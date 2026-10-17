@@ -18,8 +18,7 @@ namespace Loran.Core
         public static readonly (string id, string name)[] DevStarts =
         {
             ("village", "Skelmed square"),
-            ("road", "The map, from Yenson's shack"),
-            ("map", "The map, all of it uncovered"),
+            ("road", "Walk the coast road"),
             ("forge_first", "Forge: your first gear"),
             ("forge_iron", "Forge: buy iron (with a gem)"),
             ("dog", "Fight the wolf"),
@@ -62,21 +61,9 @@ namespace Loran.Core
                 case "road":
                     S.flags.Remove("arrived");
                     S.flags.Remove("dog_met");
-                    S.region = ""; S.fog = "";
                     MoveTo("shack");
                     Jump(TravelId);
                     break;
-                case "map":
-                {
-                    Flag("arrived");
-                    S.region = ""; S.fog = "";
-                    MoveTo("skelmed");
-                    S.fog = new string('1', S.fog.Length);
-                    foreach (var p in Region.places) Flag("place_seen:" + p.id);
-                    S.Toasts.Clear();
-                    Jump(TravelId);
-                    break;
-                }
                 case "forge_first":
                     Flag("smith_mined"); Flag("gem_shown");
                     Jump("smith_craft");
@@ -92,8 +79,6 @@ namespace Loran.Core
                 {
                     S.flags.Remove("arrived");
                     MoveTo("headland");
-                    S.mapY -= 1;                         // just past the headland
-                    Reveal(S.mapX, S.mapY, Sight());
                     S.scene = id == "dog" ? "dog" : "ev_crab";
                     StartCombat(id, id == "dog" ? "dog_won" : "ev_crab_won", TravelId);
                     break;

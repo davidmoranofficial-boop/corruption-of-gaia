@@ -1004,17 +1004,9 @@
     white-space: normal;
 }
 
-/* ---------- travel: the region map ---------- */
+/* ---------- the walkable world ---------- */
 
-.travel {
-    flex-direction: row;
-    width: 100%;
-    align-items: flex-start;
-}
-
-.map-view {
-    flex-shrink: 0;
-    margin-right: 28px;
+.world-view {
     overflow: hidden;
     background-color: #0e1619;
     border-width: 2px;
@@ -1022,12 +1014,12 @@
     border-radius: 6px;
 }
 
-.map-layer {
+.world-layer {
     position: absolute;
     -unity-background-scale-mode: stretch-to-fill;
 }
 
-.map-night, .map-fog, .map-paths {
+.world-over, .world-night {
     position: absolute;
     left: 0;
     top: 0;
@@ -1036,173 +1028,94 @@
     -unity-background-scale-mode: stretch-to-fill;
 }
 
-.map-night { background-color: rgba(8, 14, 34, 0.45); }
+.world-night { background-color: rgba(8, 14, 34, 0.5); }
 
-.map-icon {
+.walker {
+    position: absolute;
+    overflow: hidden;
+}
+
+.walker-sheet {
     position: absolute;
     -unity-background-scale-mode: stretch-to-fill;
 }
 
-.map-label {
-    position: absolute;
-    font-size: 15px;
-    -unity-font-style: bold;
-    color: var(--text);
-    background-color: rgba(13, 23, 27, 0.78);
-    padding: 1px 6px;
-    border-radius: 3px;
-    white-space: nowrap;
-}
-
-.map-label-seen { color: #c9bfa6; -unity-font-style: normal; }
-.map-label-rumour { color: var(--lantern); -unity-font-style: italic; }
-
-.map-hover {
-    position: absolute;
-    border-width: 2px;
-    border-color: rgba(232, 220, 194, 0.7);
-}
-
-.map-dot {
-    position: absolute;
-    background-color: var(--lantern);
-    border-width: 1px;
-    border-color: #3a2a12;
-}
-
-.map-dot-fog { background-color: #8a7a5a; }
-
-.map-you {
+.world-thing {
     position: absolute;
     -unity-background-scale-mode: stretch-to-fill;
 }
 
-.map-tip {
+.world-name {
     position: absolute;
-    left: 12px;
+    left: 14px;
     top: 12px;
-    font-size: 18px;
+    font-size: 17px;
+    letter-spacing: 3px;
     color: var(--text);
-    background-color: rgba(13, 23, 27, 0.88);
-    border-width: 1px;
-    border-color: var(--line);
-    border-radius: 5px;
-    padding: 6px 12px;
+    background-color: rgba(13, 23, 27, 0.8);
+    border-radius: 4px;
+    padding: 4px 12px;
 }
 
-.map-hint {
+.world-help {
     position: absolute;
-    left: 12px;
-    bottom: 10px;
+    right: 14px;
+    top: 12px;
     font-size: 15px;
     color: var(--muted);
     background-color: rgba(13, 23, 27, 0.8);
     border-radius: 4px;
-    padding: 3px 10px;
+    padding: 4px 12px;
 }
 
-.map-zoom {
+.world-prompt {
     position: absolute;
-    right: 10px;
-    top: 10px;
-    font-size: 16px;
-    color: var(--text);
-    background-color: rgba(21, 36, 43, 0.92);
-    border-width: 1px;
-    border-color: var(--line);
-    border-radius: 5px;
-    padding: 5px 12px;
-    margin: 0;
-}
-
-.map-zoom:hover { border-color: var(--lantern); }
-.map-zoom:disabled { display: none; }
-
-.travel-side {
-    flex-shrink: 0;
-}
-
-.travel-scroll {
-    flex-grow: 1;
-}
-
-.pace-row {
-    flex-direction: row;
-    margin-bottom: 6px;
-}
-
-.pace-chip {
-    flex-grow: 1;
-    flex-basis: 0;
-    margin: 0 8px 0 0;
-    padding: 8px 6px;
-    font-size: 19px;
-    color: var(--muted);
-    background-color: var(--hull);
-    border-width: 1px;
-    border-color: var(--line);
-    border-radius: 6px;
-}
-
-.pace-chip:hover { border-color: var(--lantern); color: var(--text); }
-
-.pace-on {
+    left: 50%;
+    bottom: 26px;
+    translate: -50% 0;
+    font-size: 20px;
     color: var(--sea);
     background-color: var(--lantern);
-    border-color: var(--lantern);
+    border-radius: 5px;
+    padding: 6px 16px;
     -unity-font-style: bold;
 }
 
-.pace-on:hover { color: var(--sea); }
+.dialogue {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 20px;
+    max-height: 58%;
+    background-color: rgba(13, 23, 27, 0.95);
+    border-width: 3px;
+    border-color: var(--text);
+    border-radius: 8px;
+    padding: 18px 26px;
+}
 
-.pace-help {
-    font-size: 15px;
-    color: var(--muted);
-    white-space: normal;
+.dialogue-scroll {
+    flex-shrink: 1;
+}
+
+.dialogue-title {
+    font-size: 26px;
+    color: var(--lantern);
+    -unity-font-style: bold;
     margin-bottom: 8px;
 }
 
-.place-row {
-    flex-direction: row;
-    align-items: flex-start;
-    margin: 0 0 6px 0;
-    padding: 8px 10px;
-    background-color: var(--hull);
-    border-width: 1px;
-    border-color: var(--line);
-    border-radius: 6px;
-}
-
-.place-row:hover { border-color: var(--lantern); background-color: var(--hull-hi); }
-.place-here { border-color: var(--moss); }
-
-.place-icon {
-    flex-shrink: 0;
-    margin: 4px 12px 0 0;
-    -unity-background-scale-mode: stretch-to-fill;
-}
-
-.place-text {
-    flex-grow: 1;
-    flex-shrink: 1;
-    min-width: 0;
-}
-
-.place-name {
-    font-size: 19px;
+.dialogue-text {
+    font-size: 22px;
     color: var(--text);
-    -unity-font-style: bold;
-}
-
-.place-sub {
-    font-size: 14px;
-    color: var(--lantern);
-}
-
-.place-note {
-    font-size: 14px;
-    color: var(--muted);
     white-space: normal;
+    margin-bottom: 10px;
+}
+
+.dialogue-more {
+    align-self: flex-end;
+    font-size: 16px;
+    color: var(--lantern);
 }
 
 /* ---------- forge ---------- */

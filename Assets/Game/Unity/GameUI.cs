@@ -84,7 +84,7 @@ namespace Loran.UnityLayer
             root.style.flexGrow = 1;
             docRoot.Add(root);
             root.RegisterCallback<KeyDownEvent>(OnKey);
-            root.RegisterCallback<KeyUpEvent>(e => { if (engine.S.scene == Engine.ForgeId) ForgeKeyUp(e); });
+            root.RegisterCallback<KeyUpEvent>(e => { if (engine.S.scene == Engine.ForgeId) ForgeKeyUp(e); else WorldKeyUp(e); });
 
             hud = new VisualElement();
             hud.AddToClassList("hud");
@@ -100,8 +100,8 @@ namespace Loran.UnityLayer
             mainBox.RegisterCallback<GeometryChangedEvent>(_ =>
             {
                 if (InBattle && !busy && timing == null && Mathf.Abs(BattleHeight() - battleHeight) > 4f) Render();
-                else if (engine.Travelling && !busy && walkTarget == null && openMenu == ""
-                         && (Mathf.Abs(TravelHeight() - travelSize.y) > 4f || Mathf.Abs(TravelWidth() - travelSize.x) > 4f)) Render();
+                else if (InWorld && !InBattle && !moving && openMenu == ""
+                         && (Mathf.Abs(TravelHeight() - worldSize.y) > 4f || Mathf.Abs(TravelWidth() - worldSize.x) > 4f)) Render();
             });
 
             menuBar = new VisualElement();
@@ -191,8 +191,8 @@ namespace Loran.UnityLayer
                 else
                 {
                     RenderHud();
-                    if (engine.Travelling) RenderTravel();
-                    else RenderStory();
+                    if (InWorld) RenderWorld();
+                    else { worldView = null; RenderStory(); }
                 }
                 if (menusAllowed) RenderMenuBar();
                 if (openMenu != "") RenderMenu();
@@ -743,7 +743,7 @@ namespace Loran.UnityLayer
         void Pick(ChoiceView cv)
         {
             if (!cv.enabled || busy) return;
-            if (walkTarget != null) return;
+            if (moving) return;
             engine.Choose(cv.def);
             AfterAction();
         }
@@ -766,7 +766,7 @@ namespace Loran.UnityLayer
             }
             if (InBattle) { BattleKey(e); e.StopPropagation(); return; }
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
-            if (engine.Travelling && openMenu == "" && TravelKey(e)) { e.StopPropagation(); return; }
+            if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
             if (e.keyCode == KeyCode.Escape && openMenu != "") { openMenu = ""; Render(); e.StopPropagation(); return; }
             if (menuBar.resolvedStyle.display == DisplayStyle.Flex)
                 foreach (var m in Menus)

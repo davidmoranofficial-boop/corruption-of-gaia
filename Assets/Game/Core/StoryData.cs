@@ -59,8 +59,8 @@ namespace Loran.Core
         public List<GearDef> gear = new List<GearDef>();
         public List<TraitDef> traits = new List<TraitDef>();
         public List<MaterialDef> materials = new List<MaterialDef>();
-        public List<TerrainDef> terrains = new List<TerrainDef>();
-        public List<RegionDef> regions = new List<RegionDef>();
+        public List<TileDef> tiles = new List<TileDef>();
+        public List<AreaDef> areas = new List<AreaDef>();
         public List<SpellDef> spells = new List<SpellDef>();
         public List<JournalDef> journal = new List<JournalDef>();
         public List<string> builds = new List<string>();
@@ -130,69 +130,72 @@ namespace Loran.Core
     [Serializable] public class SpellDef { public string id, name, desc; }
     [Serializable] public class JournalDef { public string text; public List<string> when = new List<string>(); }
 
-    /// <summary>
-    /// One kind of ground on the region maps, keyed by the letter used in a region's rows.
-    /// cost is walking time against a road (road = 1); 0 means you can't walk on it at all.
-    /// </summary>
+    /// <summary>One kind of tile in the walkable areas, keyed by the letter used in an area's rows.</summary>
     [Serializable]
-    public class TerrainDef
+    public class TileDef
     {
         public string key, name;
-        public string title;                                  // shown as the heading while you stand on it, e.g. "In the forest"
-        public string desc;
-        public float cost = 1.5f;
-        public int sight = 2;                                 // how many tiles you can see from it
-        public int stamina;                                   // extra stamina per tile, for hard going
-        public float danger = 1;                              // multiplies the chance of trouble
-        public float corruption;                              // added to corruption for each tile walked
-        public List<string> forage = new List<string>();      // items you might find foraging
+        public bool solid;                                    // can't walk onto it
+        public bool road;                                     // fewer fights on it
     }
 
     /// <summary>
-    /// A region map: a grid of terrain letters (made by Tools/Art/regions.py, with its picture), the places on it,
-    /// the random events that can happen walking it, and fixed story beats on certain tiles.
+    /// A top-down area you walk round tile by tile. Made by Tools/Art/world.py, which also paints its picture.
     /// </summary>
     [Serializable]
-    public class RegionDef
+    public class AreaDef
     {
         public string id, name;
-        public string night;                                  // extra line shown while walking after dark
-        public int eventChance = 15;                          // % chance of an event per tile walked
-        public List<PlaceDef> places = new List<PlaceDef>();
+        public int minutes = 2;                               // time per step walking (half that running)
+        public int eventChance = 3;                           // % per step: finds, meetings, weather
+        public int fightChance = 6;                           // % per step: a random fight (halved on roads)
+        public int fightGap = 10;                             // at least this many steps between fights
+        public List<SpotDef> spots = new List<SpotDef>();     // named places to put the player (travel:at:<id>)
+        public List<WorldObj> objects = new List<WorldObj>();
+        public List<ZoneDef> zones = new List<ZoneDef>();
+        public List<UseDef> uses = new List<UseDef>();
         public List<TravelEvent> events = new List<TravelEvent>();
-        public List<BeatDef> beats = new List<BeatDef>();
-        public List<string> rows = new List<string>();        // row 0 is the top (north) of the map
+        public List<string> rows = new List<string>();        // row 0 is the top (north)
     }
 
-    /// <summary>
-    /// A place on a region map. It's unknown until you see it (or hear a rumour), then seen, then visited.
-    /// Hidden places only show up when you walk right next to them.
-    /// </summary>
     [Serializable]
-    public class PlaceDef
+    public class SpotDef
     {
-        public string id, name;
-        public string kind = "spot";                          // the map icon: hut, village, town, quarry, camp, cave, ruin, stones, cove, blight, spot
-        public string desc;                                   // shown while you stand there
-        public string note;                                   // one line for the list of places you know
-        public string rumour;                                 // shown for a rumoured place you haven't found yet
+        public string id;
         public int x, y;
-        public bool hidden;
-        public int farSight;                                  // seen from this many tiles away even through fog (towers, smoke, lights)
-        public List<string> rumourWhen = new List<string>();  // marked with a ? on your map while these hold
-        public string enterLabel;                             // e.g. "Walk into Skelmed"
-        public List<CondScene> enter = new List<CondScene>(); // where going in takes you (the first whose conditions hold)
-        public List<ChoiceDef> choices = new List<ChoiceDef>();   // things to do here without leaving the map
-        public List<string> forage = new List<string>();
+        public string facing = "down";
     }
 
-    /// <summary>A fixed story scene waiting on the map, within radius tiles of x, y, while its conditions hold.</summary>
+    /// <summary>Something standing in an area: a person, a sign, a door, a thing to pick up. You face it and press to use it.</summary>
     [Serializable]
-    public class BeatDef
+    public class WorldObj
     {
-        public int x, y, radius;
+        public string id, kind = "npc";                       // npc, sign, door, item, spot
+        public string sprite = "";                            // Resources/Sprites/Walk (people) or World (things); empty = nothing drawn
+        public int x, y;
+        public string facing = "down";
+        public string scene;                                  // the scene using it opens
+        public string text;                                   // or just a line of text (signs)
+        public bool once;                                     // gone after it's used
+        public List<string> when = new List<string>();        // only there while these hold
+    }
+
+    /// <summary>A rectangle that runs a scene when you walk into it (while its conditions hold).</summary>
+    [Serializable]
+    public class ZoneDef
+    {
+        public int x0, y0, x1, y1;
         public string scene;
+        public List<CondScene> enter = new List<CondScene>(); // or the first of these whose conditions hold
         public List<string> when = new List<string>();
+    }
+
+    /// <summary>Facing a tile of this kind and pressing to use it opens a scene (drinking from a stream).</summary>
+    [Serializable]
+    public class UseDef
+    {
+        public string tile;
+        public string scene;
     }
 
     [Serializable]
@@ -203,13 +206,15 @@ namespace Loran.Core
     }
 
     /// <summary>
-    /// Something that can happen while walking. kind is find, danger, weather or meet: pace, night and the ground change the odds.
-    /// terrain lists the letters it can happen on (empty = anywhere); area is x0, y0, x1, y1 (empty = the whole map).
+    /// Something that can happen while walking. kind is fight, find, weather or meet. A fight starts a battle with enemy
+    /// straight away and goes to win afterwards; the rest open scene. terrain lists the tile letters it can happen on
+    /// (empty = anywhere); area is x0, y0, x1, y1 (empty = the whole area).
     /// </summary>
     [Serializable]
     public class TravelEvent
     {
         public string scene;
+        public string enemy = "", win = "";
         public string terrain = "";
         public List<int> area = new List<int>();
         public string kind = "meet";
@@ -238,22 +243,22 @@ namespace Loran.Core
         public GearDef Gear(string id) => Find(file.gear, x => x.id, id);
         public TraitDef Trait(string id) => Find(file.traits, x => x.id, id);
         public MaterialDef Material(string id) => Find(file.materials, x => x.id, id);
-        public RegionDef Region(string id) => Find(file.regions, x => x.id, id);
-        public TerrainDef Terrain(char key)
+        public SpellDef Spell(string id) => Find(file.spells, x => x.id, id);
+        public AreaDef Area(string id) => Find(file.areas, x => x.id, id);
+        public TileDef Tile(char key)
         {
-            foreach (var t in file.terrains) if (!string.IsNullOrEmpty(t.key) && t.key[0] == key) return t;
+            foreach (var t in file.tiles) if (!string.IsNullOrEmpty(t.key) && t.key[0] == key) return t;
             return null;
         }
 
-        /// <summary>A place by id, and the region it's in.</summary>
-        public (RegionDef region, PlaceDef place) Place(string id)
+        /// <summary>A named spot, and the area it's in.</summary>
+        public (AreaDef area, SpotDef spot) Spot(string id)
         {
-            foreach (var r in file.regions)
-                foreach (var p in r.places)
-                    if (p.id == id) return (r, p);
+            foreach (var a in file.areas)
+                foreach (var p in a.spots)
+                    if (p.id == id) return (a, p);
             return (null, null);
         }
-        public SpellDef Spell(string id) => Find(file.spells, x => x.id, id);
     }
 
     /// <summary>Saving and loading is done by whichever JSON library the host has (JsonUtility in Unity).</summary>

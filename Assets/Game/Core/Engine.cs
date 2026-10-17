@@ -64,32 +64,19 @@ namespace Loran.Core
                 if (e.moves.Count == 0) e.moves.Add(new EnemyMove { id = "attack", name = "Attack", tell = "It squares up to you.", power = 1, weight = 1 });
             }
             foreach (var m in d.materials) m.traits ??= new List<string>();
-            d.terrains ??= new List<TerrainDef>();
-            foreach (var t in d.terrains) t.forage ??= new List<string>();
-            d.regions ??= new List<RegionDef>();
-            foreach (var r in d.regions)
+            d.tiles ??= new List<TileDef>();
+            d.areas ??= new List<AreaDef>();
+            foreach (var a in d.areas)
             {
-                r.places ??= new List<PlaceDef>();
-                r.events ??= new List<TravelEvent>();
-                r.beats ??= new List<BeatDef>();
-                r.rows ??= new List<string>();
-                foreach (var ev in r.events) { ev.when ??= new List<string>(); ev.area ??= new List<int>(); ev.terrain ??= ""; }
-                foreach (var b in r.beats) b.when ??= new List<string>();
-                foreach (var p in r.places)
-                {
-                    p.rumourWhen ??= new List<string>();
-                    p.enter ??= new List<CondScene>();
-                    p.forage ??= new List<string>();
-                    p.choices ??= new List<ChoiceDef>();
-                    foreach (var c in p.enter) c.when ??= new List<string>();
-                    foreach (var c in p.choices)
-                    {
-                        c.when ??= new List<string>();
-                        c.need ??= new List<string>();
-                        c.train ??= new List<string>();
-                        c.effects ??= new List<string>();
-                    }
-                }
+                a.spots ??= new List<SpotDef>();
+                a.objects ??= new List<WorldObj>();
+                a.zones ??= new List<ZoneDef>();
+                a.uses ??= new List<UseDef>();
+                a.events ??= new List<TravelEvent>();
+                a.rows ??= new List<string>();
+                foreach (var ev in a.events) { ev.when ??= new List<string>(); ev.area ??= new List<int>(); ev.terrain ??= ""; ev.enemy ??= ""; ev.win ??= ""; }
+                foreach (var o in a.objects) { o.when ??= new List<string>(); o.sprite ??= ""; if (string.IsNullOrEmpty(o.facing)) o.facing = "down"; }
+                foreach (var z in a.zones) { z.when ??= new List<string>(); z.enter ??= new List<CondScene>(); foreach (var c in z.enter) c.when ??= new List<string>(); }
             }
             foreach (var j in d.journal) j.when ??= new List<string>();
         }
@@ -176,11 +163,7 @@ namespace Loran.Core
                 S.scene = TravelId;
             }
             MigrateRoad();
-            if (S.scene == TravelId ? Region != null : S.scene == ForgeId ? S.forging != "" : scenes.ContainsKey(S.scene))
-            {
-                if (Region != null) EnsureFog(Region);
-                return;
-            }
+            if (S.scene == TravelId ? Area != null : S.scene == ForgeId ? S.forging != "" : scenes.ContainsKey(S.scene)) return;
             S.scene = S.Has("arrived") && scenes.ContainsKey("village") ? "village" : "shack_visit";
         }
 
@@ -306,7 +289,7 @@ namespace Loran.Core
                 }
             }
 
-            if (id == TravelId && Region == null) throw new Exception("Not on the map");
+            if (id == TravelId && Area == null) throw new Exception("Not out in the world");
             if (id == ForgeId && S.forging == "") throw new Exception("Nothing on the anvil");
             if (!scenes.ContainsKey(id) && id != TravelId && id != ForgeId) throw new Exception("No scene called '" + id + "'");
             S.repeat = id == prev && !freshView;
@@ -739,7 +722,7 @@ namespace Loran.Core
                         if (parts.Length > 2 && data.Material(parts[2]) == null) problems.Add(where + ": no material '" + parts[2] + "'");
                         return;
                     case "travel":
-                        if ((parts[0] == "at") && data.Place(parts[1]).place == null) problems.Add(where + ": no place '" + parts[1] + "'");
+                        if ((parts[0] == "at") && data.Spot(parts[1]).spot == null) problems.Add(where + ": no spot '" + parts[1] + "'");
                         return;
                 }
                 if (e.StartsWith("item:"))
@@ -779,36 +762,46 @@ namespace Loran.Core
                     if (data.Trait(t) == null) problems.Add("material " + m.id + ": no trait '" + t + "'");
             foreach (var g in data.file.gear)
                 if (Array.IndexOf(GearSlots, g.slot) < 0) problems.Add("gear " + g.id + ": no slot '" + g.slot + "'");
-            foreach (var t in data.file.terrains)
-                foreach (var f in t.forage) if (data.Item(f) == null) problems.Add("terrain " + t.name + ": no item '" + f + "'");
-            var placeIds = new HashSet<string>();
-            foreach (var r in data.file.regions)
+            var spotIds = new HashSet<string>();
+            foreach (var a in data.file.areas)
             {
-                string rw = "region " + r.id;
-                if (r.rows.Count == 0) { problems.Add(rw + ": has no rows"); continue; }
-                for (int y = 0; y < r.rows.Count; y++)
+                string aw = "area " + a.id;
+                if (a.rows.Count == 0) { problems.Add(aw + ": has no rows"); continue; }
+                for (int y = 0; y < a.rows.Count; y++)
                 {
-                    if (r.rows[y].Length != r.rows[0].Length) problems.Add(rw + ": row " + y + " is a different length");
-                    foreach (char c in r.rows[y]) if (data.Terrain(c) == null) { problems.Add(rw + ": no terrain '" + c + "' (row " + y + ")"); break; }
+                    if (a.rows[y].Length != a.rows[0].Length) problems.Add(aw + ": row " + y + " is a different length");
+                    foreach (char c in a.rows[y]) if (data.Tile(c) == null) { problems.Add(aw + ": no tile '" + c + "' (row " + y + ")"); break; }
                 }
-                foreach (var ev in r.events) { Scene(rw + " event", ev.scene); foreach (var w in ev.when) Cond(rw + " event", w); }
-                foreach (var b in r.beats) { Scene(rw + " beat", b.scene); foreach (var w in b.when) Cond(rw + " beat", w); }
-                foreach (var p in r.places)
+                bool Open(int x, int y) => InBounds(a, x, y) && data.Tile(a.rows[y][x])?.solid == false;
+                foreach (var p in a.spots)
                 {
-                    string where = rw + " > " + p.name;
-                    if (!placeIds.Add(p.id)) problems.Add(where + ": two places share the id '" + p.id + "'");
-                    if (!Passable(r, p.x, p.y)) problems.Add(where + ": stands on ground you can't walk on");
-                    if (Array.IndexOf(PlaceKinds, p.kind) < 0) problems.Add(where + ": no map icon '" + p.kind + "'");
-                    foreach (var c in p.enter) { Scene(where, c.scene); foreach (var w in c.when) Cond(where, w); }
-                    foreach (var w in p.rumourWhen) Cond(where, w);
-                    foreach (var f in p.forage) if (data.Item(f) == null) problems.Add(where + ": no item '" + f + "'");
-                    foreach (var ch in p.choices)
+                    if (!spotIds.Add(p.id)) problems.Add(aw + ": two spots called '" + p.id + "'");
+                    if (!Open(p.x, p.y)) problems.Add(aw + " spot " + p.id + ": stands on ground you can't walk on");
+                }
+                foreach (var o in a.objects)
+                {
+                    string where = aw + " > " + o.id;
+                    Scene(where, o.scene);
+                    foreach (var w in o.when) Cond(where, w);
+                    if (!InBounds(a, o.x, o.y)) problems.Add(where + ": off the edge");
+                }
+                foreach (var z in a.zones)
+                {
+                    Scene(aw + " zone", z.scene);
+                    foreach (var w in z.when) Cond(aw + " zone", w);
+                    foreach (var c in z.enter) { Scene(aw + " zone", c.scene); foreach (var w in c.when) Cond(aw + " zone", w); }
+                }
+                foreach (var u in a.uses) Scene(aw + " use " + u.tile, u.scene);
+                foreach (var ev in a.events)
+                {
+                    string where = aw + " event";
+                    if (ev.kind == "fight")
                     {
-                        Scene(where, ch.go);
-                        foreach (var c in ch.when) Cond(where, c);
-                        foreach (var c in ch.need) Cond(where, c);
-                        foreach (var e in ch.effects) Effect(where, e);
+                        if (data.Enemy(ev.enemy) == null) problems.Add(where + ": no enemy '" + ev.enemy + "'");
+                        Scene(where, ev.win);
                     }
+                    else Scene(where, ev.scene);
+                    foreach (var w in ev.when) Cond(where, w);
                 }
             }
             foreach (var need in new[] { Title, Creation, Death, Collapse, "bedroom" }) Scene("required", need);

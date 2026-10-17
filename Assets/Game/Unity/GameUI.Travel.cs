@@ -7,32 +7,32 @@ using UnityEngine.UIElements;
 namespace Loran.UnityLayer
 {
     /// <summary>
-    /// The map screen: the region in pixel art on the left, under a fog that lifts as you explore, with the places
-    /// you know marked on it; on the right where you are, your pace, what you can do here, and the places you know.
-    /// Click anywhere on the map to walk there. Your marker walks tile by tile, and stops if anything happens.
+    /// The walkable world, seen from above and zoomed right in. Arrow keys walk one tile at a time (hold Shift to run),
+    /// Space talks to or uses what you're facing, Enter opens the actions (camping). Story scenes that happen out here
+    /// show in a box at the bottom of the screen, over the world.
     /// </summary>
     public partial class GameUI
     {
-        const int Tile = 16;               // pixels per tile in the map picture
-        const float SideWidth = 460f;
+        const int Tile = 16;
+        const float WalkSeconds = 0.2f, RunSeconds = 0.11f;
 
-        static readonly string[] PaceHelp =
-        {
-            "Slower. You notice more, find hidden places from further off, and trouble finds you less.",
-            "A normal pace. You get your breath back as you walk.",
-            "Faster, but tiring, and easier to walk into trouble.",
-        };
+        VisualElement worldView, worldLayer, playerBox, playerSheet;
+        Label usePrompt;
+        readonly Dictionary<string, (VisualElement box, VisualElement sheet)> objectSprites = new Dictionary<string, (VisualElement, VisualElement)>();
+        readonly Dictionary<string, string> npcFacing = new Dictionary<string, string>();
+        int worldScale = 4;
+        Vector2 worldSize;
+        IVisualElementScheduledItem worldTick;
 
-        VisualElement mapLayer, youMarker, pathLayer, hoverBox;
-        Label mapTip;
-        Vector2 mapView;                   // the viewport's size
-        int mapScale = 2;
-        bool mapZoomOut;
-        Vector2Int? walkTarget;
-        bool stopWalk;
-        Vector2Int hoverTile = new Vector2Int(-1, -1);
-        Texture2D fogTex;
-        Vector2 travelSize;
+        // input and movement
+        readonly List<string> heldDirs = new List<string>();
+        bool runHeld, actionsOpen, moving;
+        float moveStart, moveSeconds, turnedAt;
+        Vector2 moveFrom, moveTo;
+        ChoiceDef pendingStep;
+        int stepCount, unsavedSteps;
+
+        public bool InWorld => engine.Area != null && engine.S.scene != Engine.Death && engine.S.scene != Engine.Collapse;
 
         float TravelHeight()
         {
@@ -46,394 +46,316 @@ namespace Loran.UnityLayer
             return float.IsNaN(w) || w < 600 ? 1700f : w - 112f;
         }
 
-        void RenderTravel()
+        // ------------------------------------------------------------------ drawing
+
+        void RenderWorld()
         {
             var s = engine.S;
-            var r = engine.Region;
-            var sc = engine.Current;
+            var a = engine.Area;
             main.Clear();
-            float height = TravelHeight();
-            travelSize = new Vector2(TravelWidth(), height);
-            var wrap = Add(main, new VisualElement(), "travel");
-            wrap.style.height = height;
+            objectSprites.Clear();
+            worldSize = new Vector2(TravelWidth(), TravelHeight());
 
-            // ---- the map
-            mapView = new Vector2(Mathf.Max(300, TravelWidth() - SideWidth - 28), height);
-            var view = Add(wrap, new VisualElement(), "map-view");
-            view.style.width = mapView.x;
-            view.style.height = mapView.y;
-            DrawMap(view, r);
+            worldView = Add(main, new VisualElement(), "world-view");
+            worldView.style.width = worldSize.x;
+            worldView.style.height = worldSize.y;
+            worldScale = Mathf.Max(3, Mathf.FloorToInt(worldSize.y / (11 * Tile)));
+            int k = worldScale, T = Tile * k;
 
-            // ---- the side panel
-            var side = Add(wrap, new VisualElement(), "travel-side");
-            side.style.width = SideWidth;
-            side.style.height = height;
-            var scroll = Add(side, new ScrollView(ScrollViewMode.Vertical), "travel-scroll");
+            worldLayer = Add(worldView, new VisualElement { pickingMode = PickingMode.Ignore }, "world-layer");
+            worldLayer.style.width = Engine.Width(a) * T;
+            worldLayer.style.height = Engine.Height(a) * T;
+            var ground = Sprite("World/" + a.id);
+            if (ground != null) worldLayer.style.backgroundImage = new StyleBackground(ground);
 
-            Add(scroll, new Label(r.name.ToUpperInvariant()), "place");
-            Add(scroll, new Label(sc.title), "title");
-            if (!string.IsNullOrEmpty(s.result)) Add(scroll, new Label(s.result), "result");
-            foreach (var p in engine.Paragraphs()) Add(scroll, new Label(p), "para");
-
-            Add(scroll, new Label("PACE"), "field-label");
-            var paces = Add(scroll, new VisualElement(), "pace-row");
-            for (int i = 0; i < Engine.Paces.Length; i++)
+            // People and things, then you, drawn top to bottom so whoever is lower stands in front
+            var things = engine.Objects().Where(o => !string.IsNullOrEmpty(o.sprite)).OrderBy(o => o.y).ToList();
+            bool youDrawn = false;
+            foreach (var o in things)
             {
-                int p = i;
-                var b = Add(paces, new Button(() => { if (busy) return; engine.SetPace(p); AfterAction(); }) { text = Engine.PaceNames[p], focusable = false }, "pace-chip");
-                if (s.pace == p) b.AddToClassList("pace-on");
+                if (!youDrawn && o.y > s.ay) { DrawYou(); youDrawn = true; }
+                DrawObject(o);
             }
-            Add(scroll, new Label(PaceHelp[s.pace]), "pace-help");
+            if (!youDrawn) DrawYou();
 
-            shownChoices = engine.Choices();
-            if (shownChoices.Count > 0)
+            var over = Sprite("World/" + a.id + "_over");
+            if (over != null)
             {
-                Add(scroll, new Label("HERE"), "field-label");
-                var list = Add(scroll, new VisualElement(), "choices");
-                for (int i = 0; i < shownChoices.Count; i++)
-                {
-                    var c = shownChoices[i];
-                    var b = new Button(() => Pick(c)) { focusable = false };
-                    b.AddToClassList("choice");
-                    b.SetEnabled(c.enabled);
-                    Add(b, new Label(i < 9 ? (i + 1).ToString() : ""), "choice-num");
-                    var text = Add(b, new VisualElement(), "choice-text");
-                    Add(text, new Label(engine.Fill(c.def.label)), "choice-label");
-                    if (!c.enabled && !string.IsNullOrEmpty(c.reason)) Add(text, new Label(c.reason), "choice-reason");
-                    else if (!string.IsNullOrEmpty(c.cost)) Add(text, new Label(c.cost), "choice-meta");
-                    list.Add(b);
-                }
+                var ov = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-over");
+                ov.style.backgroundImage = new StyleBackground(over);
             }
+            if (engine.Check("night")) Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-night");
 
-            var known = engine.KnownPlaces();
-            if (known.Count > 0)
-            {
-                Add(scroll, new Label("PLACES YOU KNOW"), "field-label");
-                foreach (var (place, state) in known)
-                {
-                    var pl = place;
-                    bool hereNow = pl.x == s.mapX && pl.y == s.mapY;
-                    var row = Add(scroll, new Button(() => { if (!hereNow) StartWalk(new Vector2Int(pl.x, pl.y)); }) { focusable = false }, "place-row");
-                    if (hereNow) row.AddToClassList("place-here");
-                    var ic = Add(row, new VisualElement(), "place-icon");
-                    var tex = Sprite("Map/" + (state == "rumoured" ? "rumour" : pl.kind));
-                    if (tex != null)
-                    {
-                        ic.style.backgroundImage = new StyleBackground(tex);
-                        ic.style.width = tex.width * 2;
-                        ic.style.height = tex.height * 2;
-                    }
-                    var col = Add(row, new VisualElement(), "place-text");
-                    string sub = hereNow ? "You're here" : state == "rumoured" ? "Heard of, not found" : state == "seen" ? "Seen, not visited" : "Visited";
-                    var path = hereNow ? null : engine.PathTo(pl.x, pl.y, out int mins);
-                    if (path != null) sub += "  ·  about " + Engine.Duration(RoundTo(MinutesFor(path), 10));
-                    Add(col, new Label(pl.name), "place-name");
-                    Add(col, new Label(sub), "place-sub");
-                    string note = state == "rumoured" && !string.IsNullOrEmpty(pl.rumour) ? pl.rumour : pl.note;
-                    if (!string.IsNullOrEmpty(note)) Add(col, new Label(note), "place-note");
-                }
-            }
+            PlaceYou(new Vector2(s.ax, s.ay), moving ? 1 + stepCount % 2 : 0);
+
+            usePrompt = Add(worldView, new Label(""), "world-prompt");
+            Add(worldView, new Label(a.name.ToUpperInvariant()), "world-name");
+            Add(worldView, new Label("Arrows: walk   Shift: run   Space: talk / use   Enter: actions"), "world-help");
+            UpdatePrompt();
+
+            // The box at the bottom: a story scene, a message, or the actions
+            shownChoices = new List<ChoiceView>();
+            bool scene = s.scene != Engine.TravelId || s.inCombat;
+            if (scene) DialogueBox(engine.Current.title, s.result, engine.Paragraphs(), engine.Choices(), false);
+            else if (!string.IsNullOrEmpty(s.result)) DialogueBox(null, s.result, null, null, true);
+            else if (actionsOpen) DialogueBox("What now?", null, null, engine.Choices(), false, true);
+
+            if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
 
-        static int RoundTo(int v, int step) => Mathf.Max(step, Mathf.RoundToInt(v / (float)step) * step);
-
-        /// <summary>Roughly how long a path takes at your pace (unknown ground is guessed).</summary>
-        int MinutesFor(List<(int x, int y)> path)
+        void DialogueBox(string title, string result, List<string> paras, List<ChoiceView> choices, bool message, bool actions = false)
         {
-            int total = 0, px = engine.S.mapX, py = engine.S.mapY;
-            foreach (var (x, y) in path)
+            var box = Add(worldView, new VisualElement(), "dialogue");
+            var scroll = Add(box, new ScrollView(ScrollViewMode.Vertical), "dialogue-scroll");
+            if (!string.IsNullOrEmpty(title)) Add(scroll, new Label(engine.Fill(title)), "dialogue-title");
+            if (!string.IsNullOrEmpty(result)) Add(scroll, new Label(result), message ? "dialogue-text" : "result");
+            if (paras != null) foreach (var p in paras) Add(scroll, new Label(p), "dialogue-text");
+            if (message)
             {
-                bool diag = x != px && y != py;
-                total += engine.Known(x, y) ? engine.StepMinutes(x, y, diag) : Mathf.RoundToInt(Engine.TileMinutes * 1.6f * (diag ? 1.4f : 1f));
-                px = x; py = y;
-            }
-            return total;
-        }
-
-        // ------------------------------------------------------------------ drawing the map
-
-        void DrawMap(VisualElement view, RegionDef r)
-        {
-            var s = engine.S;
-            int w = Engine.Width(r), h = Engine.Height(r);
-            int fit = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(mapView.x / (w * Tile), mapView.y / (h * Tile))));
-            mapScale = mapZoomOut ? fit : Mathf.Max(fit, mapView.x >= 900 ? 2 : 1);
-            int k = mapScale, T = Tile * k;
-
-            mapLayer = Add(view, new VisualElement(), "map-layer");
-            mapLayer.style.width = w * T;
-            mapLayer.style.height = h * T;
-            var pic = Sprite("Maps/" + r.id);
-            if (pic != null) mapLayer.style.backgroundImage = new StyleBackground(pic);
-
-            if (engine.Check("night")) Add(mapLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-night");
-
-            var fog = Add(mapLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-fog");
-            fog.style.backgroundImage = new StyleBackground(FogTexture(r));
-
-            pathLayer = Add(mapLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-paths");
-
-            // Places you know about
-            foreach (var (place, state) in engine.KnownPlaces())
-            {
-                var tex = Sprite("Map/" + (state == "rumoured" ? "rumour" : place.kind));
-                float cx = (place.x + 0.5f) * T, cy = (place.y + 0.5f) * T;
-                float iw = 0, ih = 0;
-                if (tex != null)
-                {
-                    int ik = Mathf.Max(2, k + 1);
-                    iw = tex.width * ik; ih = tex.height * ik;
-                    var icon = Add(mapLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-icon");
-                    icon.style.backgroundImage = new StyleBackground(tex);
-                    icon.style.width = iw;
-                    icon.style.height = ih;
-                    icon.style.left = cx - iw / 2;
-                    icon.style.top = cy - ih / 2;
-                }
-                var label = Add(mapLayer, new Label(state == "rumoured" ? place.name + "?" : place.name) { pickingMode = PickingMode.Ignore }, "map-label");
-                if (state == "rumoured") label.AddToClassList("map-label-rumour");
-                else if (state == "seen") label.AddToClassList("map-label-seen");
-                label.style.left = cx;
-                label.style.top = cy + ih / 2 + 2;
-                label.style.translate = new Translate(Length.Percent(-50), 0);
-            }
-
-            hoverBox = Add(mapLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-hover");
-            hoverBox.style.width = T;
-            hoverBox.style.height = T;
-            hoverBox.style.display = DisplayStyle.None;
-
-            youMarker = Add(mapLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-you");
-            var you = Sprite("Map/you");
-            if (you != null)
-            {
-                youMarker.style.backgroundImage = new StyleBackground(you);
-                youMarker.style.width = you.width * (k + 2);
-                youMarker.style.height = you.height * (k + 2);
-            }
-            PlaceYou(new Vector2(s.mapX, s.mapY));
-
-            mapTip = Add(view, new Label("") { pickingMode = PickingMode.Ignore }, "map-tip");
-            mapTip.style.display = DisplayStyle.None;
-            Add(view, new Label(walkTarget != null ? "Walking... click or press Esc to stop" : "Click the map to walk  ·  arrow keys step one tile") { pickingMode = PickingMode.Ignore }, "map-hint");
-            var zoom = Add(view, new Button(() => { mapZoomOut = !mapZoomOut; Render(); }) { text = mapZoomOut ? "Close up" : "Whole map", focusable = false }, "map-zoom");
-            zoom.SetEnabled(fit < Mathf.Max(fit, mapView.x >= 900 ? 2 : 1) || mapZoomOut);
-
-            mapLayer.RegisterCallback<PointerMoveEvent>(e => Hover(TileUnder(e.localPosition)));
-            mapLayer.RegisterCallback<PointerLeaveEvent>(_ => Hover(new Vector2Int(-1, -1)));
-            mapLayer.RegisterCallback<PointerDownEvent>(e =>
-            {
-                if (e.button != 0) return;
-                if (walkTarget != null) { stopWalk = true; return; }
-                var t = TileUnder(e.localPosition);
-                if (t.x == s.mapX && t.y == s.mapY) return;
-                StartWalk(t);
-            });
-            hoverTile = new Vector2Int(-1, -1);
-        }
-
-        Vector2Int TileUnder(Vector3 local) => new Vector2Int(Mathf.FloorToInt(local.x / (Tile * mapScale)), Mathf.FloorToInt(local.y / (Tile * mapScale)));
-
-        /// <summary>Puts your marker on a (possibly in-between) tile, and moves the map so it stays in view.</summary>
-        void PlaceYou(Vector2 tile)
-        {
-            if (youMarker == null || mapLayer == null) return;
-            float T = Tile * mapScale;
-            float cx = (tile.x + 0.5f) * T, cy = (tile.y + 0.5f) * T;
-            float mw = youMarker.style.width.value.value, mh = youMarker.style.height.value.value;
-            youMarker.style.left = cx - mw / 2;
-            youMarker.style.top = cy - mh + mapScale * 2;
-
-            var r = engine.Region;
-            float lw = Engine.Width(r) * T, lh = Engine.Height(r) * T;
-            float ox = lw <= mapView.x ? (mapView.x - lw) / 2 : Mathf.Clamp(mapView.x / 2 - cx, mapView.x - lw, 0);
-            float oy = lh <= mapView.y ? (mapView.y - lh) / 2 : Mathf.Clamp(mapView.y / 2 - cy, mapView.y - lh, 0);
-            mapLayer.style.left = Mathf.Round(ox);
-            mapLayer.style.top = Mathf.Round(oy);
-        }
-
-        /// <summary>The fog as a picture the same size as the map: dark where you haven't been, with a dithered edge.</summary>
-        Texture2D FogTexture(RegionDef r)
-        {
-            int w = Engine.Width(r), h = Engine.Height(r);
-            int pw = w * Tile, ph = h * Tile;
-            if (fogTex == null || fogTex.width != pw || fogTex.height != ph)
-            {
-                if (fogTex != null) Destroy(fogTex);
-                fogTex = new Texture2D(pw, ph, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-            }
-            var px = new Color32[pw * ph];
-            var dark = new Color32(14, 22, 25, 255);
-            var dark2 = new Color32(18, 28, 31, 255);
-            var clear = new Color32(0, 0, 0, 0);
-            int[] bayer = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
-            bool K(int x, int y) => x >= 0 && y >= 0 && x < w && y < h && engine.Known(x, y);
-            for (int ty = 0; ty < h; ty++)
-                for (int tx = 0; tx < w; tx++)
-                {
-                    bool known = K(tx, ty);
-                    bool l = K(tx - 1, ty), rt = K(tx + 1, ty), u = K(tx, ty - 1), d = K(tx, ty + 1);
-                    bool ul = K(tx - 1, ty - 1), ur = K(tx + 1, ty - 1), dl = K(tx - 1, ty + 1), dr = K(tx + 1, ty + 1);
-                    bool edge = !known && (l || rt || u || d || ul || ur || dl || dr);
-                    for (int sy = 0; sy < Tile; sy++)
-                        for (int sx = 0; sx < Tile; sx++)
-                        {
-                            Color32 c;
-                            if (known) c = clear;
-                            else if (!edge) c = ((sx + sy * 3 + tx * 5 + ty * 7) % 23 == 0) ? dark2 : dark;
-                            else
-                            {
-                                // How far into the fog this pixel is from the lit tiles beside it: 0 at the edge, 1 deep in.
-                                float f = 1f;
-                                if (l) f = Mathf.Min(f, sx / (float)Tile);
-                                if (rt) f = Mathf.Min(f, (Tile - 1 - sx) / (float)Tile);
-                                if (u) f = Mathf.Min(f, sy / (float)Tile);
-                                if (d) f = Mathf.Min(f, (Tile - 1 - sy) / (float)Tile);
-                                if (ul) f = Mathf.Min(f, Mathf.Max(sx, sy) / (float)Tile);
-                                if (ur) f = Mathf.Min(f, Mathf.Max(Tile - 1 - sx, sy) / (float)Tile);
-                                if (dl) f = Mathf.Min(f, Mathf.Max(sx, Tile - 1 - sy) / (float)Tile);
-                                if (dr) f = Mathf.Min(f, Mathf.Max(Tile - 1 - sx, Tile - 1 - sy) / (float)Tile);
-                                int X = tx * Tile + sx, Y = ty * Tile + sy;
-                                c = f * 16f * 1.15f > bayer[(Y % 4) * 4 + X % 4] + 0.5f ? dark : clear;
-                            }
-                            int X2 = tx * Tile + sx, Y2 = ph - 1 - (ty * Tile + sy);   // textures count rows from the bottom
-                            px[Y2 * pw + X2] = c;
-                        }
-                }
-            fogTex.SetPixels32(px);
-            fogTex.Apply(false);
-            return fogTex;
-        }
-
-        // ------------------------------------------------------------------ hovering
-
-        void Hover(Vector2Int t)
-        {
-            if (t == hoverTile || mapLayer == null) return;
-            hoverTile = t;
-            pathLayer.Clear();
-            var r = engine.Region;
-            if (busy || walkTarget != null || !Engine.InBounds(r, t.x, t.y))
-            {
-                hoverBox.style.display = DisplayStyle.None;
-                mapTip.style.display = DisplayStyle.None;
+                Add(box, new Label("Space ▼"), "dialogue-more");
+                box.RegisterCallback<PointerDownEvent>(_ => DismissMessage());
                 return;
             }
-            float T = Tile * mapScale;
-            hoverBox.style.display = DisplayStyle.Flex;
-            hoverBox.style.left = t.x * T;
-            hoverBox.style.top = t.y * T;
-
-            var place = engine.KnownPlaces().Select(k => k.place).FirstOrDefault(p => p.x == t.x && p.y == t.y);
-            bool known = engine.Known(t.x, t.y);
-            string what = place != null ? place.name : known ? engine.TerrainAt(r, t.x, t.y)?.name ?? "" : "Unexplored";
-            var path = engine.PathTo(t.x, t.y, out _);
-            if (t.x == engine.S.mapX && t.y == engine.S.mapY) mapTip.text = what + "  ·  you're here";
-            else if (path == null) mapTip.text = what + "  ·  " + (known ? "you can't walk there" : "no way you know of");
-            else
+            if (choices == null) return;
+            shownChoices = choices;
+            var list = Add(scroll, new VisualElement(), "choices");
+            for (int i = 0; i < choices.Count; i++)
             {
-                mapTip.text = what + "  ·  about " + Engine.Duration(RoundTo(MinutesFor(path), 5));
-                foreach (var (x, y) in path)
-                {
-                    var dot = Add(pathLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "map-dot");
-                    float sz = Mathf.Max(4, mapScale * 3);
-                    dot.style.width = dot.style.height = sz;
-                    dot.style.left = (x + 0.5f) * T - sz / 2;
-                    dot.style.top = (y + 0.5f) * T - sz / 2;
-                    if (!engine.Known(x, y)) dot.AddToClassList("map-dot-fog");
-                }
+                var c = choices[i];
+                var b = new Button(() => { actionsOpen = false; Pick(c); }) { focusable = false };
+                b.AddToClassList("choice");
+                b.SetEnabled(c.enabled);
+                Add(b, new Label(i < 9 ? (i + 1).ToString() : ""), "choice-num");
+                var text = Add(b, new VisualElement(), "choice-text");
+                Add(text, new Label(engine.Fill(c.def.label)), "choice-label");
+                if (!c.enabled && !string.IsNullOrEmpty(c.reason)) Add(text, new Label(c.reason), "choice-reason");
+                else if (!string.IsNullOrEmpty(c.cost)) Add(text, new Label(c.cost), "choice-meta");
+                list.Add(b);
             }
-            mapTip.style.display = DisplayStyle.Flex;
+            if (actions)
+            {
+                var close = new Button(() => { actionsOpen = false; Render(); }) { focusable = false };
+                close.AddToClassList("choice");
+                Add(close, new Label("Esc"), "choice-num");
+                Add(close, new Label("Keep walking"), "choice-label");
+                list.Add(close);
+            }
+        }
+
+        void DismissMessage()
+        {
+            engine.S.result = "";
+            Render();
+        }
+
+        string PlayerSheet()
+        {
+            var s = engine.S;
+            string fig = (string.IsNullOrEmpty(s.figure) ? s.gender : s.figure) == "female" ? "female" : "male";
+            string skin = Key(s.skin) == "" ? "light" : Key(s.skin);
+            string hair = Key(s.hair) == "" || Key(s.hair) == "shaved" ? "dark_brown" : Key(s.hair);
+            return "Walk/walk_" + fig + "_" + skin + "_" + hair;
+        }
+
+        static int FacingRow(string f) => f == "up" ? 1 : f == "left" ? 2 : f == "right" ? 3 : 0;
+
+        (VisualElement box, VisualElement sheet) Walker(string sheetPath)
+        {
+            int k = worldScale;
+            var box = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
+            box.style.width = 16 * k;
+            box.style.height = 24 * k;
+            var sheet = Add(box, new VisualElement { pickingMode = PickingMode.Ignore }, "walker-sheet");
+            sheet.style.width = 48 * k;
+            sheet.style.height = 96 * k;
+            var tex = Sprite(sheetPath) ?? Sprite("Walk/walk_male_light_dark_brown");
+            if (tex != null) sheet.style.backgroundImage = new StyleBackground(tex);
+            return (box, sheet);
+        }
+
+        void SetFrame(VisualElement sheet, string facing, int frame)
+        {
+            int k = worldScale;
+            sheet.style.left = -frame * 16 * k;
+            sheet.style.top = -FacingRow(facing) * 24 * k;
+        }
+
+        void DrawYou()
+        {
+            (playerBox, playerSheet) = Walker(PlayerSheet());
+        }
+
+        void DrawObject(WorldObj o)
+        {
+            int k = worldScale, T = Tile * k;
+            if (o.sprite.StartsWith("npc_"))
+            {
+                var w = Walker("Walk/" + o.sprite);
+                SetFrame(w.sheet, npcFacing.TryGetValue(o.id, out var f) ? f : o.facing, 0);
+                w.box.style.left = o.x * T;
+                w.box.style.top = o.y * T - 8 * k;
+                objectSprites[o.id] = w;
+                return;
+            }
+            var e = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-thing");
+            var tex = Sprite("World/" + o.sprite);
+            if (tex != null) e.style.backgroundImage = new StyleBackground(tex);
+            e.style.width = T;
+            e.style.height = T;
+            e.style.left = o.x * T;
+            e.style.top = o.y * T;
+        }
+
+        /// <summary>Puts you on a (possibly in-between) tile and moves the camera to keep you in the middle.</summary>
+        void PlaceYou(Vector2 tile, int frame)
+        {
+            if (playerBox == null || worldLayer == null) return;
+            int k = worldScale, T = Tile * k;
+            playerBox.style.left = Mathf.Round(tile.x * T);
+            playerBox.style.top = Mathf.Round(tile.y * T - 8 * k);
+            SetFrame(playerSheet, engine.S.facing, frame);
+
+            var a = engine.Area;
+            float lw = Engine.Width(a) * T, lh = Engine.Height(a) * T;
+            float cx = (tile.x + 0.5f) * T, cy = (tile.y + 0.5f) * T;
+            float ox = lw <= worldSize.x ? (worldSize.x - lw) / 2 : Mathf.Clamp(worldSize.x / 2 - cx, worldSize.x - lw, 0);
+            float oy = lh <= worldSize.y ? (worldSize.y - lh) / 2 : Mathf.Clamp(worldSize.y / 2 - cy, worldSize.y - lh, 0);
+            worldLayer.style.left = Mathf.Round(ox);
+            worldLayer.style.top = Mathf.Round(oy);
+        }
+
+        void UpdatePrompt()
+        {
+            if (usePrompt == null) return;
+            string label = engine.Travelling && string.IsNullOrEmpty(engine.S.result) && !actionsOpen ? engine.UseLabel() : null;
+            usePrompt.text = label == null ? "" : "Space: " + label;
+            usePrompt.style.display = label == null ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         // ------------------------------------------------------------------ walking
 
-        void StartWalk(Vector2Int target)
+        bool FreeToWalk => engine.Travelling && string.IsNullOrEmpty(engine.S.result) && !actionsOpen && openMenu == "" && !busy;
+
+        void WorldTick()
         {
-            if (busy || !engine.Travelling) return;
-            var path = engine.PathTo(target.x, target.y, out _);
-            if (path == null || path.Count == 0)
+            if (worldView == null || worldView.panel == null) return;
+            var s = engine.S;
+            if (moving)
             {
-                engine.S.Toasts.Add("You can't see a way there.");
-                Render();
+                float t = Mathf.Clamp01((Time.realtimeSinceStartup - moveStart) / moveSeconds);
+                PlaceYou(Vector2.Lerp(moveFrom, moveTo, t), t < 0.55f ? 1 + stepCount % 2 : 0);
+                if (t < 1f) return;
+                moving = false;
+                var step = pendingStep;
+                pendingStep = null;
+                engine.Choose(step);
+                unsavedSteps++;
+                if (!engine.Travelling || !string.IsNullOrEmpty(s.result) || s.inCombat)
+                {
+                    heldDirs.Clear();
+                    SaveNow();
+                    unsavedSteps = 0;
+                    Render();
+                    return;
+                }
+                RenderHud();
+                UpdatePrompt();
+                PlaceYou(new Vector2(s.ax, s.ay), 0);
+            }
+            if (!FreeToWalk) return;
+            if (heldDirs.Count == 0)
+            {
+                if (unsavedSteps > 0) { SaveNow(); unsavedSteps = 0; }
                 return;
             }
-            walkTarget = target;
-            stopWalk = false;
-            Render();   // shows the "walking" hint
-            WalkNext();
+            string dir = heldDirs[heldDirs.Count - 1];
+            if (s.facing != dir)
+            {
+                engine.Face(dir);
+                turnedAt = Time.realtimeSinceStartup;
+                SetFrame(playerSheet, dir, 0);
+                UpdatePrompt();
+                return;
+            }
+            if (Time.realtimeSinceStartup - turnedAt < 0.08f) return;   // a quick tap just turns you
+            var c = engine.StepChoice(runHeld);
+            if (c != null && c.stamina > 0 && s.stamina < c.stamina) c = engine.StepChoice(false);
+            if (c == null) return;
+            var (dx, dy) = Engine.Dir(dir);
+            moveFrom = new Vector2(s.ax, s.ay);
+            moveTo = moveFrom + new Vector2(dx, dy);
+            moveSeconds = c.label == "Run" ? RunSeconds : WalkSeconds;
+            moveStart = Time.realtimeSinceStartup;
+            pendingStep = c;
+            moving = true;
+            stepCount++;
         }
 
-        void EndWalk()
+        /// <summary>Keys in the world. Returns true if it used the key.</summary>
+        bool WorldKeyDown(KeyDownEvent e)
         {
-            walkTarget = null;
-            stopWalk = false;
-            busy = false;
-        }
+            runHeld = e.shiftKey;
+            string dir = e.keyCode switch
+            {
+                KeyCode.UpArrow => "up",
+                KeyCode.DownArrow => "down",
+                KeyCode.LeftArrow => "left",
+                KeyCode.RightArrow => "right",
+                _ => null,
+            };
+            if (dir != null)
+            {
+                heldDirs.Remove(dir);
+                heldDirs.Add(dir);
+                return true;
+            }
+            if (e.keyCode == KeyCode.LeftShift || e.keyCode == KeyCode.RightShift) { runHeld = true; return true; }
 
-        /// <summary>Takes one step towards the target: the marker walks to the next tile, then the step happens.</summary>
-        void WalkNext()
-        {
             var s = engine.S;
-            if (walkTarget == null || !engine.Travelling || stopWalk) { EndWalk(); Render(); return; }
-            var t = walkTarget.Value;
-            var path = engine.PathTo(t.x, t.y, out _);
-            if (path == null || path.Count == 0)
+            bool confirm = e.keyCode == KeyCode.Space || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter;
+            if (engine.Travelling && !string.IsNullOrEmpty(s.result))
             {
-                if (path == null) s.Toasts.Add("There's no way through. You'll have to find another route.");
-                EndWalk(); Render(); return;
+                if (confirm) { DismissMessage(); return true; }
+                return dir != null;
             }
-            var next = path[0];
-            var step = engine.StepChoice(next.x, next.y);
-            if (step == null) { EndWalk(); Render(); return; }
-            if (s.stamina < step.stamina)
+            if (actionsOpen && e.keyCode == KeyCode.Escape) { actionsOpen = false; Render(); return true; }
+            if (!engine.Travelling || moving || busy) return false;
+            if (e.keyCode == KeyCode.Space)
             {
-                s.Toasts.Add("Too winded to go on. Catch your breath, or slow your pace.");
-                EndWalk(); Render(); return;
+                var use = engine.UseChoice();
+                if (use == null) return true;
+                var (dx, dy) = Engine.Dir(s.facing);
+                var o = engine.ObjectAt(s.ax + dx, s.ay + dy);
+                if (o != null && o.kind == "npc") npcFacing[o.id] = Opposite(s.facing);
+                heldDirs.Clear();
+                engine.Choose(use);
+                AfterAction();
+                return true;
             }
-
-            busy = true;
-            var from = new Vector2(s.mapX, s.mapY);
-            var to = new Vector2(next.x, next.y);
-            float seconds = Mathf.Clamp(step.time / 90f, 0.12f, 0.4f);
-            float start = Time.realtimeSinceStartup;
-            IVisualElementScheduledItem tick = null;
-            tick = root.schedule.Execute(() =>
+            if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
             {
-                float k = Mathf.Clamp01((Time.realtimeSinceStartup - start) / seconds);
-                PlaceYou(Vector2.Lerp(from, to, k));
-                if (k < 1f) return;
-                tick?.Pause();
-                busy = false;
-                engine.Choose(step);
-                bool arrived = s.mapX == t.x && s.mapY == t.y;
-                bool happened = !engine.Travelling || !string.IsNullOrEmpty(s.result);
-                if (arrived || happened || stopWalk) walkTarget = null;
-                SaveNow();
+                actionsOpen = !actionsOpen;
+                heldDirs.Clear();
                 Render();
-                if (walkTarget != null) root.schedule.Execute(WalkNext).StartingIn(20);
-                else stopWalk = false;
-            }).Every(16);
+                return true;
+            }
+            return false;
         }
 
-        /// <summary>Arrow keys step one tile; Escape stops a walk. Returns true if it used the key.</summary>
-        bool TravelKey(KeyDownEvent e)
+        void WorldKeyUp(KeyUpEvent e)
         {
-            if (e.keyCode == KeyCode.Escape && walkTarget != null) { stopWalk = true; return true; }
-            if (busy || walkTarget != null) return e.keyCode != KeyCode.None && e.keyCode != KeyCode.F1;
-            int dx = 0, dy = 0;
-            switch (e.keyCode)
+            runHeld = e.shiftKey && e.keyCode != KeyCode.LeftShift && e.keyCode != KeyCode.RightShift;
+            string dir = e.keyCode switch
             {
-                case KeyCode.LeftArrow: dx = -1; break;
-                case KeyCode.RightArrow: dx = 1; break;
-                case KeyCode.UpArrow: dy = -1; break;
-                case KeyCode.DownArrow: dy = 1; break;
-                default: return false;
-            }
-            var s = engine.S;
-            if (engine.StepChoice(s.mapX + dx, s.mapY + dy) == null) return true;
-            StartWalk(new Vector2Int(s.mapX + dx, s.mapY + dy));
-            return true;
+                KeyCode.UpArrow => "up",
+                KeyCode.DownArrow => "down",
+                KeyCode.LeftArrow => "left",
+                KeyCode.RightArrow => "right",
+                _ => null,
+            };
+            if (dir != null) heldDirs.Remove(dir);
         }
+
+        static string Opposite(string f) => f == "up" ? "down" : f == "down" ? "up" : f == "left" ? "right" : "left";
     }
 }

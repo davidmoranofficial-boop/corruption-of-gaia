@@ -162,18 +162,16 @@
       "place": "The headland",
       "title": "The lie of the land",
       "onEnter": [
-        "flag:lookout",
-        "travel:reveal:7"
+        "flag:lookout"
       ],
       "text": [
         "From the top of the headland you can see Loran laid out to the east: green fields, a dark line of forest to the south, and the glint of a river cutting across the north of the country.",
         "Far off, at the very edge of sight, the sky over the land looks wrong. A faint yellow tint, like a bruise that's started to turn.",
-        "The mark on your wrist feels warm.",
-        "You fix the lie of the land in your head: the road, the river, the hills, the woods."
+        "The mark on your wrist feels warm."
       ],
       "choices": [
         {
-          "label": "Climb back down to the road",
+          "label": "Climb back down",
           "time": 15,
           "go": "travel"
         }
@@ -542,6 +540,163 @@
           ],
           "go": "travel",
           "result": "You walk on. The itch follows you a long way."
+        }
+      ]
+    },
+    {
+      "id": "pools",
+      "place": "The coast road",
+      "title": "The tide pools",
+      "text": [
+        "Black rocks run out into the sea here, pocked with pools. Weed hangs off everything."
+      ],
+      "choices": [
+        {
+          "label": "Search the tide pools",
+          "when": [
+            "!flag:pools"
+          ],
+          "time": 40,
+          "stamina": 10,
+          "energy": 2,
+          "train": [
+            "agi+2"
+          ],
+          "why": "scrambling over the rocks",
+          "effects": [
+            "flag:pools",
+            "item:mussels+2"
+          ],
+          "go": "travel",
+          "result": "You pick your way out over the weed-slick rocks. Most of the pools are empty, but you prise two handfuls of mussels off the stones before a wave soaks you to the knee."
+        },
+        {
+          "label": "Poke about for anything else",
+          "when": [
+            "flag:pools"
+          ],
+          "time": 30,
+          "stamina": 6,
+          "energy": 1,
+          "train": [
+            "agi+1"
+          ],
+          "why": "foraging",
+          "effects": [
+            "item:mussels+1"
+          ],
+          "go": "travel",
+          "result": "A few more mussels. The pools have been picked over now, mostly by you."
+        },
+        {
+          "label": "Leave them",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "lookout_climb",
+      "place": "The headland",
+      "title": "The cairn",
+      "text": [
+        "A heap of stones on the highest point of the headland, piled by hand long ago. From here the whole coast lies open."
+      ],
+      "choices": [
+        {
+          "label": "Climb up on the cairn for a look around",
+          "when": [
+            "!flag:lookout"
+          ],
+          "time": 20,
+          "stamina": 8,
+          "energy": 1,
+          "train": [
+            "end+1"
+          ],
+          "why": "climbing the headland",
+          "go": "lookout"
+        },
+        {
+          "label": "Look out over the land again",
+          "when": [
+            "flag:lookout"
+          ],
+          "time": 10,
+          "go": "lookout"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "stream_drink",
+      "place": "The coast road",
+      "title": "The stream",
+      "text": [
+        "Cold, clear water running fast over stones."
+      ],
+      "choices": [
+        {
+          "label": "Drink and fill your waterskin",
+          "time": 10,
+          "effects": [
+            "water=4",
+            "thirst+20"
+          ],
+          "go": "travel",
+          "result": "The water is cold enough to hurt your teeth. You drink, then fill the skin."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "brambles",
+      "place": "The coast road",
+      "title": "Brambles",
+      "text": [
+        "Bramble bushes crowd the bank, heavy with fruit."
+      ],
+      "choices": [
+        {
+          "label": "Pick blackberries",
+          "when": [
+            "!flag:berries"
+          ],
+          "time": 30,
+          "stamina": 5,
+          "energy": 1,
+          "train": [
+            "agi+1"
+          ],
+          "why": "picking through the brambles",
+          "effects": [
+            "flag:berries",
+            "item:berries+3"
+          ],
+          "go": "travel",
+          "result": "Your hands come away scratched and stained purple, with three good handfuls of blackberries."
+        },
+        {
+          "label": "Pick what's left",
+          "when": [
+            "flag:berries"
+          ],
+          "time": 20,
+          "stamina": 3,
+          "effects": [
+            "item:berries+1"
+          ],
+          "go": "travel",
+          "result": "A handful of the last berries, mostly the small sour ones."
+        },
+        {
+          "label": "Leave them",
+          "go": "travel"
         }
       ]
     }

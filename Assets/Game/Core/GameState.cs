@@ -91,11 +91,11 @@ namespace Loran.Core
         public int round;
         public List<string> battleLog = new List<string>();
 
-        // The region map: which map you're on, where, what you've seen ('1' per tile you've had in sight), and your pace
-        public string region = "";
-        public int mapX, mapY;
-        public string fog = "";
-        public int pace = 1;                   // 0 careful, 1 steady, 2 hurried
+        // The walkable world: which area you're in, where, which way you face, and steps since the last fight
+        public string area = "";
+        public int ax, ay;
+        public string facing = "down";
+        public int stepsSinceFight;
 
         // Old saves only: the coast road from before the map (which road, steps along it, and which way you faced)
         public string travelRoute = "";
@@ -143,8 +143,7 @@ namespace Loran.Core
             foreach (var g in gearItems) g.traits ??= new List<string>();
             battleLog ??= new List<string>();
             enemyMove ??= "";
-            travelRoute ??= ""; region ??= ""; fog ??= "";
-            if (pace < 0 || pace > 2) pace = 1;
+            travelRoute ??= ""; area ??= ""; if (string.IsNullOrEmpty(facing)) facing = "down";
             forging ??= ""; forgeMaterial ??= ""; forgeMax ??= ""; forgeNext ??= ""; forgeIntro ??= "";
             if (travelDir == 0) travelDir = 1;
             if (nextGearId < 1) nextGearId = 1;

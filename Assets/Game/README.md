@@ -79,15 +79,13 @@ Put `!` in front of any condition to flip it.
 
 Gear in `data.json` is the base: name, slot (`weapon`, `offhand`, `body`, `hands`, `trinket`), damage, guard, stamina, and `part` (where a gem sits). Every piece the player gets is its own copy with a rank: F, E, D, C, B, A or S. A higher rank multiplies the numbers and adds traits: none at F, 1 at E and D, 2 at C and B, 3 at A and S. Traits are listed under `traits`, and `materials` say which traits a gem or metal can give (list one more than once to make it likelier).
 
-## The map
+## The walkable world
 
-Each region is a grid of terrain letters under `regions` in `data.json`, with a matching painted picture in `Resources/Sprites/Maps`. Both are made by `Tools/Art/regions.py` (run `python3 Tools/Art/build.py`), so to reshape the land, edit that script, not the rows. The letters are listed under `terrains`: each has a walking `cost` against a road (0 = can't walk on it), how far you can `sight` from it, extra `stamina` per tile, a `danger` multiplier, `corruption` per tile, and `forage` items.
+Areas are top-down maps you walk round tile by tile with the arrow keys (Shift runs, Space talks to or uses what you face, Enter opens the actions). Each area lives under `areas` in `data.json` and is made by `Tools/Art/world.py` (run `python3 Tools/Art/build.py`), which also paints its picture, so to change an area, edit that script. The tile letters are listed under `tiles` (`solid` ones can't be walked on; `road` ones have fewer fights).
 
-`places` sit on tiles: `kind` picks the map icon, `desc` shows while you stand there, `note` is the line in the list of places you know, and `choices` are things to do there without leaving the map. `enter` lists where going in takes you (the first whose `when` holds), labelled by `enterLabel`. A place shows on your map once you've seen it; `farSight` lets it be seen through fog from further off (smoke, lights, towers). `hidden` places only show when you walk right next to them (two tiles at a careful pace). `rumourWhen` marks a place with a ? while its conditions hold, with `rumour` as its line.
+An area has `spots` (named places to put the player, used by the effect `travel:at:<spot>`), `objects` (people, signs, doors and things: facing one and pressing Space opens its `scene` or shows its `text`; `once` ones vanish after use; `when` says when they're there), `zones` (walking into the rectangle runs `scene`, or the first of `enter` whose `when` holds) and `uses` (facing a kind of tile, like the stream, opens a scene).
 
-`events` can turn up on each tile walked (`eventChance` %, times the ground's danger). `terrain` limits them to some letters and `area` (x0, y0, x1, y1) to part of the map. Their `kind` changes the odds: careful walkers find more `find` events and walk into fewer `danger` ones, hurrying does the opposite, and night doubles danger. `once` events happen once. An event scene sends the player back to the map with `"go": "travel"`. `beats` are fixed story scenes waiting within `radius` tiles of a spot while their `when` holds.
-
-Effects: `travel:at:<place>` puts the player on the map at a place, `travel:reveal:<tiles>` lights up the map around them, and `travel:chart` lights up every road and every place that isn't hidden.
+`events` happen as you walk. `"kind": "fight"` events start a battle with `enemy` straight away, the old Final Fantasy way, and go to `win` afterwards; `fightChance` is the % per step (halved on roads), and there are always at least `fightGap` steps between fights. Other events open `scene` (`eventChance` % per step). `terrain` limits an event to some tile letters, `once` events happen once, and an event scene sends the player back out with `"go": "travel"`.
 
 ## Enemies and combat
 
