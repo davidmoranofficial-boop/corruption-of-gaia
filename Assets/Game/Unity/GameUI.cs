@@ -546,8 +546,8 @@ namespace Loran.UnityLayer
         {
             screen.Clear();
             var inner = Add(screen, new VisualElement(), "screen-inner");
-            Add(inner, new Label("LORAN"), "game-title");
-            Add(inner, new Label("VERTICAL SLICE PROTOTYPE  ·  AUTO-UPDATE TEST"), "game-sub");
+            Add(inner, new Label("CORRUPTION OF GAIA"), "game-title");
+            Add(inner, new Label("VERTICAL SLICE PROTOTYPE"), "game-sub");
 
             Add(inner, new Label("HOW DEATH WORKS  ·  LOCKED FOR THIS PLAYTHROUGH"), "field-label");
             var row = Add(inner, new VisualElement(), "option-row");

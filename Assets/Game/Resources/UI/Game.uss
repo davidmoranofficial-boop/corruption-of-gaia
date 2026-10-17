@@ -423,7 +423,8 @@
 }
 
 .game-title {
-    font-size: 110px;
+    font-size: 96px;
+    white-space: normal;
     color: var(--text);
     -unity-text-align: middle-center;
 }
