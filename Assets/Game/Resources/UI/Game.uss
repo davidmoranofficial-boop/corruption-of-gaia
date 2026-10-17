@@ -696,7 +696,6 @@
 
 .battle {
     width: 100%;
-    max-width: 1500px;
 }
 
 .battle-head {
@@ -838,13 +837,6 @@
     font-size: 15px;
     color: var(--muted);
     margin-top: 6px;
-}
-
-.battle-log {
-    flex-grow: 1;
-    flex-shrink: 1;
-    margin-left: 24px;
-    justify-content: flex-end;
 }
 
 .log-line, .log-line-new {
@@ -1494,6 +1486,67 @@
 .battle-me {
     margin-right: 22px;
     justify-content: flex-end;
+}
+
+/* ---------- battle stage (overrides) ---------- */
+
+.battle .arena {
+    flex-grow: 1;
+    flex-shrink: 1;
+    height: auto;
+    padding: 0;
+    overflow: hidden;
+    border-width: 2px;
+    border-color: #2a3a3e;
+    border-radius: 10px;
+    -unity-background-scale-mode: scale-and-crop;
+    background-color: #1d2a2e;
+}
+
+.spot-player, .spot-enemy {
+    position: absolute;
+    bottom: 6%;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.spot-player { left: 17%; }
+.spot-enemy { right: 15%; }
+
+.battle .fighter-card {
+    position: absolute;
+    top: 18px;
+    width: 440px;
+    background-color: rgba(14, 22, 26, 0.86);
+}
+
+.card-player { left: 18px; }
+.card-enemy { right: 18px; }
+
+.card-enemy .intent-text {
+    margin-top: 10px;
+    font-size: 19px;
+    color: #e2c27a;
+    -unity-text-align: upper-left;
+}
+
+.card-enemy .intent-order {
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.battle .battle-log {
+    height: 86px;
+    margin: 10px 4px 6px 4px;
+    justify-content: flex-end;
+}
+
+.battle .log-line, .battle .log-line-new {
+    -unity-text-align: lower-left;
+}
+
+.battle .portrait-letter {
+    font-size: 160px;
 }
 
 /* ---------- dev mode ---------- */

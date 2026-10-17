@@ -285,7 +285,12 @@ def main():
         made.append(save(render(icon(g)), 'Icons', gid + '.png'))
     for gid, rows in ICON_ONLY.items():
         made.append(save(render([list(r.ljust(16, '.')) for r in rows] + [['.'] * 16] * (16 - len(rows))), 'Icons', gid + '.png'))
-    made.append(save(render(load('wolf.txt', 48, 32)), 'Enemies', 'wolf.png'))
+    from beasts import wolf
+    g, w, h = wolf()
+    made.append(save(render(g), 'Enemies', 'wolf.png'))
+    from backdrops import BACKDROPS
+    for name, paint in BACKDROPS.items():
+        made.append(save(paint(), 'Backdrops', name + '.png'))
     print('built %d sprites into %s' % (len(made), os.path.normpath(OUT)))
 
 

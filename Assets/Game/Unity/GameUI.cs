@@ -96,6 +96,11 @@ namespace Loran.UnityLayer
 
             (mainBox, main) = FitBox("main");
             body.Add(mainBox);
+            // The battle screen fills the main area, so draw it again when that area changes size.
+            mainBox.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                if (InBattle && !busy && timing == null && Mathf.Abs(BattleHeight() - battleHeight) > 4f) Render();
+            });
 
             menuBar = new VisualElement();
             menuBar.AddToClassList("menu-bar");

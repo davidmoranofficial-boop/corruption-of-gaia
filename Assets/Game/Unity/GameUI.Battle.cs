@@ -38,52 +38,49 @@ namespace Loran.UnityLayer
 
         // ------------------------------------------------------------------ drawing
 
+        VisualElement enemySpot, playerSpot;
+        float battleHeight;
+
+        /// <summary>The height the battle screen fills: all of the main area, so it's never a small box in the middle.</summary>
+        float BattleHeight()
+        {
+            float h = mainBox != null ? mainBox.layout.height : float.NaN;
+            return float.IsNaN(h) || h < 400 ? 960f : h - 56f;   // 56: the main area's top and bottom padding
+        }
+
         void RenderBattle()
         {
             var s = engine.S;
             var e = engine.data.Enemy(s.enemy);
             main.Clear();
+            battleHeight = BattleHeight();
             var battle = Add(main, new VisualElement(), "battle");
+            battle.style.height = battleHeight;
 
             var head = Add(battle, new VisualElement(), "battle-head");
-            Add(head, new Label(("Fight  ·  " + engine.Scene(s.scene)?.place).ToUpperInvariant()), "place");
+            string place = engine.Scene(s.scene)?.place ?? "";
+            Add(head, new Label(("Fight  ·  " + place).ToUpperInvariant()), "place");
             Add(head, new Label("ROUND " + s.round), "battle-round");
 
+            // The stage: a painted backdrop with you on the left and the enemy on the right, both on the ground.
             arena = Add(battle, new VisualElement(), "arena");
+            var backdrop = Sprite("Backdrops/" + BackdropFor(place)) ?? Sprite("Backdrops/coast");
+            if (backdrop != null) arena.style.backgroundImage = new StyleBackground(backdrop);
+            float stageH = battleHeight - 300f;                 // what's left after the header, log and commands
+            int scale = Mathf.Clamp(Mathf.FloorToInt(stageH * 0.5f / DollH), 3, 9);
 
-            // Enemy: top right
-            var top = Add(arena, new VisualElement(), "arena-top");
-            enemyCard = Add(top, new VisualElement(), "fighter-card");
-            var nameRow = Add(enemyCard, new VisualElement(), "fighter-name-row");
-            Add(nameRow, new Label(e.name), "fighter-name");
-            RankBadge(nameRow, e.rank);
-            Bar(enemyCard, "HEALTH", Mathf.Max(0, s.enemyHp), e.hp, "#c8573f", 0, true);
-            var portrait = Add(top, new VisualElement(), "portrait");
-            enemyPic = EnemySprite(portrait, e, 210f);
-            if (enemyPic == null)
-            {
-                var art = Resources.Load<Texture2D>("Portraits/" + e.id);
-                if (art != null) portrait.style.backgroundImage = new StyleBackground(art);
-                else Add(portrait, new Label(e.name.Substring(0, 1)), "portrait-letter");
-            }
-            if (s.enemyHp <= 0) portrait.AddToClassList("portrait-down");
+            playerSpot = Add(arena, new VisualElement(), "spot-player");
+            playerPic = PlayerDoll(playerSpot, scale);
+            if (s.hp <= 0) playerSpot.AddToClassList("portrait-down");
 
-            // What it's about to do
-            var mid = Add(arena, new VisualElement(), "arena-mid");
-            if (s.inCombat && engine.Intent != null)
-            {
-                var intent = Add(mid, new VisualElement(), "intent");
-                Add(intent, new Label("IT'S ABOUT TO"), "intent-head");
-                Add(intent, new Label(engine.Intent.tell), "intent-text");
-                Add(intent, new Label(engine.PlayerActsFirst || engine.Intent.guard ? "You're quicker. You act first." : "It's quicker. It acts first, unless you defend."), "intent-order");
-            }
+            enemySpot = Add(arena, new VisualElement(), "spot-enemy");
+            enemyPic = EnemySprite(enemySpot, e, DollH * scale * 1.15f);
+            if (enemyPic == null) Add(enemySpot, new Label(e.name.Substring(0, 1)), "portrait-letter");
+            if (s.enemyHp <= 0) enemySpot.AddToClassList("portrait-down");
 
-            // You: bottom left
-            var bottom = Add(arena, new VisualElement(), "arena-bottom");
-            var me = Add(bottom, new VisualElement(), "battle-me");
-            playerPic = PlayerDoll(me, 4);
-            if (s.hp <= 0) playerPic.AddToClassList("portrait-down");
-            playerCard = Add(bottom, new VisualElement(), "fighter-card");
+            // You: top left
+            playerCard = Add(arena, new VisualElement(), "fighter-card");
+            playerCard.AddToClassList("card-player");
             Add(playerCard, new Label(s.name), "fighter-name");
             Bar(playerCard, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f", 1, false);
             Bar(playerCard, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a", 2, false);
@@ -91,10 +88,23 @@ namespace Loran.UnityLayer
             var weapon = s.InSlot("weapon");
             Add(playerCard, new Label(weapon != null ? weapon.name + "  (" + weapon.rank + ")" : "Bare hands"), "fighter-sub");
 
-            // The log of the last few things that happened
-            var log = Add(bottom, new VisualElement(), "battle-log");
-            var lines = s.battleLog.Skip(Mathf.Max(0, s.battleLog.Count - 4)).ToList();
-            if (lines.Count == 0) Add(log, new Label(engine.Fill(e.desc)), "log-line");
+            // The enemy: top right, with what it's about to do, so you can choose to attack or defend
+            enemyCard = Add(arena, new VisualElement(), "fighter-card");
+            enemyCard.AddToClassList("card-enemy");
+            var nameRow = Add(enemyCard, new VisualElement(), "fighter-name-row");
+            Add(nameRow, new Label(e.name), "fighter-name");
+            RankBadge(nameRow, e.rank);
+            Bar(enemyCard, "HEALTH", Mathf.Max(0, s.enemyHp), e.hp, "#c8573f", 0, true);
+            if (s.inCombat && engine.Intent != null)
+            {
+                Add(enemyCard, new Label(engine.Intent.tell), "intent-text");
+                Add(enemyCard, new Label(engine.PlayerActsFirst || engine.Intent.guard ? "You're quicker: you act first." : "It's quicker: it acts first, unless you defend."), "intent-order");
+            }
+
+            // The last few things that happened
+            var log = Add(battle, new VisualElement(), "battle-log");
+            var lines = s.battleLog.Skip(Mathf.Max(0, s.battleLog.Count - 3)).ToList();
+            if (lines.Count == 0) Add(log, new Label(engine.Fill(e.desc)), "log-line-new");
             for (int i = 0; i < lines.Count; i++)
                 Add(log, new Label(lines[i]), i == lines.Count - 1 ? "log-line-new" : "log-line");
 
@@ -104,6 +114,12 @@ namespace Loran.UnityLayer
             else Add(battle, new VisualElement(), "commands-placeholder");
 
             before = null;
+        }
+
+        /// <summary>Which painted backdrop suits a place. Only the coast exists so far.</summary>
+        static string BackdropFor(string place)
+        {
+            return "coast";
         }
 
         void RenderCommands(VisualElement parent)
@@ -280,9 +296,10 @@ namespace Loran.UnityLayer
                 {
                     var card = e.target == "enemy" ? enemyCard : playerCard;
                     if (card == null) return;
+                    var spot = e.target == "enemy" ? enemySpot : playerSpot;
                     string cls = e.kind == "crit" ? "pop-crit" : e.kind == "glance" ? "pop-glance" : e.kind == "heal" ? "pop-heal"
                                : e.kind == "parry" ? "pop-perfect" : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
-                    Popup(card, e.text, cls, 0);
+                    Popup(spot ?? card, e.text, cls, 0);
                     if (e.kind == "hit" || e.kind == "crit" || e.kind == "glance")
                     {
                         Flash(card);
