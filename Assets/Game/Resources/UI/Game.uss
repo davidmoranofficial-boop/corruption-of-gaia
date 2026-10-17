@@ -1336,6 +1336,93 @@
     -unity-font-style: bold;
 }
 
+/* forge: hammer (click the dots) */
+
+.anvil-area {
+    height: 290px;
+    border-radius: 8px;
+    background-color: #0f1b1f;
+    overflow: hidden;
+}
+
+.anvil-part {
+    position: absolute;
+}
+
+.gold-ring, .close-ring, .strike-dot {
+    position: absolute;
+}
+
+.gold-ring {
+    border-width: 4px;
+    border-color: #f2d36b;
+    opacity: 0.9;
+}
+
+.close-ring {
+    border-width: 3px;
+    border-color: #f0e2c4;
+}
+
+.strike-dot-core {
+    position: absolute;
+    left: 9px;
+    top: 9px;
+    right: 9px;
+    bottom: 9px;
+    border-radius: 999px;
+    background-color: #fff3c8;
+    border-width: 2px;
+    border-color: #f2d36b;
+}
+
+/* forge: quench (hold it under the water) */
+
+.trough {
+    height: 230px;
+    width: 60%;
+    align-self: center;
+    margin-top: 18px;
+    overflow: hidden;
+}
+
+.quench-blade {
+    position: absolute;
+    left: 20%;
+    width: 60%;
+    height: 34px;
+    border-radius: 4px;
+    border-width: 2px;
+    border-color: #000000;
+    transition-property: top;
+    transition-duration: 0.15s;
+}
+
+.trough-water {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 120px;
+    background-color: rgba(40, 90, 120, 0.75);
+    border-width: 3px;
+    border-top-width: 0;
+    border-color: #55585c;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+.steam {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 60px;
+    font-size: 22px;
+    letter-spacing: 6px;
+    color: #dfe9ee;
+    -unity-text-align: middle-center;
+}
+
 /* ---------- dev mode ---------- */
 
 .dev-grid {
