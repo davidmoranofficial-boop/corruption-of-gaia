@@ -639,6 +639,21 @@
           "go": "smith"
         },
         {
+          "label": "An iron cap",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge",
+          "effects": [
+            "coins-3",
+            "forge:iron_cap:D"
+          ],
+          "go": "smith"
+        },
+        {
           "label": "An iron knife, with your green gem set in it",
           "when": [
             "item:gem"

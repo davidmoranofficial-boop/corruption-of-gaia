@@ -32,7 +32,7 @@ namespace Loran.UnityLayer
         // Character creation form
         string cName = "";
         string cGender = "";
-        string cBuild, cHair, cBackground;
+        string cBuild, cHair, cBackground, cSkin, cFigure = "male";
         readonly int[] alloc = new int[Stat.Count];
         string createError;
 
@@ -59,7 +59,8 @@ namespace Loran.UnityLayer
             foreach (var p in engine.Validate()) Debug.LogWarning("[Story] " + p);
 
             cBuild = data.builds.Count > 1 ? data.builds[1] : "";
-            cHair = data.hair.Count > 0 ? data.hair[0] : "";
+            cHair = data.hair.Count > 1 ? data.hair[1] : data.hair.Count > 0 ? data.hair[0] : "";
+            cSkin = data.skins.Count > 1 ? data.skins[1] : data.skins.Count > 0 ? data.skins[0] : "";
         }
 
         // ------------------------------------------------------------------ layout
@@ -359,15 +360,30 @@ namespace Loran.UnityLayer
             bool free = engine.FreeToAct;
 
             var worn = Section(left, "WORN");
-            for (int i = 0; i < Engine.GearSlots.Length; i++)
+            var wornRow = Add(worn, new VisualElement(), "worn");
+            var dollBox = Add(wornRow, new VisualElement(), "doll-frame");
+            PlayerDoll(dollBox, 5);
+            var slots = Add(wornRow, new VisualElement(), "worn-slots");
+            foreach (var slot in Engine.GearSlots)
             {
-                var g = s.InSlot(Engine.GearSlots[i]);
-                var r = Add(worn, new VisualElement(), "gear-row");
-                Add(r, new Label(Engine.GearSlotNames[i]), "gear-slot");
-                if (g == null) { Add(r, new Label("Empty"), "gear-empty"); continue; }
-                GearText(r, g);
-                var b = Add(r, new Button(() => { engine.Unequip(g.uid); AfterAction(); }) { text = "Take off" }, "small-btn");
-                b.SetEnabled(free);
+                var inSlot = s.gearItems.Where(x => x.equipped && x.slot == slot).ToList();
+                for (int n = 0; n < Engine.SlotCapacity(slot); n++)
+                {
+                    var g = n < inSlot.Count ? inSlot[n] : null;
+                    var r = Add(slots, new VisualElement(), "gear-row");
+                    if (g != null) Icon(r, g.id, 2);
+                    else Add(r, new VisualElement(), "item-icon-empty");
+                    Add(r, new Label(Engine.SlotName(slot)), "gear-slot");
+                    if (g == null)
+                    {
+                        var held = slot == "offhand" ? s.Equipped.FirstOrDefault(x => x.twoHanded) : null;
+                        Add(r, new Label(held != null ? "Both hands on your " + held.name.ToLowerInvariant() : "Empty"), "gear-empty");
+                        continue;
+                    }
+                    GearText(r, g);
+                    var b = Add(r, new Button(() => { engine.Unequip(g.uid); AfterAction(); }) { text = "Take off" }, "small-btn");
+                    b.SetEnabled(free);
+                }
             }
 
             var spare = s.gearItems.Where(g => !g.equipped).ToList();
@@ -377,7 +393,8 @@ namespace Loran.UnityLayer
                 foreach (var g in spare)
                 {
                     var r = Add(pack, new VisualElement(), "gear-row");
-                    Add(r, new Label(Engine.GearSlotNames[System.Array.IndexOf(Engine.GearSlots, g.slot)]), "gear-slot");
+                    Icon(r, g.id, 2);
+                    Add(r, new Label(Engine.SlotName(g.slot) + (g.twoHanded ? " (both hands)" : "")), "gear-slot");
                     GearText(r, g);
                     var b = Add(r, new Button(() => { engine.Equip(g.uid); AfterAction(); }) { text = "Wear" }, "small-btn");
                     b.SetEnabled(free);
@@ -641,9 +658,18 @@ namespace Loran.UnityLayer
 
             Add(leftCol, new Label("SEX"), "field-label");
             var sexes = Add(leftCol, new VisualElement(), "option-row");
-            Chip(sexes, "Male", cGender == "male", () => { cGender = "male"; Render(); });
-            Chip(sexes, "Female", cGender == "female", () => { cGender = "female"; Render(); });
+            Chip(sexes, "Male", cGender == "male", () => { cGender = "male"; cFigure = "male"; Render(); });
+            Chip(sexes, "Female", cGender == "female", () => { cGender = "female"; cFigure = "female"; Render(); });
             Chip(sexes, "Other", cGender == "other", () => { cGender = "other"; Render(); });
+
+            Add(leftCol, new Label("BODY"), "field-label");
+            var figures = Add(leftCol, new VisualElement(), "option-row");
+            Chip(figures, "Masculine", cFigure == "male", () => { cFigure = "male"; Render(); });
+            Chip(figures, "Feminine", cFigure == "female", () => { cFigure = "female"; Render(); });
+
+            Add(leftCol, new Label("SKIN"), "field-label");
+            var skins = Add(leftCol, new VisualElement(), "option-row");
+            foreach (var k in d.skins) { var v = k; Chip(skins, v, cSkin == v, () => { cSkin = v; Render(); }); }
 
             Add(leftCol, new Label("BUILD"), "field-label");
             var builds = Add(leftCol, new VisualElement(), "option-row");
@@ -652,6 +678,12 @@ namespace Loran.UnityLayer
             Add(leftCol, new Label("HAIR"), "field-label");
             var hair = Add(leftCol, new VisualElement(), "option-row");
             foreach (var h in d.hair) { var v = h; Chip(hair, v, cHair == v, () => { cHair = v; Render(); }); }
+
+            // How you'll look: washed up in the clothes you had on
+            var look = Add(leftCol, new VisualElement(), "create-look");
+            var clothes = new List<(string, string)>();
+            foreach (var id in Engine.StartingClothes) { var gd = engine.data.Gear(id); if (gd != null) clothes.Add((id, gd.slot)); }
+            Doll(look, 5, cFigure, cSkin, cHair, clothes);
 
             Add(rightCol, new Label("THE LIFE YOU'RE LEAVING BEHIND  ·  +1 TO ONE STAT"), "field-label");
             var bgs = Add(rightCol, new VisualElement(), "option-list");
@@ -687,7 +719,7 @@ namespace Loran.UnityLayer
 
             var go = Add(inner, new Button(() =>
             {
-                createError = engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone());
+                createError = engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone(), cSkin, cFigure);
                 if (createError == null)
                 {
                     var next = engine.Choices().FirstOrDefault(c => c.enabled);

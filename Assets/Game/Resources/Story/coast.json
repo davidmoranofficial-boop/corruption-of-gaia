@@ -185,7 +185,7 @@
         "flag:dog_met"
       ],
       "text": [
-        "A dog is standing in the middle of the road. It's all ribs, its fur matted with salt. It isn't barking. It's just watching you.",
+        "A wolf is standing in the middle of the road. It's all ribs, its grey coat matted with salt and burrs. Wolves don't come this close to the sea. It isn't growling. It's just watching you.",
         "Its eyes are the wrong colour: a flat, sick yellow, like old pus. It doesn't blink."
       ],
       "choices": [
@@ -219,7 +219,7 @@
       "place": "The coast road",
       "title": "It comes for you",
       "text": [
-        "Your foot slips on a stone. The dog sees it and comes for you, silent and fast."
+        "Your foot slips on a stone. The wolf sees it and comes for you, silent and fast."
       ],
       "choices": [
         {
@@ -238,8 +238,8 @@
         "flag:dog_beaten"
       ],
       "text": [
-        "The dog lies still in the road. As you watch, the yellow drains out of its eyes and leaves them an ordinary brown.",
-        "Whatever was in it is gone. It was just a dog, once."
+        "The wolf lies still in the road. As you watch, the yellow drains out of its eyes and leaves them an ordinary amber.",
+        "Whatever was in it is gone. It was just a hungry animal, once."
       ],
       "choices": [
         {
@@ -267,7 +267,7 @@
       "place": "The coast road",
       "title": "A little kindness",
       "text": [
-        "The dog snaps the bread out of the air and swallows it whole. For a moment, the yellow in its eyes seems to flicker, and something in it looks almost like an ordinary hungry dog.",
+        "The wolf snaps the bread out of the air and swallows it whole. For a moment, the yellow in its eyes seems to flicker, and it looks like nothing more than a starving animal.",
         "Then it turns and slinks off into the gorse."
       ],
       "choices": [
@@ -282,7 +282,7 @@
       "place": "The coast road",
       "title": "Slowly",
       "text": [
-        "You back away one step at a time, never taking your eyes off it. The dog watches you go, then loses interest and trots off into the gorse."
+        "You back away one step at a time, never taking your eyes off it. The wolf watches you go, then loses interest and lopes off into the gorse."
       ],
       "choices": [
         {

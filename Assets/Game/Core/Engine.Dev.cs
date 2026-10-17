@@ -21,7 +21,7 @@ namespace Loran.Core
             ("road", "Walk the coast road"),
             ("forge_first", "Forge: your first gear"),
             ("forge_iron", "Forge: buy iron (with a gem)"),
-            ("dog", "Fight the dog"),
+            ("dog", "Fight the wolf"),
             ("crab", "Fight the rock crab"),
             ("stone", "The class stone"),
             ("shack", "Wake in Yenson's shack"),

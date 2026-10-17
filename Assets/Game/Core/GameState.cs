@@ -34,7 +34,8 @@ namespace Loran.Core
         public string name = "";
         public string desc = "";
         public string rank = "F";              // F (common) up to S (legendary)
-        public string slot = "weapon";         // weapon, offhand, body, hands, trinket
+        public string slot = "weapon";         // one of Engine.GearSlots
+        public bool twoHanded;
         public float damage, guard;
         public int stamina;
         public List<string> traits = new List<string>();
@@ -56,6 +57,8 @@ namespace Loran.Core
         public string gender = "";             // "male", "female" or "other"; used for how people refer to you
         public string build = "";
         public string hair = "";
+        public string skin = "";               // skin tone, from data.json "skins"
+        public string figure = "";             // which body the sprites use: "male" or "female"
         public string background = "";
         public int[] stats = { 3, 3, 3, 3, 3 };
         public float[] xp = { 0, 0, 0, 0, 0 };
@@ -129,6 +132,7 @@ namespace Loran.Core
                 xp = x;
             }
             gender ??= "";
+            skin ??= ""; figure ??= "";
             gearItems ??= new List<GearItem>();
             foreach (var g in gearItems) g.traits ??= new List<string>();
             battleLog ??= new List<string>();

@@ -59,9 +59,9 @@
   "enemies": [
     {
       "id": "dog",
-      "name": "Yellow-eyed dog",
+      "name": "Yellow-eyed wolf",
       "rank": "F",
-      "desc": "A starved dog with matted fur. Its eyes have gone the colour of old pus, and it doesn't blink.",
+      "desc": "A starved grey wolf, all ribs and matted fur. Its eyes have gone the colour of old pus, and it doesn't blink.",
       "hp": 42,
       "atkMin": 3,
       "atkMax": 6,
@@ -89,7 +89,8 @@
           "guard": true,
           "weight": 2
         }
-      ]
+      ],
+      "art": "wolf"
     },
     {
       "id": "crab",
@@ -215,6 +216,74 @@
       "part": "cuff",
       "desc": "Leather with iron studs across the knuckles.",
       "stamina": 10
+    },
+    {
+      "id": "castaway_shirt",
+      "name": "Salt-stiff shirt",
+      "slot": "body",
+      "desc": "Your own shirt, stiff with dried seawater and torn at one sleeve.",
+      "guard": 0.02
+    },
+    {
+      "id": "castaway_trousers",
+      "name": "Torn trousers",
+      "slot": "legs",
+      "desc": "Good cloth once. The sea and the rocks have had their way with them.",
+      "guard": 0.02
+    },
+    {
+      "id": "castaway_boots",
+      "name": "Salt-stained boots",
+      "slot": "feet",
+      "desc": "They squelch less than they did, which is something.",
+      "guard": 0.01
+    },
+    {
+      "id": "iron_cap",
+      "name": "Iron cap",
+      "slot": "head",
+      "part": "rim",
+      "desc": "A plain round cap of hammered iron. It won't stop much, but it'll stop something.",
+      "guard": 0.08
+    },
+    {
+      "id": "leather_jerkin",
+      "name": "Leather jerkin",
+      "slot": "body",
+      "part": "lacing",
+      "desc": "Thick, laced leather that turns a claw or a glancing blade.",
+      "guard": 0.12
+    },
+    {
+      "id": "leather_boots",
+      "name": "Leather boots",
+      "slot": "feet",
+      "part": "buckle",
+      "desc": "Tall boots of oiled leather. Dry feet, steady footing.",
+      "guard": 0.04
+    },
+    {
+      "id": "bone_charm",
+      "name": "Bone charm",
+      "slot": "neck",
+      "part": "bead",
+      "desc": "A carved bone on a leather cord. Fishermen here wear them against the sea."
+    },
+    {
+      "id": "copper_ring",
+      "name": "Copper ring",
+      "slot": "ring",
+      "part": "band",
+      "desc": "A plain copper band, gone green at the edges."
+    },
+    {
+      "id": "wood_axe",
+      "name": "Woodcutter's axe",
+      "slot": "weapon",
+      "twoHanded": true,
+      "part": "haft",
+      "desc": "A long-hafted axe made for felling trees. It takes both hands, and it hits like it.",
+      "damage": 7
     }
   ],
   "traits": [
@@ -565,5 +634,12 @@
         }
       ]
     }
+  ],
+  "skins": [
+    "Fair",
+    "Light",
+    "Olive",
+    "Brown",
+    "Dark"
   ]
 }

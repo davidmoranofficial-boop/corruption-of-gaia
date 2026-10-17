@@ -64,6 +64,7 @@ namespace Loran.Core
         public List<JournalDef> journal = new List<JournalDef>();
         public List<string> builds = new List<string>();
         public List<string> hair = new List<string>();
+        public List<string> skins = new List<string>();
     }
 
     [Serializable] public class ItemDef { public string id, name, desc; public float hunger, thirst, energy; public bool food; }
@@ -75,6 +76,7 @@ namespace Loran.Core
         public float hp;
         public int atkMin, atkMax;
         public int speed = 3;                  // compared with your Agility: the faster side acts first
+        public string art = "";                // sprite in Resources/Sprites/Enemies (defaults to the id)
         public List<EnemyMove> moves = new List<EnemyMove>();
     }
 
@@ -94,7 +96,8 @@ namespace Loran.Core
     public class GearDef
     {
         public string id, name, desc;
-        public string slot = "weapon";         // weapon, offhand, body, hands, trinket
+        public string slot = "weapon";         // one of Engine.GearSlots: weapon, offhand, head, neck, body, hands, legs, feet, ring
+        public bool twoHanded;                 // a weapon that takes both hands, so no shield
         public string rank = "F";              // the rank it has when found or given plainly
         public string part = "";               // where a gem goes, e.g. "pommel"
         public int damage, stamina;

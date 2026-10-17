@@ -841,7 +841,8 @@
 }
 
 .battle-log {
-    width: 760px;
+    flex-grow: 1;
+    flex-shrink: 1;
     margin-left: 24px;
     justify-content: flex-end;
 }
@@ -1421,6 +1422,78 @@
     letter-spacing: 6px;
     color: #dfe9ee;
     -unity-text-align: middle-center;
+}
+
+/* ---------- sprites and the paper doll ---------- */
+
+.doll {
+    flex-shrink: 0;
+}
+
+.doll-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.sprite-hit .doll-layer, .enemy-sprite.sprite-hit {
+    -unity-background-image-tint-color: #ff7a66;
+}
+
+.enemy-sprite {
+    flex-shrink: 0;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.item-icon, .item-icon-empty {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin-right: 10px;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.item-icon-empty {
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 4px;
+}
+
+.worn {
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.doll-frame {
+    padding: 14px;
+    margin-right: 22px;
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 8px;
+    background-color: #0a1316;
+}
+
+.worn-slots {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.create-look {
+    margin-top: 18px;
+    align-self: flex-start;
+    padding: 14px;
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 8px;
+    background-color: #0a1316;
+}
+
+.battle-me {
+    margin-right: 22px;
+    justify-content: flex-end;
 }
 
 /* ---------- dev mode ---------- */

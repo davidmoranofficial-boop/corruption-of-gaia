@@ -29,6 +29,7 @@ static class Program
         Test("dog fight never breaks, across 500 seeds", DogFights);
         Test("timing: perfect hits beat mistimed ones, parries block", Timing);
         Test("gear ranks, traits and slots", GearRanks);
+        Test("equipment slots: clothes, rings, two hands", Slots);
         Test("walking the coast road", Travel);
         Test("forging: how well you play sets the rank", Forging);
         Test("dev mode quick starts and cheats", DevMode);
@@ -525,6 +526,45 @@ static class Program
             throw new Exception("\"" + c.def.label + "\" is disabled in " + e.S.scene + ": " + c.reason);
         }
         throw new Exception("Couldn't get enough stamina for \"" + label + "\"");
+    }
+
+    static void Slots()
+    {
+        var e = NewEngine();
+        e.DevStart("village");
+        foreach (var id in Engine.StartingClothes)
+            Assert(e.S.Equipped.Any(g => g.id == id), "should start wearing " + id);
+        Assert(e.S.figure == "male" && e.S.skin != "", "the body and skin should default from creation");
+
+        var shield = e.DevGear("buckler", "F");
+        var axe = e.DevGear("wood_axe", "F");
+        Assert(axe.equipped && axe.twoHanded && !shield.equipped, "a two-handed axe should take the shield off");
+        e.Equip(shield.uid);
+        Assert(shield.equipped && !axe.equipped, "a shield should take the two-handed axe off");
+
+        var r1 = e.DevGear("copper_ring", "F");
+        var r2 = e.DevGear("copper_ring", "F");
+        Assert(r1.equipped && r2.equipped, "two rings can be worn at once");
+        var r3 = e.DevGear("copper_ring", "F");
+        Assert(r3.equipped && r2.equipped && !r1.equipped, "a third ring pushes out the first one put on");
+
+        var cap = e.DevGear("iron_cap", "F");
+        var jerkin = e.DevGear("leather_jerkin", "F");
+        Assert(cap.equipped && jerkin.equipped && !e.S.Equipped.Any(g => g.id == "castaway_shirt"), "the jerkin should replace the shirt");
+        Assert(Rules.GearGuard(e.S, e.data) > 0.2f, "armour pieces should add up");
+
+        // An old save: a trinket slot and no clothes
+        var old = NewEngine();
+        old.DevStart("village");
+        var st = old.S;
+        st.gearItems.Clear();
+        st.flags.Remove("clothed");
+        st.gearItems.Add(new GearItem { uid = 90, id = "bone_charm", slot = "trinket", equipped = true });
+        var json = Json.Write(st);
+        var back = NewEngine();
+        back.LoadState(Json.Read<GameState>(json));
+        Assert(back.S.gearItems.Any(g => g.id == "bone_charm" && g.slot == "neck"), "an old trinket should move to the neck");
+        Assert(Engine.StartingClothes.All(id => back.S.Equipped.Any(g => g.id == id)), "an old save should be given clothes");
     }
 
     static Engine NewEngine()

@@ -7,8 +7,29 @@ namespace Loran.Core
     /// <summary>Gear: ranks, traits, slots, equipping.</summary>
     public partial class Engine
     {
-        public static readonly string[] GearSlots = { "weapon", "offhand", "body", "hands", "trinket" };
-        public static readonly string[] GearSlotNames = { "Weapon", "Off-hand", "Body", "Hands", "Trinket" };
+        public static readonly string[] GearSlots = { "weapon", "offhand", "head", "neck", "body", "hands", "legs", "feet", "ring" };
+        public static readonly string[] GearSlotNames = { "Main hand", "Off hand", "Head", "Neck", "Body", "Hands", "Legs", "Feet", "Ring" };
+
+        /// <summary>How many of each slot you can wear at once. Two rings; one of everything else.</summary>
+        public static int SlotCapacity(string slot) => slot == "ring" ? 2 : 1;
+
+        public static string SlotName(string slot)
+        {
+            int i = Array.IndexOf(GearSlots, slot);
+            return i < 0 ? slot : GearSlotNames[i];
+        }
+
+        /// <summary>The clothes you wash up in. Everyone starts wearing these.</summary>
+        public static readonly string[] StartingClothes = { "castaway_shirt", "castaway_trousers", "castaway_boots" };
+
+        /// <summary>Gives the starting clothes once (also to older saves made before clothes existed).</summary>
+        void GiveClothes()
+        {
+            if (S.Has("clothed")) return;
+            S.flags.Add("clothed");
+            foreach (var id in StartingClothes)
+                if (data.Gear(id) != null && !S.gearItems.Any(g => g.id == id)) MakeGear(id, null, null);
+        }
 
         /// <summary>
         /// Makes a new piece of gear and puts it on, moving whatever was in that slot to the pack.
@@ -27,6 +48,7 @@ namespace Loran.Core
                 id = def.id,
                 rank = rank,
                 slot = def.slot,
+                twoHanded = def.twoHanded,
                 damage = (float)Math.Round(def.damage * k, 1),
                 guard = Math.Min(0.6f, def.guard * k),
                 stamina = (int)Math.Round(def.stamina * k),
@@ -62,8 +84,17 @@ namespace Loran.Core
             if (!force && !FreeToAct) return false;
             var item = S.gearItems.FirstOrDefault(g => g.uid == uid);
             if (item == null) return false;
-            foreach (var g in S.gearItems)
-                if (g.equipped && g.slot == item.slot) g.equipped = false;
+            if (item.equipped) return true;
+            // Make room in the slot: a third ring pushes out the one you put on first.
+            var same = S.gearItems.Where(g => g.equipped && g.slot == item.slot).ToList();
+            for (int i = 0; i <= same.Count - SlotCapacity(item.slot); i++) same[i].equipped = false;
+            // A two-handed weapon and a shield can't be held together.
+            if (item.twoHanded)
+                foreach (var g in S.gearItems) if (g.equipped && g.slot == "offhand") g.equipped = false;
+            if (item.slot == "offhand")
+                foreach (var g in S.gearItems) if (g.equipped && g.slot == "weapon" && g.twoHanded) g.equipped = false;
+            S.gearItems.Remove(item);
+            S.gearItems.Add(item);   // most recently worn goes last, so it's the last to be pushed out
             item.equipped = true;
             Rules.Clamp(S, data);
             return true;
@@ -92,6 +123,12 @@ namespace Loran.Core
         /// <summary>Saves from before gear ranks had a single gear id. Turn it into a real piece of gear.</summary>
         void MigrateGear()
         {
+            foreach (var g in S.gearItems)
+            {
+                if (g.slot == "trinket") g.slot = "neck";   // the old single trinket slot
+                var def = data.Gear(g.id);
+                if (def != null) g.twoHanded = def.twoHanded;
+            }
             if (string.IsNullOrEmpty(S.gear)) return;
             string id = S.gear;
             S.gear = "";

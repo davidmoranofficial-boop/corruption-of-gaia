@@ -151,6 +151,11 @@ namespace Loran.UnityLayer
                 }
                 list.Add(new Vector2(50f, 50f));
             }
+            else if (slot == "head")
+            {
+                foreach (float x in new[] { 40f, 50f, 60f }) list.Add(new Vector2(x, 42f));
+                foreach (float x in new[] { 34f, 45f, 55f, 66f }) list.Add(new Vector2(x, 58f));
+            }
             else if (slot == "hands")
             {
                 foreach (float x in new[] { 40f, 50f, 60f })
@@ -175,6 +180,7 @@ namespace Loran.UnityLayer
 
             if (g.slot == "offhand") DrawShield(hot);
             else if (g.slot == "hands") DrawGlove(hot);
+            else if (g.slot == "head") DrawCap(hot);
             else DrawDagger(hot);
 
             // The gold ring (the target), the closing ring and the dot. Only the dot takes clicks.
@@ -232,6 +238,12 @@ namespace Loran.UnityLayer
             rim.style.borderTopWidth = rim.style.borderBottomWidth = rim.style.borderLeftWidth = rim.style.borderRightWidth = 6f;
             rim.style.borderTopColor = rim.style.borderBottomColor = rim.style.borderLeftColor = rim.style.borderRightColor = (Color)new Color32(0x55, 0x58, 0x5c, 255);
             Part(46f, 40f, 8f, 20f, new Color32(0x55, 0x58, 0x5c, 255), 999f);   // the boss
+        }
+
+        void DrawCap(Color hot)
+        {
+            Part(32f, 28f, 36f, 52f, hot, 90f);                                  // the dome
+            Part(28f, 66f, 44f, 10f, new Color32(0x57, 0x51, 0x58, 255), 4f);   // the rim
         }
 
         void DrawGlove(Color hot)

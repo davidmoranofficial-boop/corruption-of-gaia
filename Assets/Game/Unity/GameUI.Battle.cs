@@ -32,7 +32,7 @@ namespace Loran.UnityLayer
 
         // Bars animate from what they showed before the action to what they are now.
         float[] before;
-        VisualElement enemyCard, playerCard, arena;
+        VisualElement enemyCard, playerCard, arena, enemyPic, playerPic;
 
         bool InBattle => engine.S.inCombat || outro;
 
@@ -59,9 +59,13 @@ namespace Loran.UnityLayer
             RankBadge(nameRow, e.rank);
             Bar(enemyCard, "HEALTH", Mathf.Max(0, s.enemyHp), e.hp, "#c8573f", 0, true);
             var portrait = Add(top, new VisualElement(), "portrait");
-            var art = Resources.Load<Texture2D>("Portraits/" + e.id);
-            if (art != null) portrait.style.backgroundImage = new StyleBackground(art);
-            else Add(portrait, new Label(e.name.Substring(0, 1)), "portrait-letter");
+            enemyPic = EnemySprite(portrait, e, 210f);
+            if (enemyPic == null)
+            {
+                var art = Resources.Load<Texture2D>("Portraits/" + e.id);
+                if (art != null) portrait.style.backgroundImage = new StyleBackground(art);
+                else Add(portrait, new Label(e.name.Substring(0, 1)), "portrait-letter");
+            }
             if (s.enemyHp <= 0) portrait.AddToClassList("portrait-down");
 
             // What it's about to do
@@ -76,6 +80,9 @@ namespace Loran.UnityLayer
 
             // You: bottom left
             var bottom = Add(arena, new VisualElement(), "arena-bottom");
+            var me = Add(bottom, new VisualElement(), "battle-me");
+            playerPic = PlayerDoll(me, 4);
+            if (s.hp <= 0) playerPic.AddToClassList("portrait-down");
             playerCard = Add(bottom, new VisualElement(), "fighter-card");
             Add(playerCard, new Label(s.name), "fighter-name");
             Bar(playerCard, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f", 1, false);
@@ -279,6 +286,9 @@ namespace Loran.UnityLayer
                     if (e.kind == "hit" || e.kind == "crit" || e.kind == "glance")
                     {
                         Flash(card);
+                        var pic = e.target == "enemy" ? enemyPic : playerPic;
+                        HitFlash(pic);
+                        Shake(pic, e.kind == "crit" ? 12f : 6f);
                         Shake(e.kind == "crit" ? (e.target == "player" ? arena : card) : card, e.kind == "crit" ? 14f : e.kind == "glance" ? 4f : 8f);
                     }
                 }).StartingIn(delay);

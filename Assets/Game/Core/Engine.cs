@@ -127,7 +127,8 @@ namespace Loran.Core
         }
 
         /// <summary>Applies the character creation form. alloc is the bonus points spread over the stats.</summary>
-        public string CreateCharacter(string name, string gender, string build, string hair, string backgroundId, int[] alloc)
+        public string CreateCharacter(string name, string gender, string build, string hair, string backgroundId, int[] alloc,
+                                      string skin = null, string figure = null)
         {
             name = (name ?? "").Trim();
             if (name.Length == 0) return "Give your character a name.";
@@ -142,10 +143,13 @@ namespace Loran.Core
             S.gender = gender;
             S.build = build;
             S.hair = hair;
+            S.skin = string.IsNullOrEmpty(skin) ? (data.file.skins.Count > 1 ? data.file.skins[1] : "") : skin;
+            S.figure = figure == "male" || figure == "female" ? figure : gender == "female" ? "female" : "male";
             S.background = bg.id;
             for (int i = 0; i < Stat.Count; i++) S.stats[i] = 3 + alloc[i];
             S.stats[Stat.Parse(bg.stat)] += 1;
             if (!S.Has("created")) S.flags.Add("created");
+            GiveClothes();
             return null;
         }
 
@@ -157,6 +161,7 @@ namespace Loran.Core
             S = state;
             MigrateGear();
             MigrateScene();
+            if (S.Has("created")) GiveClothes();
         }
 
         /// <summary>Saves made in a scene that no longer exists (the old coast road scenes) are moved onto the road.</summary>
