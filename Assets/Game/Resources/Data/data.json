@@ -1,0 +1,569 @@
+{
+  "items": [
+    {
+      "id": "bread",
+      "name": "Bread",
+      "desc": "A heel of dark bread. Filling.",
+      "food": true,
+      "hunger": 30,
+      "thirst": -3,
+      "energy": 6
+    },
+    {
+      "id": "fish",
+      "name": "Smoked fish",
+      "desc": "Salty, oily and good.",
+      "food": true,
+      "hunger": 35,
+      "thirst": -6,
+      "energy": 6
+    },
+    {
+      "id": "mussels",
+      "name": "Mussels",
+      "desc": "Prised off the rocks.",
+      "food": true,
+      "hunger": 15,
+      "thirst": 0,
+      "energy": 3
+    },
+    {
+      "id": "berries",
+      "name": "Blackberries",
+      "desc": "Sharp and sweet.",
+      "food": true,
+      "hunger": 10,
+      "thirst": 6,
+      "energy": 3
+    },
+    {
+      "id": "flint",
+      "name": "Flint and steel",
+      "desc": "From Yenson. For lighting fires."
+    },
+    {
+      "id": "gem",
+      "name": "Green gem",
+      "desc": "A small green stone from the quarry. You never mentioned it to Garran."
+    },
+    {
+      "id": "crab_meat",
+      "name": "Crab meat",
+      "desc": "Sweet white meat, cracked out of the shell.",
+      "food": true,
+      "hunger": 25,
+      "thirst": -2,
+      "energy": 5
+    }
+  ],
+  "enemies": [
+    {
+      "id": "dog",
+      "name": "Yellow-eyed dog",
+      "rank": "F",
+      "desc": "A starved dog with matted fur. Its eyes have gone the colour of old pus, and it doesn't blink.",
+      "hp": 42,
+      "atkMin": 3,
+      "atkMax": 6,
+      "speed": 4,
+      "moves": [
+        {
+          "id": "snap",
+          "name": "snaps at you",
+          "tell": "It circles you, snapping at the air.",
+          "power": 1,
+          "weight": 5
+        },
+        {
+          "id": "lunge",
+          "name": "lunges at your throat",
+          "tell": "It drops low and its back legs bunch. It's going to lunge.",
+          "power": 1.6,
+          "weight": 3
+        },
+        {
+          "id": "wary",
+          "name": "backs off, hackles up",
+          "tell": "It backs off a step, watching your hands. It's ready for you.",
+          "power": 0,
+          "guard": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "crab",
+      "name": "Rock crab",
+      "rank": "F",
+      "desc": "A crab the size of a dinner plate, barnacled and old. One claw is far bigger than the other, and there's a yellow crust where its eyes should shine.",
+      "hp": 24,
+      "atkMin": 2,
+      "atkMax": 5,
+      "speed": 2,
+      "moves": [
+        {
+          "id": "pinch",
+          "name": "pinches at your ankle",
+          "tell": "It sidles towards you, big claw open.",
+          "power": 1,
+          "weight": 5
+        },
+        {
+          "id": "crush",
+          "name": "clamps its big claw on you",
+          "tell": "It rears up and raises both claws high.",
+          "power": 1.5,
+          "weight": 3
+        },
+        {
+          "id": "shell",
+          "name": "hunkers down behind its shell",
+          "tell": "It pulls its legs in and hunkers behind its shell.",
+          "power": 0,
+          "guard": true,
+          "weight": 2
+        }
+      ]
+    }
+  ],
+  "classes": [
+    {
+      "id": "adventurer",
+      "name": "Adventurer",
+      "desc": "Travelling, surviving and fighting. More stamina for the road.",
+      "stat": "agi",
+      "statBonus": 1,
+      "staminaBonus": 15
+    },
+    {
+      "id": "blacksmith",
+      "name": "Blacksmith",
+      "desc": "Crafting, mining and defence. Stronger arms.",
+      "stat": "str",
+      "statBonus": 2,
+      "staminaBonus": 0
+    },
+    {
+      "id": "mage",
+      "name": "Mage",
+      "desc": "Magic, intellect and enchanting. A sharper mind.",
+      "stat": "int",
+      "statBonus": 2,
+      "staminaBonus": 0
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": "desk",
+      "name": "Desk job",
+      "desc": "Eight hours a day of screens and spreadsheets.",
+      "stat": "int"
+    },
+    {
+      "id": "warehouse",
+      "name": "Warehouse shifts",
+      "desc": "Lifting, stacking, lifting again.",
+      "stat": "str"
+    },
+    {
+      "id": "runner",
+      "name": "Weekend runner",
+      "desc": "The one thing you did for yourself.",
+      "stat": "agi"
+    },
+    {
+      "id": "nights",
+      "name": "Night shifts",
+      "desc": "Long hours on your feet while everyone else slept.",
+      "stat": "end"
+    },
+    {
+      "id": "retail",
+      "name": "Shop floor",
+      "desc": "Smiling at people who never smiled back.",
+      "stat": "cha"
+    }
+  ],
+  "gear": [
+    {
+      "id": "gutting_knife",
+      "name": "Gutting knife",
+      "slot": "weapon",
+      "desc": "Yenson's spare. Made for fish, not fights, but it has a point.",
+      "damage": 2
+    },
+    {
+      "id": "knife",
+      "name": "Iron knife",
+      "slot": "weapon",
+      "part": "pommel",
+      "desc": "Plain and sharp, and you made it.",
+      "damage": 4
+    },
+    {
+      "id": "buckler",
+      "name": "Hide buckler",
+      "slot": "offhand",
+      "part": "boss",
+      "desc": "A small round shield of boiled hide on an iron rim.",
+      "guard": 0.3
+    },
+    {
+      "id": "gloves",
+      "name": "Reinforced work gloves",
+      "slot": "hands",
+      "part": "cuff",
+      "desc": "Leather with iron studs across the knuckles.",
+      "stamina": 10
+    }
+  ],
+  "traits": [
+    {
+      "id": "keen",
+      "name": "Keen",
+      "desc": "Perfect strikes hit even harder.",
+      "crit": 0.35
+    },
+    {
+      "id": "balanced",
+      "name": "Balanced",
+      "desc": "Sits well in the hand. The timing bar's sweet spot is wider.",
+      "zone": 0.06
+    },
+    {
+      "id": "warded",
+      "name": "Warded",
+      "desc": "Holds back a little of the corruption's growth on you.",
+      "ward": 0.1
+    },
+    {
+      "id": "light",
+      "name": "Light",
+      "desc": "Attacks cost less stamina.",
+      "light": 0.25
+    },
+    {
+      "id": "kindled",
+      "name": "Kindled",
+      "desc": "Every hit carries a little fire.",
+      "fire": 3
+    },
+    {
+      "id": "sturdy",
+      "name": "Sturdy",
+      "desc": "Blocks a little more of every hit.",
+      "guard": 0.08
+    },
+    {
+      "id": "swift",
+      "name": "Swift",
+      "desc": "Helps you act before your enemy.",
+      "speed": 1
+    },
+    {
+      "id": "hardy",
+      "name": "Hardy",
+      "desc": "More stamina to work and fight with.",
+      "stamina": 8
+    }
+  ],
+  "materials": [
+    {
+      "id": "green_gem",
+      "name": "Green gem",
+      "desc": "Your green quarry gem is set in the {part}.",
+      "traits": [
+        "warded",
+        "warded",
+        "warded",
+        "balanced",
+        "sturdy",
+        "hardy"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "id": "draw_water",
+      "name": "Draw Water",
+      "desc": "Pull water out of the air. Refills your waterskin; puts out small fires."
+    },
+    {
+      "id": "kindle",
+      "name": "Kindle",
+      "desc": "A spark of fire. Lights fires, and stings in a fight."
+    }
+  ],
+  "journal": [
+    {
+      "text": "Follow the coast road to the village Yenson told you about.",
+      "when": [
+        "flag:yenson_road",
+        "!flag:arrived"
+      ]
+    },
+    {
+      "text": "Help the hunters at the lodge: firewood, water and food.",
+      "when": [
+        "flag:arrived",
+        "!flag:hunt_done"
+      ]
+    },
+    {
+      "text": "Help Garran the blacksmith get his forge going again.",
+      "when": [
+        "flag:arrived",
+        "!flag:smith_done"
+      ]
+    },
+    {
+      "text": "Visit old Orlen, the retired mage.",
+      "when": [
+        "flag:arrived",
+        "!flag:mage_done"
+      ]
+    },
+    {
+      "text": "Go to the class stone at the guild post and choose your path.",
+      "when": [
+        "flag:hunt_done",
+        "flag:smith_done",
+        "flag:mage_done",
+        "!class"
+      ]
+    },
+    {
+      "text": "Skelmed needs more help than you can give it here. Head for the nearest town.",
+      "when": [
+        "class"
+      ]
+    }
+  ],
+  "builds": [
+    "Slight",
+    "Lean",
+    "Average",
+    "Broad",
+    "Heavy"
+  ],
+  "hair": [
+    "Black",
+    "Dark brown",
+    "Light brown",
+    "Red",
+    "Blond",
+    "Grey",
+    "Shaved"
+  ],
+  "routes": [
+    {
+      "id": "coast_road",
+      "name": "The coast road",
+      "night": "It's dark. You can hear the sea better than you can see the road.",
+      "start": [
+        {
+          "scene": "shack_visit"
+        }
+      ],
+      "end": [
+        {
+          "when": [
+            "!flag:arrived"
+          ],
+          "scene": "skelmed_arrive"
+        },
+        {
+          "scene": "village"
+        }
+      ],
+      "eventChance": 35,
+      "stops": [
+        {
+          "id": "shack",
+          "name": "Yenson's shack",
+          "x": 34,
+          "y": 91,
+          "desc": "Yenson's chimney smokes behind you. The coast road runs north along the shore, between gorse and the grey edge of the sea.",
+          "steps": 2,
+          "minutes": 30,
+          "leg": "Packed sand and stones underfoot. The sea is still sulking after the storm, throwing weed and splintered wood up the beach."
+        },
+        {
+          "id": "pools",
+          "name": "The tide pools",
+          "x": 22,
+          "y": 70,
+          "desc": "Black rocks run out into the sea here, pocked with pools. Weed hangs off everything.",
+          "forage": [
+            "mussels",
+            "mussels",
+            "berries"
+          ],
+          "choices": [
+            {
+              "label": "Search the tide pools",
+              "when": [
+                "!flag:pools"
+              ],
+              "time": 40,
+              "stamina": 10,
+              "energy": 2,
+              "train": [
+                "agi+2"
+              ],
+              "why": "scrambling over the rocks",
+              "effects": [
+                "flag:pools",
+                "item:mussels+2"
+              ],
+              "result": "You pick your way out over the weed-slick rocks. Most of the pools are empty, but you prise two handfuls of mussels off the stones before a wave soaks you to the knee."
+            }
+          ],
+          "steps": 2,
+          "minutes": 40,
+          "leg": "The road climbs. Gorse closes in on both sides, and the wind gets up as the headland rises ahead."
+        },
+        {
+          "id": "headland",
+          "name": "The headland",
+          "x": 31,
+          "y": 47,
+          "desc": "The road crests the headland. A sheep track leads off to the very top.",
+          "choices": [
+            {
+              "label": "Climb to the top for a look around",
+              "when": [
+                "!flag:lookout"
+              ],
+              "time": 30,
+              "stamina": 12,
+              "energy": 2,
+              "train": [
+                "end+1"
+              ],
+              "why": "climbing the headland",
+              "go": "lookout"
+            }
+          ],
+          "steps": 3,
+          "minutes": 45,
+          "leg": "The road drops off the headland and winds inland through rough grazing. Nobody grazes it now.",
+          "beat": "dog",
+          "beatWhen": [
+            "!flag:dog_met"
+          ]
+        },
+        {
+          "id": "stream",
+          "name": "The stream",
+          "x": 52,
+          "y": 27,
+          "desc": "The road drops into a sheltered dip where a stream runs down to the sea. Bramble bushes crowd the banks. Up ahead, roofs and a crooked harbour light: Skelmed.",
+          "forage": [
+            "berries",
+            "berries",
+            "mussels"
+          ],
+          "choices": [
+            {
+              "label": "Fill your waterskin at the stream",
+              "when": [
+                "water<4"
+              ],
+              "time": 10,
+              "effects": [
+                "water=4",
+                "thirst+20"
+              ],
+              "result": "The water is cold enough to hurt your teeth. You drink, then fill the skin."
+            },
+            {
+              "label": "Pick blackberries",
+              "when": [
+                "!flag:berries"
+              ],
+              "time": 30,
+              "stamina": 5,
+              "energy": 1,
+              "train": [
+                "agi+1"
+              ],
+              "why": "picking through the brambles",
+              "effects": [
+                "flag:berries",
+                "item:berries+3"
+              ],
+              "result": "Your hands come away scratched and stained purple, with three good handfuls of blackberries."
+            }
+          ],
+          "steps": 2,
+          "minutes": 30,
+          "leg": "The last stretch. The road widens into an old cart track, rutted by wheels that stopped coming years ago."
+        },
+        {
+          "id": "skelmed",
+          "name": "Skelmed",
+          "x": 66,
+          "y": 9,
+          "desc": "The edge of the village. Grey cottages and a harbour far too big for them."
+        }
+      ],
+      "events": [
+        {
+          "scene": "ev_gulls",
+          "kind": "meet",
+          "weight": 3,
+          "when": [
+            "!night"
+          ]
+        },
+        {
+          "scene": "ev_mussels",
+          "kind": "find",
+          "weight": 2,
+          "when": [
+            "!night"
+          ]
+        },
+        {
+          "scene": "ev_purse",
+          "kind": "find",
+          "weight": 2,
+          "once": true
+        },
+        {
+          "scene": "ev_crate",
+          "kind": "find",
+          "weight": 3,
+          "once": true
+        },
+        {
+          "scene": "ev_crab",
+          "kind": "danger",
+          "weight": 3
+        },
+        {
+          "scene": "ev_squall",
+          "kind": "weather",
+          "weight": 2
+        },
+        {
+          "scene": "ev_fisher",
+          "kind": "meet",
+          "weight": 2,
+          "once": true,
+          "when": [
+            "!night",
+            "hour>=6"
+          ]
+        },
+        {
+          "scene": "ev_taint",
+          "kind": "danger",
+          "weight": 2,
+          "once": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,547 @@
+{
+  "scenes": [
+    {
+      "id": "shack",
+      "place": "Yenson's shack, the coast of Loran",
+      "title": "By the fire",
+      "safe": true,
+      "onEnter": [
+        "hud:on",
+        "clock:1:17:30",
+        "hp=60",
+        "stamina=30",
+        "energy=45",
+        "hunger=40",
+        "thirst=30",
+        "save"
+      ],
+      "text": [
+        "Warmth, first. Then the smell of smoke and fish, and the pop of driftwood in a fire.",
+        "You're lying on a pile of old sailcloth in a one-room shack. Nets hang from the rafters. The wind leans on the walls and the walls lean back.",
+        "An old man sits by the fire, mending a net with fingers like knotted rope. He sees your eyes open and nods, as if you're a fish he expected to land.",
+        "\"Easy. Sea nearly kept you. Name's Yenson.\""
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:y_supplies"
+          ],
+          "text": "Yenson has gone back to his net. Through the gap in the door you can see the coast road climbing north, towards a faint light on the hill."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"What happened to me?\"",
+          "when": [
+            "!flag:y_what"
+          ],
+          "effects": [
+            "flag:y_what"
+          ],
+          "time": 5,
+          "result": "\"Found you at the tide line this morning, tangled round a barrel. There was a trade boat went down off the point in the storm. You're the only one the sea gave back. Lucky.\" He looks at you a moment longer. \"Or something.\""
+        },
+        {
+          "label": "\"Where am I?\"",
+          "when": [
+            "!flag:y_where"
+          ],
+          "effects": [
+            "flag:y_where"
+          ],
+          "time": 5,
+          "result": "\"Loran. West coast. That light up the hill is Skelmed. Used to be the busiest port on this coast, ships three deep at the pier. Now the king takes half of every catch in tax, and the roads have gone bad, so the merchants don't come. Just me, a few boats, and a village getting smaller every year.\""
+        },
+        {
+          "label": "Eat the stew he offers",
+          "when": [
+            "!flag:y_stew"
+          ],
+          "effects": [
+            "flag:y_stew",
+            "hunger+40",
+            "thirst+15",
+            "energy+10"
+          ],
+          "time": 20,
+          "result": "Fish stew, mostly water and bones, and the best thing you've ever eaten. Yenson watches you finish it without comment and takes the bowl back."
+        },
+        {
+          "label": "Thank him",
+          "when": [
+            "!flag:y_thanks"
+          ],
+          "effects": [
+            "flag:y_thanks"
+          ],
+          "train": [
+            "cha+1"
+          ],
+          "why": "talking with Yenson",
+          "result": "He waves it off. \"Sea takes enough. Wasn't letting it have you as well.\""
+        },
+        {
+          "label": "\"What should I do now?\"",
+          "when": [
+            "!flag:y_supplies"
+          ],
+          "effects": [
+            "flag:y_supplies",
+            "flag:yenson_road",
+            "item:bread+2",
+            "item:flint+1",
+            "water=4",
+            "gear:gutting_knife"
+          ],
+          "time": 10,
+          "result": "\"Can't keep you. I've barely enough for me.\" He pushes a bundle across the floor: two heels of bread, a flint and steel, and a waterskin he fills from a barrel. Then, after a moment, his spare gutting knife. \"Roads aren't what they were.\" \"Just up the road there's a village, Skelmed. Ida at the hunters' lodge always needs hands. Garran the smith's been sitting at a cold forge for days. And old Orlen up on the hill was a royal mage once, if you believe him. Help them and they'll help you.\""
+        },
+        {
+          "label": "Sleep by the fire until morning",
+          "effects": [
+            "sleep:safe"
+          ]
+        },
+        {
+          "label": "Set off up the coast road",
+          "need": [
+            "flag:y_supplies"
+          ],
+          "needText": "Yenson hasn't finished talking to you.",
+          "effects": [
+            "travel:start:coast_road"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shack_visit",
+      "place": "Yenson's shack, the coast of Loran",
+      "title": "Yenson's shack",
+      "safe": true,
+      "text": [
+        "Smoke curls from the chimney of Yenson's shack. He's at the door, gutting a fish, and lifts the knife in greeting."
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:fire_magic"
+          ],
+          "text": "\"Heard you put a fire out with your bare hands,\" he says. \"Or not with your hands. Folk are talking.\""
+        },
+        {
+          "when": [
+            "flag:fire_ignored"
+          ],
+          "text": "\"Heard about the net shed,\" he says, and doesn't say anything else about it."
+        },
+        {
+          "when": [
+            "class"
+          ],
+          "text": "He nods at the guild card on your belt. \"Look at you. Washed up a nobody, and now the stone's spoken for you.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Sleep by Yenson's fire",
+          "effects": [
+            "sleep:safe"
+          ]
+        },
+        {
+          "label": "Head up the coast road towards Skelmed",
+          "effects": [
+            "travel:start:coast_road"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lookout",
+      "place": "The headland",
+      "title": "The lie of the land",
+      "onEnter": [
+        "flag:lookout"
+      ],
+      "text": [
+        "From the top of the headland you can see Loran laid out to the east: green fields, a dark line of forest to the south, and the glint of a river cutting across the north of the country.",
+        "Far off, at the very edge of sight, the sky over the land looks wrong. A faint yellow tint, like a bruise that's started to turn.",
+        "The mark on your wrist feels warm."
+      ],
+      "choices": [
+        {
+          "label": "Climb back down to the road",
+          "time": 15,
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "dog",
+      "place": "The coast road",
+      "title": "Something in the road",
+      "onEnter": [
+        "flag:dog_met"
+      ],
+      "text": [
+        "A dog is standing in the middle of the road. It's all ribs, its fur matted with salt. It isn't barking. It's just watching you.",
+        "Its eyes are the wrong colour: a flat, sick yellow, like old pus. It doesn't blink."
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:dog:dog_won:dog_fled"
+          ]
+        },
+        {
+          "label": "Throw it some bread",
+          "when": [
+            "item:bread"
+          ],
+          "effects": [
+            "item:bread-1",
+            "flag:dog_fed"
+          ],
+          "go": "dog_fed"
+        },
+        {
+          "label": "Back away slowly",
+          "effects": [
+            "check:agi:40:dog_avoided:dog_attacks"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dog_attacks",
+      "place": "The coast road",
+      "title": "It comes for you",
+      "text": [
+        "Your foot slips on a stone. The dog sees it and comes for you, silent and fast."
+      ],
+      "choices": [
+        {
+          "label": "Fight",
+          "effects": [
+            "combat:dog:dog_won:dog_fled"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dog_won",
+      "place": "The coast road",
+      "title": "Still",
+      "onEnter": [
+        "flag:dog_beaten"
+      ],
+      "text": [
+        "The dog lies still in the road. As you watch, the yellow drains out of its eyes and leaves them an ordinary brown.",
+        "Whatever was in it is gone. It was just a dog, once."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "dog_fled",
+      "place": "The coast road",
+      "title": "Away",
+      "text": [
+        "You run, and you don't look back until your lungs give out. When you do, the road behind you is empty."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "dog_fed",
+      "place": "The coast road",
+      "title": "A little kindness",
+      "text": [
+        "The dog snaps the bread out of the air and swallows it whole. For a moment, the yellow in its eyes seems to flicker, and something in it looks almost like an ordinary hungry dog.",
+        "Then it turns and slinks off into the gorse."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "dog_avoided",
+      "place": "The coast road",
+      "title": "Slowly",
+      "text": [
+        "You back away one step at a time, never taking your eyes off it. The dog watches you go, then loses interest and trots off into the gorse."
+      ],
+      "choices": [
+        {
+          "label": "Walk on, the long way round",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_gulls",
+      "place": "The coast road",
+      "title": "Gulls",
+      "text": [
+        "A knot of gulls is fighting over something on the shingle: a fish, still fresh, dropped by one of them and fought over by all the rest."
+      ],
+      "choices": [
+        {
+          "label": "Wade in and take the fish",
+          "time": 5,
+          "stamina": 8,
+          "train": [
+            "agi+1"
+          ],
+          "why": "snatching a fish from gulls",
+          "effects": [
+            "item:fish+1"
+          ],
+          "go": "travel",
+          "result": "You charge in waving your arms. The gulls scream blue murder and scatter, and the fish is yours."
+        },
+        {
+          "label": "Leave them to it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_mussels",
+      "place": "The coast road",
+      "title": "Mussel rocks",
+      "text": [
+        "The tide has gone out a long way here and left a reef of rocks crusted thick with mussels."
+      ],
+      "choices": [
+        {
+          "label": "Gather some",
+          "time": 15,
+          "stamina": 5,
+          "effects": [
+            "item:mussels+2"
+          ],
+          "go": "travel",
+          "result": "You fill your pockets with mussels before the water starts to come back."
+        },
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_purse",
+      "place": "The coast road",
+      "title": "Something in the wrack",
+      "text": [
+        "Something glints in the line of weed and driftwood the storm left behind: a leather purse, soaked black, with the drawstring still knotted."
+      ],
+      "choices": [
+        {
+          "label": "Open it",
+          "effects": [
+            "coins+4"
+          ],
+          "go": "travel",
+          "result": "Four copper coins, green with sea water. Whoever owned it won't be needing them."
+        },
+        {
+          "label": "Leave it where it lies",
+          "go": "travel",
+          "result": "It isn't yours. You leave it for the sea."
+        }
+      ]
+    },
+    {
+      "id": "ev_crate",
+      "place": "The coast road",
+      "title": "Wreckage",
+      "text": [
+        "A broken crate has washed up against the rocks, its planks stamped with a merchant's mark you recognise. It's from the boat you were on.",
+        "Most of what was in it is ruined. Not all."
+      ],
+      "choices": [
+        {
+          "label": "Search it",
+          "time": 10,
+          "effects": [
+            "item:bread+2"
+          ],
+          "go": "travel",
+          "result": "Two loaves in an oilcloth wrap, damp at the edges but good. You stand there a while longer than you need to, thinking about the crew."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_crab",
+      "place": "The coast road",
+      "title": "Something on the rocks",
+      "text": [
+        "A rock crab the size of a dinner plate sits right across the narrow path, between the cliff and the surf. It turns to face you and lifts its big claw."
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:crab:ev_crab_won:travel"
+          ]
+        },
+        {
+          "label": "Go round by the water",
+          "time": 20,
+          "stamina": 10,
+          "energy": 2,
+          "effects": [
+            "thirst-5"
+          ],
+          "go": "travel",
+          "result": "You wade round it through the surf, soaked to the waist. It watches you all the way."
+        }
+      ]
+    },
+    {
+      "id": "ev_crab_won",
+      "place": "The coast road",
+      "title": "Supper",
+      "text": [
+        "The crab stops moving. The yellow crust on its eyes cracks and flakes away."
+      ],
+      "choices": [
+        {
+          "label": "Crack it open for the meat",
+          "time": 15,
+          "effects": [
+            "item:crab_meat+2"
+          ],
+          "go": "travel",
+          "result": "Two good handfuls of crab meat. Your knife has never been put to better use."
+        },
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_squall",
+      "place": "The coast road",
+      "title": "A squall",
+      "text": [
+        "The sky darkens fast. A squall comes in off the sea, all hard rain and wind that pushes you sideways."
+      ],
+      "choices": [
+        {
+          "label": "Shelter under the rocks until it passes",
+          "time": 30,
+          "go": "travel",
+          "result": "You wedge yourself into a cleft in the rocks and wait it out. It passes as fast as it came."
+        },
+        {
+          "label": "Push on through it",
+          "stamina": 15,
+          "energy": 3,
+          "effects": [
+            "thirst+15"
+          ],
+          "train": [
+            "end+1"
+          ],
+          "why": "walking through a squall",
+          "go": "travel",
+          "result": "You put your head down and walk. You catch rain in your mouth as you go, and come out the other side drenched."
+        }
+      ]
+    },
+    {
+      "id": "ev_fisher",
+      "place": "The coast road",
+      "title": "A fisherman",
+      "text": [
+        "A wiry man with a coil of rope over one shoulder is coming down the road, heading for the pots below the cliffs. He stops when he sees you, surprised to see anyone at all."
+      ],
+      "choices": [
+        {
+          "label": "Ask him about Skelmed",
+          "time": 10,
+          "train": [
+            "cha+1"
+          ],
+          "why": "talking with a stranger",
+          "go": "travel",
+          "result": "\"Skelmed? Same as everywhere. Taxes take the catch, and the roads take the traders.\" He spits. \"Ida at the lodge'll feed you if you work. Tell her Tam sent you.\""
+        },
+        {
+          "label": "Nod and walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_taint",
+      "place": "The coast road",
+      "title": "Dead gulls",
+      "text": [
+        "There are dead gulls in the gorse beside the road. Six or seven of them, lying in a ring. Their eyes have gone the same flat yellow as the mark's warning light, and the gorse around them has turned black.",
+        "The mark on your wrist itches."
+      ],
+      "choices": [
+        {
+          "label": "Burn them with your flint",
+          "when": [
+            "item:flint"
+          ],
+          "time": 20,
+          "stamina": 5,
+          "effects": [
+            "corruption-0.2"
+          ],
+          "go": "travel",
+          "result": "The gorse catches easily. You stand back and watch until there's nothing left but ash. The itch on your wrist fades."
+        },
+        {
+          "label": "Burn them with Kindle",
+          "when": [
+            "spell:kindle"
+          ],
+          "time": 10,
+          "energy": 4,
+          "effects": [
+            "corruption-0.2"
+          ],
+          "train": [
+            "int+1"
+          ],
+          "why": "burning out the taint",
+          "go": "travel",
+          "result": "Fire leaps from your hand into the black gorse. When it's done, the itch on your wrist has gone."
+        },
+        {
+          "label": "Leave them",
+          "effects": [
+            "corruption+0.1"
+          ],
+          "go": "travel",
+          "result": "You walk on. The itch follows you a long way."
+        }
+      ]
+    }
+  ]
+}

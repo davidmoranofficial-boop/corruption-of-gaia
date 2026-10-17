@@ -1,0 +1,107 @@
+{
+  "scenes": [
+    {
+      "id": "title",
+      "title": "New Game",
+      "text": ["Choose how death works. This is locked for the whole playthrough."]
+    },
+    {
+      "id": "bedroom",
+      "place": "Your room",
+      "title": "Another day",
+      "safe": true,
+      "text": [
+        "Your room. The same ceiling you've stared at a thousand times, a crack running from the light fitting to the corner like a river on a map of nowhere.",
+        "God, what a boring day.",
+        "Tomorrow will be no better. Just more of the same.",
+        "Your eyes are heavy."
+      ],
+      "choices": [
+        { "label": "Close your eyes", "go": "god_light" }
+      ]
+    },
+    {
+      "id": "god_light",
+      "place": "Somewhere else",
+      "title": "This is the one",
+      "safe": true,
+      "text": [
+        "Light. Not the orange of a streetlamp through the curtains but light everywhere, with no edges, no floor and no ceiling.",
+        "A voice, vast and very close: \"This is the one.\"",
+        "You open your eyes. Someone is standing in front of you, or something shaped like someone. It's hard to look at directly, like looking at the sun through water."
+      ],
+      "choices": [
+        { "label": "\"Where am I?\"", "when": ["!flag:god_where"], "effects": ["flag:god_where"], "result": "\"Between,\" the figure says. \"Between your world and all the others. I am the God of Realms. I keep them, as best I can.\"", "go": "god_light" },
+        { "label": "\"Who are you?\"", "when": ["!flag:god_who"], "effects": ["flag:god_who"], "result": "\"I have had many names. The one that matters to you is the God of Realms. Every world you could imagine, and many you couldn't, is in my care.\"", "go": "god_light" },
+        { "label": "\"What do you want with me?\"", "go": "god_explain" }
+      ]
+    },
+    {
+      "id": "god_explain",
+      "place": "Somewhere else",
+      "title": "The corruption",
+      "safe": true,
+      "text": [
+        "\"A corruption has started in one of my realms,\" the God says. \"An evil that gets into people, into the land, into animals and even into objects, and twists them. Someone has to go there and stop it.\"",
+        "\"I am choosing you.\""
+      ],
+      "choices": [
+        { "label": "\"Why not send someone from that realm?\"", "when": ["!flag:god_why_not"], "effects": ["flag:god_why_not"], "result": "\"Because I cannot tell who carries it. It hides. It could be in a king, a farmer or a dog. If I reach in through anyone from that realm, I might be reaching in through the corruption itself. So I need someone from a realm it has never touched.\"", "go": "god_explain" },
+        { "label": "\"I can't interfere, but you can't either?\"", "when": ["flag:god_why_not", "!flag:god_interfere"], "effects": ["flag:god_interfere"], "result": "\"If I touch that realm directly, whatever I touch could carry it further. That is the cruelty of it. I can send you. After that, it's yours.\"", "go": "god_explain" },
+        { "label": "\"Why me?\"", "when": ["!flag:god_why_me"], "effects": ["flag:god_why_me"], "result": "The God almost smiles. \"You were bored. You were sure tomorrow would be no different from today. I'd like to prove you wrong.\"", "go": "god_explain" },
+        { "label": "\"Do I have a choice?\"", "go": "god_boon" }
+      ]
+    },
+    {
+      "id": "god_boon",
+      "place": "Somewhere else",
+      "title": "A boon",
+      "safe": true,
+      "text": [
+        "\"You always have a choice,\" the God says. \"That is rather the point of you.\"",
+        "\"But take this with you.\" Something presses into the inside of your wrist: a mark, warm, like a coin left in the sun. \"It will show you how far the corruption has spread. Right now it is five parts in a hundred. Time feeds it. What you do will feed it or starve it. At a hundred, that world falls apart.\"",
+        "\"One more thing. You can't arrive as you are. Tell me who you'll be.\""
+      ],
+      "choices": [
+        { "label": "Decide who you'll be", "effects": ["corruption=5"], "go": "creation" }
+      ]
+    },
+    {
+      "id": "creation",
+      "place": "Somewhere else",
+      "title": "Who will you be?",
+      "safe": true,
+      "text": ["Your name, how you look, the life you're leaving behind, and where your strengths lie. Your class comes later, once you've seen what the world needs from you."],
+      "choices": [
+        { "label": "Go", "need": ["flag:created"], "needText": "Finish creating your character first.", "go": "storm" }
+      ]
+    },
+    {
+      "id": "storm",
+      "place": "At sea, off the coast of Loran",
+      "title": "The storm",
+      "text": [
+        "Salt water in your mouth. Rain like thrown gravel.",
+        "You're on the deck of a trade boat, a fat-bellied cog, gripping a rope with both hands while the sky tears itself open. You don't remember boarding. Your clothes aren't yours. Your hands are, just about.",
+        "A sailor screams something about the Skelmed light, and points at nothing you can see.",
+        "The boat climbs a wave the size of a house."
+      ],
+      "choices": [
+        { "label": "Help the sailors haul on the sail", "train": ["str+2"], "why": "hauling sail in a storm", "go": "storm_wave" },
+        { "label": "Wrap the rope round your arm and hold on", "train": ["end+2"], "why": "holding on in a storm", "go": "storm_wave" }
+      ]
+    },
+    {
+      "id": "storm_wave",
+      "place": "At sea, off the coast of Loran",
+      "title": "Over",
+      "text": [
+        "The wave doesn't break over the boat. It breaks the boat.",
+        "Cold. Noise. Then nothing at all."
+      ],
+      "choices": [
+        { "label": "…", "go": "shack" }
+      ]
+    }
+  ]
+}
