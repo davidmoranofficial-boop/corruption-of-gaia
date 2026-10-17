@@ -291,6 +291,8 @@ def main():
     from backdrops import BACKDROPS
     for name, paint in BACKDROPS.items():
         made.append(save(paint(), 'Backdrops', name + '.png'))
+    import regions
+    regions.main()
     print('built %d sprites into %s' % (len(made), os.path.normpath(OUT)))
 
 

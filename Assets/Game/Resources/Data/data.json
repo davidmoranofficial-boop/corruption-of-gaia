@@ -54,6 +54,33 @@
       "hunger": 25,
       "thirst": -2,
       "energy": 5
+    },
+    {
+      "id": "mushrooms",
+      "name": "Field mushrooms",
+      "desc": "Pale caps from the woods. You're fairly sure they're the safe kind.",
+      "food": true,
+      "hunger": 12,
+      "thirst": 0,
+      "energy": 3
+    },
+    {
+      "id": "hazelnuts",
+      "name": "Hazelnuts",
+      "desc": "A pocketful, cracked with a stone.",
+      "food": true,
+      "hunger": 10,
+      "thirst": -2,
+      "energy": 4
+    },
+    {
+      "id": "samphire",
+      "name": "Samphire",
+      "desc": "Salty green stems from the marsh edge.",
+      "food": true,
+      "hunger": 8,
+      "thirst": -4,
+      "energy": 2
     }
   ],
   "enemies": [
@@ -424,45 +451,45 @@
     "Grey",
     "Shaved"
   ],
-  "routes": [
+  "skins": [
+    "Fair",
+    "Light",
+    "Olive",
+    "Brown",
+    "Dark"
+  ],
+  "regions": [
     {
-      "id": "coast_road",
-      "name": "The coast road",
-      "night": "It's dark. You can hear the sea better than you can see the road.",
-      "start": [
-        {
-          "scene": "shack_visit"
-        }
-      ],
-      "end": [
-        {
-          "when": [
-            "!flag:arrived"
-          ],
-          "scene": "skelmed_arrive"
-        },
-        {
-          "scene": "village"
-        }
-      ],
-      "eventChance": 35,
-      "stops": [
+      "id": "loran_nw",
+      "name": "North-west Loran",
+      "night": "It's dark. You can hear the sea better than you can see the ground.",
+      "eventChance": 16,
+      "places": [
         {
           "id": "shack",
           "name": "Yenson's shack",
-          "x": 34,
-          "y": 91,
-          "desc": "Yenson's chimney smokes behind you. The coast road runs north along the shore, between gorse and the grey edge of the sea.",
-          "steps": 2,
-          "minutes": 30,
-          "leg": "Packed sand and stones underfoot. The sea is still sulking after the storm, throwing weed and splintered wood up the beach."
+          "kind": "hut",
+          "x": 8,
+          "y": 26,
+          "farSight": 3,
+          "desc": "Yenson's chimney smokes. The coast road runs north from his door, between gorse and the grey edge of the sea.",
+          "note": "The fisherman who pulled you out of the sea. His fire is always lit.",
+          "enterLabel": "Go to Yenson's door",
+          "enter": [
+            {
+              "scene": "shack_visit"
+            }
+          ]
         },
         {
           "id": "pools",
           "name": "The tide pools",
-          "x": 22,
-          "y": 70,
+          "kind": "spot",
+          "x": 5,
+          "y": 23,
+          "farSight": 4,
           "desc": "Black rocks run out into the sea here, pocked with pools. Weed hangs off everything.",
+          "note": "Rock pools full of mussels, south of the headland.",
           "forage": [
             "mussels",
             "mussels",
@@ -487,17 +514,17 @@
               ],
               "result": "You pick your way out over the weed-slick rocks. Most of the pools are empty, but you prise two handfuls of mussels off the stones before a wave soaks you to the knee."
             }
-          ],
-          "steps": 2,
-          "minutes": 40,
-          "leg": "The road climbs. Gorse closes in on both sides, and the wind gets up as the headland rises ahead."
+          ]
         },
         {
           "id": "headland",
           "name": "The headland",
-          "x": 31,
-          "y": 47,
+          "kind": "spot",
+          "x": 9,
+          "y": 20,
+          "farSight": 3,
           "desc": "The road crests the headland. A sheep track leads off to the very top.",
+          "note": "High ground over the coast road. You can see half of Loran from the top.",
           "choices": [
             {
               "label": "Climb to the top for a look around",
@@ -513,21 +540,17 @@
               "why": "climbing the headland",
               "go": "lookout"
             }
-          ],
-          "steps": 3,
-          "minutes": 45,
-          "leg": "The road drops off the headland and winds inland through rough grazing. Nobody grazes it now.",
-          "beat": "dog",
-          "beatWhen": [
-            "!flag:dog_met"
           ]
         },
         {
           "id": "stream",
           "name": "The stream",
-          "x": 52,
-          "y": 27,
-          "desc": "The road drops into a sheltered dip where a stream runs down to the sea. Bramble bushes crowd the banks. Up ahead, roofs and a crooked harbour light: Skelmed.",
+          "kind": "spot",
+          "x": 9,
+          "y": 16,
+          "farSight": 2,
+          "desc": "The road fords a stream in a sheltered dip. Bramble bushes crowd the banks. Up ahead, roofs and a crooked harbour light: Skelmed.",
+          "note": "Clean water and brambles, just south of Skelmed.",
           "forage": [
             "berries",
             "berries",
@@ -564,17 +587,215 @@
               ],
               "result": "Your hands come away scratched and stained purple, with three good handfuls of blackberries."
             }
-          ],
-          "steps": 2,
-          "minutes": 30,
-          "leg": "The last stretch. The road widens into an old cart track, rutted by wheels that stopped coming years ago."
+          ]
         },
         {
           "id": "skelmed",
           "name": "Skelmed",
-          "x": 66,
-          "y": 9,
-          "desc": "The edge of the village. Grey cottages and a harbour far too big for them."
+          "kind": "village",
+          "x": 8,
+          "y": 14,
+          "farSight": 5,
+          "rumourWhen": [
+            "flag:yenson_road"
+          ],
+          "desc": "The edge of the village. Grey cottages and a harbour far too big for them.",
+          "note": "A fishing village that used to be a busy port. The guild, Garran's smithy and Orlen's cottage are here.",
+          "enterLabel": "Walk into Skelmed",
+          "enter": [
+            {
+              "when": [
+                "!flag:arrived"
+              ],
+              "scene": "skelmed_arrive"
+            },
+            {
+              "scene": "village"
+            }
+          ]
+        },
+        {
+          "id": "quarry",
+          "name": "Garran's quarry",
+          "kind": "quarry",
+          "x": 16,
+          "y": 12,
+          "farSight": 3,
+          "rumourWhen": [
+            "flag:arrived"
+          ],
+          "desc": "A bite out of the hillside, cut in grey steps. Rusted wedges lie where the last crew dropped them.",
+          "note": "Garran's old quarry in the hills east of Skelmed.",
+          "enterLabel": "Look around the quarry",
+          "enter": [
+            {
+              "scene": "quarry_site"
+            }
+          ]
+        },
+        {
+          "id": "hunters_camp",
+          "name": "The hunters' camp",
+          "kind": "camp",
+          "x": 21,
+          "y": 19,
+          "farSight": 2,
+          "rumourWhen": [
+            "flag:arrived"
+          ],
+          "desc": "A ring of stones and a lean-to at the edge of Brackenwood. The ashes are a few days cold.",
+          "note": "Where Skelmed's hunters set out from, on the edge of Brackenwood.",
+          "enterLabel": "Look around the camp",
+          "enter": [
+            {
+              "scene": "hunters_site"
+            }
+          ]
+        },
+        {
+          "id": "brennick",
+          "name": "Brennick",
+          "kind": "town",
+          "x": 27,
+          "y": 16,
+          "farSight": 5,
+          "rumourWhen": [
+            "flag:arrived"
+          ],
+          "desc": "A market town behind a wooden wall, where the trade road meets the north track. Smoke from a hundred chimneys.",
+          "note": "The nearest town, east along the old trade road. The king's tax collector works from here.",
+          "rumour": "Everyone in Skelmed talks about Brennick, the market town east along the trade road.",
+          "enterLabel": "Go up to the town gate",
+          "enter": [
+            {
+              "scene": "brennick_gate"
+            }
+          ]
+        },
+        {
+          "id": "vael_bridge",
+          "name": "Vael Bridge",
+          "kind": "spot",
+          "x": 24,
+          "y": 8,
+          "farSight": 3,
+          "desc": "An old stone bridge over the Vael, three arches wide. Somebody has chiselled the king's crest off the keystone.",
+          "note": "The old stone bridge over the river Vael, on the north track."
+        },
+        {
+          "id": "eskholt",
+          "name": "Eskholt",
+          "kind": "village",
+          "x": 25,
+          "y": 3,
+          "farSight": 4,
+          "desc": "A woodcutters' village of log halls, on the edge of the northern woods. Axes ring somewhere in the trees.",
+          "note": "A woodcutters' village over the Vael.",
+          "enterLabel": "Walk into Eskholt",
+          "enter": [
+            {
+              "scene": "eskholt_edge"
+            }
+          ]
+        },
+        {
+          "id": "harrow",
+          "name": "Harrow Tower",
+          "kind": "ruin",
+          "x": 34,
+          "y": 12,
+          "farSight": 6,
+          "rumourWhen": [
+            "flag:heard_harrow"
+          ],
+          "desc": "A broken watchtower on the crown of the hill. One wall still stands to its full height.",
+          "note": "A ruined watchtower in the Harrow Hills, empty since the king pulled the road patrols.",
+          "rumour": "A carter told you about Harrow Tower, an old watchtower in the hills north of the trade road.",
+          "enterLabel": "Climb up to the tower",
+          "enter": [
+            {
+              "scene": "harrow_tower"
+            }
+          ]
+        },
+        {
+          "id": "gloam_cave",
+          "name": "Gloam Cave",
+          "kind": "cave",
+          "x": 19,
+          "y": 23,
+          "hidden": true,
+          "desc": "A cleft in a mossy bank, half hidden by roots. It smells of animal.",
+          "note": "A cave in Brackenwood. Something lives in it.",
+          "enterLabel": "Look into the cave",
+          "enter": [
+            {
+              "scene": "gloam_cave"
+            }
+          ]
+        },
+        {
+          "id": "old_stones",
+          "name": "The Old Stones",
+          "kind": "stones",
+          "x": 37,
+          "y": 28,
+          "hidden": true,
+          "desc": "A ring of standing stones in a clearing, deep in the forest. The trees don't grow close to them.",
+          "note": "A ring of standing stones deep in the south-eastern forest.",
+          "enterLabel": "Step into the ring",
+          "enter": [
+            {
+              "scene": "old_stones"
+            }
+          ]
+        },
+        {
+          "id": "gullet_cove",
+          "name": "Gullet Cove",
+          "kind": "cove",
+          "x": 11,
+          "y": 31,
+          "hidden": true,
+          "rumourWhen": [
+            "flag:heard_cove"
+          ],
+          "desc": "A narrow cove under the cliffs, with a strip of shingle that can't be seen from the road. There are keel marks in it.",
+          "note": "A hidden cove down the coast. Smugglers land goods here to dodge the king's taxes.",
+          "rumour": "A fisherman said boats come into a cove south of Yenson's place at night.",
+          "enterLabel": "Climb down into the cove",
+          "enter": [
+            {
+              "scene": "gullet_cove"
+            }
+          ]
+        },
+        {
+          "id": "rotwood",
+          "name": "The Rotwood",
+          "kind": "blight",
+          "x": 43,
+          "y": 30,
+          "farSight": 2,
+          "desc": "A grove gone grey and soft. Nothing sings here.",
+          "note": "A blighted grove in the south-eastern forest. The Corruption has reached even here.",
+          "enterLabel": "Go into the grey trees",
+          "enter": [
+            {
+              "scene": "rotwood"
+            }
+          ]
+        }
+      ],
+      "beats": [
+        {
+          "x": 9,
+          "y": 18,
+          "radius": 1,
+          "scene": "dog",
+          "when": [
+            "!flag:dog_met"
+          ]
         }
       ],
       "events": [
@@ -584,6 +805,13 @@
           "weight": 3,
           "when": [
             "!night"
+          ],
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
           ]
         },
         {
@@ -592,29 +820,64 @@
           "weight": 2,
           "when": [
             "!night"
+          ],
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
           ]
         },
         {
           "scene": "ev_purse",
           "kind": "find",
           "weight": 2,
-          "once": true
+          "once": true,
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
+          ]
         },
         {
           "scene": "ev_crate",
           "kind": "find",
           "weight": 3,
-          "once": true
+          "once": true,
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
+          ]
         },
         {
           "scene": "ev_crab",
           "kind": "danger",
-          "weight": 3
+          "weight": 3,
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
+          ]
         },
         {
           "scene": "ev_squall",
           "kind": "weather",
-          "weight": 2
+          "weight": 2,
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
+          ]
         },
         {
           "scene": "ev_fisher",
@@ -624,22 +887,278 @@
           "when": [
             "!night",
             "hour>=6"
+          ],
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
           ]
         },
         {
           "scene": "ev_taint",
           "kind": "danger",
           "weight": 2,
+          "once": true,
+          "terrain": "=,.:b",
+          "area": [
+            0,
+            13,
+            13,
+            35
+          ]
+        },
+        {
+          "scene": "ev_deer",
+          "kind": "meet",
+          "weight": 3,
+          "terrain": ".fh",
+          "when": [
+            "!night"
+          ]
+        },
+        {
+          "scene": "ev_wolf",
+          "kind": "danger",
+          "weight": 3,
+          "terrain": "fx"
+        },
+        {
+          "scene": "ev_mushroom_ring",
+          "kind": "find",
+          "weight": 2,
+          "terrain": "f",
           "once": true
+        },
+        {
+          "scene": "ev_bog",
+          "kind": "weather",
+          "weight": 3,
+          "terrain": "m"
+        },
+        {
+          "scene": "ev_heron",
+          "kind": "meet",
+          "weight": 2,
+          "terrain": "m,",
+          "when": [
+            "!night"
+          ]
+        },
+        {
+          "scene": "ev_rockslide",
+          "kind": "danger",
+          "weight": 2,
+          "terrain": "h"
+        },
+        {
+          "scene": "ev_cairn",
+          "kind": "find",
+          "weight": 2,
+          "terrain": "h",
+          "once": true
+        },
+        {
+          "scene": "ev_carter",
+          "kind": "meet",
+          "weight": 4,
+          "terrain": "=",
+          "area": [
+            12,
+            0,
+            47,
+            35
+          ],
+          "once": true,
+          "when": [
+            "!night"
+          ]
+        },
+        {
+          "scene": "ev_patrol_stone",
+          "kind": "find",
+          "weight": 2,
+          "terrain": "=:",
+          "area": [
+            12,
+            0,
+            47,
+            35
+          ],
+          "once": true
+        },
+        {
+          "scene": "ev_rain",
+          "kind": "weather",
+          "weight": 2,
+          "terrain": ".=:hf"
+        },
+        {
+          "scene": "ev_grey_thing",
+          "kind": "danger",
+          "weight": 4,
+          "terrain": "x"
         }
+      ],
+      "rows": [
+        "~~~~~,..........................................",
+        "~~~~~~,.........................................",
+        "~~~~~~,.........................................",
+        "~~~~~~~,.mmmm............=ffffffff..............",
+        "~~~~~~~,mmmmmmm..........=fffffffff.............",
+        "~~~~~~~,mmmmmm...........=.ffffffff.............",
+        "~~~~~~~,mmmmmm..........=.....f.................",
+        "~~~~rrrrrrrrrrrrr.......=..rrrrrrrrr............",
+        "~~~~rrrrrrrrrrr..rrrrrrrbrr.........rr..........",
+        "~~~~~~~,................=.............rrr.......",
+        "~~~~~~,.................=........hh.h....rrrr...",
+        "~~~~~~,.......hhhhh......=......hhhhhh.......r..",
+        "~~~~~~,......hh::hhh.....=......hhhhh.........rr",
+        "~~~~~,........:hhhh.......=.....hhhhh...........",
+        "~~~~~,..=======.h.........=.......hh............",
+        "~~~~~,..=...rr.=========..=.....................",
+        "~~~~,rrrrbrr.....::.....=======.................",
+        "~~~~,....=.........:...........=============....",
+        "~~~~,....=..........:.......................====",
+        "~~~~,....=hhh......f.:..................hhhh....",
+        "~~~~,....=hhhh....ffffff..............hhhhhhh...",
+        "~~~~,....=hhhh...fffffff..............hhhhhhh...",
+        "~~~~,....=......ffffffff..............hhhhhhh...",
+        "~~~~~,...=.......ffffffff..............hhhh.....",
+        "~~~~~,...=........fffff.........................",
+        "~~~~~~,.=..........fff..............ff.f........",
+        "~~~~~~~,=.........................f..ffff.ff.f..",
+        "~~~~~~~~,.........................fffffffffffff.",
+        "~~~~~~~~~,.......................ffffffffffffff.",
+        "~~~~~~~~~,.....................fffffffffffffffff",
+        "~~~~~~~~~~,...................ffffffffffffxxxxff",
+        "~~~~~~~~~~~,..................ffffffffffffxxxfff",
+        "~~~~~~~~~~~,..................ffffffffffffxxxfff",
+        "~~~~~~~~~~~,.................f.fffffffffffffffff",
+        "~~~~~~~~~~~~,....................ffffffffffffff.",
+        "~~~~~~~~~~~~,..................f.fffffffffffff.."
       ]
     }
   ],
-  "skins": [
-    "Fair",
-    "Light",
-    "Olive",
-    "Brown",
-    "Dark"
+  "terrains": [
+    {
+      "key": "~",
+      "name": "Sea",
+      "cost": 0
+    },
+    {
+      "key": "r",
+      "name": "River",
+      "cost": 0
+    },
+    {
+      "key": "=",
+      "name": "Road",
+      "title": "On the road",
+      "cost": 1,
+      "sight": 3,
+      "danger": 0.8,
+      "desc": "An old road, rutted and patched. Nobody has mended it in years."
+    },
+    {
+      "key": ":",
+      "name": "Track",
+      "title": "On a track",
+      "cost": 1.2,
+      "sight": 3,
+      "danger": 0.9,
+      "desc": "A narrow track, trodden more by boots than wheels."
+    },
+    {
+      "key": "b",
+      "name": "Bridge",
+      "title": "At the crossing",
+      "cost": 1,
+      "sight": 3,
+      "danger": 0.8,
+      "desc": "The water runs loud underneath you."
+    },
+    {
+      "key": ",",
+      "name": "Beach",
+      "title": "On the shore",
+      "cost": 1.5,
+      "sight": 3,
+      "danger": 1,
+      "forage": [
+        "mussels",
+        "mussels",
+        "samphire"
+      ],
+      "desc": "Shingle and wet sand. The sea throws weed and splinters up the beach."
+    },
+    {
+      "key": ".",
+      "name": "Grassland",
+      "title": "In open country",
+      "cost": 1.5,
+      "sight": 3,
+      "danger": 1,
+      "forage": [
+        "berries",
+        "hazelnuts"
+      ],
+      "desc": "Rough grass and gorse. Old field walls run through it, fallen in places. Nobody farms this now."
+    },
+    {
+      "key": "h",
+      "name": "Hills",
+      "title": "In the hills",
+      "cost": 2,
+      "sight": 5,
+      "stamina": 3,
+      "danger": 1,
+      "forage": [
+        "berries"
+      ],
+      "desc": "Bare hills and loose stone. Hard going, but you can see a long way from up here."
+    },
+    {
+      "key": "f",
+      "name": "Forest",
+      "title": "In the forest",
+      "cost": 2.5,
+      "sight": 1,
+      "stamina": 2,
+      "danger": 1.4,
+      "forage": [
+        "mushrooms",
+        "hazelnuts",
+        "berries"
+      ],
+      "desc": "Close trees and dead bracken. You can't see far, and things can't see you either. Mostly."
+    },
+    {
+      "key": "m",
+      "name": "Marsh",
+      "title": "In the marsh",
+      "cost": 3,
+      "sight": 2,
+      "stamina": 4,
+      "danger": 1.1,
+      "forage": [
+        "samphire",
+        "samphire",
+        "mussels"
+      ],
+      "desc": "Reeds, black water and sucking mud. Every step is work."
+    },
+    {
+      "key": "x",
+      "name": "Blighted land",
+      "title": "In blighted land",
+      "cost": 2,
+      "sight": 2,
+      "stamina": 2,
+      "danger": 2,
+      "corruption": 0.15,
+      "desc": "The trees here are grey and soft, and the ground gives under you like something rotten. The mark on your wrist itches."
+    }
   ]
 }

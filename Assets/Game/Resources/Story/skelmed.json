@@ -99,9 +99,9 @@
           "result": "The well water tastes of stone. You drink your fill and top up the skin."
         },
         {
-          "label": "Walk back down the coast road",
+          "label": "Leave the village (open the map)",
           "effects": [
-            "travel:start:coast_road:end"
+            "travel:at:skelmed"
           ]
         }
       ]

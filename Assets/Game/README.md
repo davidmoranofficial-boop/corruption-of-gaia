@@ -79,13 +79,15 @@ Put `!` in front of any condition to flip it.
 
 Gear in `data.json` is the base: name, slot (`weapon`, `offhand`, `body`, `hands`, `trinket`), damage, guard, stamina, and `part` (where a gem sits). Every piece the player gets is its own copy with a rank: F, E, D, C, B, A or S. A higher rank multiplies the numbers and adds traits: none at F, 1 at E and D, 2 at C and B, 3 at A and S. Traits are listed under `traits`, and `materials` say which traits a gem or metal can give (list one more than once to make it likelier).
 
-## Roads and travel
+## The map
 
-Roads live under `routes` in `data.json`. A road has a list of `stops`, each with a map position (`x`, `y` in % of the map), a `desc`, optional `choices` (things to do there, written like scene choices; leave `go` empty to stay on the road) and `forage` items. Each stop also describes the leg to the next stop: how many `steps` it takes, how many `minutes` at a steady pace, the `leg` text, and an optional fixed story `beat` scene (with `beatWhen`, usually a flag so it only happens once).
+Each region is a grid of terrain letters under `regions` in `data.json`, with a matching painted picture in `Resources/Sprites/Maps`. Both are made by `Tools/Art/regions.py` (run `python3 Tools/Art/build.py`), so to reshape the land, edit that script, not the rows. The letters are listed under `terrains`: each has a walking `cost` against a road (0 = can't walk on it), how far you can `sight` from it, extra `stamina` per tile, a `danger` multiplier, `corruption` per tile, and `forage` items.
 
-`events` are scenes that can turn up between stops (`eventChance` % per step). Their `kind` changes the odds: careful walkers find more `find` events and walk into fewer `danger` ones, hurrying does the opposite, and night doubles danger. `once` events happen only once. An event scene sends the player back to the road with `"go": "travel"`.
+`places` sit on tiles: `kind` picks the map icon, `desc` shows while you stand there, `note` is the line in the list of places you know, and `choices` are things to do there without leaving the map. `enter` lists where going in takes you (the first whose `when` holds), labelled by `enterLabel`. A place shows on your map once you've seen it; `farSight` lets it be seen through fog from further off (smoke, lights, towers). `hidden` places only show when you walk right next to them (two tiles at a careful pace). `rumourWhen` marks a place with a ? while its conditions hold, with `rumour` as its line.
 
-`start` and `end` say where walking off each end of the road takes you (the first one whose `when` holds). Start a walk with the effect `travel:start:coast_road` (from the start) or `travel:start:coast_road:end` (from the far end).
+`events` can turn up on each tile walked (`eventChance` %, times the ground's danger). `terrain` limits them to some letters and `area` (x0, y0, x1, y1) to part of the map. Their `kind` changes the odds: careful walkers find more `find` events and walk into fewer `danger` ones, hurrying does the opposite, and night doubles danger. `once` events happen once. An event scene sends the player back to the map with `"go": "travel"`. `beats` are fixed story scenes waiting within `radius` tiles of a spot while their `when` holds.
+
+Effects: `travel:at:<place>` puts the player on the map at a place, `travel:reveal:<tiles>` lights up the map around them, and `travel:chart` lights up every road and every place that isn't hidden.
 
 ## Enemies and combat
 

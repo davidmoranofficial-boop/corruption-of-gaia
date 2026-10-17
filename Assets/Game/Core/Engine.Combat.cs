@@ -100,7 +100,7 @@ namespace Loran.Core
         SceneDef CombatScene()
         {
             var e = data.Enemy(S.enemy);
-            var under = Scene(S.scene) ?? new SceneDef { place = Route?.name };
+            var under = Scene(S.scene) ?? new SceneDef { place = Region?.name };
             var sc = new SceneDef
             {
                 id = "combat",

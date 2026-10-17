@@ -103,13 +103,13 @@
           ]
         },
         {
-          "label": "Set off up the coast road",
+          "label": "Set off (open the map)",
           "need": [
             "flag:y_supplies"
           ],
           "needText": "Yenson hasn't finished talking to you.",
           "effects": [
-            "travel:start:coast_road"
+            "travel:at:shack"
           ]
         }
       ]
@@ -150,9 +150,9 @@
           ]
         },
         {
-          "label": "Head up the coast road towards Skelmed",
+          "label": "Head out (open the map)",
           "effects": [
-            "travel:start:coast_road"
+            "travel:at:shack"
           ]
         }
       ]
@@ -162,12 +162,14 @@
       "place": "The headland",
       "title": "The lie of the land",
       "onEnter": [
-        "flag:lookout"
+        "flag:lookout",
+        "travel:reveal:7"
       ],
       "text": [
         "From the top of the headland you can see Loran laid out to the east: green fields, a dark line of forest to the south, and the glint of a river cutting across the north of the country.",
         "Far off, at the very edge of sight, the sky over the land looks wrong. A faint yellow tint, like a bruise that's started to turn.",
-        "The mark on your wrist feels warm."
+        "The mark on your wrist feels warm.",
+        "You fix the lie of the land in your head: the road, the river, the hills, the woods."
       ],
       "choices": [
         {

@@ -26,14 +26,14 @@ static class Program
         Test("dying in permadeath ends the game", PermaDeath);
         Test("running out of energy makes you collapse", Collapse);
         Test("running out of energy mid-fight kills you", CombatExhaustion);
-        Test("dog fight never breaks, across 500 seeds", DogFights);
+        if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("dog fight never breaks, across 500 seeds", DogFights);
         Test("timing: perfect hits beat mistimed ones, parries block", Timing);
         Test("gear ranks, traits and slots", GearRanks);
         Test("equipment slots: clothes, rings, two hands", Slots);
         Test("walking the coast road", Travel);
         Test("forging: how well you play sets the rank", Forging);
         Test("dev mode quick starts and cheats", DevMode);
-        Test("random play never gets stuck, across 300 seeds", RandomPlay);
+        if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("random play never gets stuck, across 300 seeds", RandomPlay);
         Console.WriteLine(failures == 0 ? "\nAll tests passed." : "\n" + failures + " test(s) failed.");
         return failures == 0 ? 0 : 1;
     }
@@ -77,14 +77,14 @@ static class Program
         Assert(e.S.Count("bread") == 2 && e.S.water == 4, "Yenson should give supplies");
         Pick(e, "Sleep by the fire");
         Assert(e.S.Day == 2 && e.S.Hour == 6, "should wake on day 2 at 06:00, was day " + e.S.Day + " " + Rules.Clock(e.S));
-        Pick(e, "Set off up the coast road");
-        Assert(e.S.scene == "travel", "the coast road should be walked");
-        WalkUntil(e, () => AtStop(e, "tide pools"));
-        Pick(e, "Search the tide pools");
-        WalkUntil(e, () => e.S.scene == "dog");
+        Pick(e, "Set off");
+        Assert(e.S.scene == "travel" && e.Here?.id == "shack", "setting off should put you on the map at the shack");
+        WalkUntil(e, "skelmed", () => e.S.scene == "dog");
         Pick(e, "Throw it some bread");
         Pick(e, "Walk on");
-        WalkUntil(e, () => e.S.scene == "skelmed_arrive");
+        WalkUntil(e, "skelmed", () => AtPlace(e, "skelmed"));
+        Pick(e, "Walk into Skelmed");
+        Assert(e.S.scene == "skelmed_arrive", "the first time into Skelmed should be the arrival scene");
         Pick(e, "village square");
 
         Pick(e, "hunters' lodge");
@@ -106,7 +106,7 @@ static class Program
         Pick(e, "Carry the stone");
         Pick(e, "first gear");
         Pick(e, "with the gem in the pommel");
-        Assert(e.S.scene == "forge" && e.Current.title.Contains("knife"), "making gear should go to the anvil");
+        Assert(e.S.scene == "forge" && e.Current.title.Contains("knife"), "making gear should go to the anvil, was " + e.S.scene + " / " + e.Current.title);
         Pick(e, "Work the forge");
         Assert(e.S.scene == "smith" && e.S.result.Contains("Quality"), "after forging, back to Garran with the quality, was " + e.S.scene);
         var knife = e.S.InSlot("weapon");
@@ -152,7 +152,10 @@ static class Program
         Assert(up.S.stats.Length == 5 && up.S.stats[Stat.Cha] == 3 && up.S.xp.Length == 5, "old saves should gain Charisma");
         var onOldRoad = NewEngine();
         onOldRoad.LoadState(new GameState { scene = "road2", hud = true });
-        Assert(onOldRoad.S.scene == "travel" && onOldRoad.Current.title == "The stream", "saves on the old road scenes should land on the new road");
+        Assert(onOldRoad.S.scene == "travel" && onOldRoad.Current.title == "The stream", "saves on the old road scenes should land on the map, was " + onOldRoad.Current.title);
+        var midRoad = NewEngine();
+        midRoad.LoadState(new GameState { scene = "travel", hud = true, travelRoute = "coast_road", travelAt = 3 });
+        Assert(midRoad.S.scene == "travel" && midRoad.Region != null && midRoad.Here != null && midRoad.S.travelRoute == "", "saves walking the old road should land on the map");
 
         var e = NewEngine();
         ToShack(e);
@@ -169,7 +172,7 @@ static class Program
         Pick(e, "Sleep by the fire");
         int savedTime = e.S.minutes;
         Pick(e, "Set off");
-        WalkUntil(e, () => AtStop(e, "tide pools"));
+        WalkUntil(e, "pools", () => AtPlace(e, "pools"));
         Pick(e, "Search the tide pools");
         e.S.hp = 0;
         e.GoTo(e.S.scene);
@@ -204,7 +207,7 @@ static class Program
         Pick(e, "Set off");
         e.S.energy = 1;
         e.S.coins = 6;
-        Pick(e, "Walk on");
+        StepToward(e, "skelmed");
         Assert(e.S.scene == "collapse", "should collapse, was " + e.S.scene);
         Assert(e.S.coins == 3, "collapsing on the road should cost half your coins, had " + e.S.coins + " result " + e.S.result);
         Pick(e, "Get up");
@@ -216,7 +219,7 @@ static class Program
         var e = NewEngine();
         ToShack(e);
         Walk(e, "What should I do now", "Set off");
-        WalkUntil(e, () => e.S.scene == "dog");
+        WalkUntil(e, "skelmed", () => e.S.scene == "dog");
         Pick(e, "Fight it");
         e.S.energy = 0.5f;
         Pick(e, "Defend");
@@ -232,7 +235,7 @@ static class Program
             var e = NewEngine();
             ToShack(e, seed);
             Walk(e, "What should I do now", "Set off");
-            WalkUntil(e, () => e.S.scene == "dog");
+            WalkUntil(e, "skelmed", () => e.S.scene == "dog");
             Pick(e, "Fight it");
             float hp0 = e.S.hp;
             for (int turn = 0; turn < 60 && e.S.inCombat; turn++)
@@ -257,7 +260,7 @@ static class Program
         var e = NewEngine();
         ToShack(e, seed);
         Walk(e, "What should I do now", "Set off");
-        WalkUntil(e, () => e.S.scene == "dog");
+        WalkUntil(e, "skelmed", () => e.S.scene == "dog");
         Pick(e, "Fight it");
         return e;
     }
@@ -327,51 +330,122 @@ static class Program
         var e = NewEngine();
         ToShack(e);
         Walk(e, "What should I do now", "Sleep by the fire", "Set off");
-        var careful = e.Choices().First(c => c.def.label == "Go carefully").def;
-        var hurry = e.Choices().First(c => c.def.label == "Hurry").def;
+        var r = e.Region;
+        Assert(r != null && e.Here?.id == "shack", "should be on the map at the shack");
+        Assert(e.PlaceState(Place(e, "skelmed")) == "rumoured", "Yenson's directions should put Skelmed on the map as a rumour");
+        Assert(!e.Known(30, 30), "far-off ground should start in fog");
+
+        // Paces
+        var step = e.PathTo(8, 14, out _)[0];
+        e.SetPace(0); var careful = e.StepChoice(step.x, step.y);
+        e.SetPace(2); var hurry = e.StepChoice(step.x, step.y);
+        e.SetPace(1);
         Assert(careful.time > hurry.time && hurry.stamina > careful.stamina, "hurrying should be faster but cost more stamina");
+        Assert(e.StepChoice(e.S.mapX - 3, e.S.mapY) == null, "you can only step to a neighbouring tile");
+        Assert(e.StepChoice(e.S.mapX - 2, e.S.mapY) == null && !e.Passable(r, 6, 26), "you can't walk into the sea");
+
+        // The coast road to Skelmed: a couple of hours, past the wolf
         int t0 = e.S.minutes;
-        WalkUntil(e, () => e.S.scene == "dog");
+        WalkUntil(e, "skelmed", () => e.S.scene == "dog");
         Pick(e, "Throw it some bread");
         Pick(e, "Walk on");
-        WalkUntil(e, () => e.S.scene == "skelmed_arrive");
+        WalkUntil(e, "skelmed", () => AtPlace(e, "skelmed"));
         Assert(e.S.minutes - t0 >= 120, "the walk should take a couple of hours, took " + (e.S.minutes - t0) + " min");
-        Assert(e.S.travelRoute == "", "arriving should end the walk");
+        Assert(e.PlaceState(Place(e, "skelmed")) == "visited", "Skelmed should now be visited");
+        Assert(e.PlaceState(Place(e, "gullet_cove")) == "unknown", "hidden places shouldn't show without looking");
+        Pick(e, "Walk into Skelmed");
+        Assert(e.S.scene == "skelmed_arrive", "should arrive in Skelmed");
 
-        // Back the other way, turn round halfway, and turn round again
+        // Back out onto the map, and down to the shack again
         Pick(e, "village square");
-        Pick(e, "Walk back down the coast road");
-        Assert(e.S.scene == "travel" && e.S.travelDir == -1, "should start at the Skelmed end facing back");
-        Pick(e, "Walk on");
-        Pick(e, "Turn back");
-        Assert(e.S.travelDir == 1, "turning round should face Skelmed again");
-        Pick(e, "Turn back");
-        WalkUntil(e, () => e.S.scene == "shack_visit");
+        Pick(e, "Leave the village");
+        Assert(e.S.scene == "travel" && e.Here?.id == "skelmed", "leaving should put you on the map at Skelmed");
+        Assert(e.PlaceState(Place(e, "brennick")) == "rumoured", "people in Skelmed talk about Brennick");
+        WalkUntil(e, "shack", () => AtPlace(e, "shack"));
+        Pick(e, "Yenson's door");
+        Assert(e.S.scene == "shack_visit", "should be back at Yenson's");
 
         // Camping saves the game
-        Pick(e, "Head up the coast road");
-        Pick(e, "Walk on");
-        if (e.S.scene != "travel") WalkUntil(e, () => e.S.scene == "travel");
+        Pick(e, "Head out");
         e.S.lastSleep = "";
         Pick(e, "Make camp");
         Assert(e.S.lastSleep != "" && e.S.Hour == 6, "camping should sleep until morning and save");
 
+        // The river can only be crossed at the bridge
+        var seenAll = NewEngine();
+        seenAll.DevStart("map");
+        var north = seenAll.PathTo(25, 3, out _);
+        Assert(north != null && north.Contains((24, 8)), "the way north should cross Vael Bridge: " + (north == null ? "none" : string.Join(" ", north)));
+
+        // Hidden places turn up when you walk next to them
+        WalkUntil(e, "gullet_cove", () => e.PlaceState(Place(e, "gullet_cove")) != "unknown", toTile: true);
+        Assert(e.Found(Place(e, "gullet_cove")), "walking up to the cove should find it");
+
+        // The lookout lights up the land around the headland; the patrol map charts the roads
+        var look = NewEngine();
+        look.DevStart("road");
+        look.S.mapX = 9; look.S.mapY = 20;
+        look.Jump("lookout");
+        Assert(look.Known(9, 13) && look.Known(15, 22), "the view from the headland should reveal the land around");
+        look.Jump("travel");
+        look.Jump("harrow_tower");
+        Pick(look, "Search the guardroom");
+        Assert(look.Found(Place(look, "eskholt")) && !look.Found(Place(look, "old_stones")) && look.Known(40, 17), "the patrol map should show roads and villages, not hidden places");
+
+        // Blighted ground feeds the corruption
+        var rot = NewEngine();
+        rot.DevStart("map");
+        rot.S.mapX = 41; rot.S.mapY = 30;
+        float c0 = rot.S.corruption;
+        rot.Choose(rot.StepChoice(42, 30));
+        Assert(rot.S.corruption > c0 + 0.1f, "walking on blighted land should raise corruption");
+
+        // Every place you can go into leads back out onto the map
+        foreach (var p in seenAll.Region.places.Where(p => p.enter.Count > 0))
+        {
+            var v = NewEngine();
+            v.DevStart("map");
+            v.S.coins = 20;
+            v.S.mapX = p.x; v.S.mapY = p.y;
+            v.GoTo("travel");
+            Assert(v.Here?.id == p.id, "should be standing at " + p.name);
+            v.Choose(v.Choices().First(c => c.def.effects.Contains("travel:enter")).def);
+            Assert(v.S.scene != "travel", "going into " + p.name + " should open its scene");
+            for (int i = 0; i < 30 && v.S.scene != "travel" && v.S.scene != "death"; i++)
+            {
+                if (v.S.inCombat) { v.DevWinFight(); continue; }
+                var opts = v.Choices().Where(c => c.enabled).ToList();
+                if (p.id == "skelmed" || p.id == "shack")
+                {
+                    var leave = opts.FirstOrDefault(c => c.def.effects.Any(x => x.StartsWith("travel:at:")));
+                    if (leave == null) break;
+                    v.Choose(leave.def);
+                    continue;
+                }
+                v.Choose(opts.Last().def);
+            }
+            Assert(p.id == "skelmed" || v.S.scene == "travel", "leaving " + p.name + " should go back to the map, was " + v.S.scene);
+        }
+
         // Different walks turn up different things
         var seen = new HashSet<string>();
-        for (int seed = 0; seed < 120; seed++)
+        for (int seed = 0; seed < 150; seed++)
         {
             var w = NewEngine();
             ToShack(w, seed);
             Walk(w, "What should I do now", "Sleep by the fire", "Set off");
-            for (int i = 0; i < 80 && w.S.scene != "skelmed_arrive"; i++)
+            string goal = seed % 3 == 0 ? "skelmed" : seed % 3 == 1 ? "old_stones" : "eskholt";
+            for (int i = 0; i < 400 && !AtPlace(w, goal) && w.S.scene != "death"; i++)
             {
                 if (w.S.scene.StartsWith("ev_")) seen.Add(w.S.scene);
+                if (w.S.scene == "collapse") { Pick(w, "Get up"); continue; }
                 if (w.S.scene == "dog") { Pick(w, "Back away"); continue; }
-                StepRoad(w);
+                if (w.S.scene == "travel" && w.S.energy < 25) { Pick(w, "Make camp"); continue; }
+                StepToward(w, goal);
             }
         }
-        Console.WriteLine("    road events seen: " + string.Join(", ", seen.OrderBy(x => x)));
-        Assert(seen.Count >= 7, "most road events should turn up across many walks");
+        Console.WriteLine("    events seen: " + string.Join(", ", seen.OrderBy(x => x)));
+        Assert(seen.Count >= 12, "most events should turn up across many walks");
     }
 
     static void Forging()
@@ -404,7 +478,7 @@ static class Program
     {
         var expect = new Dictionary<string, string>
         {
-            { "village", "village" }, { "road", "travel" }, { "forge_first", "smith_craft" }, { "forge_iron", "smith_forge" },
+            { "village", "village" }, { "road", "travel" }, { "map", "travel" }, { "forge_first", "smith_craft" }, { "forge_iron", "smith_forge" },
             { "dog", "dog" }, { "crab", "ev_crab" }, { "stone", "stone" }, { "shack", "shack" },
         };
         foreach (var (id, _) in Engine.DevStarts)
@@ -430,30 +504,40 @@ static class Program
         foreach (var id in d.AllScenes.ToList()) { var j = NewEngine(); j.DevStart("village"); j.Jump(id); Assert(j.S.scene != "", "jump to " + id); }
     }
 
-    static bool AtStop(Engine e, string name)
-    {
-        if (e.S.scene != "travel") return false;
-        int i = e.StopIndexAt(e.Route, e.S.travelAt);
-        return i >= 0 && e.Route.stops[i].name.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0;
-    }
+    static PlaceDef Place(Engine e, string id) => e.data.Place(id).place;
 
-    /// <summary>One step of walking: on the road walk on, in a fight attack, at a road event take its last (move on) option.</summary>
-    static void StepRoad(Engine e)
+    static bool AtPlace(Engine e, string id) => e.S.scene == "travel" && e.Here?.id == id;
+
+    /// <summary>
+    /// One step of walking towards a place: on the map step along the quickest path, in a fight attack,
+    /// at an event take its last (move on) option.
+    /// </summary>
+    static void StepToward(Engine e, string placeId)
     {
         if (e.S.inCombat)
         {
             var a = e.Choices().First(c => c.def.label == "Attack");
             e.Act(a.enabled ? a.def : e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
         }
-        else if (e.S.scene == "travel") Pick(e, "Walk on");
-        else if (e.S.scene.StartsWith("ev_") || e.S.scene.StartsWith("dog_")) e.Choose(e.Choices().Where(c => c.enabled).Last().def);
+        else if (e.S.scene == "travel")
+        {
+            var p = Place(e, placeId);
+            var path = e.PathTo(p.x, p.y, out _);
+            if (path == null || path.Count == 0) throw new Exception("no path to " + placeId + " from " + e.S.mapX + "," + e.S.mapY);
+            var step = e.StepChoice(path[0].x, path[0].y);
+            for (int i = 0; i < 10 && e.S.stamina < step.stamina; i++) e.CatchBreath();
+            if (Environment.GetEnvironmentVariable("TRACE") == "2") Console.WriteLine("      step " + path[0] + " " + step.time + "min st" + step.stamina + " energy " + e.S.energy.ToString("0.0") + " stam " + e.S.stamina.ToString("0") + " " + Rules.Clock(e.S));
+            e.Choose(step);
+        }
+        else if (e.S.scene.StartsWith("ev_") || e.S.scene.StartsWith("dog_") || e.S.scene == "collapse")
+            e.Choose(e.Choices().Where(c => c.enabled).Last().def);
         else throw new Exception("walking stopped in " + e.S.scene + ": " + e.S.result);
     }
 
-    static void WalkUntil(Engine e, Func<bool> done)
+    static void WalkUntil(Engine e, string placeId, Func<bool> done, bool toTile = false)
     {
-        for (int i = 0; i < 80 && !done(); i++) StepRoad(e);
-        if (!done()) throw new Exception("never got there; stuck in " + e.S.scene);
+        for (int i = 0; i < 300 && !done(); i++) StepToward(e, placeId);
+        if (!done()) throw new Exception("never got there; stuck in " + e.S.scene + " at " + e.S.mapX + "," + e.S.mapY);
     }
 
     static void RandomPlay()
@@ -489,6 +573,18 @@ static class Program
                     if (food != null) { e.Eat(food.id); continue; }
                 }
                 if (r == 2 && e.FreeToAct) { e.Drink(); e.DrawWater(); continue; }
+                if (e.Travelling && r >= 3 && r <= 7)
+                {
+                    // Walk towards somewhere: mostly Skelmed, sometimes anywhere on the map
+                    var places = e.Region.places;
+                    var goal = r <= 5 ? places.First(p => p.id == "skelmed") : places[rng.Next(places.Count)];
+                    var path = e.PathTo(goal.x, goal.y, out _);
+                    if (path != null && path.Count > 0)
+                    {
+                        var walk = e.StepChoice(path[0].x, path[0].y);
+                        if (e.S.stamina >= walk.stamina) { e.Choose(walk); continue; }
+                    }
+                }
                 e.Choose(opts[rng.Next(opts.Count)].def);
                 Rules.Clamp(e.S, e.data);
                 Assert(!float.IsNaN(e.S.hp) && e.S.corruption >= 0 && e.S.corruption <= 100, "numbers out of range in " + e.S.scene);
@@ -586,7 +682,7 @@ static class Program
     static void Test(string name, Action body)
     {
         try { body(); Console.WriteLine("PASS " + name); }
-        catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + "\n    " + ex.Message); }
+        catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + "\n    " + ex.Message); if (Environment.GetEnvironmentVariable("STACK") == "1") Console.WriteLine(ex.StackTrace); }
     }
 
     static void Assert(bool ok, string message)

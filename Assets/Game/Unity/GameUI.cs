@@ -100,6 +100,8 @@ namespace Loran.UnityLayer
             mainBox.RegisterCallback<GeometryChangedEvent>(_ =>
             {
                 if (InBattle && !busy && timing == null && Mathf.Abs(BattleHeight() - battleHeight) > 4f) Render();
+                else if (engine.Travelling && !busy && walkTarget == null && openMenu == ""
+                         && (Mathf.Abs(TravelHeight() - travelSize.y) > 4f || Mathf.Abs(TravelWidth() - travelSize.x) > 4f)) Render();
             });
 
             menuBar = new VisualElement();
@@ -741,7 +743,7 @@ namespace Loran.UnityLayer
         void Pick(ChoiceView cv)
         {
             if (!cv.enabled || busy) return;
-            if (engine.Travelling && cv.def.effects.Count > 0 && cv.def.effects[0].StartsWith("travel:walk:")) { WalkStep(cv); return; }
+            if (walkTarget != null) return;
             engine.Choose(cv.def);
             AfterAction();
         }
@@ -764,6 +766,7 @@ namespace Loran.UnityLayer
             }
             if (InBattle) { BattleKey(e); e.StopPropagation(); return; }
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
+            if (engine.Travelling && openMenu == "" && TravelKey(e)) { e.StopPropagation(); return; }
             if (e.keyCode == KeyCode.Escape && openMenu != "") { openMenu = ""; Render(); e.StopPropagation(); return; }
             if (menuBar.resolvedStyle.display == DisplayStyle.Flex)
                 foreach (var m in Menus)

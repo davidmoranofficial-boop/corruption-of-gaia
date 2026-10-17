@@ -1,0 +1,722 @@
+{
+  "scenes": [
+    {
+      "id": "quarry_site",
+      "place": "Garran's quarry",
+      "title": "The quarry",
+      "text": [
+        "Grey steps cut into the hillside, and a pool of rainwater at the bottom. The winch has rotted through. Somebody's left a pick handle wedged in a crack, as if they meant to come back for it."
+      ],
+      "choices": [
+        {
+          "label": "Climb back out",
+          "go": "travel"
+        }
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:smith_mined"
+          ],
+          "text": "Your own pick marks are still bright on the rock face."
+        }
+      ]
+    },
+    {
+      "id": "hunters_site",
+      "place": "Brackenwood",
+      "title": "The hunters' camp",
+      "text": [
+        "A lean-to of poles and bracken, a fire ring, and a rack for drying meat with nothing on it. Tracks lead off into the trees in every direction."
+      ],
+      "choices": [
+        {
+          "label": "Rest under the lean-to for a while",
+          "time": 60,
+          "effects": [
+            "stamina+40"
+          ],
+          "result": "You sit with your back to a pole and listen to the wood. Your legs stop aching."
+        },
+        {
+          "label": "Leave the camp",
+          "go": "travel"
+        }
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:hunt_done"
+          ],
+          "text": "Ida's mark is cut into the post now. Yours is next to it."
+        }
+      ]
+    },
+    {
+      "id": "brennick_gate",
+      "place": "Brennick",
+      "title": "The gate",
+      "text": [
+        "The trade road ends at a wooden wall and a gate with two guards in faded royal blue. A line of carts waits to get in. Every one of them is being searched, and every one of them is paying.",
+        "\"Toll's five,\" says the guard, without looking at you. \"King's levy. No coin, no market.\""
+      ],
+      "choices": [
+        {
+          "label": "Pay the toll and go in (5 coins)",
+          "need": [
+            "coins>=5"
+          ],
+          "needText": "You haven't got five coins.",
+          "go": "brennick_gate_back"
+        },
+        {
+          "label": "Ask the carters what's going on",
+          "time": 10,
+          "effects": [
+            "flag:heard_harrow"
+          ],
+          "result": "\"Tax collector's in town,\" a carter mutters. \"Third time this season. Used to be the road patrols kept the bandits off us, out of Harrow Tower. Now the tower's empty and we pay twice: once to the king, once to whoever's waiting in the hills.\""
+        },
+        {
+          "label": "Turn back down the road",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "brennick_gate_back",
+      "place": "Brennick",
+      "title": "Not yet",
+      "text": [
+        "The guard holds out his hand for the coins, then stops. A shout goes up further in, and the gate swings shut in your face. \"Collector's business,\" he says. \"Come back another day.\"",
+        "(Brennick is the next part of the story and isn't built yet. Your coins are safe.)"
+      ],
+      "choices": [
+        {
+          "label": "Back to the map",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "eskholt_edge",
+      "place": "Eskholt",
+      "title": "Eskholt",
+      "text": [
+        "Log halls with turf roofs, stacked timber, and the smell of resin. A woman splitting wood stops to watch you come in, axe resting on her shoulder.",
+        "\"Long way from the coast,\" she says. \"We don't get many. We don't want many either, not since the tax men started coming over the bridge.\""
+      ],
+      "choices": [
+        {
+          "label": "Ask about the woods",
+          "time": 10,
+          "result": "\"Keep to the paths. There's things in the deep woods that weren't there when my father cut them. Grey things. Wrong things.\" She goes back to her wood."
+        },
+        {
+          "label": "Head back over the Vael",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "harrow_tower",
+      "place": "Harrow Hills",
+      "title": "Harrow Tower",
+      "text": [
+        "The tower was built to watch the trade road. You can see why: from up here the road runs east and west like a seam, and Brennick's smoke rises in the south.",
+        "Inside is a ruin of fallen floors and bird droppings. A rusted bracket by the door still holds the stub of a royal pennant."
+      ],
+      "choices": [
+        {
+          "label": "Search the guardroom",
+          "when": [
+            "!flag:harrow_searched"
+          ],
+          "time": 30,
+          "stamina": 8,
+          "energy": 1,
+          "train": [
+            "int+1"
+          ],
+          "why": "searching the ruins",
+          "effects": [
+            "flag:harrow_searched",
+            "travel:chart",
+            "coins+6"
+          ],
+          "result": "Under a fallen beam you find a patrol box, its lock long broken. Six old coins, and a patrol map drawn on oilcloth: every road and village in this corner of Loran. You copy it into your memory as best you can."
+        },
+        {
+          "label": "Look out from the top",
+          "time": 20,
+          "stamina": 6,
+          "effects": [
+            "travel:reveal:8"
+          ],
+          "result": "You climb the stair that's left and look out across the hills. The land opens up around you."
+        },
+        {
+          "label": "Climb back down",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "gloam_cave",
+      "place": "Brackenwood",
+      "title": "Gloam Cave",
+      "text": [
+        "The cleft opens into a low cave. Bones are scattered over the floor, picked clean, and the air is warm with the stink of animal. Something breathes in the dark at the back.",
+        "Two yellow eyes open."
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:dog:gloam_won:gloam_fled"
+          ]
+        },
+        {
+          "label": "Back out, slowly",
+          "effects": [
+            "check:agi:45:gloam_out:gloam_fight"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gloam_fight",
+      "place": "Brackenwood",
+      "title": "Too slow",
+      "text": [
+        "A stone turns under your heel. The wolf comes out of the dark like it was thrown."
+      ],
+      "choices": [
+        {
+          "label": "Fight",
+          "effects": [
+            "combat:dog:gloam_won:gloam_fled"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gloam_out",
+      "place": "Brackenwood",
+      "title": "Out",
+      "text": [
+        "You back out into the daylight one step at a time. The eyes don't follow. Not yet."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "gloam_won",
+      "place": "Brackenwood",
+      "title": "The den",
+      "text": [
+        "The wolf lies still. Further in, under a shelf of rock, the bones of a traveller and a rotted pack. There's still something in it."
+      ],
+      "choices": [
+        {
+          "label": "Search the pack",
+          "when": [
+            "!flag:gloam_pack"
+          ],
+          "effects": [
+            "flag:gloam_pack",
+            "coins+9",
+            "item:bread+1"
+          ],
+          "result": "Nine coins in a twist of cloth, and a heel of bread hard as wood. Whoever it was, they didn't make it to Brennick.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave the cave",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "gloam_fled",
+      "place": "Brackenwood",
+      "title": "Away",
+      "text": [
+        "You run until the trees thin and your lungs burn. Nothing follows."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "old_stones",
+      "place": "The south-eastern forest",
+      "title": "The Old Stones",
+      "text": [
+        "Nine stones stand in a ring, taller than a man, furred with lichen. The air between them is still and cool, and quiet in a way the rest of the forest isn't.",
+        "The itch in your wrist fades while you stand here."
+      ],
+      "choices": [
+        {
+          "label": "Sit in the ring a while",
+          "when": [
+            "!flag:stones_rest"
+          ],
+          "time": 60,
+          "train": [
+            "int+2"
+          ],
+          "why": "sitting among the Old Stones",
+          "effects": [
+            "flag:stones_rest",
+            "corruption-0.5"
+          ],
+          "result": "You sit with your back against the coldest stone. For an hour your head is clearer than it's been since the storm. When you stand, the mark on your wrist looks a shade paler."
+        },
+        {
+          "label": "Leave the ring",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "gullet_cove",
+      "place": "The coast",
+      "title": "Gullet Cove",
+      "text": [
+        "A slot of shingle between two cliffs, invisible from the road. Keel marks run up the stones, and someone has buried a fire pit under a flat rock.",
+        "Barrels are stacked in a crack in the cliff, roped and tarred. They're not fishermen's barrels."
+      ],
+      "choices": [
+        {
+          "label": "Break one open",
+          "when": [
+            "!flag:cove_barrel"
+          ],
+          "time": 15,
+          "stamina": 6,
+          "effects": [
+            "flag:cove_barrel",
+            "item:fish+2",
+            "coins+3"
+          ],
+          "result": "Smoked fish packed in salt, and a few coins someone tucked between the layers. Untaxed, all of it. Whoever owns these won't be happy."
+        },
+        {
+          "label": "Climb back up",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "rotwood",
+      "place": "The south-eastern forest",
+      "title": "The Rotwood",
+      "text": [
+        "The trees here have gone grey. Their bark peels like wet paper and the leaves hang limp in air that doesn't move. Things have died here and not rotted properly.",
+        "In the middle of the grove the ground has split. Something pale is growing out of the crack."
+      ],
+      "choices": [
+        {
+          "label": "Burn the growth",
+          "need": [
+            "item:flint"
+          ],
+          "needText": "You'd need a way to light a fire.",
+          "when": [
+            "!flag:rotwood_burnt"
+          ],
+          "time": 30,
+          "stamina": 10,
+          "energy": 2,
+          "effects": [
+            "flag:rotwood_burnt",
+            "corruption-0.3"
+          ],
+          "result": "It goes up with a smell like burnt hair, screaming faintly, or maybe that's the sap. The grey doesn't leave the trees. But the crack in the ground stops spreading."
+        },
+        {
+          "label": "Get out of here",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_deer",
+      "place": "Out in the wilds",
+      "title": "Deer",
+      "text": [
+        "A deer lifts its head from the grass a stone's throw away. It watches you, ears turning, then goes back to grazing."
+      ],
+      "choices": [
+        {
+          "label": "Stalk closer",
+          "time": 20,
+          "stamina": 8,
+          "train": [
+            "agi+1"
+          ],
+          "why": "stalking deer",
+          "result": "You get within twenty paces before a twig cracks. It's gone in three bounds. Still, you're getting quieter.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it be",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_wolf",
+      "place": "Out in the wilds",
+      "title": "Yellow eyes",
+      "text": [
+        "The birds stop. Between the trunks ahead, low to the ground, a pair of yellow eyes. The wolf is thin, and it's not afraid of you."
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:dog:ev_wolf_won:travel"
+          ]
+        },
+        {
+          "label": "Throw it some bread",
+          "when": [
+            "item:bread"
+          ],
+          "effects": [
+            "item:bread-1"
+          ],
+          "result": "It snatches the bread and melts back into the trees.",
+          "go": "travel"
+        },
+        {
+          "label": "Back away",
+          "effects": [
+            "check:agi:35:ev_wolf_gone:ev_wolf_attacks"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ev_wolf_gone",
+      "place": "Out in the wilds",
+      "title": "Gone",
+      "text": [
+        "You back off until the eyes are lost in the shadows. You don't turn your back on that spot for a long while."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_wolf_attacks",
+      "place": "Out in the wilds",
+      "title": "It comes",
+      "text": [
+        "It doesn't let you go."
+      ],
+      "choices": [
+        {
+          "label": "Fight",
+          "effects": [
+            "combat:dog:ev_wolf_won:travel"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ev_wolf_won",
+      "place": "Out in the wilds",
+      "title": "Still",
+      "text": [
+        "The wolf lies in the leaves. Up close it's mostly bone, with yellow crust at the corners of its eyes. It was starving."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_mushroom_ring",
+      "place": "The forest",
+      "title": "A fairy ring",
+      "text": [
+        "A ring of pale mushrooms in a clearing, perfectly round. Your grandmother would have said not to step inside."
+      ],
+      "choices": [
+        {
+          "label": "Pick the ones outside the ring",
+          "time": 15,
+          "effects": [
+            "item:mushrooms+3"
+          ],
+          "result": "Three handfuls of field mushrooms, and you keep your feet out of the ring.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave them",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_bog",
+      "place": "The marsh",
+      "title": "Sucked in",
+      "text": [
+        "Your foot goes through the crust and the bog takes you to the thigh. It's cold, and it pulls."
+      ],
+      "choices": [
+        {
+          "label": "Haul yourself out",
+          "stamina": 15,
+          "train": [
+            "str+1"
+          ],
+          "why": "dragging yourself out of a bog",
+          "effects": [
+            "energy-3"
+          ],
+          "result": "You get a grip on a tussock and drag yourself free, filthy and shaking.",
+          "go": "travel"
+        },
+        {
+          "label": "Lie flat and wriggle out slowly",
+          "time": 30,
+          "train": [
+            "int+1"
+          ],
+          "why": "keeping your head",
+          "result": "You spread your weight and inch out like a seal. It takes half an hour, but it works.",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_heron",
+      "place": "The marsh",
+      "title": "A heron",
+      "text": [
+        "A grey heron stands in the shallows, still as a post. It spears a fish, swallows it, and lifts off with slow, creaking wingbeats."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_rockslide",
+      "place": "The hills",
+      "title": "Loose stone",
+      "text": [
+        "The slope shifts under you. Stones start to slide, then more, rattling down the hill."
+      ],
+      "choices": [
+        {
+          "label": "Jump clear",
+          "effects": [
+            "check:agi:40:ev_rockslide_clear:ev_rockslide_hit"
+          ]
+        },
+        {
+          "label": "Drop and cover your head",
+          "effects": [
+            "hp-6"
+          ],
+          "result": "Stones bounce off your back and arms. It stops. You're bruised all over.",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_rockslide_clear",
+      "place": "The hills",
+      "title": "Clear",
+      "text": [
+        "You throw yourself sideways and the slide roars past where you were standing."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_rockslide_hit",
+      "place": "The hills",
+      "title": "Caught",
+      "text": [
+        "Your foot slips as you jump. A stone the size of a loaf catches your leg."
+      ],
+      "choices": [
+        {
+          "label": "Get up",
+          "effects": [
+            "hp-12"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_cairn",
+      "place": "The hills",
+      "title": "A cairn",
+      "text": [
+        "A heap of stones on the hilltop, piled by hand a long time ago. Travellers used to add one as they passed, for luck."
+      ],
+      "choices": [
+        {
+          "label": "Add a stone",
+          "time": 5,
+          "result": "You add your stone to the pile. It doesn't feel like much. It feels like something.",
+          "go": "travel"
+        },
+        {
+          "label": "Look inside",
+          "time": 15,
+          "effects": [
+            "coins+2"
+          ],
+          "result": "Wedged between the stones: two old coins someone left for luck. Now they're your luck.",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_carter",
+      "place": "The trade road",
+      "title": "A carter",
+      "text": [
+        "An old man leads a mule and an empty cart west along the road. He nods to you and doesn't stop until you fall in beside him."
+      ],
+      "choices": [
+        {
+          "label": "Ask him about the road",
+          "time": 15,
+          "effects": [
+            "flag:heard_harrow"
+          ],
+          "result": "\"Bandits in the Harrow Hills,\" he says. \"Used to be the king's patrol in the old tower up there, Harrow Tower. Kept the road clean. King pulled them out to collect taxes instead. Now look at it.\" He spits.",
+          "go": "travel"
+        },
+        {
+          "label": "Nod and walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_patrol_stone",
+      "place": "The road",
+      "title": "A milestone",
+      "text": [
+        "A milestone by the road, the distances worn smooth. Somebody has scratched new words over the king's crest: NO MORE."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_rain",
+      "place": "Out in the wilds",
+      "title": "Rain",
+      "text": [
+        "The sky closes over and the rain comes in sideways, cold and steady."
+      ],
+      "choices": [
+        {
+          "label": "Find shelter and wait it out",
+          "time": 45,
+          "result": "You crouch under what cover there is until it passes. You're cold, but not soaked.",
+          "go": "travel"
+        },
+        {
+          "label": "Keep walking",
+          "effects": [
+            "thirst+10",
+            "energy-2"
+          ],
+          "result": "You put your head down and walk. At least you're not thirsty.",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_grey_thing",
+      "place": "Blighted land",
+      "title": "Something grey",
+      "text": [
+        "Something moves between the dead trees. It might once have been a deer. It walks wrong, and it has too many joints in its neck, and it's coming towards you."
+      ],
+      "choices": [
+        {
+          "label": "Run",
+          "effects": [
+            "check:agi:40:ev_grey_away:ev_grey_touch"
+          ]
+        },
+        {
+          "label": "Stand still and let it pass",
+          "effects": [
+            "corruption+0.2"
+          ],
+          "result": "It passes close enough to touch. It smells like a cellar. The mark on your wrist burns, and you don't breathe until it's gone.",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_grey_away",
+      "place": "Blighted land",
+      "title": "Away",
+      "text": [
+        "You run, and it doesn't follow. Maybe it can't."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ev_grey_touch",
+      "place": "Blighted land",
+      "title": "Touched",
+      "text": [
+        "It's faster than it looks. A grey muzzle brushes your arm before you tear free, and the skin there goes cold and numb."
+      ],
+      "choices": [
+        {
+          "label": "Get away from here",
+          "effects": [
+            "corruption+0.4",
+            "hp-5"
+          ],
+          "go": "travel"
+        }
+      ]
+    }
+  ]
+}

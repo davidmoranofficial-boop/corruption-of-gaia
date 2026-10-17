@@ -1004,140 +1004,205 @@
     white-space: normal;
 }
 
-/* ---------- travel ---------- */
+/* ---------- travel: the region map ---------- */
 
 .travel {
     flex-direction: row;
     width: 100%;
-    max-width: 1500px;
     align-items: flex-start;
 }
 
-.route-map {
-    width: 540px;
-    height: 720px;
+.map-view {
     flex-shrink: 0;
-    margin-right: 40px;
-    background-color: #17241c;
-    border-width: 1px;
-    border-color: var(--line);
-    border-radius: 10px;
+    margin-right: 28px;
     overflow: hidden;
+    background-color: #0e1619;
+    border-width: 2px;
+    border-color: var(--line);
+    border-radius: 6px;
 }
 
-.route-night {
-    background-color: #0c1410;
+.map-layer {
+    position: absolute;
+    -unity-background-scale-mode: stretch-to-fill;
 }
 
-.route-night .sea { background-color: #0a1a22; }
-.route-night .stop-label { color: #6f7d78; }
-
-.sea {
+.map-night, .map-fog, .map-paths {
     position: absolute;
     left: 0;
-    background-color: #12323d;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-background-scale-mode: stretch-to-fill;
 }
 
-.sea-label {
+.map-night { background-color: rgba(8, 14, 34, 0.45); }
+
+.map-icon {
     position: absolute;
-    left: 14px;
-    top: 50%;
-    font-size: 14px;
-    letter-spacing: 4px;
-    color: #3f7480;
+    -unity-background-scale-mode: stretch-to-fill;
 }
 
-.trail-dot {
+.map-label {
     position: absolute;
-    width: 6px;
-    height: 6px;
-    margin-left: -3px;
-    margin-top: -3px;
-    border-radius: 3px;
-    background-color: #5c5a44;
-}
-
-.trail-walked {
-    background-color: var(--lantern);
-}
-
-.stop-node {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    margin-left: -10px;
-    margin-top: -10px;
-    border-radius: 10px;
-    border-width: 3px;
-    border-color: var(--text);
-    background-color: #17241c;
-}
-
-.stop-here {
-    border-color: var(--lantern);
-    background-color: var(--lantern);
-}
-
-.stop-label {
-    position: absolute;
-    font-size: 17px;
-    color: var(--text);
+    font-size: 15px;
     -unity-font-style: bold;
+    color: var(--text);
+    background-color: rgba(13, 23, 27, 0.78);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
 }
 
-.you-marker {
+.map-label-seen { color: #c9bfa6; -unity-font-style: normal; }
+.map-label-rumour { color: var(--lantern); -unity-font-style: italic; }
+
+.map-hover {
     position: absolute;
-    width: 26px;
-    height: 26px;
-    margin-left: -13px;
-    margin-top: -13px;
-    border-radius: 13px;
-    border-width: 3px;
-    border-color: #ffffff;
-    background-color: var(--blood);
+    border-width: 2px;
+    border-color: rgba(232, 220, 194, 0.7);
 }
+
+.map-dot {
+    position: absolute;
+    background-color: var(--lantern);
+    border-width: 1px;
+    border-color: #3a2a12;
+}
+
+.map-dot-fog { background-color: #8a7a5a; }
+
+.map-you {
+    position: absolute;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.map-tip {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    font-size: 18px;
+    color: var(--text);
+    background-color: rgba(13, 23, 27, 0.88);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 5px;
+    padding: 6px 12px;
+}
+
+.map-hint {
+    position: absolute;
+    left: 12px;
+    bottom: 10px;
+    font-size: 15px;
+    color: var(--muted);
+    background-color: rgba(13, 23, 27, 0.8);
+    border-radius: 4px;
+    padding: 3px 10px;
+}
+
+.map-zoom {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 16px;
+    color: var(--text);
+    background-color: rgba(21, 36, 43, 0.92);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 5px;
+    padding: 5px 12px;
+    margin: 0;
+}
+
+.map-zoom:hover { border-color: var(--lantern); }
+.map-zoom:disabled { display: none; }
 
 .travel-side {
+    flex-shrink: 0;
+}
+
+.travel-scroll {
     flex-grow: 1;
-    flex-shrink: 1;
-    min-width: 0;
 }
 
 .pace-row {
     flex-direction: row;
-    margin-bottom: 14px;
+    margin-bottom: 6px;
 }
 
-.pace {
+.pace-chip {
     flex-grow: 1;
     flex-basis: 0;
     margin: 0 8px 0 0;
-    padding: 10px 14px;
+    padding: 8px 6px;
+    font-size: 19px;
+    color: var(--muted);
     background-color: var(--hull);
     border-width: 1px;
     border-color: var(--line);
-    border-radius: 8px;
-    align-items: stretch;
+    border-radius: 6px;
 }
 
-.pace:hover { border-color: var(--lantern); background-color: var(--hull-hi); }
-.pace:disabled { opacity: 0.45; }
+.pace-chip:hover { border-color: var(--lantern); color: var(--text); }
 
-.pace-top {
-    flex-direction: row;
-    align-items: center;
+.pace-on {
+    color: var(--sea);
+    background-color: var(--lantern);
+    border-color: var(--lantern);
+    -unity-font-style: bold;
 }
 
-.pace-name {
-    font-size: 23px;
-    color: var(--text);
-}
+.pace-on:hover { color: var(--sea); }
 
 .pace-help {
     font-size: 15px;
     color: var(--muted);
     white-space: normal;
-    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.place-row {
+    flex-direction: row;
+    align-items: flex-start;
+    margin: 0 0 6px 0;
+    padding: 8px 10px;
+    background-color: var(--hull);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 6px;
+}
+
+.place-row:hover { border-color: var(--lantern); background-color: var(--hull-hi); }
+.place-here { border-color: var(--moss); }
+
+.place-icon {
+    flex-shrink: 0;
+    margin: 4px 12px 0 0;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.place-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.place-name {
+    font-size: 19px;
+    color: var(--text);
+    -unity-font-style: bold;
+}
+
+.place-sub {
+    font-size: 14px;
+    color: var(--lantern);
+}
+
+.place-note {
+    font-size: 14px;
+    color: var(--muted);
+    white-space: normal;
 }
 
 /* ---------- forge ---------- */

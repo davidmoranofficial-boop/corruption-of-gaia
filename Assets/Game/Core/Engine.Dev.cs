@@ -18,7 +18,8 @@ namespace Loran.Core
         public static readonly (string id, string name)[] DevStarts =
         {
             ("village", "Skelmed square"),
-            ("road", "Walk the coast road"),
+            ("road", "The map, from Yenson's shack"),
+            ("map", "The map, all of it uncovered"),
             ("forge_first", "Forge: your first gear"),
             ("forge_iron", "Forge: buy iron (with a gem)"),
             ("dog", "Fight the wolf"),
@@ -61,11 +62,21 @@ namespace Loran.Core
                 case "road":
                     S.flags.Remove("arrived");
                     S.flags.Remove("dog_met");
-                    S.travelRoute = "coast_road";
-                    S.travelAt = 0;
-                    S.travelDir = 1;
+                    S.region = ""; S.fog = "";
+                    MoveTo("shack");
                     Jump(TravelId);
                     break;
+                case "map":
+                {
+                    Flag("arrived");
+                    S.region = ""; S.fog = "";
+                    MoveTo("skelmed");
+                    S.fog = new string('1', S.fog.Length);
+                    foreach (var p in Region.places) Flag("place_seen:" + p.id);
+                    S.Toasts.Clear();
+                    Jump(TravelId);
+                    break;
+                }
                 case "forge_first":
                     Flag("smith_mined"); Flag("gem_shown");
                     Jump("smith_craft");
@@ -79,11 +90,10 @@ namespace Loran.Core
                 case "dog":
                 case "crab":
                 {
-                    var road = data.Route("coast_road");
                     S.flags.Remove("arrived");
-                    S.travelRoute = road.id;
-                    S.travelAt = StepsTo(road, 2) + 1;   // just past the headland
-                    S.travelDir = 1;
+                    MoveTo("headland");
+                    S.mapY -= 1;                         // just past the headland
+                    Reveal(S.mapX, S.mapY, Sight());
                     S.scene = id == "dog" ? "dog" : "ev_crab";
                     StartCombat(id, id == "dog" ? "dog_won" : "ev_crab_won", TravelId);
                     break;
@@ -105,7 +115,6 @@ namespace Loran.Core
         public void Jump(string id)
         {
             S.inCombat = false;
-            if (id != TravelId) S.travelRoute = "";
             if (id != ForgeId) S.forging = "";
             S.scene = "";   // so arrival effects run even when jumping to the scene you're in
             freshView = true;
