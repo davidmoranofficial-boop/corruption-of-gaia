@@ -118,6 +118,14 @@ namespace Loran.Core
     public class ClimateDef
     {
         public string id, name;
+        public List<SeasonClimate> seasons = new List<SeasonClimate>();
+    }
+
+    /// <summary>A place's weather in one season: the warmest and coldest hours, and how likely each weather is.</summary>
+    [Serializable]
+    public class SeasonClimate
+    {
+        public string season;                  // spring, summer, autumn, winter
         public float day = 15, night = 6;      // °C at the warmest and coldest hours
         public List<WeatherChance> weather = new List<WeatherChance>();
     }
@@ -199,6 +207,9 @@ namespace Loran.Core
         public string until = "";              // a companion who's only with you for a while: how long (shown in the Party menu)
         public List<string> untilWhen = new List<string>();   // when that line shows
         public int warmth = 6;                 // how well dressed they are for the cold, in °C
+        // How they look in battle, drawn with the same paper doll as you
+        public string figure = "male", skin = "light", hair = "dark brown";
+        public List<string> worn = new List<string>();   // gear ids they wear
     }
     [Serializable] public class BackgroundDef { public string id, name, desc, stat; }
     [Serializable]

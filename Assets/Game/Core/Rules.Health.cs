@@ -11,9 +11,26 @@ namespace Loran.Core
     public static partial class Rules
     {
         public const float ColdAt = 40, HotAt = 40, WetAt = 40;   // when a body counts as cold, hot or wet
-        public const float Comfortable = 8, TooHot = 27;          // felt °C: below this you get colder, above that hotter
+        public const float Comfortable = 8, TooHot = 30;          // felt °C: below this you get colder, above that hotter
         public const float ShelterTemp = 17;                       // indoors
-        public const int WeatherHours = 4;                         // the weather can change every few hours
+        public const int WeatherHours = 8;                         // the weather can only change every eight hours...
+        public const int WeatherHolds = 50;                        // ...and half the time it holds for the next stretch too
+
+        // The calendar: four seasons of 28 days. The game starts in high summer.
+        public static readonly string[] Seasons = { "spring", "summer", "autumn", "winter" };
+        public const int SeasonDays = 28, StartDayOfYear = 40;
+        public static int DayOfYear(int minutes) => (minutes / 1440 + StartDayOfYear) % (SeasonDays * 4);
+        public static string Season(int minutes) => Seasons[DayOfYear(minutes) / SeasonDays];
+        public static string Season(GameState s) => Season(s.minutes);
+
+        /// <summary>A place's weather for the season at that moment.</summary>
+        public static SeasonClimate SeasonAt(GameState s, GameData d, int minutes)
+        {
+            var c = ClimateAt(s, d);
+            if (c == null || c.seasons.Count == 0) return null;
+            string season = Season(minutes);
+            return c.seasons.FirstOrDefault(x => x.season == season) ?? c.seasons[0];
+        }
         public const float FirstAidPerLevel = 0.08f;              // each level of First aid heals wounds 8% faster
 
         // ------------------------------------------------------------------ weather
@@ -38,11 +55,20 @@ namespace Loran.Core
         public static WeatherDef WeatherAt(GameState s, GameData d, int minutes)
         {
             if (!string.IsNullOrEmpty(s.devWeather) && d.Weather(s.devWeather) != null) return d.Weather(s.devWeather);
-            var c = ClimateAt(s, d);
+            var c = SeasonAt(s, d, minutes);
             if (c == null || c.weather.Count == 0) return null;
             long block = minutes / (WeatherHours * 60);
             long b = block;
-            while (b > block - 4 && Hash(s.seed, b, 1) % 100 < 50) b--;
+            while (b > block - 6 && Hash(s.seed, b, 1) % 100 < (ulong)WeatherHolds) b--;
+            var w = PickWeather(s, c, b, d);
+            // Fog is a morning thing: it burns off by late morning
+            float hour = (minutes % 1440) / 60f;
+            if (w != null && w.id == "fog" && (hour < 3 || hour >= 11)) return d.Weather("clear") ?? w;
+            return w;
+        }
+
+        static WeatherDef PickWeather(GameState s, SeasonClimate c, long b, GameData d)
+        {
             int total = c.weather.Sum(w => Math.Max(0, w.weight));
             if (total <= 0) return d.Weather(c.weather[0].id);
             int roll = (int)(Hash(s.seed, b, 2) % (ulong)total);
@@ -59,7 +85,7 @@ namespace Loran.Core
         /// <summary>The air temperature outside, °C: coldest before dawn, warmest mid-afternoon, plus the weather.</summary>
         public static float AirTemp(GameState s, GameData d, int minutes)
         {
-            var c = ClimateAt(s, d);
+            var c = SeasonAt(s, d, minutes);
             if (c == null) return 15;
             float hour = (minutes % 1440) / 60f;
             float t = c.night + (c.day - c.night) * (0.5f - 0.5f * (float)Math.Cos(2 * Math.PI * (hour - 4) / 24));

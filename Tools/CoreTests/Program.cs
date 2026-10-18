@@ -474,10 +474,10 @@ static class Program
         // A broken leg: no running, slow walking, no getting away
         var l = NewEngine();
         l.DevStart("village");
-        int walk = l.StepChoice(false)?.time ?? 0;
+        float walk = l.StepSeconds(false);
         Rules.Afflict(l.S, l.data, l.S.body, "broken_leg", null);
         var run = l.StepChoice(true);
-        Assert(run == null || (run.label == "Walk" && run.time >= walk * 2), "a broken leg can't run and walks slowly");
+        Assert(run == null || (run.label == "Walk" && l.StepSeconds(false) >= walk * 2), "a broken leg can't run and walks slowly");
         Assert(!l.TreatmentCost("splint").ok, "no splint, no bandage, no splinting");
         l.S.AddItem("split_wood", 1); l.S.AddItem("bandage", 1);
         Assert(l.TreatmentCost("splint").ok, "a split log and a bandage make a splint");
@@ -529,13 +529,32 @@ static class Program
         // The weather is the same every time for the same moment, and it changes over days
         var seen = new HashSet<string>();
         for (int m = 0; m < 20 * 1440; m += 240) seen.Add(Rules.WeatherAt(e.S, e.data, m).id);
-        Assert(seen.Count >= 4 && seen.Contains("rain"), "twenty days should bring several kinds of weather: " + string.Join(", ", seen));
+        Assert(seen.SetEquals(new[] { "clear", "fog", "rain" }), "the coast has clear days, fog and rain, nothing else: " + string.Join(", ", seen));
+        int changes = 0;
+        string last = null;
+        for (int m = 0; m < 20 * 1440; m += 60)
+        {
+            var w = Rules.WeatherAt(e.S, e.data, m).id;
+            if (w == "fog") w = "clear";   // fog lifting in the morning isn't a change of weather
+            if (last != null && w != last) changes++;
+            last = w;
+        }
+        Console.WriteLine("    weather changes in 20 days: " + changes);
+        Assert(changes <= 25, "the weather shouldn't change every few hours: " + changes + " changes in 20 days");
+        foreach (var m in Enumerable.Range(0, 20 * 24).Select(h => h * 60))
+            if (Rules.WeatherAt(e.S, e.data, m).id == "fog") Assert((m % 1440) / 60 >= 3 && (m % 1440) / 60 < 11, "fog only in the morning");
+        int summerNoon = 12 * 60, winterNoon = (Rules.SeasonDays * 2 + 1) * 1440 + 12 * 60;
+        Assert(Rules.Season(summerNoon) == "summer" && Rules.Season(winterNoon) == "winter", "the game starts in summer and winter comes");
+        e.S.devWeather = "clear";
+        Assert(Rules.AirTemp(e.S, e.data, summerNoon) > Rules.AirTemp(e.S, e.data, winterNoon) + 10, "summer is warmer than winter");
+        Assert(Rules.AirTemp(e.S, e.data, summerNoon + 3 * 60) > Rules.AirTemp(e.S, e.data, summerNoon + 16 * 60), "afternoons are warmer than the small hours");
+        e.S.devWeather = "";
         Assert(Rules.WeatherAt(e.S, e.data, 5000).id == Rules.WeatherAt(e.S, e.data, 5000).id, "weather is fixed by the seed");
         Assert(Rules.AirTemp(e.S, e.data, 1440 + 15 * 60) > Rules.AirTemp(e.S, e.data, 1440 + 4 * 60) || e.S.devWeather != "", "afternoons are warmer than before dawn");
 
-        // A storm at night, in castaway clothes: wet, cold, then hypothermia
+        // A winter storm at night, in castaway clothes: wet, cold, then hypothermia
         e.S.devWeather = "storm";
-        e.DevTime(21);
+        e.S.minutes = (Rules.SeasonDays * 2 + 1) * 1440 + 21 * 60;
         e.S.body = new Body();
         Rules.Advance(e.S, e.data, 60, false);
         Assert(e.S.body.wet >= Rules.WetAt, "a storm soaks you");
@@ -571,12 +590,12 @@ static class Program
         var warm = NewEngine();
         warm.DevStart("road");
         warm.S.devWeather = "rain";
-        warm.DevTime(21);
+        warm.S.minutes = (Rules.SeasonDays * 2 + 1) * 1440 + 21 * 60;
         warm.DevGear("leather_jerkin", "F"); warm.DevGear("leather_boots", "F"); warm.DevGear("gloves", "F"); warm.DevGear("iron_cap", "F");
         var bare = NewEngine();
         bare.DevStart("road");
         bare.S.devWeather = "rain";
-        bare.DevTime(21);
+        bare.S.minutes = (Rules.SeasonDays * 2 + 1) * 1440 + 21 * 60;
         Rules.Advance(warm.S, warm.data, 3 * 60, false);
         Rules.Advance(bare.S, bare.data, 3 * 60, false);
         Assert(warm.S.body.cold < bare.S.body.cold, "warm clothes keep you warmer: " + warm.S.body.cold + " vs " + bare.S.body.cold);
@@ -694,7 +713,7 @@ static class Program
     {
         var e = NewEngine();
         ToRoad(e);
-        e.S.energy = 0.05f;
+        e.S.energy = 0.005f;
         e.S.coins = 6;
         e.S.stepsSinceFight = -1000;
         StepToward(e, Gate(e));
@@ -818,7 +837,7 @@ static class Program
         e.Face("down");
         var walk = e.StepChoice(false);
         var run = e.StepChoice(true);
-        Assert(walk != null && run != null && run.time < walk.time && run.stamina > walk.stamina, "running should be quicker but tiring");
+        Assert(walk != null && run != null && e.StepSeconds(true) < e.StepSeconds(false) && run.stamina > walk.stamina, "running should be quicker but tiring");
 
         // In and out of the door
         e.Face("up");
@@ -834,7 +853,7 @@ static class Program
         Assert(e.S.scene == "travel" && e.S.result.Contains("Skelmed"), "reading a sign should show what it says");
         e.S.result = "";
 
-        // The coast road to Skelmed: a couple of hours, past the wolf
+        // The coast road to Skelmed: a quarter of an hour or so, past the wolf
         int t0 = e.S.minutes;
         e.S.stepsSinceFight = -1000;
         WalkUntil(e, Gate(e), () => e.S.scene == "dog");
@@ -843,7 +862,7 @@ static class Program
         var wolf = a.objects.First(o => o.id == "wolf");
         Assert(e.ObjectAt(wolf.x, wolf.y) == null, "the wolf should be gone from the road");
         WalkUntil(e, Gate(e), () => e.Area.id == "skelmed");
-        Assert(e.S.minutes - t0 >= 150, "the walk should take a good while, took " + (e.S.minutes - t0) + " min");
+        Assert(e.S.minutes - t0 >= 12 && e.S.minutes - t0 <= 90, "the walk should take a little while, took " + (e.S.minutes - t0) + " min");
         Assert(!e.Choices().Any(), "no camping in the village");
 
         // The well

@@ -1515,15 +1515,17 @@ def object_sprite(text):
 # ============================================================================================== weather
 
 def fx_sprites(out):
-    """Rain streaks drawn over the world in rain and storms: a tile that repeats, slanting a little with the wind."""
-    for name, count, length, alpha in (('fx_drizzle', 26, 3, 90), ('fx_rain', 46, 6, 130), ('fx_storm', 90, 9, 160)):
+    """Rain drawn over the world: long thin streaks slanting a little with the wind, in a tile that repeats."""
+    for name, count, length, alpha in (('fx_drizzle', 18, 7, 70), ('fx_rain', 30, 12, 110), ('fx_storm', 55, 16, 140)):
         rnd = random.Random(name)
         img = Image.new('RGBA', (96, 96), (0, 0, 0, 0))
         for _ in range(count):
             x, y = rnd.randrange(96), rnd.randrange(96)
-            for i in range(length):
-                px, py = (x - i // 3) % 96, (y + i) % 96
-                img.putpixel((px, py), (190, 210, 225, alpha))
+            n = length + rnd.randrange(-2, 3)
+            for i in range(n):
+                px, py = (x - i // 4) % 96, (y + i) % 96
+                a = int(alpha * (0.45 + 0.55 * i / n))           # fades in towards the head of the drop
+                img.putpixel((px, py), (150, 180, 205, a))
         img.save(os.path.join(out, name + '.png'))
 
 

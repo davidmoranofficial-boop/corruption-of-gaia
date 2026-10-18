@@ -74,28 +74,19 @@ namespace Loran.UnityLayer
             playerPic = PlayerDoll(playerSpot, scale);
             if (s.hp <= 0) playerSpot.AddToClassList("portrait-down");
 
-            // Your party stands a little behind you, staggered so everyone can be seen
+            // Your party stands behind you, staggered so everyone can be seen; drawn back to front
             followerSpots.Clear();
             followerPics.Clear();
-            for (int pi = 0; pi < s.party.Count; pi++)
+            for (int pi = 0; pi < s.party.Count; pi++) { followerSpots.Add(null); followerPics.Add(null); }
+            for (int pi = s.party.Count - 1; pi >= 0; pi--)
             {
                 var m = s.party[pi];
                 var fol = engine.data.Follower(m.id);
-                if (fol == null) { followerSpots.Add(null); followerPics.Add(null); continue; }
+                if (fol == null) continue;
                 var spot = Add(arena, new VisualElement(), "spot-follower");
-                spot.style.left = Length.Percent(5 - pi * 3.5f);
-                spot.style.bottom = Length.Percent(9 + pi * 14);
-                int fk = Mathf.Max(2, scale * 2 - pi);
-                var box = Add(spot, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
-                box.style.position = Position.Relative;
-                box.style.width = 16 * fk;
-                box.style.height = 24 * fk;
-                var sheet = Add(box, new VisualElement { pickingMode = PickingMode.Ignore }, "walker-sheet");
-                sheet.style.width = 48 * fk;
-                sheet.style.height = 96 * fk;
-                sheet.style.top = -3 * 24 * fk;      // the row facing right
-                var tex = Sprite("Walk/" + fol.sprite);
-                if (tex != null) sheet.style.backgroundImage = new StyleBackground(tex);
+                spot.style.left = Length.Percent(6 - pi * 4f);
+                spot.style.bottom = Length.Percent(14 + pi * 9);
+                var pic = Doll(spot, Mathf.Max(2, scale - (pi > 0 ? 1 : 0)), fol.figure, fol.skin, fol.hair, fol.worn.Select(g => (g, engine.data.Gear(g)?.slot ?? "body")));
                 if (m.hp <= 0) spot.AddToClassList("portrait-down");
                 var tag = Add(spot, new VisualElement(), "follower-tag");
                 var trouble = Rules.Conditions(m, engine.data);
@@ -105,9 +96,10 @@ namespace Loran.UnityLayer
                 ff.style.width = Length.Percent(Mathf.Clamp01(m.hp / fol.hp) * 100f);
                 ColorUtility.TryParseHtmlString("#c8573f", out var fc);
                 ff.style.backgroundColor = fc;
-                followerSpots.Add(spot);
-                followerPics.Add(box);
+                followerSpots[pi] = spot;
+                followerPics[pi] = pic;
             }
+            playerSpot.BringToFront();
 
             enemySpot = Add(arena, new VisualElement(), "spot-enemy");
             enemyPic = EnemySprite(enemySpot, e, DollH * scale * 1.15f * Mathf.Max(1f, e.size));

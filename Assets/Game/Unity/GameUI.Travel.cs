@@ -238,19 +238,13 @@ namespace Loran.UnityLayer
             weatherFx.style.left = -((t * 0.33f) % weatherTile) - 1;
         }
 
-        /// <summary>You and your party. Walkers are made in party order, then layered so whoever's lower stands in front.</summary>
+        /// <summary>
+        /// You. Like the old Final Fantasy games, only you are drawn walking about: your party is with you,
+        /// and they show up beside you in battle.
+        /// </summary>
         void DrawYouAndFollower()
         {
-            var s = engine.S;
-            foreach (var m in s.party)
-            {
-                var fol = engine.data.Follower(m.id);
-                partyWalkers.Add(fol == null ? (null, null) : Walker("Walk/" + fol.sprite));
-            }
             DrawYou();
-            // party members below you on the screen go in front of you
-            foreach (var (m, w) in s.party.Zip(partyWalkers, (m, w) => (m, w)))
-                if (w.box != null && m.y > s.ay) w.box.BringToFront();
         }
 
         void PlaceParty()

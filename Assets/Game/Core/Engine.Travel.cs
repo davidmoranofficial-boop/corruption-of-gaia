@@ -65,6 +65,9 @@ namespace Loran.Core
         }
 
         /// <summary>A step the way you're facing, as a choice ready for Choose, or null if something's in the way.</summary>
+        /// <summary>How long one step takes, in seconds: a dozen walking, half that running, longer with a broken leg in the party.</summary>
+        public float StepSeconds(bool run) => (run ? Rules.StepSeconds / 2 : Rules.StepSeconds) * TravelSlow();
+
         public ChoiceDef StepChoice(bool run = false)
         {
             var a = Area;
@@ -75,7 +78,7 @@ namespace Loran.Core
             return new ChoiceDef
             {
                 label = run ? "Run" : "Walk",
-                time = (int)Math.Round((run ? Math.Max(1, a.minutes / 2) : a.minutes) * TravelSlow()),
+                time = 0,                      // a step is seconds, not minutes: Step adds them up (StepSeconds)
                 stamina = run ? 2 : 0,
                 effects = { "travel:step" + (run ? ":run" : "") },
             };
@@ -229,8 +232,12 @@ namespace Loran.Core
             S.ax += dx;
             S.ay += dy;
             S.stepsSinceFight++;
-            S.energy -= run ? 0.2f : 0.1f;   // walking tires you a little more than the time alone
-            if (run) Rules.Train(S, Stat.End, 0.05f, "running");
+            S.energy -= run ? 0.02f : 0.01f;   // walking tires you a little more than the time alone
+            if (run) Rules.Train(S, Stat.End, 0.01f, "running");
+            // Time: a step takes seconds; whole minutes pass as they add up
+            S.secondsCarry += StepSeconds(run);
+            int mins = (int)(S.secondsCarry / 60);
+            if (mins > 0) { S.secondsCarry -= mins * 60; Rules.Advance(S, data, mins, run); }
 
             // Walking into somewhere
             foreach (var z in a.zones)

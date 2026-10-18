@@ -9,15 +9,19 @@ namespace Loran.Core
     public static partial class Rules
     {
         // Needs drain per in-game hour while awake
-        public const float HungerPerHour = 3f;
-        public const float ThirstPerHour = 5f;
-        public const float EnergyPerHour = 4.5f;       // daily energy: only sleep, food and drink restore it
+        public const float HungerPerHour = 2.5f;
+        public const float ThirstPerHour = 4f;
+        public const float EnergyPerHour = 3f;         // daily energy: only sleep, food and drink restore it
         public const float StaminaRegenPerHour = 25f;  // stamina comes back with any rest
         public const float StarveDamagePerHour = 4f;   // per empty need (hunger or thirst)
 
         // Corruption: starts at 5%, grows with time. Good local reputation slows it, bad speeds it up.
         public const float StartCorruption = 5f;
-        public const float CorruptionPerDay = 1f;
+        public const float CorruptionPerDay = 0.3f;
+
+        // Time walking: each step takes this many seconds (half running). At normal walking pace that's
+        // about an hour of game time for a minute of real time.
+        public const float StepSeconds = 12f;
 
         public const int WaterskinSize = 4;
         public const int CollapseMinutes = 6 * 60;

@@ -2115,7 +2115,16 @@
       "untilWhen": [
         "flag:rook_escort"
       ],
-      "warmth": 6
+      "warmth": 6,
+      "figure": "male",
+      "skin": "light",
+      "hair": "Red",
+      "worn": [
+        "leather_jerkin",
+        "castaway_trousers",
+        "leather_boots",
+        "hunting_bow"
+      ]
     }
   ],
   "afflictions": [
@@ -2347,36 +2356,82 @@
     {
       "id": "coast",
       "name": "The Loran coast",
-      "day": 14,
-      "night": 6,
-      "weather": [
+      "seasons": [
         {
-          "id": "clear",
-          "weight": 30
+          "season": "spring",
+          "day": 16,
+          "night": 6,
+          "weather": [
+            {
+              "id": "clear",
+              "weight": 50
+            },
+            {
+              "id": "fog",
+              "weight": 20
+            },
+            {
+              "id": "rain",
+              "weight": 30
+            }
+          ]
         },
         {
-          "id": "overcast",
-          "weight": 30
+          "season": "summer",
+          "day": 24,
+          "night": 10,
+          "weather": [
+            {
+              "id": "clear",
+              "weight": 65
+            },
+            {
+              "id": "fog",
+              "weight": 15
+            },
+            {
+              "id": "rain",
+              "weight": 20
+            }
+          ]
         },
         {
-          "id": "drizzle",
-          "weight": 12
+          "season": "autumn",
+          "day": 15,
+          "night": 5,
+          "weather": [
+            {
+              "id": "clear",
+              "weight": 45
+            },
+            {
+              "id": "fog",
+              "weight": 25
+            },
+            {
+              "id": "rain",
+              "weight": 30
+            }
+          ]
         },
         {
-          "id": "rain",
-          "weight": 14
-        },
-        {
-          "id": "fog",
-          "weight": 8
-        },
-        {
-          "id": "storm",
-          "weight": 4
-        },
-        {
-          "id": "warm_spell",
-          "weight": 2
+          "season": "winter",
+          "day": 7,
+          "night": 0,
+          "weather": [
+            {
+              "id": "clear",
+              "weight": 40
+            },
+            {
+              "id": "fog",
+              "weight": 25
+            },
+            {
+              "id": "rain",
+              "weight": 35
+            }
+          ]
         }
       ]
     }
@@ -2386,7 +2441,7 @@
       "id": "clear",
       "name": "Clear",
       "desc": "Clear skies.",
-      "temp": 1,
+      "temp": 0,
       "wet": 0,
       "dry": 20,
       "overlay": ""

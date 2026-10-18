@@ -113,7 +113,7 @@ Skills go up to 10. The Skills menu (K) shows them all.
 
 ## Party
 
-`followers` in `data.json` are people who can join your party (`follow:<id>`), up to three at once (`Rules.PartyMax`). They walk in a line behind you, each attacks after you in a fight, and the enemy sometimes goes for them instead. If they go down they stay down with a grave wound until you bind it (see Death in the party).
+`followers` in `data.json` are people who can join your party (`follow:<id>`), up to three at once (`Rules.PartyMax`). Like the old Final Fantasy games, only you are drawn walking about; your party shows beside you in battle, drawn with the same paper doll as you (`figure`, `skin`, `hair`, `worn`). Each attacks after you in a fight, and the enemy sometimes goes for them instead. If they go down they stay down with a grave wound until you bind it (see Death in the party).
 
 A party lives off your supplies, so recruiting someone is a real cost. Each member has the same hunger, thirst and energy as you (`appetite` makes some eat faster), plus spirits (`morale`). At night, whoever's hungry eats from your pack and whoever's thirsty drinks from your waterskin; if there's nothing, they go without. You can also feed them or pass the waterskin from the Party menu (P). Being hungry, thirsty, exhausted, wounded or in low spirits each takes 15% off how hard they hit. Going without, cold camps and being knocked down lower their spirits; a bed, food and finishing their own `quest` raise them. At zero spirits a companion leaves, unless they have `leaves: false` (a story companion like Rook). `until` and `untilWhen` show a line in the Party menu for someone who's only with you for a while.
 
@@ -125,9 +125,11 @@ Treating one means doing each of its `treat` steps, from `treatments`: clean (sp
 
 Supplies: Ida gives two bandages and spirits with the wolf job, Bess sells bandages, spirits, willow bark and a sewing kit, and yarrow and a willow grow in the hills (they grow back each day: flags ending `_today` clear when you sleep).
 
-## Weather
+## Time and weather
 
-Each area has a `climate` (`climates` in `data.json`: day and night temperatures and how likely each weather is). The weather (`weathers`: clear, overcast, drizzle, rain, storm, fog, a warm spell) changes every few hours, worked out from the seed and the clock, so it's the same on every load. Rain soaks you (`wet`); being wet makes the cold far worse; clothes add `warmth` (on gear, and on each companion). Too cold for long and you get cold (tire faster, slower to get your breath back), then hypothermia; too hot and you get thirsty, then heatstroke. A roof, a fire or a bed puts it right: a bed resets everything, a camp fire warms and dries you, sleeping in the open soaks and chills you and can give you a chill. Dev mode can force the weather and hand out wounds.
+Walking, a step takes 12 seconds of game time (6 running), so a minute of real walking is about an hour in the game; talking, working and sleeping take the minutes their choices say. The year has four seasons of 28 days (`Rules.Seasons`), and the game starts in high summer.
+
+Each area has a `climate` (`climates` in `data.json`), with each season's warmest and coldest temperatures and how likely each weather is. Temperature comes from three things: the time of day (coldest before dawn, warmest mid-afternoon), the season, and the place. The weather (`weathers`) changes at most every eight hours and often holds longer; fog only comes in the morning and burns off by eleven. The Loran coast has clear days, fog and rain; storms, drizzle and warm spells are defined for other places later. Rain soaks you (`wet`), and wet makes the cold far worse; clothes add `warmth`. Too cold for long and you get cold (tire faster, slower to get your breath back), then hypothermia; too hot and you get thirsty, then heatstroke. A bed resets everything, a camp fire warms and dries you, and sleeping in the open soaks and chills you and can give you a chill. Dev mode can force the weather and hand out wounds.
 
 ## Death in the party
 

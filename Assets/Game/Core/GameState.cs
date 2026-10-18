@@ -121,7 +121,8 @@ namespace Loran.Core
         public List<PartyMember> party = new List<PartyMember>();
         public List<string> fallen = new List<string>();     // companions who died: gone for good
         public Body body = new Body();                        // your wounds, and how cold, hot and wet you are
-        public string devWeather = "";                        // dev mode: forces the weather
+        public string devWeather = "";
+        public float secondsCarry;                            // seconds of walking not yet added to the clock                        // dev mode: forces the weather
         // old saves only: the single follower from before parties
         public string follower = "";
         public float followerHp;

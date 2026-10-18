@@ -264,7 +264,7 @@ namespace Loran.UnityLayer
 
             var clock = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "clock-card");
             Add(clock, new Label(Rules.Clock(s)), "clock");
-            Add(clock, new Label("Day " + s.Day + "  ·  " + Rules.TimeOfDay(s)), "clock-sub");
+            Add(clock, new Label("Day " + s.Day + "  ·  " + char.ToUpperInvariant(Rules.Season(s)[0]) + Rules.Season(s).Substring(1) + "  ·  " + Rules.TimeOfDay(s)), "clock-sub");
             var area = engine.Area;
             if (area != null) Add(clock, new Label(area.name), "clock-place");
             var weather = Rules.WeatherNow(s, engine.data);

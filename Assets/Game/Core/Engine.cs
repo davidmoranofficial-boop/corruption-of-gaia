@@ -58,12 +58,12 @@ namespace Loran.Core
             d.treatments ??= new List<TreatmentDef>();
             foreach (var x in d.treatments) { x.items ??= new List<string>(); x.tool ??= ""; }
             d.climates ??= new List<ClimateDef>();
-            foreach (var x in d.climates) x.weather ??= new List<WeatherChance>();
+            foreach (var x in d.climates) { x.seasons ??= new List<SeasonClimate>(); foreach (var se in x.seasons) se.weather ??= new List<WeatherChance>(); }
             d.weathers ??= new List<WeatherDef>();
             foreach (var x in d.weathers) x.overlay ??= "";
             foreach (var en in d.enemies) foreach (var mv in en.moves) mv.wounds ??= new List<WoundChance>();
             foreach (var ar in d.areas ?? new List<AreaDef>()) if (string.IsNullOrEmpty(ar.climate)) ar.climate = "coast";
-            foreach (var f in d.followers) { f.untilWhen ??= new List<string>(); f.until ??= ""; f.quest ??= ""; }
+            foreach (var f in d.followers) { f.worn ??= new List<string>(); f.figure ??= "male"; f.skin ??= "light"; f.hair ??= ""; f.untilWhen ??= new List<string>(); f.until ??= ""; f.quest ??= ""; }
             d.backgrounds ??= new List<BackgroundDef>();
             d.gear ??= new List<GearDef>();
             d.traits ??= new List<TraitDef>();
@@ -877,8 +877,12 @@ namespace Loran.Core
             }
             foreach (var en in data.file.enemies) foreach (var mv in en.moves) foreach (var w in mv.wounds)
                 if (data.Affliction(w.id) == null) problems.Add("enemy " + en.id + ": no affliction '" + w.id + "'");
-            foreach (var c in data.file.climates) foreach (var w in c.weather)
-                if (data.Weather(w.id) == null) problems.Add("climate " + c.id + ": no weather '" + w.id + "'");
+            foreach (var c in data.file.climates)
+            {
+                foreach (var name in Rules.Seasons) if (c.seasons.All(x => x.season != name)) problems.Add("climate " + c.id + ": no " + name);
+                foreach (var se in c.seasons) foreach (var w in se.weather)
+                    if (data.Weather(w.id) == null) problems.Add("climate " + c.id + ": no weather '" + w.id + "'");
+            }
             foreach (var ar in data.file.areas) if (data.Climate(ar.climate) == null) problems.Add("area " + ar.id + ": no climate '" + ar.climate + "'");
             foreach (var id in new[] { "grave", "hypothermia", "heatstroke", "chill" }) if (data.Affliction(id) == null) problems.Add("no affliction '" + id + "' (the engine uses it)");
             foreach (var f in data.file.followers)
