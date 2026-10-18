@@ -19,7 +19,7 @@ namespace Loran.EditorTools
     ///
     /// It never runs during Play mode; it waits until you stop. Turn it off or check by hand from the
     /// "Corruption of Gaia" menu. Anything you change by hand inside Assets/Game will be replaced by the next update.
-    /// Needs git installed (it is on most Linux systems).
+    /// Needs git installed (it is on most Linux systems; on Windows install Git for Windows).
     /// </summary>
     [InitializeOnLoad]
     public static class LoranAutoUpdate
@@ -138,7 +138,9 @@ namespace Loran.EditorTools
             {
                 if (warnedNoGit) return "";
                 warnedNoGit = true;
-                return "!git isn't installed, so the game can't update itself. Install it with: sudo apt install git";
+                return Environment.OSVersion.Platform == PlatformID.Win32NT
+                    ? "!Git isn't installed, so the game can't update itself. Install Git for Windows from https://git-scm.com/download/win (keep the default options), then restart Unity."
+                    : "!git isn't installed, so the game can't update itself. Install it with: sudo apt install git";
             }
             return "!Couldn't reach GitHub to check for updates. " + output.Trim();
         }
@@ -174,13 +176,32 @@ namespace Loran.EditorTools
             return (changed, removed);
         }
 
+        /// <summary>"git" if it's on the PATH; on Windows, falls back to where Git for Windows installs itself.</summary>
+        static string GitExe()
+        {
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT) return "git";
+            foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';'))
+                try { if (dir != "" && File.Exists(Path.Combine(dir.Trim('"'), "git.exe"))) return "git"; } catch { }
+            foreach (var env in new[] { "ProgramFiles", "ProgramW6432", "ProgramFiles(x86)", "LOCALAPPDATA" })
+            {
+                string baseDir = Environment.GetEnvironmentVariable(env);
+                if (string.IsNullOrEmpty(baseDir)) continue;
+                foreach (var sub in new[] { @"Git\cmd\git.exe", @"Programs\Git\cmd\git.exe" })
+                {
+                    string candidate = Path.Combine(baseDir, sub);
+                    if (File.Exists(candidate)) return candidate;
+                }
+            }
+            return "git";
+        }
+
         static (bool ok, string output) Git(string dir, string args)
         {
             try
             {
                 var p = new Process
                 {
-                    StartInfo = new ProcessStartInfo("git", args)
+                    StartInfo = new ProcessStartInfo(GitExe(), "-c core.autocrlf=false " + args)
                     {
                         WorkingDirectory = dir,
                         RedirectStandardOutput = true,
