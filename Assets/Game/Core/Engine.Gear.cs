@@ -117,6 +117,8 @@ namespace Loran.Core
             if (g.damage > 0) parts.Add("+" + g.damage.ToString("0.#") + " damage");
             if (g.guard > 0) parts.Add("blocks " + Math.Round(g.guard * 100) + "% of each hit");
             if (g.stamina > 0) parts.Add("+" + g.stamina + " max stamina");
+            int warmth = data.Gear(g.id)?.warmth ?? 0;
+            if (warmth > 0) parts.Add("+" + warmth + "° warmth");
             return string.Join(" · ", parts);
         }
 

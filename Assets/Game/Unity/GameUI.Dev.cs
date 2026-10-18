@@ -43,6 +43,23 @@ namespace Loran.UnityLayer
             Add(row, new Button(() => Cheat(() => engine.DevTime(6))) { text = "Morning" }, "dev-btn");
             Add(row, new Button(() => Cheat(() => engine.DevTime(21))) { text = "Night" }, "dev-btn");
 
+            var hurt = Section(right, "WOUNDS AND WEATHER");
+            var hr = Add(hurt, new VisualElement(), "dev-grid");
+            foreach (var af in engine.data.file.afflictions)
+            {
+                string id = af.id;
+                Add(hr, new Button(() => Cheat(() => engine.DevAfflict(id))) { text = af.name }, "dev-btn");
+            }
+            Add(hr, new Button(() => Cheat(engine.DevHeal)) { text = "Heal all wounds" }, "dev-btn");
+            Add(hr, new Button(() => Cheat(engine.DevMedicine)) { text = "Medical supplies" }, "dev-btn");
+            var wr = Add(hurt, new VisualElement(), "dev-grid");
+            Add(wr, new Button(() => Cheat(() => engine.DevWeather(""))) { text = "Natural weather" }, "dev-btn");
+            foreach (var w in engine.data.file.weathers)
+            {
+                string id = w.id;
+                Add(wr, new Button(() => Cheat(() => engine.DevWeather(id))) { text = w.name }, "dev-btn");
+            }
+
             var stats = Section(right, "STATS");
             for (int i = 0; i < Stat.Count; i++)
             {

@@ -113,9 +113,25 @@ Skills go up to 10. The Skills menu (K) shows them all.
 
 ## Party
 
-`followers` in `data.json` are people who can join your party (`follow:<id>`), up to three at once (`Rules.PartyMax`). They walk in a line behind you, each attacks after you in a fight, and the enemy sometimes goes for them instead. If they go down they get back up at a quarter health after the fight.
+`followers` in `data.json` are people who can join your party (`follow:<id>`), up to three at once (`Rules.PartyMax`). They walk in a line behind you, each attacks after you in a fight, and the enemy sometimes goes for them instead. If they go down they stay down with a grave wound until you bind it (see Death in the party).
 
 A party lives off your supplies, so recruiting someone is a real cost. Each member has the same hunger, thirst and energy as you (`appetite` makes some eat faster), plus spirits (`morale`). At night, whoever's hungry eats from your pack and whoever's thirsty drinks from your waterskin; if there's nothing, they go without. You can also feed them or pass the waterskin from the Party menu (P). Being hungry, thirsty, exhausted, wounded or in low spirits each takes 15% off how hard they hit. Going without, cold camps and being knocked down lower their spirits; a bed, food and finishing their own `quest` raise them. At zero spirits a companion leaves, unless they have `leaves: false` (a story companion like Rook). `until` and `untilWhen` show a line in the Party menu for someone who's only with you for a while.
+
+## Wounds and ailments
+
+`afflictions` in `data.json` are wounds and illnesses, for you and for each companion: bites, cuts, deep gashes, broken arms and legs, cracked ribs, sprains, concussion, infection, a chill, hypothermia, heatstroke, and the grave wound a companion gets when they're knocked down. Each can make you bleed (`bleed`, health per hour), drain energy (`drain`), hit weaker (`fight`), lower your top stamina (`stamina`), stop you running and fleeing (`noRun`), slow the whole party (`slow`), make fight actions go astray (`fumble`), or stop a companion fighting at all (`noFight`).
+
+Treating one means doing each of its `treat` steps, from `treatments`: clean (spirits, yarrow or two drinks of water), bandage, stitch (needs a sewing kit, not used up), splint (a splint, or split wood or firewood with a bandage), bring a fever down (willow bark), and rest (a night's sleep does it). Once every step is done it heals over `heal` hours (First aid, a life skill trained by treating, speeds that up). Some go by themselves (`selfHeal`); some turn into something worse if a step isn't done in time (`worsen`, `worsenAfter`, `worsenUnless`: an unclean bite becomes an infection); a grave wound kills unless it's bandaged within `deadline` hours. Enemy moves list the `wounds` a hit can leave, with % chances (more for a heavy blow, half when you defend). Treat wounds from the Survival menu (S).
+
+Supplies: Ida gives two bandages and spirits with the wolf job, Bess sells bandages, spirits, willow bark and a sewing kit, and yarrow and a willow grow in the hills (they grow back each day: flags ending `_today` clear when you sleep).
+
+## Weather
+
+Each area has a `climate` (`climates` in `data.json`: day and night temperatures and how likely each weather is). The weather (`weathers`: clear, overcast, drizzle, rain, storm, fog, a warm spell) changes every few hours, worked out from the seed and the clock, so it's the same on every load. Rain soaks you (`wet`); being wet makes the cold far worse; clothes add `warmth` (on gear, and on each companion). Too cold for long and you get cold (tire faster, slower to get your breath back), then hypothermia; too hot and you get thirsty, then heatstroke. A roof, a fire or a bed puts it right: a bed resets everything, a camp fire warms and dries you, sleeping in the open soaks and chills you and can give you a chill. Dev mode can force the weather and hand out wounds.
+
+## Death in the party
+
+Companions can die, and they're gone for good. A huge blow can kill them outright; knocked down, they get a grave wound and bleed out unless bandaged in time; starving, thirst, cold and untreated wounds kill them out in the world. The dead are listed under Survival, and the flag `dead_<id>` is set (Ida has her own line if Rook doesn't come back).
 
 ## Enemies and combat
 

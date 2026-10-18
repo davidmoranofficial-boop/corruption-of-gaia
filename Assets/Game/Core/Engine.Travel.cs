@@ -71,10 +71,11 @@ namespace Loran.Core
             if (a == null) return null;
             var (dx, dy) = Dir(S.facing);
             if (Blocked(S.ax + dx, S.ay + dy)) return null;
+            if (run && Rules.NoRun(S.body, data)) run = false;   // a broken leg or a sprain: no running
             return new ChoiceDef
             {
                 label = run ? "Run" : "Walk",
-                time = run ? Math.Max(1, a.minutes / 2) : a.minutes,
+                time = (int)Math.Round((run ? Math.Max(1, a.minutes / 2) : a.minutes) * TravelSlow()),
                 stamina = run ? 2 : 0,
                 effects = { "travel:step" + (run ? ":run" : "") },
             };

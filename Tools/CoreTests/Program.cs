@@ -35,6 +35,9 @@ static class Program
         Test("dev mode quick starts and cheats", DevMode);
         Test("levels, skills, moves and followers", Progression);
         Test("a party eats, drinks, tires and can walk out on you", Party);
+        Test("wounds: treating them, letting them go bad, broken bones", Wounds);
+        Test("weather: rain, cold, hypothermia, a chill", Weather);
+        Test("companions can die, for good", CompanionDeath);
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("random play never gets stuck, across 300 seeds", RandomPlay);
         Console.WriteLine(failures == 0 ? "\nAll tests passed." : "\n" + failures + " test(s) failed.");
         return failures == 0 ? 0 : 1;
@@ -168,7 +171,7 @@ static class Program
         Pick(e, "Fight it");
         Assert(e.S.inCombat && e.S.enemy == "dog", "a wolf should be robbing the last snare");
         for (int i = 0; i < 80 && e.S.inCombat; i++) StepToward(e, (0, 0));
-        Assert(e.S.scene == "snare3_won", "should beat the snare robber, was " + e.S.scene);
+        Assert(e.S.scene == "snare3_won", "should beat the snare robber, was " + e.S.scene + " " + e.S.deathCause + " [" + string.Join(", ", Rules.BodyStates(e.S.body, e.data)) + "] hp " + e.S.hp + " " + string.Join(" / ", e.S.battleLog));
         Pick(e, "Take it");
         Assert(e.S.Count("hare") == 3 && e.Objects().All(o => !o.id.StartsWith("snare")), "three hares, snare line done");
         Keep(e); UseTile(e, 'w');
@@ -431,6 +434,196 @@ static class Program
 
     /// <summary>A throwaway choice that applies some effects, for tests.</summary>
     static ChoiceDef Ch(params string[] effects) => new ChoiceDef { label = "test", effects = effects.ToList() };
+
+    static void Wounds()
+    {
+        var e = NewEngine();
+        e.DevStart("village");
+        e.S.devWeather = "overcast";
+        // A bite left alone goes bad
+        Rules.Afflict(e.S, e.data, e.S.body, "bite", null);
+        float hp0 = e.S.hp;
+        Rules.Advance(e.S, e.data, 60, false);
+        Assert(e.S.hp < hp0, "a bite bleeds");
+        Rules.Advance(e.S, e.data, 12 * 60, false);
+        Assert(!Rules.Has(e.S.body, "bite") && Rules.Has(e.S.body, "infection"), "an unclean bite turns into an infection");
+        e.S.hp = Rules.MaxHp(e.S);
+        e.DevMedicine();
+        e.S.result = "";
+        Assert(e.Treat("", "infection", "medicine"), "willow bark brings the fever down");
+        e.Choose(Ch("sleep:safe"));
+        Assert(e.S.body.afflictions.All(a => a.id != "infection" || a.done.Contains("rest")), "sleeping counts as rest");
+
+        // A bite cleaned and bound heals
+        var b = NewEngine();
+        b.DevStart("village");
+        b.S.devWeather = "overcast";
+        Rules.Afflict(b.S, b.data, b.S.body, "bite", null);
+        b.DevMedicine();
+        int spirits = b.S.Count("spirits");
+        Assert(b.Treat("", "bite", "clean") && b.S.Count("spirits") == spirits - 1, "spirits clean a bite");
+        b.S.result = "";
+        Assert(b.Treat("", "bite", "bandage"), "and a bandage binds it");
+        float hp1 = b.S.hp;
+        Rules.Advance(b.S, b.data, 60, false);
+        Assert(b.S.hp >= hp1, "a bound wound stops bleeding");
+        Rules.Advance(b.S, b.data, 40 * 60, false);
+        Assert(!Rules.Has(b.S.body, "bite") && !Rules.Has(b.S.body, "infection"), "a treated bite heals in time");
+        Assert(b.SkillLevel("first_aid") >= 0 && b.S.skills.Any(k => k.id == "first_aid"), "treating wounds trains First aid");
+
+        // A broken leg: no running, slow walking, no getting away
+        var l = NewEngine();
+        l.DevStart("village");
+        int walk = l.StepChoice(false)?.time ?? 0;
+        Rules.Afflict(l.S, l.data, l.S.body, "broken_leg", null);
+        var run = l.StepChoice(true);
+        Assert(run == null || (run.label == "Walk" && run.time >= walk * 2), "a broken leg can't run and walks slowly");
+        Assert(!l.TreatmentCost("splint").ok, "no splint, no bandage, no splinting");
+        l.S.AddItem("split_wood", 1); l.S.AddItem("bandage", 1);
+        Assert(l.TreatmentCost("splint").ok, "a split log and a bandage make a splint");
+        l.S.result = "";
+        Assert(l.Treat("", "broken_leg", "splint") && l.S.Count("split_wood") == 0 && l.S.Count("bandage") == 0, "splinting uses them up");
+        Assert(Rules.NoRun(l.S.body, l.data), "still no running while it knits");
+
+        // Stitching needs a sewing kit, which isn't used up
+        var g = NewEngine();
+        g.DevStart("village");
+        Rules.Afflict(g.S, g.data, g.S.body, "gash", null);
+        Assert(!g.TreatmentCost("stitch").ok, "no kit, no stitches");
+        g.S.AddItem("sewing_kit", 1);
+        g.S.result = "";
+        Assert(g.Treat("", "gash", "stitch") && g.S.Count("sewing_kit") == 1, "stitching with the kit keeps the kit");
+
+        // Fights leave wounds
+        int wounded = 0;
+        for (int seed = 1; seed <= 40; seed++)
+        {
+            var f = NewEngine();
+            f.DevStart("dog");
+            f.S.seed = seed;
+            for (int i = 0; i < 100 && f.S.inCombat; i++) StepToward(f, (0, 0));
+            if (f.S.body.afflictions.Any()) wounded++;
+        }
+        Console.WriteLine("    wolf fights that left a wound: " + wounded + " of 40");
+        Assert(wounded >= 4 && wounded <= 36, "wolf fights should sometimes leave a wound, not always");
+
+        // A concussion makes blows go astray
+        var c = NewEngine();
+        c.DevStart("dog");
+        Rules.Afflict(c.S, c.data, c.S.body, "concussion", null);
+        int dizzy = 0;
+        for (int i = 0; i < 30 && c.S.inCombat; i++)
+        {
+            c.S.enemyHp = 999;
+            c.Act(c.Choices().First(x => x.def.label == "Attack").def, Engine.TimingGood);
+            if (c.S.battleLog.Any(x => x.Contains("world swims"))) dizzy++;
+            c.S.hp = Rules.MaxHp(c.S); c.S.stamina = 100; c.S.energy = 100;
+        }
+        Assert(dizzy > 0, "a concussion should make you miss sometimes");
+    }
+
+    static void Weather()
+    {
+        var e = NewEngine();
+        e.DevStart("road");
+        // The weather is the same every time for the same moment, and it changes over days
+        var seen = new HashSet<string>();
+        for (int m = 0; m < 20 * 1440; m += 240) seen.Add(Rules.WeatherAt(e.S, e.data, m).id);
+        Assert(seen.Count >= 4 && seen.Contains("rain"), "twenty days should bring several kinds of weather: " + string.Join(", ", seen));
+        Assert(Rules.WeatherAt(e.S, e.data, 5000).id == Rules.WeatherAt(e.S, e.data, 5000).id, "weather is fixed by the seed");
+        Assert(Rules.AirTemp(e.S, e.data, 1440 + 15 * 60) > Rules.AirTemp(e.S, e.data, 1440 + 4 * 60) || e.S.devWeather != "", "afternoons are warmer than before dawn");
+
+        // A storm at night, in castaway clothes: wet, cold, then hypothermia
+        e.S.devWeather = "storm";
+        e.DevTime(21);
+        e.S.body = new Body();
+        Rules.Advance(e.S, e.data, 60, false);
+        Assert(e.S.body.wet >= Rules.WetAt, "a storm soaks you");
+        for (int i = 0; i < 12 && !Rules.Has(e.S.body, "hypothermia"); i++) { Rules.Advance(e.S, e.data, 60, false); e.S.hp = 100; e.S.energy = 100; e.S.hunger = 100; e.S.thirst = 100; }
+        Assert(Rules.Has(e.S.body, "hypothermia"), "hours in a night storm bring on hypothermia, cold " + e.S.body.cold);
+        Assert(Rules.FightPower(e.S.body, e.data) < 0.6f, "hypothermia makes you fight badly");
+
+        // A fire warms you and dries you; hypothermia goes
+        e.S.AddItem("flint", 1);
+        e.S.result = "";
+        e.Choose(Ch("sleep:camp"));
+        Assert(e.S.body.wet == 0 && !Rules.Has(e.S.body, "hypothermia"), "a night by a fire dries you and warms you, cold " + e.S.body.cold);
+
+        // Sleeping out in the rain, no fire, catches you a chill
+        var r = NewEngine();
+        r.DevStart("road");
+        r.S.devWeather = "rain";
+        r.DevTime(21);
+        r.S.items.RemoveAll(i => i.id == "flint");
+        r.S.result = "";
+        r.Choose(Ch("sleep:camp"));
+        Assert(Rules.Has(r.S.body, "chill") || Rules.Has(r.S.body, "hypothermia"), "a wet night in the open makes you ill");
+
+        // A bed puts it all right
+        var bed = NewEngine();
+        bed.DevStart("village");
+        bed.S.body.cold = 90; bed.S.body.wet = 90;
+        bed.S.result = "";
+        bed.Choose(Ch("sleep:safe"));
+        Assert(bed.S.body.cold == 0 && bed.S.body.wet == 0, "a bed: warm and dry");
+
+        // Good clothes keep the cold out
+        var warm = NewEngine();
+        warm.DevStart("road");
+        warm.S.devWeather = "rain";
+        warm.DevTime(21);
+        warm.DevGear("leather_jerkin", "F"); warm.DevGear("leather_boots", "F"); warm.DevGear("gloves", "F"); warm.DevGear("iron_cap", "F");
+        var bare = NewEngine();
+        bare.DevStart("road");
+        bare.S.devWeather = "rain";
+        bare.DevTime(21);
+        Rules.Advance(warm.S, warm.data, 3 * 60, false);
+        Rules.Advance(bare.S, bare.data, 3 * 60, false);
+        Assert(warm.S.body.cold < bare.S.body.cold, "warm clothes keep you warmer: " + warm.S.body.cold + " vs " + bare.S.body.cold);
+    }
+
+    static void CompanionDeath()
+    {
+        // Down in a fight, and left untreated: dead, for good
+        var e = NewEngine();
+        e.DevStart("boss");
+        var rook = e.Member("rook");
+        rook.hp = 0;
+        Rules.Afflict(e.S, e.data, rook.body, "grave", "Rook");
+        Rules.Advance(e.S, e.data, 7 * 60, false);
+        Assert(e.Member("rook") == null && e.S.fallen.Contains("rook") && e.Check("flag:dead_rook"), "an untreated grave wound kills");
+        Assert(e.Check("!follower:rook") && e.Objects().All(o => o.id != "rook"), "Rook is gone, and not back at his snares");
+
+        // Bandaged in time: back on their feet
+        var s = NewEngine();
+        s.DevStart("boss");
+        var r2 = s.Member("rook");
+        r2.hp = 0;
+        Rules.Afflict(s.S, s.data, r2.body, "grave", "Rook");
+        s.DevMedicine();
+        s.S.result = "";
+        Assert(s.Treat("rook", "grave", "bandage") && r2.hp > 0, "a bandage gets Rook back up");
+        Rules.Advance(s.S, s.data, 8 * 60, false);
+        Assert(s.Member("rook") != null, "and he lives");
+        Assert(Rules.NoFight(r2.body, s.data), "but he can't fight until it heals");
+
+        // Killed outright by a huge blow, or starved: dead too
+        var k = NewEngine();
+        k.DevStart("boss");
+        var r3 = k.Member("rook");
+        r3.hunger = 0; r3.thirst = 0; r3.hp = 3;
+        Rules.Advance(k.S, k.data, 2 * 60, false);
+        Assert(k.Member("rook") == null && k.S.fallen.Contains("rook"), "starving to death kills a companion");
+
+        // Ida, if Rook died on the hunt
+        var i = NewEngine();
+        i.DevStart("village");
+        i.S.flags.Add("quest:pack"); i.S.flags.Add("den_found"); i.S.flags.Add("alpha_dead"); i.S.flags.Add("dead_rook");
+        Keep(i); UseThing(i, "ida");
+        Assert(i.Choices().Any(c => c.enabled && c.def.label.Contains("isn't coming back")) && !i.Choices().Any(c => c.enabled && c.def.label == "\"The pack leader's dead.\""), "Ida hears Rook's dead");
+        Pick(i, "isn't coming back");
+        Assert(i.Check("done:pack"), "the job's still done");
+    }
 
     static void SaveLoad()
     {
@@ -836,7 +1029,7 @@ static class Program
         }
         else if (e.S.scene.StartsWith("ev_") || e.S.scene.StartsWith("dog_") || e.S.scene == "collapse")
             e.Choose(e.Choices().Where(c => c.enabled).Last().def);
-        else throw new Exception("walking stopped in " + e.S.scene + ": " + e.S.result);
+        else throw new Exception("walking stopped in " + e.S.scene + ": " + e.S.result + " " + e.S.deathCause + " [" + string.Join(", ", Rules.BodyStates(e.S.body, e.data)) + "] day " + e.S.Day + " " + Rules.Clock(e.S));
     }
 
     /// <summary>Walks to the zone that leads to a spot in another area, and through it.</summary>
@@ -880,6 +1073,9 @@ static class Program
         e.S.energy = Math.Max(e.S.energy, 60);
         e.S.hunger = Math.Max(e.S.hunger, 60);
         e.S.thirst = Math.Max(e.S.thirst, 60);
+        // the story runs aren't about wounds and weather (those have their own tests)
+        e.S.body = new Body();
+        foreach (var m in e.S.party) m.body = new Body();
     }
 
     static void WalkUntil(Engine e, (int x, int y) goal, Func<bool> done)

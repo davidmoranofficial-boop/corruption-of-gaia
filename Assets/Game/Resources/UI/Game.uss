@@ -1319,6 +1319,61 @@
 
 .world-night { background-color: rgba(8, 14, 34, 0.5); }
 
+/* weather over the world */
+.weather-tint, .weather-fx {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+.weather-tint { right: 0; bottom: 0; }
+.weather-tile {
+    position: absolute;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+.weather-drizzle { background-color: rgba(60, 80, 100, 0.14); }
+.weather-rain { background-color: rgba(40, 60, 85, 0.24); }
+.weather-storm { background-color: rgba(20, 28, 45, 0.42); }
+.weather-fog { background-color: rgba(200, 208, 210, 0.38); }
+.weather-heat { background-color: rgba(255, 190, 90, 0.12); }
+
+/* how you're doing: cold, wet, wounds */
+.hud-chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+.hud-chip, .hud-chip-bad {
+    font-size: 12px;
+    padding: 1px 6px;
+    margin: 0 4px 3px 0;
+    border-radius: 3px;
+    color: var(--text);
+    background-color: rgba(70, 103, 106, 0.55);
+}
+.hud-chip-bad { background-color: rgba(122, 51, 40, 0.75); }
+.clock-weather {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+.wound-who {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--brine);
+    margin: 6px 0 4px 0;
+}
+.wound-done {
+    font-size: 14px;
+    color: #7fae6a;
+    margin: 4px 10px 6px 0;
+}
+.line-warn {
+    font-size: 15px;
+    color: #e3a64e;
+    white-space: normal;
+    margin-bottom: 4px;
+}
+
 .walker {
     position: absolute;
     overflow: hidden;

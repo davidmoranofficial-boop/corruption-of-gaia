@@ -574,6 +574,75 @@
           "result": "It goes in your pocket, and stays there."
         }
       ]
+    },
+    {
+      "id": "herb_yarrow1",
+      "title": "Yarrow",
+      "text": [
+        "Yarrow: flat white flower heads on feathery stems. Packed into a wound, it keeps it clean. It'll grow back."
+      ],
+      "choices": [
+        {
+          "label": "Pick some",
+          "time": 10,
+          "effects": [
+            "item:yarrow+2",
+            "flag:yarrow1_today"
+          ],
+          "go": "travel",
+          "result": "You pick a good handful and fold it into a cloth."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "herb_yarrow2",
+      "title": "Yarrow",
+      "text": [
+        "Yarrow: flat white flower heads on feathery stems. Packed into a wound, it keeps it clean. It'll grow back."
+      ],
+      "choices": [
+        {
+          "label": "Pick some",
+          "time": 10,
+          "effects": [
+            "item:yarrow+2",
+            "flag:yarrow2_today"
+          ],
+          "go": "travel",
+          "result": "You pick a good handful and fold it into a cloth."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "herb_willow",
+      "title": "A young willow",
+      "text": [
+        "A young willow leaning over the stream. Its bark brings a fever down, chewed or brewed. Take a little and it'll mend."
+      ],
+      "choices": [
+        {
+          "label": "Strip some bark",
+          "time": 10,
+          "effects": [
+            "item:willow_bark+2",
+            "flag:willow_today"
+          ],
+          "go": "travel",
+          "result": "You peel a few strips from the side facing the water, and leave the rest."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
     }
   ]
 }

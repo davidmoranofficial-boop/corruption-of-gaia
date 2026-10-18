@@ -502,7 +502,7 @@ def hills():
             {'id': 'brazier_lit', 'kind': 'item', 'sprite': 'obj_brazier_lit', 'x': 22, 'y': 30, 'scene': 'brazier',
              'when': ['flag:brazier_lit']},
             {'id': 'rook', 'kind': 'npc', 'sprite': 'npc_rook', 'x': 9, 'y': 29, 'facing': 'right', 'scene': 'rook',
-             'when': ['!follower:rook']},
+             'when': ['!follower:rook', '!flag:dead_rook', '!flag:rook_escort']},
             # the pack leader's den, in the north-east corner
             {'id': 'alpha', 'kind': 'npc', 'sprite': 'obj_wolf_alpha', 'x': 29, 'y': 3, 'facing': 'down', 'scene': 'den',
              'when': ['quest:pack', '!flag:alpha_dead']},
@@ -512,6 +512,10 @@ def hills():
              'when': ['!flag:snare2_done']},
             {'id': 'snare3', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[2][0], 'y': snares[2][1], 'scene': 'snare3',
              'when': ['!flag:snare3_done']},
+            # herbs for wounds: yarrow by the path, willow by the stream (both come back the next day)
+            {'id': 'yarrow1', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 19, 'y': 23, 'scene': 'herb_yarrow1', 'when': ['!flag:yarrow1_today']},
+            {'id': 'yarrow2', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 5, 'y': 17, 'scene': 'herb_yarrow2', 'when': ['!flag:yarrow2_today']},
+            {'id': 'willow', 'kind': 'item', 'sprite': 'obj_willow', 'x': 12, 'y': 21, 'scene': 'herb_willow', 'when': ['!flag:willow_today']},
             {'id': 'glint', 'kind': 'item', 'sprite': 'obj_glint', 'x': 21, 'y': 10, 'scene': 'quarry_gem',
              'when': ['!flag:gem_found']},
             {'id': 'sign_hills', 'kind': 'sign', 'sprite': 'obj_sign', 'x': path(36) + 2, 'y': 36,
@@ -1384,6 +1388,44 @@ oeWbbbDbbbbbbBo.
 ...vvvvvvvvvv...
 ................
 """,
+    # a clump of yarrow: flat white flower heads on feathery stems
+    'obj_yarrow': """
+................
+................
+................
+................
+...oo.....oo....
+..oWWo...oWWo...
+..oWYWo.oWYWWo..
+...oWo..oWWWo...
+...ofo...ofo..oo
+...of.oo.of..oWWo
+..oF.oWWo.fo.oYWo
+..oFf.oWo.Fo..ofo
+...oFfofoFf..oFo.
+...ovFFfFFvooFo..
+....ovvvvvvvvvo..
+.....ooooooooo...
+""",
+    # a young willow by the stream, bark peeling
+    'obj_willow': """
+.....oooooo.....
+...ooFffffFoo...
+..oFfiffiffiFo..
+.oFiffFfFfffiFo.
+.oFfiFffiFFfFFo.
+oFfFfvFfFfvFfiFo
+oFiFvoFbbFovFfFo
+.oFvo.oDbo.ovFo.
+.ofo..odbo..oFo.
+.oFo..obDo..ofo.
+..o...oDbo...o..
+......obdo......
+......oDbo......
+.....obDdbo.....
+....oBbbbbBo....
+.....oooooo.....
+""",
     # something glinting in the spoil heap
     'obj_glint': """
 ................
@@ -1470,6 +1512,21 @@ def object_sprite(text):
     return img
 
 
+# ============================================================================================== weather
+
+def fx_sprites(out):
+    """Rain streaks drawn over the world in rain and storms: a tile that repeats, slanting a little with the wind."""
+    for name, count, length, alpha in (('fx_drizzle', 26, 3, 90), ('fx_rain', 46, 6, 130), ('fx_storm', 90, 9, 160)):
+        rnd = random.Random(name)
+        img = Image.new('RGBA', (96, 96), (0, 0, 0, 0))
+        for _ in range(count):
+            x, y = rnd.randrange(96), rnd.randrange(96)
+            for i in range(length):
+                px, py = (x - i // 3) % 96, (y + i) % 96
+                img.putpixel((px, py), (190, 210, 225, alpha))
+        img.save(os.path.join(out, name + '.png'))
+
+
 # ============================================================================================== main
 
 def main():
@@ -1523,6 +1580,7 @@ def main():
         sheet(fig, sw).save(os.path.join(walk, name + '.png'))
     for name, text in OBJECTS.items():
         object_sprite(text).save(os.path.join(out, name + '.png'))
+    fx_sprites(out)
     print('world: %d areas, %d walking sheets' % (len(AREAS), n + len(NPCS)))
 
 

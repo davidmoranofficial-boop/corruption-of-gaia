@@ -149,6 +149,36 @@
       "id": "wolf_pelt",
       "name": "Pack leader's pelt",
       "desc": "A huge grey pelt, black along the spine. Proof, if anyone doubts you."
+    },
+    {
+      "id": "bandage",
+      "name": "Bandage",
+      "desc": "A roll of clean linen. Stops bleeding, binds sprains and ribs."
+    },
+    {
+      "id": "spirits",
+      "name": "Flask of spirits",
+      "desc": "Rough fishermen's spirit. Burns going into a wound, which is the point."
+    },
+    {
+      "id": "splint",
+      "name": "Splint",
+      "desc": "Two straight lengths of wood and some ties, for a broken bone."
+    },
+    {
+      "id": "sewing_kit",
+      "name": "Sewing kit",
+      "desc": "Needle and waxed thread. For deep cuts, if you can stomach it. It isn't used up."
+    },
+    {
+      "id": "yarrow",
+      "name": "Yarrow",
+      "desc": "A hill herb with feathery leaves. Packed into a wound, it stops it going bad."
+    },
+    {
+      "id": "willow_bark",
+      "name": "Willow bark",
+      "desc": "Chewed or brewed, it brings a fever down."
     }
   ],
   "enemies": [
@@ -167,14 +197,30 @@
           "name": "snaps at you",
           "tell": "It circles you, snapping at the air.",
           "power": 1,
-          "weight": 5
+          "weight": 5,
+          "wounds": [
+            {
+              "id": "bite",
+              "chance": 10
+            }
+          ]
         },
         {
           "id": "lunge",
           "name": "lunges at your throat",
           "tell": "It drops low and its back legs bunch. It's going to lunge.",
           "power": 1.6,
-          "weight": 3
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "bite",
+              "chance": 22
+            },
+            {
+              "id": "gash",
+              "chance": 5
+            }
+          ]
         },
         {
           "id": "wary",
@@ -203,14 +249,34 @@
           "name": "pinches at your ankle",
           "tell": "It sidles towards you, big claw open.",
           "power": 1,
-          "weight": 5
+          "weight": 5,
+          "wounds": [
+            {
+              "id": "cut",
+              "chance": 20
+            },
+            {
+              "id": "sprain",
+              "chance": 8
+            }
+          ]
         },
         {
           "id": "crush",
           "name": "clamps its big claw on you",
           "tell": "It rears up and raises both claws high.",
           "power": 1.5,
-          "weight": 3
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "cut",
+              "chance": 25
+            },
+            {
+              "id": "broken_arm",
+              "chance": 6
+            }
+          ]
         },
         {
           "id": "shell",
@@ -239,14 +305,38 @@
           "name": "hooks at you with its tusks",
           "tell": "It swings its head low, tusks first.",
           "power": 1,
-          "weight": 5
+          "weight": 5,
+          "wounds": [
+            {
+              "id": "gash",
+              "chance": 22
+            },
+            {
+              "id": "cut",
+              "chance": 20
+            }
+          ]
         },
         {
           "id": "charge",
           "name": "charges you down",
           "tell": "It paws the ground and drops its head. It's going to charge.",
           "power": 1.7,
-          "weight": 3
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "cracked_ribs",
+              "chance": 18
+            },
+            {
+              "id": "broken_leg",
+              "chance": 6
+            },
+            {
+              "id": "concussion",
+              "chance": 8
+            }
+          ]
         },
         {
           "id": "snort",
@@ -278,14 +368,34 @@
           "name": "mauls you",
           "tell": "It paces towards you, head low, jaws open.",
           "power": 1,
-          "weight": 5
+          "weight": 5,
+          "wounds": [
+            {
+              "id": "bite",
+              "chance": 30
+            },
+            {
+              "id": "gash",
+              "chance": 10
+            }
+          ]
         },
         {
           "id": "lunge",
           "name": "lunges at your throat",
           "tell": "It drops low and its back legs bunch. It's going to lunge.",
           "power": 1.7,
-          "weight": 3
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "bite",
+              "chance": 30
+            },
+            {
+              "id": "gash",
+              "chance": 15
+            }
+          ]
         },
         {
           "id": "howl",
@@ -300,7 +410,21 @@
           "name": "tears into you in a frenzy",
           "tell": "Its hackles rise and froth flecks its jaws. It's about to go wild.",
           "power": 2.1,
-          "weight": 1
+          "weight": 1,
+          "wounds": [
+            {
+              "id": "gash",
+              "chance": 20
+            },
+            {
+              "id": "bite",
+              "chance": 20
+            },
+            {
+              "id": "broken_arm",
+              "chance": 6
+            }
+          ]
         }
       ]
     }
@@ -370,28 +494,32 @@
       "slot": "hands",
       "part": "cuff",
       "desc": "Leather with iron studs across the knuckles.",
-      "stamina": 10
+      "stamina": 10,
+      "warmth": 2
     },
     {
       "id": "castaway_shirt",
       "name": "Salt-stiff shirt",
       "slot": "body",
       "desc": "Your own shirt, stiff with dried seawater and torn at one sleeve.",
-      "guard": 0.02
+      "guard": 0.02,
+      "warmth": 1
     },
     {
       "id": "castaway_trousers",
       "name": "Torn trousers",
       "slot": "legs",
       "desc": "Good cloth once. The sea and the rocks have had their way with them.",
-      "guard": 0.02
+      "guard": 0.02,
+      "warmth": 1
     },
     {
       "id": "castaway_boots",
       "name": "Salt-stained boots",
       "slot": "feet",
       "desc": "They squelch less than they did, which is something.",
-      "guard": 0.01
+      "guard": 0.01,
+      "warmth": 1
     },
     {
       "id": "iron_cap",
@@ -399,7 +527,8 @@
       "slot": "head",
       "part": "rim",
       "desc": "A plain round cap of hammered iron. It won't stop much, but it'll stop something.",
-      "guard": 0.08
+      "guard": 0.08,
+      "warmth": 1
     },
     {
       "id": "leather_jerkin",
@@ -407,7 +536,8 @@
       "slot": "body",
       "part": "lacing",
       "desc": "Thick, laced leather that turns a claw or a glancing blade.",
-      "guard": 0.12
+      "guard": 0.12,
+      "warmth": 4
     },
     {
       "id": "leather_boots",
@@ -415,7 +545,8 @@
       "slot": "feet",
       "part": "buckle",
       "desc": "Tall boots of oiled leather. Dry feet, steady footing.",
-      "guard": 0.04
+      "guard": 0.04,
+      "warmth": 2
     },
     {
       "id": "bone_charm",
@@ -1305,7 +1436,9 @@
           "facing": "right",
           "scene": "rook",
           "when": [
-            "!follower:rook"
+            "!follower:rook",
+            "!flag:dead_rook",
+            "!flag:rook_escort"
           ]
         },
         {
@@ -1352,6 +1485,39 @@
           "scene": "snare3",
           "when": [
             "!flag:snare3_done"
+          ]
+        },
+        {
+          "id": "yarrow1",
+          "kind": "item",
+          "sprite": "obj_yarrow",
+          "x": 19,
+          "y": 23,
+          "scene": "herb_yarrow1",
+          "when": [
+            "!flag:yarrow1_today"
+          ]
+        },
+        {
+          "id": "yarrow2",
+          "kind": "item",
+          "sprite": "obj_yarrow",
+          "x": 5,
+          "y": 17,
+          "scene": "herb_yarrow2",
+          "when": [
+            "!flag:yarrow2_today"
+          ]
+        },
+        {
+          "id": "willow",
+          "kind": "item",
+          "sprite": "obj_willow",
+          "x": 12,
+          "y": 21,
+          "scene": "herb_willow",
+          "when": [
+            "!flag:willow_today"
           ]
         },
         {
@@ -1810,6 +1976,12 @@
       "name": "Hunting",
       "kind": "life",
       "desc": "Snares, tracking and game. Each level makes the work lighter."
+    },
+    {
+      "id": "first_aid",
+      "name": "First aid",
+      "kind": "life",
+      "desc": "Grows each time you treat a wound. Every level heals your whole party faster."
     }
   ],
   "moves": [
@@ -1942,7 +2114,333 @@
       "until": "Walking with you as far as the town inland, where he has business. Then he goes his own way.",
       "untilWhen": [
         "flag:rook_escort"
+      ],
+      "warmth": 6
+    }
+  ],
+  "afflictions": [
+    {
+      "id": "bite",
+      "name": "Bite wound",
+      "desc": "Teeth went in. It bleeds, and an animal's mouth is filthy: clean it before it goes bad.",
+      "bleed": 1,
+      "fight": 0.9,
+      "treat": [
+        "clean",
+        "bandage"
+      ],
+      "heal": 36,
+      "worsen": "infection",
+      "worsenAfter": 12,
+      "worsenUnless": "clean"
+    },
+    {
+      "id": "cut",
+      "name": "Cut",
+      "desc": "A shallow cut. It bleeds until it's bound.",
+      "bleed": 1.5,
+      "fight": 0.95,
+      "treat": [
+        "bandage"
+      ],
+      "heal": 24,
+      "selfHeal": 30
+    },
+    {
+      "id": "gash",
+      "name": "Deep gash",
+      "desc": "Laid open. It bleeds hard and needs cleaning, stitching and binding.",
+      "bleed": 4,
+      "fight": 0.75,
+      "stamina": 0.85,
+      "treat": [
+        "clean",
+        "stitch",
+        "bandage"
+      ],
+      "heal": 72,
+      "worsen": "infection",
+      "worsenAfter": 10,
+      "worsenUnless": "clean"
+    },
+    {
+      "id": "broken_arm",
+      "name": "Broken arm",
+      "desc": "Every swing is agony. Set it in a splint and give it days.",
+      "fight": 0.5,
+      "treat": [
+        "splint"
+      ],
+      "heal": 120
+    },
+    {
+      "id": "broken_leg",
+      "name": "Broken leg",
+      "desc": "You can't run, can't get away from a fight, and the whole party crawls. Splint it and give it days.",
+      "fight": 0.8,
+      "noRun": true,
+      "noFight": true,
+      "slow": 2,
+      "treat": [
+        "splint"
+      ],
+      "heal": 168
+    },
+    {
+      "id": "cracked_ribs",
+      "name": "Cracked ribs",
+      "desc": "Every breath hurts. Bind them and you can at least breathe.",
+      "stamina": 0.7,
+      "fight": 0.9,
+      "treat": [
+        "bandage"
+      ],
+      "heal": 96
+    },
+    {
+      "id": "sprain",
+      "name": "Sprained ankle",
+      "desc": "Swollen and weak. No running until it's bound and rested.",
+      "noRun": true,
+      "slow": 1.3,
+      "treat": [
+        "bandage"
+      ],
+      "heal": 24,
+      "selfHeal": 72
+    },
+    {
+      "id": "concussion",
+      "name": "Concussion",
+      "desc": "Your head rings and the world swims. Blows go astray. Only sleep fixes it.",
+      "fumble": 25,
+      "drain": 1,
+      "fight": 0.9,
+      "treat": [
+        "rest"
+      ],
+      "heal": 12
+    },
+    {
+      "id": "infection",
+      "name": "Infection",
+      "desc": "The wound's gone hot and angry and the fever's in you. It'll kill you slowly unless you bring the fever down.",
+      "bleed": 1.5,
+      "drain": 2,
+      "fight": 0.6,
+      "stamina": 0.8,
+      "noFight": true,
+      "treat": [
+        "medicine",
+        "rest"
+      ],
+      "heal": 36
+    },
+    {
+      "id": "chill",
+      "name": "Chill",
+      "desc": "You slept cold and wet and now you've caught it: shivers, a running nose, no strength. A warm bed and time.",
+      "drain": 1.5,
+      "stamina": 0.85,
+      "fight": 0.9,
+      "treat": [
+        "rest"
+      ],
+      "heal": 24,
+      "selfHeal": 72
+    },
+    {
+      "id": "hypothermia",
+      "name": "Hypothermia",
+      "desc": "Too cold for too long. Clumsy, slow, and it's killing you. Get dry and get warm: a fire, a bed, a roof.",
+      "drain": 2,
+      "fight": 0.5,
+      "stamina": 0.6,
+      "noFight": true,
+      "fumble": 15,
+      "slow": 1.3,
+      "cure": "warm"
+    },
+    {
+      "id": "heatstroke",
+      "name": "Heatstroke",
+      "desc": "The heat's got into your head. Get out of the sun and drink.",
+      "drain": 2,
+      "thirst": 6,
+      "fight": 0.6,
+      "stamina": 0.7,
+      "noFight": true,
+      "fumble": 10,
+      "cure": "cool"
+    },
+    {
+      "id": "grave",
+      "name": "Grave wound",
+      "desc": "Down and bleeding out. Bandage it within six hours or they die; stitch it too and they'll heal.",
+      "fight": 0.3,
+      "noFight": true,
+      "slow": 1.5,
+      "treat": [
+        "bandage",
+        "stitch"
+      ],
+      "heal": 48,
+      "deadline": 6
+    }
+  ],
+  "treatments": [
+    {
+      "id": "clean",
+      "name": "Clean the wound",
+      "desc": "Spirits, or a yarrow poultice, or at a pinch two drinks of water.",
+      "items": [
+        "spirits",
+        "yarrow",
+        "water+water"
+      ],
+      "minutes": 5
+    },
+    {
+      "id": "bandage",
+      "name": "Bandage it",
+      "desc": "Bind it tight with clean linen.",
+      "items": [
+        "bandage"
+      ],
+      "minutes": 10
+    },
+    {
+      "id": "stitch",
+      "name": "Stitch it",
+      "desc": "Needle and thread. Grit your teeth.",
+      "tool": "sewing_kit",
+      "minutes": 20
+    },
+    {
+      "id": "splint",
+      "name": "Splint it",
+      "desc": "A splint, or a split log and a bandage to make one.",
+      "items": [
+        "splint",
+        "split_wood+bandage",
+        "firewood+bandage"
+      ],
+      "minutes": 20
+    },
+    {
+      "id": "medicine",
+      "name": "Bring the fever down",
+      "desc": "Willow bark, chewed or brewed.",
+      "items": [
+        "willow_bark"
+      ],
+      "minutes": 15
+    },
+    {
+      "id": "rest",
+      "name": "Rest",
+      "desc": "A night's sleep.",
+      "minutes": 0
+    }
+  ],
+  "climates": [
+    {
+      "id": "coast",
+      "name": "The Loran coast",
+      "day": 14,
+      "night": 6,
+      "weather": [
+        {
+          "id": "clear",
+          "weight": 30
+        },
+        {
+          "id": "overcast",
+          "weight": 30
+        },
+        {
+          "id": "drizzle",
+          "weight": 12
+        },
+        {
+          "id": "rain",
+          "weight": 14
+        },
+        {
+          "id": "fog",
+          "weight": 8
+        },
+        {
+          "id": "storm",
+          "weight": 4
+        },
+        {
+          "id": "warm_spell",
+          "weight": 2
+        }
       ]
+    }
+  ],
+  "weathers": [
+    {
+      "id": "clear",
+      "name": "Clear",
+      "desc": "Clear skies.",
+      "temp": 1,
+      "wet": 0,
+      "dry": 20,
+      "overlay": ""
+    },
+    {
+      "id": "overcast",
+      "name": "Overcast",
+      "desc": "A grey lid of cloud.",
+      "temp": 0,
+      "wet": 0,
+      "dry": 10,
+      "overlay": ""
+    },
+    {
+      "id": "drizzle",
+      "name": "Drizzle",
+      "desc": "A fine wet mist of rain that gets into everything.",
+      "temp": -1,
+      "wet": 12,
+      "overlay": "drizzle"
+    },
+    {
+      "id": "rain",
+      "name": "Rain",
+      "desc": "Steady rain off the sea.",
+      "temp": -3,
+      "wet": 40,
+      "overlay": "rain"
+    },
+    {
+      "id": "storm",
+      "name": "Storm",
+      "desc": "Driving rain and a gale. Get under a roof.",
+      "temp": -6,
+      "wet": 80,
+      "overlay": "storm"
+    },
+    {
+      "id": "fog",
+      "name": "Fog",
+      "desc": "Sea fog, thick and cold.",
+      "temp": -2,
+      "wet": 5,
+      "dry": 0,
+      "overlay": "fog"
+    },
+    {
+      "id": "warm_spell",
+      "name": "Warm spell",
+      "desc": "A hot, still day, rare on this coast.",
+      "temp": 12,
+      "wet": 0,
+      "dry": 30,
+      "overlay": "heat"
     }
   ]
 }

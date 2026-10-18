@@ -25,6 +25,9 @@ namespace Loran.UnityLayer
         readonly Dictionary<string, string> npcFacing = new Dictionary<string, string>();
         int worldScale = 4;
         Vector2 worldSize;
+        VisualElement weatherFx;               // rain streaks, moved every frame
+        float weatherTile, weatherSpeed;
+        string drawnWeather = "";
         IVisualElementScheduledItem worldTick;
 
         // input and movement
@@ -89,6 +92,7 @@ namespace Loran.UnityLayer
                 ov.style.backgroundImage = new StyleBackground(over);
             }
             if (engine.Check("night") && !a.indoor) Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-night");
+            DrawWeather(a, k);
 
             PlaceYou(new Vector2(s.ax, s.ay), moving ? 1 + stepCount % 2 : 0);
             PlaceParty();
@@ -197,6 +201,43 @@ namespace Loran.UnityLayer
         }
 
         /// <summary>You, and whoever's walking with you (drawn behind you when they're above you on the screen).</summary>
+        /// <summary>The weather over the world: a tint for rain, fog or heat, and falling rain drawn as repeating tiles.</summary>
+        void DrawWeather(AreaDef a, int k)
+        {
+            weatherFx = null;
+            var w = Rules.WeatherNow(engine.S, engine.data);
+            drawnWeather = w?.id ?? "";
+            if (w == null || a.indoor || string.IsNullOrEmpty(w.overlay)) return;
+            var tint = Add(worldView, new VisualElement { pickingMode = PickingMode.Ignore }, "weather-tint");
+            tint.AddToClassList("weather-" + w.overlay);
+            var tex = Sprite("World/fx_" + w.overlay);
+            if (tex == null) return;
+            weatherTile = 96 * k;
+            weatherSpeed = w.overlay == "storm" ? 1100 : w.overlay == "rain" ? 700 : 260;
+            weatherFx = Add(worldView, new VisualElement { pickingMode = PickingMode.Ignore }, "weather-fx");
+            int cols = Mathf.CeilToInt(worldSize.x / weatherTile) + 2, rows = Mathf.CeilToInt(worldSize.y / weatherTile) + 2;
+            weatherFx.style.width = cols * weatherTile;
+            weatherFx.style.height = rows * weatherTile;
+            for (int y = 0; y < rows; y++)
+                for (int x = 0; x < cols; x++)
+                {
+                    var t = Add(weatherFx, new VisualElement { pickingMode = PickingMode.Ignore }, "weather-tile");
+                    t.style.left = x * weatherTile;
+                    t.style.top = y * weatherTile;
+                    t.style.width = weatherTile;
+                    t.style.height = weatherTile;
+                    t.style.backgroundImage = new StyleBackground(tex);
+                }
+        }
+
+        void MoveWeather()
+        {
+            if (weatherFx == null || weatherTile <= 0) return;
+            float t = Time.realtimeSinceStartup * weatherSpeed;
+            weatherFx.style.top = (t % weatherTile) - weatherTile;
+            weatherFx.style.left = -((t * 0.33f) % weatherTile) - 1;
+        }
+
         /// <summary>You and your party. Walkers are made in party order, then layered so whoever's lower stands in front.</summary>
         void DrawYouAndFollower()
         {
@@ -285,6 +326,7 @@ namespace Loran.UnityLayer
         void WorldTick()
         {
             if (worldView == null || worldView.panel == null) return;
+            MoveWeather();
             var s = engine.S;
             if (moving)
             {
@@ -308,6 +350,7 @@ namespace Loran.UnityLayer
                     Render();
                     return;
                 }
+                if ((Rules.WeatherNow(s, engine.data)?.id ?? "") != drawnWeather) { Render(); return; }   // the weather's turned
                 RenderHud();
                 UpdatePrompt();
                 PlaceYou(new Vector2(s.ax, s.ay), 0);

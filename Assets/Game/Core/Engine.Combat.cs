@@ -149,7 +149,7 @@ namespace Loran.Core
                 lines.Add("");   // marks the break between their turn and yours
             }
 
-            PlayerActs(kind, e, move, lines);
+            if (!Fumbles(kind, lines)) PlayerActs(kind, e, move, lines);
             if (S.inCombat && S.enemyHp > 0 && FollowerUp) FollowerActs(e, move, lines);
 
             if (S.inCombat && S.enemyHp <= 0)
@@ -163,7 +163,7 @@ namespace Loran.Core
             {
                 EnemyActs(e, move, lines);
             }
-            if (!S.inCombat) FollowerAfterFight();
+            if (!S.inCombat) { DownedAfterFight(); FollowerAfterFight(); }
 
             if (S.inCombat && S.hp > 0)
             {
@@ -232,7 +232,7 @@ namespace Loran.Core
                     break;
                 case "flee":
                 {
-                    int chance = Math.Min(95, 35 + S.stats[Stat.Agi] * 8);
+                    int chance = Rules.NoRun(S.body, data) ? 5 : Math.Min(95, 35 + S.stats[Stat.Agi] * 8);
                     if (Roll(1, 100) <= chance)
                     {
                         S.inCombat = false;
@@ -302,6 +302,7 @@ namespace Loran.Core
             if (how == "crit") dmg *= Rules.CritMultiplier + Rules.TraitSum(S, data, t => t.crit);
             else if (how == "glance") dmg *= Rules.GlanceMultiplier;
             dmg += Rules.TraitSum(S, data, t => t.fire);
+            dmg *= Rules.FightPower(S.body, data);
             if (move != null && move.guard) dmg *= 0.5f;
             int dealt = Math.Max(1, (int)Math.Round(dmg));
             S.enemyHp -= dealt;
@@ -337,7 +338,13 @@ namespace Loran.Core
                 m.hp -= ft;
                 lines.Add(foe + " " + move.name.Replace("your", f.name + "'s").Replace(" you", " " + f.name) + " for " + ft + ".");
                 Events.Add(new BattleEvent { target = "follower" + S.party.IndexOf(m), kind = "hit", amount = ft, text = ft.ToString() });
-                if (m.hp <= 0) lines.Add(f.name + " goes down!");
+                if (m.hp <= -f.hp * 0.5f)
+                {
+                    lines.Add(f.name + " is killed!");
+                    Rules.Die(S, data, m, "a blow from " + FoeName(e));
+                }
+                else if (m.hp <= 0) lines.Add(f.name + " goes down!");
+                else MaybeWound(move, m.body, f.name, ft, false);
                 return;
             }
             if (S.defending)
@@ -368,6 +375,7 @@ namespace Loran.Core
             lines.Add(foe + " " + move.name + " for " + taken + ".");
             Events.Add(new BattleEvent { target = "player", kind = move.power > 1.2f ? "crit" : "hit", amount = taken, text = taken.ToString() });
             if (S.defending) Rules.Train(S, Stat.End, 0.5f, "taking hits");
+            if (S.hp > 0) MaybeWound(move, S.body, null, taken, S.defending);
             if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
         }
 

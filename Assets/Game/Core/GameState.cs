@@ -21,6 +21,25 @@ namespace Loran.Core
 
     [Serializable] public class ItemStack { public string id; public int count; }
     [Serializable] public class RepEntry { public string place; public int value; }
+    /// <summary>A wound or ailment someone has: how long they've had it, which treatments are done, how far it's healed.</summary>
+    [Serializable]
+    public class Affliction
+    {
+        public string id = "";
+        public float hours;
+        public List<string> done = new List<string>();
+        public float healed;
+    }
+
+    /// <summary>What the weather and the wars have done to a body: wounds, and how cold, hot and wet it is (0 to 100).</summary>
+    [Serializable]
+    public class Body
+    {
+        public List<Affliction> afflictions = new List<Affliction>();
+        public float cold, heat, wet;
+        public void Fix() { afflictions ??= new List<Affliction>(); foreach (var a in afflictions) a.done ??= new List<string>(); }
+    }
+
     /// <summary>Someone in your party: their health, needs and mood, and where they stand in the world.</summary>
     [Serializable]
     public class PartyMember
@@ -32,6 +51,7 @@ namespace Loran.Core
         public int x, y;
         public string facing = "down";
         public List<string> conditions = new List<string>(); // hungry, thirsty, exhausted, wounded, low (spirits), as last told to the player
+        public Body body = new Body();
     }
 
     [Serializable] public class SkillEntry { public string id; public int level; public float xp; }
@@ -99,6 +119,9 @@ namespace Loran.Core
 
         // Your party: the people walking with you, in the order they walk behind you
         public List<PartyMember> party = new List<PartyMember>();
+        public List<string> fallen = new List<string>();     // companions who died: gone for good
+        public Body body = new Body();                        // your wounds, and how cold, hot and wet you are
+        public string devWeather = "";                        // dev mode: forces the weather
         // old saves only: the single follower from before parties
         public string follower = "";
         public float followerHp;
@@ -174,7 +197,10 @@ namespace Loran.Core
             if (!string.IsNullOrEmpty(follower) && party.Count == 0)
                 party.Add(new PartyMember { id = follower, hp = followerHp, x = fx, y = fy, facing = followerFacing ?? "down" });
             follower = "";
-            foreach (var m in party) { m.facing ??= "down"; m.conditions ??= new List<string>(); }
+            foreach (var m in party) { m.facing ??= "down"; m.conditions ??= new List<string>(); m.body ??= new Body(); m.body.Fix(); }
+            fallen ??= new List<string>();
+            body ??= new Body(); body.Fix();
+            devWeather ??= "";
             enemyMove ??= "";
             travelRoute ??= ""; area ??= ""; if (string.IsNullOrEmpty(facing)) facing = "down";
             forging ??= ""; forgeMaterial ??= ""; forgeMax ??= ""; forgeNext ??= ""; forgeIntro ??= "";

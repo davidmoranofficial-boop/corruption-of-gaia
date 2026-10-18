@@ -178,6 +178,7 @@ namespace Loran.Core
                 int index = i++;
                 var f = data.Follower(m.id);
                 if (f == null || m.hp <= 0 || S.enemyHp <= 0) continue;
+                if (Rules.NoFight(m.body, data)) { lines.Add(f.name + " is in no state to fight."); continue; }
                 float dmg = Roll(f.atkMin, f.atkMax) * Rules.PartyPower(m, data);
                 if (move.guard) dmg *= 0.5f;
                 int dealt = Math.Max(1, (int)Math.Round(dmg));
@@ -187,14 +188,13 @@ namespace Loran.Core
             }
         }
 
-        /// <summary>After a fight: anyone who went down gets back up, hurt. Fighting tires everyone.</summary>
+        /// <summary>After a fight, fighting has tired everyone.</summary>
         void FollowerAfterFight()
         {
             foreach (var m in S.party)
             {
                 var f = data.Follower(m.id);
                 if (f == null) continue;
-                if (m.hp <= 0) { m.hp = Math.Max(1, f.hp * 0.25f); m.morale -= 5; }
                 m.energy -= 3;
                 Rules.ClampMember(m, f);
             }

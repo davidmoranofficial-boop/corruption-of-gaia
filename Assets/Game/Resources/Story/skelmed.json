@@ -468,7 +468,8 @@
         {
           "when": [
             "done:pack",
-            "!flag:guild_member"
+            "!flag:guild_member",
+            "!flag:dead_rook"
           ],
           "text": "\"Go and see the others, if you haven't. Garran at the forge. Old Orlen up the hill. Then Mira at the guild post. She'll want your name in her book.\""
         },
@@ -477,6 +478,12 @@
             "flag:guild_member"
           ],
           "text": "\"Guild card and all. Look at you.\""
+        },
+        {
+          "when": [
+            "flag:dead_rook"
+          ],
+          "text": "Ida doesn't quite look at you. There's a bow hung over the lodge door that wasn't there before."
         }
       ],
       "choices": [
@@ -529,14 +536,17 @@
             "quest:pack",
             "follow:rook",
             "give:hunting_bow",
-            "item:fish+1"
+            "item:fish+1",
+            "item:bandage+2",
+            "item:spirits+1"
           ],
-          "result": "Ida's quiet for a moment. \"The wolves. They didn't used to come down this far, and they didn't used to have eyes like that. Rook says there's one leading them: a big grey brute with a scar across its muzzle, denning past the quarry. Kill the leader and the rest will scatter.\" She whistles, and Rook comes round the side of the lodge with two bows. He hands you the older one. \"He goes with you,\" says Ida. \"He knows the hills. You know how to finish a job.\" She pushes a fish into your hands. \"And he's not eaten since yesterday, the fool. Feed him before you go up there. A hungry man shoots wide.\""
+          "result": "Ida's quiet for a moment. \"The wolves. They didn't used to come down this far, and they didn't used to have eyes like that. Rook says there's one leading them: a big grey brute with a scar across its muzzle, denning past the quarry. Kill the leader and the rest will scatter.\" She whistles, and Rook comes round the side of the lodge with two bows. He hands you the older one. \"He goes with you,\" says Ida. \"He knows the hills. You know how to finish a job.\" She pushes a fish into your hands. \"And he's not eaten since yesterday, the fool. Feed him before you go up there. A hungry man shoots wide.\" Then two rolls of linen and a little flask. \"Bandages, and spirits for the bites. Wolves' mouths are filthy. Clean a bite before you bind it, or it'll go bad on you.\""
         },
         {
           "label": "\"The pack leader's dead.\"",
           "when": [
-            "ready:pack"
+            "ready:pack",
+            "follower:rook"
           ],
           "time": 15,
           "effects": [
@@ -549,6 +559,20 @@
           "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses ten coppers on you, and this time she won't hear a word about it. Rook clears his throat. \"I've business in the town inland. Pelts to sell, and a man there who owes the lodge money.\" He shrugs his bow higher on his shoulder. \"Roads are bad. I'll walk with you as far as the town, if you're going. After that you're on your own.\""
         },
         {
+          "label": "\"The pack leader's dead. Rook isn't coming back.\"",
+          "when": [
+            "ready:pack",
+            "!follower:rook"
+          ],
+          "time": 20,
+          "effects": [
+            "complete:pack",
+            "coins+10",
+            "rep:skelmed+5"
+          ],
+          "result": "Ida takes the pelt without looking at it. For a long time she doesn't say anything at all. \"He was nineteen,\" she says at last. She puts ten coppers in your hand and closes your fingers over them, and goes inside, and shuts the door."
+        },
+        {
           "label": "\"What now?\"",
           "when": [
             "flag:guild_member",
@@ -559,7 +583,7 @@
           "effects": [
             "flag:ida_town"
           ],
-          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks at your guild card. \"Somebody ought to go and see. Somebody with a card like that.\" She nods at Rook. \"And he'll see you as far as the town. Feed him. He won't ask.\""
+          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks at your guild card. \"Somebody ought to go and see. Somebody with a card like that.\""
         },
         {
           "label": "\"Goodbye.\"",
@@ -1171,6 +1195,57 @@
             "item:bread+1"
           ],
           "result": "Bess wraps a loaf in a cloth. \"Yesterday's. Still good.\""
+        },
+        {
+          "label": "Buy a bandage (2 coppers)",
+          "need": [
+            "coins>=2"
+          ],
+          "needText": "You haven't the coin.",
+          "effects": [
+            "coins-2",
+            "item:bandage+1"
+          ],
+          "result": "Bess fetches a roll of clean linen from a chest. \"For the cuts. There's always cuts.\""
+        },
+        {
+          "label": "Buy a flask of spirits (3 coppers)",
+          "need": [
+            "coins>=3"
+          ],
+          "needText": "You haven't the coin.",
+          "effects": [
+            "coins-3",
+            "item:spirits+1"
+          ],
+          "result": "\"Don't drink it all at once. Or at all, really. It's for wounds.\""
+        },
+        {
+          "label": "Buy willow bark (2 coppers)",
+          "need": [
+            "coins>=2"
+          ],
+          "needText": "You haven't the coin.",
+          "effects": [
+            "coins-2",
+            "item:willow_bark+1"
+          ],
+          "result": "\"For fevers. Brew it, it's foul. Or there's a willow up by the hill stream, if you'd rather pick your own.\""
+        },
+        {
+          "label": "Buy a sewing kit (5 coppers)",
+          "need": [
+            "coins>=5"
+          ],
+          "needText": "You haven't the coin.",
+          "effects": [
+            "coins-5",
+            "item:sewing_kit+1"
+          ],
+          "result": "\"Needle and good thread. Stitched up my husband with that, twice.\"",
+          "when": [
+            "!item:sewing_kit"
+          ]
         },
         {
           "label": "\"Goodbye.\"",

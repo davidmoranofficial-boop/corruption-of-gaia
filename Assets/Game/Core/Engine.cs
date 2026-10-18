@@ -53,6 +53,16 @@ namespace Loran.Core
             d.moves ??= new List<MoveDef>();
             foreach (var m in d.moves) m.need ??= "";
             d.followers ??= new List<FollowerDef>();
+            d.afflictions ??= new List<AfflictionDef>();
+            foreach (var x in d.afflictions) { x.treat ??= new List<string>(); x.worsen ??= ""; x.worsenUnless ??= ""; x.cure ??= ""; }
+            d.treatments ??= new List<TreatmentDef>();
+            foreach (var x in d.treatments) { x.items ??= new List<string>(); x.tool ??= ""; }
+            d.climates ??= new List<ClimateDef>();
+            foreach (var x in d.climates) x.weather ??= new List<WeatherChance>();
+            d.weathers ??= new List<WeatherDef>();
+            foreach (var x in d.weathers) x.overlay ??= "";
+            foreach (var en in d.enemies) foreach (var mv in en.moves) mv.wounds ??= new List<WoundChance>();
+            foreach (var ar in d.areas ?? new List<AreaDef>()) if (string.IsNullOrEmpty(ar.climate)) ar.climate = "coast";
             foreach (var f in d.followers) { f.untilWhen ??= new List<string>(); f.until ??= ""; f.quest ??= ""; }
             d.backgrounds ??= new List<BackgroundDef>();
             d.gear ??= new List<GearDef>();
@@ -668,27 +678,28 @@ namespace Loran.Core
         void Sleep(string kind, StringBuilder notes)
         {
             int mins = Rules.MinutesUntilMorning(S);
+            S.flags.RemoveAll(f => f.EndsWith("_today"));   // things that come back each day (herbs) are back in the morning
             var partyNotes = new StringBuilder();
             PartyAtNight(kind, kind != "camp" || S.Count("flint") > 0, partyNotes);
             switch (kind)
             {
                 case "safe":
-                    Rules.Sleep(S, data, mins, 100);
+                    Rules.Sleep(S, data, mins, 100, "bed");
                     notes.Append("You sleep through until morning and wake rested.");
                     break;
                 case "rough":
-                    Rules.Sleep(S, data, mins, 70);
+                    Rules.Sleep(S, data, mins, 70, "none");
                     notes.Append("You sleep badly, but you sleep. You wake stiff and cold.");
                     break;
                 case "camp":
                     if (S.Count("flint") > 0)
                     {
-                        Rules.Sleep(S, data, mins, 85);
+                        Rules.Sleep(S, data, mins, 85, "fire");
                         notes.Append("You scrape together driftwood and get a fire going with Yenson's flint. You sleep warm, with the fire between you and the dark.");
                     }
                     else
                     {
-                        Rules.Sleep(S, data, mins, 65);
+                        Rules.Sleep(S, data, mins, 65, "none");
                         notes.Append("No fire. You curl up out of the wind and sleep in fits.");
                         if (Roll(1, 100) <= 35)
                         {
@@ -853,6 +864,23 @@ namespace Loran.Core
                 }
             }
             foreach (var j in data.file.journal) foreach (var c in j.when) Cond("journal \"" + j.text + "\"", c);
+            foreach (var a in data.file.afflictions)
+            {
+                foreach (var t in a.treat) if (data.Treatment(t) == null) problems.Add("affliction " + a.id + ": no treatment '" + t + "'");
+                if (a.worsen != "" && data.Affliction(a.worsen) == null) problems.Add("affliction " + a.id + ": no affliction '" + a.worsen + "'");
+                if (a.worsenUnless != "" && !a.treat.Contains(a.worsenUnless)) problems.Add("affliction " + a.id + ": worsenUnless isn't one of its treatments");
+            }
+            foreach (var t in data.file.treatments)
+            {
+                foreach (var alt in t.items) foreach (var i in alt.Split('+')) if (i != "water" && data.Item(i) == null) problems.Add("treatment " + t.id + ": no item '" + i + "'");
+                if (t.tool != "" && data.Item(t.tool) == null) problems.Add("treatment " + t.id + ": no item '" + t.tool + "'");
+            }
+            foreach (var en in data.file.enemies) foreach (var mv in en.moves) foreach (var w in mv.wounds)
+                if (data.Affliction(w.id) == null) problems.Add("enemy " + en.id + ": no affliction '" + w.id + "'");
+            foreach (var c in data.file.climates) foreach (var w in c.weather)
+                if (data.Weather(w.id) == null) problems.Add("climate " + c.id + ": no weather '" + w.id + "'");
+            foreach (var ar in data.file.areas) if (data.Climate(ar.climate) == null) problems.Add("area " + ar.id + ": no climate '" + ar.climate + "'");
+            foreach (var id in new[] { "grave", "hypothermia", "heatstroke", "chill" }) if (data.Affliction(id) == null) problems.Add("no affliction '" + id + "' (the engine uses it)");
             foreach (var f in data.file.followers)
             {
                 foreach (var c in f.untilWhen) Cond("follower " + f.id, c);

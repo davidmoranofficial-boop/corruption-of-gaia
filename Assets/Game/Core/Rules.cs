@@ -6,7 +6,7 @@ namespace Loran.Core
     /// <summary>
     /// The numbers behind the core systems. Every tuning value lives here so it can be balanced in one place.
     /// </summary>
-    public static class Rules
+    public static partial class Rules
     {
         // Needs drain per in-game hour while awake
         public const float HungerPerHour = 3f;
@@ -37,7 +37,7 @@ namespace Loran.Core
             int bonus = (s.level - 1) * StaminaPerLevel;
             foreach (var g in s.Equipped) bonus += g.stamina;
             bonus += (int)TraitSum(s, d, t => t.stamina);
-            return 70 + s.stats[Stat.End] * 6 + bonus;
+            return (int)Math.Round((70 + s.stats[Stat.End] * 6 + bonus) * StaminaPower(s.body, d));
         }
 
         /// <summary>Rep +100 halves the rate, rep -100 makes it 1.5x. Only Skelmed's local rep exists in the slice so far.</summary>
@@ -57,12 +57,13 @@ namespace Loran.Core
             s.hunger -= HungerPerHour * h;
             s.thirst -= ThirstPerHour * h;
             s.energy -= EnergyPerHour * h;
-            if (!exerting) s.stamina += StaminaRegenPerHour * h;
+            if (!exerting) s.stamina += StaminaRegenPerHour * h * (s.body.cold >= ColdAt ? 0.5f : 1f);
             s.corruption += CorruptionPerDay / 24f * h * CorruptionMultiplier(s) * WardFactor(s, d);
 
             if (s.hunger <= 0) s.hp -= StarveDamagePerHour * h;
             if (s.thirst <= 0) s.hp -= StarveDamagePerHour * h;
-            AdvanceParty(s, d, h, false, 0);
+            AdvanceYourBody(s, d, h, false, 0);
+            AdvanceParty(s, d, h, false, 0, "");
             Clamp(s, d);
         }
 
@@ -73,8 +74,18 @@ namespace Loran.Core
         public const float MoraleLossPerHour = 1.5f;   // for each need that's low
         public const float MoraleRestPerHour = 0.5f;   // when nothing's wrong, spirits slowly recover (up to 60)
 
-        /// <summary>A party member's troubles right now: hungry, thirsty, exhausted, wounded, low spirits.</summary>
+        static readonly string[] Announce = { "starving", "hungry", "parched", "thirsty", "exhausted", "low spirits", "cold", "hot" };
+
+        /// <summary>A party member's troubles right now: hungry, thirsty, exhausted, wounded, low spirits, then cold, wet, hot and each wound.</summary>
         public static List<string> Conditions(PartyMember m, GameData d)
+        {
+            var c = NeedTroubles(m, d);
+            c.AddRange(BodyStates(m.body, d));
+            if (m.hp <= 0) c.Insert(0, "down");
+            return c;
+        }
+
+        static List<string> NeedTroubles(PartyMember m, GameData d)
         {
             var c = new List<string>();
             var f = d.Follower(m.id);
@@ -87,16 +98,30 @@ namespace Loran.Core
         }
 
         /// <summary>How hard a party member hits: each trouble takes 15% off, down to 40%.</summary>
-        public static float PartyPower(PartyMember m, GameData d) => Math.Max(0.4f, 1f - 0.15f * Conditions(m, d).Count);
+        public static float PartyPower(PartyMember m, GameData d) => Math.Max(0.4f, 1f - 0.15f * NeedTroubles(m, d).Count) * FightPower(m.body, d);
 
         /// <summary>Time passes for your party too: they get hungry, thirsty and tired, and unhappy if it goes on.</summary>
-        static void AdvanceParty(GameState s, GameData d, float h, bool sleeping, float energyAfter)
+        static void AdvanceParty(GameState s, GameData d, float h, bool sleeping, float energyAfter, string shelter, int start = 0)
         {
             for (int i = s.party.Count - 1; i >= 0; i--)
             {
                 var m = s.party[i];
                 var f = d.Follower(m.id);
                 float app = f?.appetite ?? 1;
+                string name = f?.name ?? m.id;
+                if (sleeping) SleepBody(s, d, m.body, f?.warmth ?? 6, start, (int)(h * 60), shelter, name);
+                var (bhp, ben, bth) = AdvanceBody(s, d, m.body, f?.warmth ?? 6, h, name, sleeping, 0, s.minutes, out var killedBy);
+                bool down = m.hp <= 0;
+                if (m.hunger <= 0) bhp += StarveDamagePerHour * h;
+                if (m.thirst <= 0) bhp += StarveDamagePerHour * h;
+                if (!down) m.hp -= bhp;
+                m.energy -= ben;
+                m.thirst -= bth;
+                if (killedBy != null || (!down && m.hp <= 0 && !Has(m.body, "grave")))
+                {
+                    Die(s, d, m, killedBy != null ? killedBy.ToLowerInvariant() : "their wounds");
+                    continue;
+                }
                 if (sleeping)
                 {
                     m.hunger -= 2f * h * app;
@@ -113,15 +138,12 @@ namespace Loran.Core
                     if (low > 0) m.morale -= MoraleLossPerHour * low * h;
                     else if (m.morale < 60) m.morale = Math.Min(60, m.morale + MoraleRestPerHour * h);
                 }
-                if (m.hunger <= 0) m.hp -= StarveDamagePerHour * h;
-                if (m.thirst <= 0) m.hp -= StarveDamagePerHour * h;
                 ClampMember(m, f);
 
-                // Tell the player when something new goes wrong
-                string name = f?.name ?? m.id;
+                // Tell the player when something new goes wrong (wounds announce themselves)
                 var now = Conditions(m, d);
                 foreach (var c in now)
-                    if (!m.conditions.Contains(c)) s.Toasts.Add(name + (c == "low spirits" ? " is in low spirits." : " is " + c + "."));
+                    if (!m.conditions.Contains(c) && System.Array.IndexOf(Announce, c) >= 0) s.Toasts.Add(name + (c == "low spirits" ? " is in low spirits." : " is " + c + "."));
                 m.conditions = now;
 
                 if (m.morale <= 0 && (f == null || f.leaves))
@@ -141,10 +163,24 @@ namespace Loran.Core
             if (f != null) m.hp = Math.Clamp(m.hp, m.hp <= 0 ? -1000 : 0, f.hp);
         }
 
-        public static void Sleep(GameState s, GameData d, int minutes, float energyAfter)
+        /// <summary>A companion dies. They're gone for good.</summary>
+        public static void Die(GameState s, GameData d, PartyMember m, string cause)
+        {
+            string name = d.Follower(m.id)?.name ?? m.id;
+            s.party.Remove(m);
+            if (!s.fallen.Contains(m.id)) s.fallen.Add(m.id);
+            if (!s.flags.Contains("dead_" + m.id)) s.flags.Add("dead_" + m.id);
+            s.Toasts.Add(name + " is dead, of " + cause + ". They won't be coming back.");
+        }
+
+        /// <summary>shelter: bed (warm and dry), fire (a camp with a fire) or none (out in the open).</summary>
+        public static void Sleep(GameState s, GameData d, int minutes, float energyAfter, string shelter = "bed")
         {
             float h = minutes / 60f;
-            AdvanceParty(s, d, h, true, energyAfter);
+            int start = s.minutes;
+            AdvanceParty(s, d, h, true, energyAfter, shelter, start);
+            SleepBody(s, d, s.body, Warmth(s, d), start, minutes, shelter, null);
+            AdvanceYourBody(s, d, h, true, 0);
             s.minutes += minutes;
             s.hunger -= 2f * h;
             s.thirst -= 3f * h;

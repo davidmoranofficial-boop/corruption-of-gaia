@@ -126,6 +126,29 @@ namespace Loran.Core
         string devRedirect;
 
         /// <summary>Adds experience, enough for the next level.</summary>
+        /// <summary>Wounds you (or, for a companion-only one, the first in your party).</summary>
+        public void DevAfflict(string id)
+        {
+            var target = id == "grave" && S.party.Count > 0 ? S.party[0] : null;
+            if (target != null) { target.hp = 0; Rules.Afflict(S, data, target.body, id, data.Follower(target.id)?.name ?? target.id); }
+            else Rules.Afflict(S, data, S.body, id, null);
+        }
+
+        public void DevHeal()
+        {
+            S.body = new Body();
+            foreach (var m in S.party) { m.body = new Body(); m.hp = data.Follower(m.id)?.hp ?? m.hp; }
+        }
+
+        public void DevMedicine()
+        {
+            foreach (var (id, n) in new[] { ("bandage", 4), ("spirits", 2), ("splint", 2), ("yarrow", 2), ("willow_bark", 2), ("sewing_kit", 1) })
+                if (data.Item(id) != null) S.AddItem(id, n);
+        }
+
+        /// <summary>Forces the weather ("" lets it run naturally again).</summary>
+        public void DevWeather(string id) => S.devWeather = id;
+
         public void DevLevel() => GainExp(Rules.ExpToNext(S.level) - S.exp, "(dev)");
 
         /// <summary>Raises every skill by one level.</summary>

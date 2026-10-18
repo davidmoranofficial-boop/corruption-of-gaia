@@ -70,6 +70,68 @@ namespace Loran.Core
         public List<string> builds = new List<string>();
         public List<string> hair = new List<string>();
         public List<string> skins = new List<string>();
+        public List<AfflictionDef> afflictions = new List<AfflictionDef>();
+        public List<TreatmentDef> treatments = new List<TreatmentDef>();
+        public List<ClimateDef> climates = new List<ClimateDef>();
+        public List<WeatherDef> weathers = new List<WeatherDef>();
+    }
+
+    /// <summary>
+    /// A wound or ailment: a bite, a broken bone, a fever, hypothermia. It hurts you while you have it (bleeding,
+    /// weakness, no running) and goes once it's treated and has had time to heal, or by itself, or gets worse.
+    /// </summary>
+    [Serializable]
+    public class AfflictionDef
+    {
+        public string id, name, desc;
+        public float bleed;                    // health lost per hour until it's treated
+        public float drain;                    // extra energy lost per hour until it's healed
+        public float fight = 1;                // multiplies the damage you (or a companion) deal
+        public float stamina = 1;              // multiplies your top stamina
+        public bool noRun;                     // can't run, and fleeing a fight is near hopeless
+        public bool noFight;                   // a companion with this can't fight
+        public int fumble;                     // % chance a fight action goes wrong
+        public float slow = 1;                 // walking takes this many times as long
+        public float thirst;                   // extra thirst per hour
+        public List<string> treat = new List<string>();   // treatment steps, any order
+        public float heal;                     // hours to heal once every step is done
+        public float selfHeal;                 // untreated, it goes by itself after this many hours (0 = never)
+        public string worsen = "";             // it turns into this...
+        public float worsenAfter;              // ...after this many hours...
+        public string worsenUnless = "";       // ...unless this step was done
+        public float deadline;                 // untreated after this many hours, it kills (0 = never)
+        public string cure = "";               // warm / cool: it goes once your body is warm (or cool) again
+    }
+
+    /// <summary>One step in treating a wound. items are alternatives ("split_wood+bandage" needs both); a tool is needed but not used up.</summary>
+    [Serializable]
+    public class TreatmentDef
+    {
+        public string id, name, desc;
+        public List<string> items = new List<string>();
+        public string tool = "";
+        public int minutes = 10;
+    }
+
+    /// <summary>The temperatures and weather of a kind of country. Areas name theirs with climate.</summary>
+    [Serializable]
+    public class ClimateDef
+    {
+        public string id, name;
+        public float day = 15, night = 6;      // °C at the warmest and coldest hours
+        public List<WeatherChance> weather = new List<WeatherChance>();
+    }
+    [Serializable] public class WeatherChance { public string id; public int weight = 1; }
+    [Serializable] public class WoundChance { public string id; public int chance; }
+
+    [Serializable]
+    public class WeatherDef
+    {
+        public string id, name, desc;
+        public float temp;                     // added to the air temperature
+        public float wet;                      // how fast it soaks you, per hour, out in it
+        public float dry = 10;                 // how fast you dry, per hour, out in it (when it isn't soaking you)
+        public string overlay = "";            // rain, storm, fog, heat: drawn over the world
     }
 
     [Serializable] public class ItemDef { public string id, name, desc; public float hunger, thirst, energy; public bool food; }
@@ -97,6 +159,7 @@ namespace Loran.Core
         public float power = 1;                // multiplies the enemy's attack roll; 0 = no attack
         public bool guard;                     // it holds back: your hits do half damage this round
         public int weight = 1;                 // how often it picks this move
+        public List<WoundChance> wounds = new List<WoundChance>();   // % chances a hit from this leaves a wound
     }
 
     /// <summary>
@@ -135,6 +198,7 @@ namespace Loran.Core
         public string quest = "";              // their own quest, if they have one: doing it lifts their spirits
         public string until = "";              // a companion who's only with you for a while: how long (shown in the Party menu)
         public List<string> untilWhen = new List<string>();   // when that line shows
+        public int warmth = 6;                 // how well dressed they are for the cold, in °C
     }
     [Serializable] public class BackgroundDef { public string id, name, desc, stat; }
     [Serializable]
@@ -148,6 +212,7 @@ namespace Loran.Core
         public string skill = "";              // the combat skill a weapon or shield trains: dagger, axe, bow, shield
         public int damage, stamina;
         public float guard;
+        public int warmth;                     // keeps out the cold, in °C
     }
 
     /// <summary>A trait gear can carry above F rank. The numbers add up across everything you wear.</summary>
@@ -220,6 +285,7 @@ namespace Loran.Core
         public int fightGap = 10;                             // at least this many steps between fights
         public bool indoor;                                   // inside a building: no night shade, no camping
         public bool camp = true;                              // you can make camp here
+        public string climate = "coast";                      // its temperatures and weather (climates in data.json)
         public List<SpotDef> spots = new List<SpotDef>();     // named places to put the player (travel:at:<id>)
         public List<WorldObj> objects = new List<WorldObj>();
         public List<ZoneDef> zones = new List<ZoneDef>();
@@ -319,6 +385,10 @@ namespace Loran.Core
         public SpellDef Spell(string id) => Find(file.spells, x => x.id, id);
         public QuestDef Quest(string id) => Find(file.quests, x => x.id, id);
         public AreaDef Area(string id) => Find(file.areas, x => x.id, id);
+        public AfflictionDef Affliction(string id) => Find(file.afflictions, x => x.id, id);
+        public TreatmentDef Treatment(string id) => Find(file.treatments, x => x.id, id);
+        public ClimateDef Climate(string id) => Find(file.climates, x => x.id, id);
+        public WeatherDef Weather(string id) => Find(file.weathers, x => x.id, id);
         public TileDef Tile(char key)
         {
             foreach (var t in file.tiles) if (!string.IsNullOrEmpty(t.key) && t.key[0] == key) return t;

@@ -233,6 +233,13 @@ namespace Loran.UnityLayer
             var small = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-small");
             Need(small, "HUNGER", s.hunger, 100, "#d08a4a");
             Need(small, "THIRST", s.thirst, 100, "#4f9b97");
+            var states = Rules.BodyStates(s.body, engine.data);
+            if (states.Count > 0)
+            {
+                var chips = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-chips");
+                foreach (var st in states)
+                    Add(chips, new Label(st), st == "cold" || st == "wet" || st == "hot" ? "hud-chip" : "hud-chip-bad");
+            }
 
             // What you're doing: each quest you've taken, and what's left of it
             foreach (var q in engine.ActiveQuests)
@@ -250,6 +257,9 @@ namespace Loran.UnityLayer
             Add(clock, new Label("Day " + s.Day + "  ·  " + Rules.TimeOfDay(s)), "clock-sub");
             var area = engine.Area;
             if (area != null) Add(clock, new Label(area.name), "clock-place");
+            var weather = Rules.WeatherNow(s, engine.data);
+            if (weather != null && area != null)
+                Add(clock, new Label(area.indoor ? weather.name + " outside" : weather.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, engine.data)) + "°C"), "clock-weather");
             if (engine.IsDev) Add(clock, new Label("DEV GAME · F1"), "clock-dev");
         }
 
@@ -550,7 +560,8 @@ namespace Loran.UnityLayer
                 Need(small2, "ENERGY", m.energy, 100, "#9d8fd0");
                 Need(small2, "SPIRITS", m.morale, 100, "#d4b45a");
                 int power = Mathf.RoundToInt(Rules.PartyPower(m, d) * 100);
-                Add(card, new Label("Fights at " + power + "% of their best."), "line-muted");
+                Add(card, new Label(m.hp <= 0 ? "Down: they can't fight until their wound is bound." : Rules.NoFight(m.body, d) ? "In no state to fight." : "Fights at " + power + "% of their best."), "line-muted");
+                if (m.body.afflictions.Count > 0) Add(card, new Label("Treat their wounds under Survival (S)."), "line-muted");
                 if (!string.IsNullOrEmpty(f.quest))
                 {
                     var q = d.Quest(f.quest);
@@ -715,6 +726,73 @@ namespace Loran.UnityLayer
             drink.AddToClassList("wide-btn");
             drink.SetEnabled(free && s.water > 0);
             Add(rest, new Label("To sleep, find somewhere to bed down: a fire, an inn, or rough if you must. Sleeping saves your game."), "line-muted");
+
+            // The weather, and what it's doing to you
+            var d = engine.data;
+            var sky = Section(right, "WEATHER");
+            var w = Rules.WeatherNow(s, d);
+            bool inside = Rules.Sheltered(s, d);
+            if (w != null)
+            {
+                Add(sky, new Label(w.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, d)) + "°C" + (inside ? "  (you're under a roof)" : "")), "line");
+                Add(sky, new Label(w.desc), "line-muted");
+            }
+            float warmth = Rules.Warmth(s, d);
+            Add(sky, new Label("Your clothes add " + Mathf.RoundToInt(warmth) + "°. It feels like " + Mathf.RoundToInt(Rules.Felt(s, d, s.body, warmth)) + "° to you."), "line-muted");
+            NeedRow(sky, "Cold", s.body.cold, 100, "#7fa6c8", "Below about " + Mathf.RoundToInt(Rules.Comfortable) + "° you get colder. Cold, you tire faster and get your breath back slower. All the way: hypothermia.");
+            NeedRow(sky, "Wet", s.body.wet, 100, "#4f7f9b", "Rain soaks you, and wet makes the cold far worse. A fire or a roof dries you.");
+            if (s.body.heat > 0 || (w != null && w.temp > 5)) NeedRow(sky, "Heat", s.body.heat, 100, "#d08a4a", "Too hot, you get thirsty fast. All the way: heatstroke. Get out of the sun and drink.");
+
+            // Wounds and ailments: yours, then your party's
+            var hurt = Section(left, "WOUNDS AND AILMENTS");
+            bool any = false;
+            any |= WoundList(hurt, "", "You", s.body, free);
+            foreach (var m in s.party)
+            {
+                var f = d.Follower(m.id);
+                if (f != null) any |= WoundList(hurt, m.id, f.name + (m.hp <= 0 ? " (down)" : ""), m.body, free);
+            }
+            if (!any) Add(hurt, new Label("Nothing, for now. Fights leave bites, cuts and broken bones; the weather leaves chills. Carry bandages, spirits, and a sewing kit if you can."), "line-muted");
+            if (s.fallen.Count > 0)
+                Add(hurt, new Label("Lost: " + string.Join(", ", s.fallen.Select(id => d.Follower(id)?.name ?? id)) + "."), "line-muted");
+        }
+
+        /// <summary>One person's wounds, each with what it's doing to them and buttons for the treatments still to do.</summary>
+        bool WoundList(VisualElement parent, string who, string name, Body body, bool free)
+        {
+            var d = engine.data;
+            if (body.afflictions.Count == 0) return false;
+            Add(parent, new Label(name.ToUpperInvariant()), "wound-who");
+            foreach (var a in body.afflictions.ToList())
+            {
+                var def = d.Affliction(a.id);
+                if (def == null) continue;
+                var card = Add(parent, new VisualElement(), "party-card");
+                var top = Add(card, new VisualElement(), "party-top");
+                Add(top, new Label(def.name), "detail-name");
+                bool treated = Rules.Treated(a, def);
+                string state = Rules.Bleeding(a, def) ? (def.deadline > 0 ? "bleeding out: " + Mathf.Max(0, Mathf.CeilToInt(def.deadline - a.hours)) + " h left" : "bleeding")
+                             : treated && def.heal > 0 ? "healing  " + Mathf.RoundToInt(Mathf.Clamp01(a.healed / def.heal) * 100) + "%"
+                             : def.cure == "warm" ? "get warm" : def.cure == "cool" ? "cool down" : "untreated";
+                var st = Add(top, new Label(state), "party-state");
+                if (!treated) st.AddToClassList("party-state-bad");
+                Add(card, new Label(def.desc), "line-muted");
+                if (def.worsen != "" && !treated && (def.worsenUnless == "" || !a.done.Contains(def.worsenUnless)))
+                    Add(card, new Label("Turns bad in " + Mathf.Max(0, Mathf.CeilToInt(def.worsenAfter - a.hours)) + " h unless " + (d.Treatment(def.worsenUnless)?.name ?? "treated").ToLowerInvariant() + "."), "line-warn");
+                var row = Add(card, new VisualElement(), "party-btns");
+                foreach (var step in def.treat)
+                {
+                    var t = d.Treatment(step);
+                    if (t == null) continue;
+                    if (a.done.Contains(step)) { Add(row, new Label("√ " + t.name), "wound-done"); continue; }
+                    var (ok, uses, why) = engine.TreatmentCost(step);
+                    string cost = ok ? (uses.Count == 0 ? "" : "  (" + string.Join(", ", uses.Select(u => u == "water" ? "water" : (d.Item(u)?.name ?? u).ToLowerInvariant())) + ")") : "  (" + why + ")";
+                    string aid = a.id, sid = step;
+                    var b = Add(row, new Button(() => { engine.Treat(who, aid, sid); AfterAction(); }) { text = t.name + cost, focusable = false }, "small-btn");
+                    b.SetEnabled(free && ok);
+                }
+            }
+            return true;
         }
 
         void NeedRow(VisualElement parent, string name, float value, float max, string colour, string help)
