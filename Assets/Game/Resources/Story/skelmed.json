@@ -1,501 +1,30 @@
 {
   "scenes": [
     {
-      "id": "skelmed_arrive",
-      "place": "Skelmed",
-      "title": "Skelmed",
-      "safe": true,
-      "onEnter": [
-        "flag:arrived"
-      ],
-      "text": [
-        "Skelmed is grey stone cottages with turf roofs, huddled around a harbour far too big for it. The pier runs a long way out into the bay, built for thirty boats. Three are tied up.",
-        "Half the warehouses along the front have their doors nailed shut. The ones that don't have their doors open on nothing much.",
-        "A woman carrying a basket of kindling looks you over, decides you're not worth worrying about, and keeps walking."
-      ],
-      "choices": [
-        {
-          "label": "Go into the village square",
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "village",
-      "place": "Skelmed",
-      "title": "The village square",
-      "safe": true,
-      "text": [
-        "A well, a patch of trampled grass and a noticeboard nobody has pinned anything to in months. Paths lead off to the hunters' lodge, the forge, the inn and the little guild post. A steep track climbs the hill to a lone cottage."
-      ],
-      "extra": [
-        {
-          "when": [
-            "flag:fire_magic"
-          ],
-          "text": "People nod to you now. One of the fishermen's children points at you and whispers something about water out of nowhere."
-        },
-        {
-          "when": [
-            "flag:fire_ignored"
-          ],
-          "text": "The burned-out net shed is still a black smear by the pier. A few people look away when you pass."
-        },
-        {
-          "when": [
-            "flag:smith_done"
-          ],
-          "text": "Smoke is rising from Garran's forge again."
-        },
-        {
-          "when": [
-            "class"
-          ],
-          "text": "Ida is waiting for you by the well."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Talk to Ida by the well",
-          "when": [
-            "class"
-          ],
-          "go": "epilogue"
-        },
-        {
-          "label": "The hunters' lodge",
-          "time": 5,
-          "go": "hunt"
-        },
-        {
-          "label": "Garran's forge",
-          "time": 5,
-          "go": "smith"
-        },
-        {
-          "label": "Orlen's cottage on the hill",
-          "time": 15,
-          "stamina": 6,
-          "energy": 1,
-          "go": "mage"
-        },
-        {
-          "label": "The guild post",
-          "time": 5,
-          "go": "guild"
-        },
-        {
-          "label": "The Net & Anchor (the inn)",
-          "time": 5,
-          "go": "inn"
-        },
-        {
-          "label": "Drink from the well and fill your waterskin",
-          "time": 5,
-          "effects": [
-            "water=4",
-            "thirst+25"
-          ],
-          "result": "The well water tastes of stone. You drink your fill and top up the skin."
-        },
-        {
-          "label": "Leave the village (open the map)",
-          "effects": [
-            "travel:at:skelmed"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "inn",
-      "place": "Skelmed",
-      "title": "The Net & Anchor",
-      "safe": true,
-      "text": [
-        "A low room that smells of smoke, beer and wet wool. The landlady, Bess, is wiping a table that's already clean, because there's no one to make it dirty."
-      ],
-      "choices": [
-        {
-          "label": "Rent a bed for the night (3 coppers)",
-          "need": [
-            "coins>=3"
-          ],
-          "needText": "You need 3 coppers.",
-          "effects": [
-            "coins-3",
-            "sleep:safe"
-          ]
-        },
-        {
-          "label": "Buy a loaf of bread (1 copper)",
-          "need": [
-            "coins>=1"
-          ],
-          "needText": "You need 1 copper.",
-          "effects": [
-            "coins-1",
-            "item:bread+1"
-          ]
-        },
-        {
-          "label": "Ask Bess about Skelmed",
-          "when": [
-            "!flag:bess_talk"
-          ],
-          "effects": [
-            "flag:bess_talk"
-          ],
-          "time": 10,
-          "train": [
-            "cha+2"
-          ],
-          "why": "chatting with Bess",
-          "result": "\"What's to tell? Collector comes from the town once a month and takes what we've got. The roads are too dangerous for traders now, so nothing comes in either. The young ones leave. The rest of us stay because we're too stubborn to die.\""
-        },
-        {
-          "label": "Sleep rough by the net racks",
-          "effects": [
-            "sleep:rough"
-          ]
-        },
-        {
-          "label": "Back to the square",
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "hunt",
-      "place": "Skelmed",
-      "title": "The hunters' lodge",
-      "safe": true,
-      "text": [
-        "A long timber hall hung with drying pelts. Ida runs it: a broad, weathered woman with a bow over one shoulder and no patience for small talk."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!flag:hunt_met"
-          ],
-          "text": "\"You're Yenson's catch,\" she says. \"Good. I'm short of hands. Two of mine went inland to the town and didn't come back. The roads. If you can work, there's wood to split, water to haul and snares to check. Do all three and I'll see you right.\""
-        },
-        {
-          "when": [
-            "flag:hunt_done"
-          ],
-          "text": "Ida gives you a nod. From her, it's practically a hug."
-        }
-      ],
-      "onEnter": [],
-      "choices": [
-        {
-          "label": "Split and carry firewood",
-          "when": [
-            "!flag:hunt_wood"
-          ],
-          "time": 90,
-          "stamina": 30,
-          "energy": 6,
-          "train": [
-            "str+3",
-            "end+1"
-          ],
-          "why": "splitting wood",
-          "effects": [
-            "flag:hunt_met",
-            "flag:hunt_wood"
-          ],
-          "result": "An hour and a half of the axe. Your palms blister, then the blisters split. The woodpile behind the lodge is a good deal taller when you're done."
-        },
-        {
-          "label": "Haul water up from the stream",
-          "when": [
-            "!flag:hunt_water"
-          ],
-          "time": 60,
-          "stamina": 20,
-          "energy": 4,
-          "train": [
-            "end+3"
-          ],
-          "why": "hauling water",
-          "effects": [
-            "flag:hunt_met",
-            "flag:hunt_water"
-          ],
-          "result": "Two buckets on a yoke, down to the stream and back up, again and again until the lodge's barrels are full."
-        },
-        {
-          "label": "Walk the snare line with Ida's son Rook",
-          "when": [
-            "!flag:hunt_food"
-          ],
-          "time": 90,
-          "stamina": 20,
-          "energy": 5,
-          "train": [
-            "agi+3"
-          ],
-          "why": "walking the snare line",
-          "effects": [
-            "flag:hunt_met",
-            "flag:hunt_food"
-          ],
-          "result": "Rook is twelve and moves through the gorse like a fox. He shows you how to set a snare and how to read a rabbit run. You come back with four rabbits, and he lets you carry them."
-        },
-        {
-          "label": "Tell Ida the work is done",
-          "when": [
-            "flag:hunt_wood",
-            "flag:hunt_water",
-            "flag:hunt_food",
-            "!flag:hunt_done"
-          ],
-          "go": "hunt_pay"
-        },
-        {
-          "label": "Back to the square",
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "hunt_pay",
-      "place": "Skelmed",
-      "title": "Payment",
-      "safe": true,
-      "text": [
-        "Ida counts five coppers into her palm, slowly, the way people count money they can't spare. She holds them out to you, along with two parcels of smoked fish."
-      ],
-      "choices": [
-        {
-          "label": "Take it and thank her",
-          "train": [
-            "cha+1"
-          ],
-          "why": "dealing with Ida",
-          "effects": [
-            "coins+5",
-            "item:fish+2",
-            "rep:skelmed+3",
-            "flag:hunt_done"
-          ],
-          "go": "hunt",
-          "result": "\"Earned it,\" she says."
-        },
-        {
-          "label": "Take the fish but leave the coin. She needs it more",
-          "train": [
-            "cha+2"
-          ],
-          "why": "winning Ida over",
-          "effects": [
-            "item:fish+2",
-            "rep:skelmed+10",
-            "corruption-0.2",
-            "flag:hunt_done"
-          ],
-          "go": "hunt",
-          "result": "Ida stares at you for a long moment, then puts the coins away. \"Huh,\" is all she says. By evening, half the village has heard about it."
-        },
-        {
-          "label": "Tell her it was worth more than five",
-          "train": [
-            "cha+2"
-          ],
-          "why": "haggling",
-          "effects": [
-            "coins+8",
-            "item:fish+2",
-            "rep:skelmed-6",
-            "corruption+0.25",
-            "flag:hunt_done"
-          ],
-          "go": "hunt",
-          "result": "Ida's jaw tightens. She counts out three more coppers and drops them in your hand without a word."
-        }
-      ]
-    },
-    {
       "id": "smith",
-      "place": "Skelmed",
+      "speaker": "Garran",
       "title": "Garran's forge",
       "safe": true,
-      "text": [
-        "Garran Holt is a big man going soft at the edges, sitting beside a forge that's gone cold."
-      ],
+      "text": [],
       "extra": [
         {
           "when": [
-            "!flag:smith_mined"
-          ],
-          "text": "\"Can't make what I can't mine,\" he says. \"Ore used to come up the road from the town. Now nothing comes, and what does costs double with the king's levy on it. There's an old quarry up the valley with good stone and the odd stone worth more than that. I'm too old to swing a pick all day. You're not.\""
-        },
-        {
-          "when": [
-            "flag:smith_mined",
             "!flag:smith_done"
           ],
-          "text": "The forge is roaring now. Garran is grinning for the first time since you met him. \"Right. Time you learned to make something.\""
+          "text": "\"Another one off the coast road? Garran. This is my forge, such as it is. No ore's come up the road in months, but I've a few bars put by. Make something. First one's on me.\""
         },
         {
           "when": [
             "flag:smith_done"
           ],
-          "text": "The forge is busy. Garran waves a pair of tongs at you without looking up."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Go up to the quarry with Garran",
-          "when": [
-            "!flag:smith_mined"
-          ],
-          "time": 30,
-          "stamina": 5,
-          "energy": 2,
-          "go": "quarry"
-        },
-        {
-          "label": "Learn to make your first gear",
-          "when": [
-            "flag:smith_mined",
-            "!flag:smith_done"
-          ],
-          "go": "smith_craft"
-        },
-        {
-          "label": "Buy iron and use the forge (3 coppers)",
-          "when": [
-            "flag:smith_done"
-          ],
-          "need": [
-            "coins>=3"
-          ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
-          "go": "smith_forge"
-        },
-        {
-          "label": "Back to the square",
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "quarry",
-      "place": "The old quarry above Skelmed",
-      "title": "The quarry",
-      "safe": true,
-      "text": [
-        "A bite out of the hillside, half grown over. Garran points out the seams in the rock face, then sits on a boulder with his pipe to watch you work."
-      ],
-      "choices": [
-        {
-          "label": "Swing the pick at the rock face",
-          "when": [
-            "!flag:q_stone"
-          ],
-          "time": 60,
-          "stamina": 30,
-          "energy": 6,
-          "train": [
-            "str+3",
-            "end+2"
-          ],
-          "why": "swinging a pick",
-          "effects": [
-            "flag:q_stone"
-          ],
-          "result": "Your shoulders scream by the end of it, but there's a heap of good stone and a few lumps of rusty ore at your feet."
-        },
-        {
-          "label": "Search the spoil heap for anything that glints",
-          "when": [
-            "flag:q_stone",
-            "!flag:q_gem"
-          ],
-          "time": 45,
-          "stamina": 10,
-          "energy": 3,
-          "train": [
-            "int+2"
-          ],
-          "why": "searching the spoil",
-          "effects": [
-            "flag:q_gem"
-          ],
-          "go": "quarry_gem"
-        },
-        {
-          "label": "Carry the stone back down to the forge",
-          "when": [
-            "flag:q_stone",
-            "flag:q_gem"
-          ],
-          "time": 40,
-          "stamina": 15,
-          "energy": 3,
-          "train": [
-            "str+1"
-          ],
-          "why": "carrying stone",
-          "effects": [
-            "flag:smith_mined"
-          ],
-          "go": "smith"
-        }
-      ]
-    },
-    {
-      "id": "quarry_gem",
-      "place": "The old quarry above Skelmed",
-      "title": "A glint",
-      "safe": true,
-      "text": [
-        "Sifting through the broken rock, you find it: a green stone the size of a fingernail, clear as bottle glass. Garran is looking the other way, relighting his pipe."
-      ],
-      "choices": [
-        {
-          "label": "Show it to Garran",
-          "effects": [
-            "flag:gem_shown",
-            "rep:skelmed+4"
-          ],
-          "go": "quarry",
-          "result": "Garran whistles. \"Now that's a find. Hang on to that. We'll put it to use.\""
-        },
-        {
-          "label": "Slip it into your pocket",
-          "effects": [
-            "item:gem+1",
-            "corruption+0.25"
-          ],
-          "go": "quarry",
-          "result": "It sits in your pocket like a secret. Garran never notices."
-        }
-      ]
-    },
-    {
-      "id": "smith_craft",
-      "place": "Skelmed",
-      "title": "Your first gear",
-      "safe": true,
-      "text": [
-        "Garran puts a hammer in your hand. \"Doesn't matter what you make. Matters that you make it yourself. Pick one.\""
-      ],
-      "extra": [
-        {
-          "when": [
-            "flag:gem_shown"
-          ],
-          "text": "He holds up the green stone you found. \"And we'll set this in it.\""
+          "text": "\"Forge is hot. Iron's three coppers a bar. Anything you make, you keep.\""
         }
       ],
       "choices": [
         {
           "label": "An iron knife",
           "when": [
-            "!flag:gem_shown"
+            "!flag:smith_done"
           ],
           "time": 120,
           "stamina": 25,
@@ -509,13 +38,13 @@
             "forge:knife:E",
             "flag:smith_done"
           ],
-          "go": "smith",
+          "go": "travel",
           "result": "Garran shows you how, once, and then hands you the tongs. \"Your turn.\""
         },
         {
           "label": "A hide buckler",
           "when": [
-            "!flag:gem_shown"
+            "!flag:smith_done"
           ],
           "time": 120,
           "stamina": 25,
@@ -529,13 +58,13 @@
             "forge:buckler:E",
             "flag:smith_done"
           ],
-          "go": "smith",
+          "go": "travel",
           "result": "Garran shows you how, once, and then hands you the tongs. \"Your turn.\""
         },
         {
           "label": "Reinforced work gloves",
           "when": [
-            "!flag:gem_shown"
+            "!flag:smith_done"
           ],
           "time": 120,
           "stamina": 25,
@@ -549,82 +78,11 @@
             "forge:gloves:E",
             "flag:smith_done"
           ],
-          "go": "smith",
+          "go": "travel",
           "result": "Garran shows you how, once, and then hands you the tongs. \"Your turn.\""
         },
         {
-          "label": "An iron knife, with the gem in the pommel",
-          "when": [
-            "flag:gem_shown"
-          ],
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge",
-          "effects": [
-            "forge:knife:D:green_gem",
-            "flag:smith_done"
-          ],
-          "go": "smith",
-          "result": "Garran shows you how, once, and then hands you the tongs. \"Your turn.\""
-        },
-        {
-          "label": "A hide buckler, with the gem as its boss",
-          "when": [
-            "flag:gem_shown"
-          ],
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge",
-          "effects": [
-            "forge:buckler:D:green_gem",
-            "flag:smith_done"
-          ],
-          "go": "smith",
-          "result": "Garran shows you how, once, and then hands you the tongs. \"Your turn.\""
-        },
-        {
-          "label": "Work gloves, with the gem in the cuff",
-          "when": [
-            "flag:gem_shown"
-          ],
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge",
-          "effects": [
-            "forge:gloves:D:green_gem",
-            "flag:smith_done"
-          ],
-          "go": "smith",
-          "result": "Garran shows you how, once, and then hands you the tongs. \"Your turn.\""
-        }
-      ]
-    },
-    {
-      "id": "smith_forge",
-      "place": "Skelmed",
-      "title": "Garran's forge",
-      "safe": true,
-      "text": [
-        "Garran slides a bar of iron across the bench and jerks his head at the forge. \"Three coppers. Anything you make, you keep. Anything you ruin, you've still paid for.\""
-      ],
-      "choices": [
-        {
-          "label": "An iron knife",
+          "label": "An iron knife (3 coppers)",
           "time": 120,
           "stamina": 25,
           "energy": 8,
@@ -636,10 +94,17 @@
             "coins-3",
             "forge:knife:D"
           ],
-          "go": "smith"
+          "go": "travel",
+          "when": [
+            "flag:smith_done"
+          ],
+          "need": [
+            "coins>=3"
+          ],
+          "needText": "Iron costs 3 coppers, and you haven't got them."
         },
         {
-          "label": "An iron cap",
+          "label": "An iron cap (3 coppers)",
           "time": 120,
           "stamina": 25,
           "energy": 8,
@@ -651,29 +116,17 @@
             "coins-3",
             "forge:iron_cap:D"
           ],
-          "go": "smith"
-        },
-        {
-          "label": "An iron knife, with your green gem set in it",
+          "go": "travel",
           "when": [
-            "item:gem"
+            "flag:smith_done"
           ],
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
+          "need": [
+            "coins>=3"
           ],
-          "why": "working the forge",
-          "effects": [
-            "coins-3",
-            "item:gem-1",
-            "forge:knife:C:green_gem"
-          ],
-          "go": "smith"
+          "needText": "Iron costs 3 coppers, and you haven't got them."
         },
         {
-          "label": "A hide buckler",
+          "label": "A hide buckler (3 coppers)",
           "time": 120,
           "stamina": 25,
           "energy": 8,
@@ -685,29 +138,17 @@
             "coins-3",
             "forge:buckler:D"
           ],
-          "go": "smith"
-        },
-        {
-          "label": "A hide buckler, with your green gem set in it",
+          "go": "travel",
           "when": [
-            "item:gem"
+            "flag:smith_done"
           ],
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
+          "need": [
+            "coins>=3"
           ],
-          "why": "working the forge",
-          "effects": [
-            "coins-3",
-            "item:gem-1",
-            "forge:buckler:C:green_gem"
-          ],
-          "go": "smith"
+          "needText": "Iron costs 3 coppers, and you haven't got them."
         },
         {
-          "label": "Reinforced work gloves",
+          "label": "Reinforced work gloves (3 coppers)",
           "time": 120,
           "stamina": 25,
           "energy": 8,
@@ -719,394 +160,87 @@
             "coins-3",
             "forge:gloves:D"
           ],
-          "go": "smith"
-        },
-        {
-          "label": "Reinforced work gloves, with your green gem set in it",
+          "go": "travel",
           "when": [
-            "item:gem"
-          ],
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge",
-          "effects": [
-            "coins-3",
-            "item:gem-1",
-            "forge:gloves:C:green_gem"
-          ],
-          "go": "smith"
-        },
-        {
-          "label": "Not today",
-          "go": "smith"
-        }
-      ]
-    },
-    {
-      "id": "mage",
-      "place": "Skelmed",
-      "title": "Orlen's cottage",
-      "safe": true,
-      "text": [
-        "The cottage leans into the wind at the top of the hill. Herbs grow in pots along every windowsill. Orlen Vey is very old, in a robe that was royal blue a long time ago and is now the colour of a winter sky."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!spell:draw_water"
-          ],
-          "text": "\"Yenson's driftwood,\" he says, before you can speak. \"I saw the wreck from up here. Come in, then. Mind the cat.\" There is no cat."
-        },
-        {
-          "when": [
-            "flag:mage_done"
-          ],
-          "text": "\"Ah. My student.\" He seems pleased to see you, which you suspect isn't true of many people."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Ask about his years in Zaron",
-          "when": [
-            "!flag:orlen_zaron"
-          ],
-          "time": 15,
-          "effects": [
-            "flag:orlen_zaron"
-          ],
-          "train": [
-            "cha+2"
-          ],
-          "why": "drawing Orlen out",
-          "result": "\"Forty years at court. I served King Melvin's father, and then Melvin.\" He's quiet for a while. \"He was a good king once. Firm, but fair. Then something changed in him. Not all at once. Like rot in a beam. I said so, and found myself retired.\""
-        },
-        {
-          "label": "Ask him to teach you magic",
-          "when": [
-            "!spell:draw_water"
-          ],
-          "time": 60,
-          "energy": 10,
-          "train": [
-            "int+4"
-          ],
-          "why": "studying with Orlen",
-          "effects": [
-            "spell:draw_water",
-            "spell:kindle"
-          ],
-          "go": "mage_fire",
-          "result": "Orlen teaches the way old men tell stories: slowly, with detours. But by the end of the hour you can coax a thread of water out of the air, and a spark from your fingertip."
-        },
-        {
-          "label": "Walk back down to the square",
-          "time": 10,
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "mage_fire",
-      "place": "Skelmed",
-      "title": "Fire!",
-      "safe": true,
-      "text": [
-        "A shout from below, then a bell clanging. You and Orlen look out of the window together.",
-        "The net shed by the pier is burning. Dry nets go up like straw, and the wind is pushing the flames towards the boats.",
-        "\"Well,\" says Orlen. \"Lesson two.\""
-      ],
-      "choices": [
-        {
-          "label": "Run down and cast Draw Water on the flames",
-          "stamina": 15,
-          "energy": 10,
-          "time": 20,
-          "train": [
-            "int+3"
-          ],
-          "why": "fighting a fire with magic",
-          "effects": [
-            "flag:fire_magic",
-            "rep:skelmed+12",
-            "corruption-0.3",
-            "flag:mage_done"
-          ],
-          "go": "fire_after"
-        },
-        {
-          "label": "Run down and join the bucket line",
-          "stamina": 35,
-          "energy": 8,
-          "time": 45,
-          "train": [
-            "end+3"
-          ],
-          "why": "passing buckets",
-          "effects": [
-            "flag:fire_buckets",
-            "rep:skelmed+6",
-            "flag:mage_done"
-          ],
-          "go": "fire_after"
-        },
-        {
-          "label": "Stay up here. It's not your shed",
-          "effects": [
-            "flag:fire_ignored",
-            "rep:skelmed-10",
-            "corruption+0.4",
-            "flag:mage_done"
-          ],
-          "go": "fire_after"
-        }
-      ]
-    },
-    {
-      "id": "fire_after",
-      "place": "Skelmed",
-      "title": "After the fire",
-      "safe": true,
-      "text": [],
-      "extra": [
-        {
-          "when": [
-            "flag:fire_magic"
-          ],
-          "text": "Your first try is a splash. Your second is a wave. By the fourth, the fire is hissing out under a sheet of water you pulled from nowhere, and the whole pier has gone quiet, staring at you. The nets are scorched but saved. Orlen arrives, puffing, and looks very pleased with himself, as if he did it."
-        },
-        {
-          "when": [
-            "flag:fire_buckets"
-          ],
-          "text": "You take a place in the line and pass buckets until your arms are numb. It's slow. By the time the fire is out, half the nets are ash. But the boats are safe, and the woman next to you in the line claps you on the back."
-        },
-        {
-          "when": [
-            "flag:fire_ignored"
-          ],
-          "text": "From up on the hill you watch the village fight the fire with buckets. It takes them an hour. The shed is gone and so are the nets, and two families' livelihoods with them. Orlen says nothing at all. He doesn't need to."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Go back to the square",
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "guild",
-      "place": "Skelmed",
-      "title": "The guild post",
-      "safe": true,
-      "text": [
-        "The smallest guild post in Loran, probably: one room, one desk, one clerk. Mira is young, sharp-eyed and bored. Through the back door you can see a yard, and in it a standing stone taller than a man, carved with three rings."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!class"
-          ],
-          "text": "\"Guild cards are issued at the stone,\" Mira says. \"Put your hand on it and it'll tell you what you are. It reads what you've done, mind, not what you wish you were. So go and do something first.\""
-        },
-        {
-          "when": [
-            "class"
-          ],
-          "text": "Mira glances at your guild card and goes back to her ledger."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Ask Mira what the guild does",
-          "when": [
-            "!flag:mira_guild"
-          ],
-          "effects": [
-            "flag:mira_guild"
-          ],
-          "time": 10,
-          "train": [
-            "cha+1"
-          ],
-          "why": "talking with Mira",
-          "result": "\"Takes jobs, hands them out, keeps the cards. Teaches, too, if you've the time to learn. You can study another path here later, but it won't be quick. Nothing worth having is.\""
-        },
-        {
-          "label": "Go out to the class stone",
-          "go": "stone"
-        },
-        {
-          "label": "Back to the square",
-          "go": "village"
-        }
-      ]
-    },
-    {
-      "id": "stone",
-      "place": "Skelmed",
-      "title": "The class stone",
-      "safe": true,
-      "text": [
-        "Up close, the three rings carved into the stone are three pictures, worn soft by weather: a figure with a pack and a staff on a road, a hammer over an anvil, and an open hand with a flame in it."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!class",
-            "!flag:hunt_done"
-          ],
-          "text": "You haven't finished helping the hunters yet."
-        },
-        {
-          "when": [
-            "!class",
-            "!flag:smith_done"
-          ],
-          "text": "You haven't finished helping Garran at the forge yet."
-        },
-        {
-          "when": [
-            "!class",
-            "!flag:mage_done"
-          ],
-          "text": "You haven't had your lessons with Orlen yet."
-        },
-        {
-          "when": [
-            "flag:hunt_done",
-            "flag:smith_done",
-            "flag:mage_done",
-            "!class"
-          ],
-          "text": "You've split wood and hauled water, swung a pick and worked a forge, and called water out of the air. When you lay your hand on the stone, all three rings grow warm. It's waiting for you to choose."
-        }
-      ],
-      "choices": [
-        {
-          "label": "The road: become an Adventurer",
-          "when": [
-            "!class"
+            "flag:smith_done"
           ],
           "need": [
-            "flag:hunt_done",
-            "flag:smith_done",
-            "flag:mage_done"
+            "coins>=3"
           ],
-          "needText": "Do all three jobs in Skelmed first.",
-          "effects": [
-            "class:adventurer"
-          ],
-          "go": "guild_card",
-          "result": "The ring with the traveller flares with light. Travelling, surviving, fighting: the road is yours."
+          "needText": "Iron costs 3 coppers, and you haven't got them."
         },
         {
-          "label": "The anvil: become a Blacksmith",
-          "when": [
-            "!class"
-          ],
-          "need": [
-            "flag:hunt_done",
-            "flag:smith_done",
-            "flag:mage_done"
-          ],
-          "needText": "Do all three jobs in Skelmed first.",
-          "effects": [
-            "class:blacksmith"
-          ],
-          "go": "guild_card",
-          "result": "The ring with the hammer glows like a coal. Crafting, mining, defence: you'll make your mark with your hands."
-        },
-        {
-          "label": "The flame: become a Mage",
-          "when": [
-            "!class"
-          ],
-          "need": [
-            "flag:hunt_done",
-            "flag:smith_done",
-            "flag:mage_done"
-          ],
-          "needText": "Do all three jobs in Skelmed first.",
-          "effects": [
-            "class:mage"
-          ],
-          "go": "guild_card",
-          "result": "The ring with the flame burns blue. Magic, intellect, enchanting: Orlen will be insufferable about this."
-        },
-        {
-          "label": "Step away from the stone",
-          "go": "guild"
+          "label": "\"Another time.\"",
+          "go": "travel"
         }
       ]
     },
     {
-      "id": "guild_card",
-      "place": "Skelmed",
-      "title": "Your guild card",
+      "id": "well_drink",
+      "title": "The well",
       "safe": true,
       "text": [
-        "Mira has a card ready when you come back in: a stiff square of waxed leather with the guild seal, your name, and the mark of the path you chose. She presses it into your hand.",
-        "\"Welcome to the guild, {name}. Don't lose it. I hate paperwork.\"",
-        "Your class has its own tree of abilities to grow into, but that's for another day."
+        "The village well. The rope's new, which is more than you can say for anything else here."
       ],
       "choices": [
         {
-          "label": "Go back out to the square",
-          "go": "village"
+          "label": "Drink and fill your waterskin",
+          "time": 5,
+          "effects": [
+            "water=4",
+            "thirst+25"
+          ],
+          "go": "travel",
+          "result": "The well water tastes of stone. You drink your fill and top up the skin."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
         }
       ]
     },
     {
-      "id": "epilogue",
-      "place": "Skelmed",
-      "title": "More than this",
+      "id": "ida",
+      "speaker": "Ida",
+      "title": "Ida",
       "safe": true,
       "text": [
-        "Ida is leaning on the well. She doesn't bother with hello.",
-        "\"You've done right by us. Wood, water, the forge going again.\""
-      ],
-      "extra": [
-        {
-          "when": [
-            "flag:fire_magic"
-          ],
-          "text": "\"And the fire. People won't forget that.\""
-        },
-        {
-          "when": [
-            "flag:fire_ignored"
-          ],
-          "text": "She doesn't mention the fire. That says enough."
-        },
-        {
-          "when": [
-            "!flag:fire_magic",
-            "!flag:fire_ignored"
-          ],
-          "text": "\"And you were on the bucket line. People noticed.\""
-        },
-        {
-          "when": [],
-          "text": "\"But a few nets and a lit forge won't fix what's killing Skelmed. It's the levy. The king's collector sits in the town inland and every coin this village makes goes through his hands, and fewer come back each year. And the road there's got worse than it's ever been.\""
-        },
-        {
-          "when": [],
-          "text": "\"Somebody ought to go and see what can be done. Somebody with a guild card, maybe.\""
-        }
+        "\"You're the one Yenson pulled out of the sea? Ida. I keep the hunters' lodge, what's left of it. There'll be work for you once you've found your feet.\""
       ],
       "choices": [
         {
-          "label": "Take the road inland to the nearest town",
-          "go": "end_slice"
-        },
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "bess",
+      "speaker": "Bess",
+      "title": "Bess",
+      "safe": true,
+      "text": [
+        "\"Half the houses on this street are empty. The young ones went inland when the levy went up. Can't say I blame them.\""
+      ],
+      "choices": [
         {
-          "label": "Not yet. Back to the square",
-          "go": "village"
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "dockhand",
+      "speaker": "Dockhand",
+      "title": "A dockhand",
+      "safe": true,
+      "text": [
+        "\"Thirty boats, this pier was built for. Three left. King's collector takes half of every catch, and the other half barely feeds us.\""
+      ],
+      "choices": [
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
         }
       ]
     }

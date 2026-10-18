@@ -18,6 +18,7 @@ namespace Loran.Core
         public string id;
         public string place;                   // shown above the title, e.g. "Skelmed"
         public string title;
+        public string speaker;                 // who's talking, shown on the talk box out in the world
         public bool safe;                      // collapsing or sleeping here is safe
         public List<string> text = new List<string>();      // paragraphs; {name} etc. are filled in
         public List<CondText> extra = new List<CondText>(); // paragraphs shown only when their conditions hold
@@ -150,6 +151,8 @@ namespace Loran.Core
         public int eventChance = 3;                           // % per step: finds, meetings, weather
         public int fightChance = 6;                           // % per step: a random fight (halved on roads)
         public int fightGap = 10;                             // at least this many steps between fights
+        public bool indoor;                                   // inside a building: no night shade, no camping
+        public bool camp = true;                              // you can make camp here
         public List<SpotDef> spots = new List<SpotDef>();     // named places to put the player (travel:at:<id>)
         public List<WorldObj> objects = new List<WorldObj>();
         public List<ZoneDef> zones = new List<ZoneDef>();
@@ -180,12 +183,13 @@ namespace Loran.Core
         public List<string> when = new List<string>();        // only there while these hold
     }
 
-    /// <summary>A rectangle that runs a scene when you walk into it (while its conditions hold).</summary>
+    /// <summary>A rectangle that runs a scene, or takes you somewhere, when you walk into it (while its conditions hold).</summary>
     [Serializable]
     public class ZoneDef
     {
         public int x0, y0, x1, y1;
         public string scene;
+        public string to;                                     // or a spot to move you to (doors, the village gate)
         public List<CondScene> enter = new List<CondScene>(); // or the first of these whose conditions hold
         public List<string> when = new List<string>();
     }

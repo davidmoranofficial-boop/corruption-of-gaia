@@ -84,30 +84,36 @@ namespace Loran.UnityLayer
                 var ov = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-over");
                 ov.style.backgroundImage = new StyleBackground(over);
             }
-            if (engine.Check("night")) Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-night");
+            if (engine.Check("night") && !a.indoor) Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-night");
 
             PlaceYou(new Vector2(s.ax, s.ay), moving ? 1 + stepCount % 2 : 0);
 
             usePrompt = Add(worldView, new Label(""), "world-prompt");
             Add(worldView, new Label(a.name.ToUpperInvariant()), "world-name");
-            Add(worldView, new Label("Arrows: walk   Shift: run   Space: talk / use   Enter: actions"), "world-help");
+            bool canCamp = a.camp && !a.indoor;
+            Add(worldView, new Label("Arrows: walk   Shift: run   Space: talk / use" + (canCamp ? "   Enter: camp" : "")), "world-help");
             UpdatePrompt();
 
             // The box at the bottom: a story scene, a message, or the actions
             shownChoices = new List<ChoiceView>();
             bool scene = s.scene != Engine.TravelId || s.inCombat;
-            if (scene) DialogueBox(engine.Current.title, s.result, engine.Paragraphs(), engine.Choices(), false);
+            if (scene)
+            {
+                var sc = engine.Current;
+                DialogueBox(sc.title, s.result, engine.Paragraphs(), engine.Choices(), false, false, sc.speaker);
+            }
             else if (!string.IsNullOrEmpty(s.result)) DialogueBox(null, s.result, null, null, true);
             else if (actionsOpen) DialogueBox("What now?", null, null, engine.Choices(), false, true);
 
             if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
 
-        void DialogueBox(string title, string result, List<string> paras, List<ChoiceView> choices, bool message, bool actions = false)
+        void DialogueBox(string title, string result, List<string> paras, List<ChoiceView> choices, bool message, bool actions = false, string speaker = null)
         {
             var box = Add(worldView, new VisualElement(), "dialogue");
+            if (!string.IsNullOrEmpty(speaker)) Add(box, new Label(engine.Fill(speaker)), "dialogue-speaker");
             var scroll = Add(box, new ScrollView(ScrollViewMode.Vertical), "dialogue-scroll");
-            if (!string.IsNullOrEmpty(title)) Add(scroll, new Label(engine.Fill(title)), "dialogue-title");
+            if (string.IsNullOrEmpty(speaker) && !string.IsNullOrEmpty(title)) Add(scroll, new Label(engine.Fill(title)), "dialogue-title");
             if (!string.IsNullOrEmpty(result)) Add(scroll, new Label(result), message ? "dialogue-text" : "result");
             if (paras != null) foreach (var p in paras) Add(scroll, new Label(p), "dialogue-text");
             if (message)
@@ -248,9 +254,10 @@ namespace Loran.UnityLayer
                 moving = false;
                 var step = pendingStep;
                 pendingStep = null;
+                string areaBefore = s.area;
                 engine.Choose(step);
                 unsavedSteps++;
-                if (!engine.Travelling || !string.IsNullOrEmpty(s.result) || s.inCombat)
+                if (!engine.Travelling || !string.IsNullOrEmpty(s.result) || s.inCombat || s.area != areaBefore)
                 {
                     heldDirs.Clear();
                     SaveNow();
@@ -332,7 +339,7 @@ namespace Loran.UnityLayer
                 AfterAction();
                 return true;
             }
-            if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
+            if ((e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && engine.Area.camp && !engine.Area.indoor)
             {
                 actionsOpen = !actionsOpen;
                 heldDirs.Clear();

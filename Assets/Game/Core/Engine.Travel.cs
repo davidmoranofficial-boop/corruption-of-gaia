@@ -148,8 +148,8 @@ namespace Loran.Core
         {
             var a = Area;
             var sc = new SceneDef { id = TravelId, place = a?.name, title = a?.name };
-            if (Check("night")) sc.text.Add("It's dark. You can hear the sea better than you can see the way.");
-            sc.choices.Add(new ChoiceDef { label = "Make camp here for the night", effects = { "travel:camp" } });
+            if (a != null && a.camp && !a.indoor)
+                sc.choices.Add(new ChoiceDef { label = "Make camp here for the night", effects = { "travel:camp" } });
             return sc;
         }
 
@@ -162,6 +162,7 @@ namespace Loran.Core
             S.ax = p.x;
             S.ay = p.y;
             S.facing = string.IsNullOrEmpty(p.facing) ? "down" : p.facing;
+            if (!S.Has("been:" + a.id)) S.flags.Add("been:" + a.id);
         }
 
         // ------------------------------------------------------------------ effects
@@ -174,6 +175,10 @@ namespace Loran.Core
                     // travel:at:<spot>
                     MoveTo(parts[1]);
                     redirect = TravelId;
+                    return;
+                case "place":
+                    // travel:place:<spot>  puts you there without leaving the scene you're going to (waking up in the hut)
+                    MoveTo(parts[1]);
                     return;
                 case "start":
                     // From before the walkable world: the coast road from either end
@@ -228,6 +233,7 @@ namespace Loran.Core
             foreach (var z in a.zones)
             {
                 if (S.ax < z.x0 || S.ax > z.x1 || S.ay < z.y0 || S.ay > z.y1 || !All(z.when)) continue;
+                if (!string.IsNullOrEmpty(z.to)) { MoveTo(z.to); return; }
                 if (!string.IsNullOrEmpty(z.scene)) { redirect = z.scene; return; }
                 var target = z.enter.FirstOrDefault(c => All(c.when));
                 if (target != null) { redirect = target.scene; return; }

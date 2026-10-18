@@ -392,46 +392,23 @@
   ],
   "journal": [
     {
-      "text": "Follow the coast road to the village Yenson told you about.",
+      "text": "Talk to Yenson.",
       "when": [
-        "flag:yenson_road",
-        "!flag:arrived"
+        "!flag:y_supplies"
       ]
     },
     {
-      "text": "Help the hunters at the lodge: firewood, water and food.",
+      "text": "Follow the coast road north to Skelmed.",
       "when": [
-        "flag:arrived",
-        "!flag:hunt_done"
+        "flag:y_supplies",
+        "!flag:been:skelmed"
       ]
     },
     {
-      "text": "Help Garran the blacksmith get his forge going again.",
+      "text": "Find Garran the smith in Skelmed. He'll let you use his forge.",
       "when": [
-        "flag:arrived",
+        "flag:been:skelmed",
         "!flag:smith_done"
-      ]
-    },
-    {
-      "text": "Visit old Orlen, the retired mage.",
-      "when": [
-        "flag:arrived",
-        "!flag:mage_done"
-      ]
-    },
-    {
-      "text": "Go to the class stone at the guild post and choose your path.",
-      "when": [
-        "flag:hunt_done",
-        "flag:smith_done",
-        "flag:mage_done",
-        "!class"
-      ]
-    },
-    {
-      "text": "Skelmed needs more help than you can give it here. Head for the nearest town.",
-      "when": [
-        "class"
       ]
     }
   ],
@@ -463,7 +440,7 @@
       "id": "coast_road",
       "name": "The coast road",
       "minutes": 2,
-      "eventChance": 3,
+      "eventChance": 0,
       "fightChance": 6,
       "fightGap": 10,
       "spots": [
@@ -499,23 +476,6 @@
         }
       ],
       "objects": [
-        {
-          "id": "yenson",
-          "kind": "npc",
-          "sprite": "npc_yenson",
-          "x": 14,
-          "y": 57,
-          "facing": "down",
-          "scene": "shack_visit"
-        },
-        {
-          "id": "shack_door",
-          "kind": "door",
-          "sprite": "",
-          "x": 11,
-          "y": 57,
-          "scene": "shack_visit"
-        },
         {
           "id": "sign_shack",
           "kind": "sign",
@@ -604,22 +564,18 @@
           ]
         },
         {
+          "x0": 11,
+          "y0": 57,
+          "x1": 11,
+          "y1": 57,
+          "to": "hut_door"
+        },
+        {
           "x0": 16,
           "y0": 0,
           "x1": 19,
-          "y1": 3,
-          "scene": "",
-          "enter": [
-            {
-              "when": [
-                "!flag:arrived"
-              ],
-              "scene": "skelmed_arrive"
-            },
-            {
-              "scene": "village"
-            }
-          ]
+          "y1": 4,
+          "to": "village_gate"
         }
       ],
       "uses": [
@@ -646,52 +602,6 @@
           "kind": "fight",
           "weight": 3,
           "terrain": ","
-        },
-        {
-          "scene": "ev_deer",
-          "kind": "meet",
-          "weight": 2,
-          "terrain": ".go",
-          "when": [
-            "!night"
-          ]
-        },
-        {
-          "scene": "ev_gulls",
-          "kind": "meet",
-          "weight": 3,
-          "terrain": ",=",
-          "when": [
-            "!night"
-          ]
-        },
-        {
-          "scene": "ev_mussels",
-          "kind": "find",
-          "weight": 2,
-          "terrain": ",",
-          "when": [
-            "!night"
-          ]
-        },
-        {
-          "scene": "ev_purse",
-          "kind": "find",
-          "weight": 2,
-          "terrain": ",=",
-          "once": true
-        },
-        {
-          "scene": "ev_squall",
-          "kind": "weather",
-          "weight": 2,
-          "terrain": ".=,"
-        },
-        {
-          "scene": "ev_rain",
-          "kind": "weather",
-          "weight": 1,
-          "terrain": ".="
         }
       ],
       "rows": [
@@ -752,13 +662,195 @@
         "~~~~~~~~,,......g==gg....TTTTT",
         "~~~~~~~~,HHHHH..g==gg....TTTTT",
         "~~~~~~~~,HHHHH...g==.....TTTTT",
-        "~~~~~~~~,HHHHH.o..==......TTTT",
+        "~~~~~~~~,HHDHH.o..==......TTTT",
         "~~~~~~~~,,.=========......TTTT",
         "~~~~~~~~,,,...........T...TTTT",
         "~~~~~~~~,,....T.....T.....TTTT",
         "~~~~~~~~,,...........T....TTTT",
         "~~~~~~~~,,.................TTT",
         "~~~~~~~~,,.................TTT"
+      ]
+    },
+    {
+      "id": "yenson_hut",
+      "name": "Yenson's hut",
+      "minutes": 1,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 10,
+      "indoor": true,
+      "camp": false,
+      "spots": [
+        {
+          "id": "hut_bed",
+          "x": 2,
+          "y": 3,
+          "facing": "right"
+        },
+        {
+          "id": "hut_door",
+          "x": 5,
+          "y": 6,
+          "facing": "up"
+        }
+      ],
+      "objects": [
+        {
+          "id": "yenson",
+          "kind": "npc",
+          "sprite": "npc_yenson",
+          "x": 7,
+          "y": 2,
+          "facing": "down",
+          "scene": "yenson"
+        }
+      ],
+      "zones": [
+        {
+          "x0": 5,
+          "y0": 7,
+          "x1": 5,
+          "y1": 7,
+          "to": "shack"
+        }
+      ],
+      "uses": [
+        {
+          "tile": "B",
+          "scene": "hut_bed"
+        },
+        {
+          "tile": "f",
+          "scene": "hut_fire"
+        }
+      ],
+      "events": [],
+      "rows": [
+        "xxxxxxxxxxxx",
+        "xWWWWWfWWWWx",
+        "xBppppppppnx",
+        "xBppppppppnx",
+        "xpppptttpppx",
+        "xppppppppppx",
+        "xnppppppppnx",
+        "xxxxxMxxxxxx"
+      ]
+    },
+    {
+      "id": "skelmed",
+      "name": "Skelmed",
+      "minutes": 1,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 10,
+      "camp": false,
+      "spots": [
+        {
+          "id": "village_gate",
+          "x": 17,
+          "y": 24,
+          "facing": "up"
+        }
+      ],
+      "objects": [
+        {
+          "id": "garran",
+          "kind": "npc",
+          "sprite": "npc_garran",
+          "x": 27,
+          "y": 22,
+          "facing": "right",
+          "scene": "smith"
+        },
+        {
+          "id": "ida",
+          "kind": "npc",
+          "sprite": "npc_ida",
+          "x": 20,
+          "y": 13,
+          "facing": "left",
+          "scene": "ida"
+        },
+        {
+          "id": "bess",
+          "kind": "npc",
+          "sprite": "npc_bess",
+          "x": 9,
+          "y": 8,
+          "facing": "down",
+          "scene": "bess"
+        },
+        {
+          "id": "dockhand",
+          "kind": "npc",
+          "sprite": "npc_fisher",
+          "x": 2,
+          "y": 13,
+          "facing": "left",
+          "scene": "dockhand"
+        },
+        {
+          "id": "board",
+          "kind": "sign",
+          "sprite": "obj_sign",
+          "x": 15,
+          "y": 9,
+          "text": "The noticeboard. One notice, months old: BY ORDER OF THE CROWN, THE HARBOUR LEVY IS RAISED TO ONE HALF."
+        }
+      ],
+      "zones": [
+        {
+          "x0": 17,
+          "y0": 26,
+          "x1": 18,
+          "y1": 27,
+          "to": "skelmed"
+        }
+      ],
+      "uses": [
+        {
+          "tile": "O",
+          "scene": "well_drink"
+        },
+        {
+          "tile": "A",
+          "scene": "smith"
+        },
+        {
+          "tile": "L",
+          "scene": "smith"
+        }
+      ],
+      "events": [],
+      "rows": [
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "~~~~~,,.....................oo...TTT",
+        "~~~~~~,HHHHH..HHHHHHH..HHHHH......TT",
+        "~~~~~~,HHHHH..HHHHHHH..HHHHH.....TTT",
+        "~~~~~~,HHHHH..HHHHHHH..HHHHH.....TTT",
+        "~~~~~~,HHHHH..HHHHHHH.oHHHHH......TT",
+        "~~~~~~,,.co......c.......c.......TTT",
+        "~~~~~~,,.c....T..c....T..c.......TTT",
+        "~~~~~~,,.ccccc...c.....ccc.HHHHH..TT",
+        "~~~~~~,,....occccccccccc...HHHHH.TTT",
+        "~~~~~~,,...nnccccccccccc...HHHHH.TTT",
+        "PPPPPPPPcccccccccccccccc...HHHHH..TT",
+        "PPPPPPPPccccccccccOccccc...HHHHH.TTT",
+        "~~~~~,,....n.ccccccccccccccccc...TTT",
+        "~~~~~,,......ccccccccccc.......o..TT",
+        "~~~~~,,......ccccccccccc........TTTT",
+        "~~~~~,,..........cc..............TTT",
+        "~~~~,,..HHHHH....cc.....HHHHHH....TT",
+        "~~~~,,..HHHHH....cc..T..HHHHHH...TTT",
+        "~~~~,,..HHHHH....cc.o..oHHHHHHo..TTT",
+        "~~~~,,..HHHHH.o..cc.....HHHHHHn...TT",
+        "~~~~,,....ccccccccccccccLcccAcn..TTT",
+        "~~~~,,T......T...ccccccccccccc...TTT",
+        "~~~~,,.....o.....cc............T..TT",
+        "~~~~,,.......o...cc..............TTT",
+        "~~~~FFFFFFFFFFFFFccFFFFFFFFFFFFFFFFF",
+        "TTTTTTTTTTTTTTTTTccTTTTTTTTTTTTTTTTT"
       ]
     }
   ],
@@ -842,6 +934,76 @@
     {
       "key": "o",
       "name": "Flowers"
+    },
+    {
+      "key": "D",
+      "name": "Door",
+      "road": true
+    },
+    {
+      "key": "c",
+      "name": "Cobbles",
+      "road": true
+    },
+    {
+      "key": "P",
+      "name": "Pier",
+      "road": true
+    },
+    {
+      "key": "O",
+      "name": "Well",
+      "solid": true
+    },
+    {
+      "key": "A",
+      "name": "Anvil",
+      "solid": true
+    },
+    {
+      "key": "L",
+      "name": "Forge",
+      "solid": true
+    },
+    {
+      "key": "n",
+      "name": "Barrel",
+      "solid": true
+    },
+    {
+      "key": "p",
+      "name": "Floor",
+      "road": true
+    },
+    {
+      "key": "W",
+      "name": "Wall",
+      "solid": true
+    },
+    {
+      "key": "x",
+      "name": "Wall",
+      "solid": true
+    },
+    {
+      "key": "M",
+      "name": "Doorway",
+      "road": true
+    },
+    {
+      "key": "f",
+      "name": "Hearth",
+      "solid": true
+    },
+    {
+      "key": "B",
+      "name": "Bed",
+      "solid": true
+    },
+    {
+      "key": "t",
+      "name": "Table",
+      "solid": true
     }
   ]
 }

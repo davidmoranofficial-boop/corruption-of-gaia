@@ -17,14 +17,13 @@ namespace Loran.Core
         /// <summary>The quick starts the dev panel offers: id and button text.</summary>
         public static readonly (string id, string name)[] DevStarts =
         {
-            ("village", "Skelmed square"),
+            ("village", "Skelmed"),
             ("road", "Walk the coast road"),
+            ("hut", "Wake in Yenson's hut"),
             ("forge_first", "Forge: your first gear"),
-            ("forge_iron", "Forge: buy iron (with a gem)"),
+            ("forge_iron", "Forge: buy iron"),
             ("dog", "Fight the wolf"),
             ("crab", "Fight the rock crab"),
-            ("stone", "The class stone"),
-            ("shack", "Wake in Yenson's shack"),
         };
 
         /// <summary>A fresh test character, rested and supplied, standing in Skelmed on the morning of day 2.</summary>
@@ -40,7 +39,7 @@ namespace Loran.Core
             S.water = Rules.WaterskinSize;
             S.AddItem("bread", 2);
             S.AddItem("flint", 1);
-            foreach (var f in new[] { "y_what", "y_where", "y_stew", "y_thanks", "y_supplies", "yenson_road", "arrived", "dog_met" })
+            foreach (var f in new[] { "y_met", "y_what", "y_where", "y_stew", "y_thanks", "y_supplies", "yenson_road", "dog_met" })
                 if (!S.Has(f)) S.flags.Add(f);
             if (data.Gear("gutting_knife") != null) MakeGear("gutting_knife", null, null);
             DevRefill();
@@ -53,42 +52,37 @@ namespace Loran.Core
             S.result = "Dev mode: " + (DevStarts.FirstOrDefault(d => d.id == id).name ?? id) + ". This game won't overwrite your real save.";
             switch (id)
             {
-                case "village": Jump("village"); break;
-                case "shack":
-                    S.flags.RemoveAll(f => f.StartsWith("y_") || f == "yenson_road" || f == "arrived" || f == "dog_met");
-                    Jump("shack");
+                case "village":
+                    MoveTo("village_gate");
+                    Jump(TravelId);
+                    break;
+                case "hut":
+                    S.flags.RemoveAll(f => f.StartsWith("y_") || f == "yenson_road" || f == "dog_met");
+                    Jump("wake");
                     break;
                 case "road":
-                    S.flags.Remove("arrived");
                     S.flags.Remove("dog_met");
                     MoveTo("shack");
                     Jump(TravelId);
                     break;
                 case "forge_first":
-                    Flag("smith_mined"); Flag("gem_shown");
-                    Jump("smith_craft");
+                    MoveTo("village_gate");
+                    Jump("smith");
                     break;
                 case "forge_iron":
-                    Flag("smith_mined"); Flag("smith_done");
+                    MoveTo("village_gate");
+                    Flag("smith_done");
                     S.coins = 30;
-                    S.AddItem("gem", 1);
-                    Jump("smith_forge");
+                    Jump("smith");
                     break;
                 case "dog":
                 case "crab":
                 {
-                    S.flags.Remove("arrived");
                     MoveTo("headland");
-                    S.scene = id == "dog" ? "dog" : "ev_crab";
+                    S.scene = TravelId;
                     StartCombat(id, id == "dog" ? "dog_won" : "ev_crab_won", TravelId);
                     break;
                 }
-                case "stone":
-                    Flag("hunt_done"); Flag("smith_mined"); Flag("smith_done"); Flag("mage_done");
-                    if (!S.spells.Contains("draw_water")) S.spells.Add("draw_water");
-                    if (!S.spells.Contains("kindle")) S.spells.Add("kindle");
-                    Jump("stone");
-                    break;
                 default: throw new Exception("No dev start called '" + id + "'");
             }
             Snapshot();

@@ -84,7 +84,7 @@ namespace Loran.Core
                        : "Garran sighs. \"Well. It's a start.\"");
             S.Toasts.Add("Forged: " + item.name + " (" + item.rank + " rank).");
 
-            string next = string.IsNullOrEmpty(S.forgeNext) ? "village" : S.forgeNext;
+            string next = string.IsNullOrEmpty(S.forgeNext) ? TravelId : S.forgeNext;
             S.forging = S.forgeMaterial = S.forgeMax = S.forgeNext = S.forgeIntro = "";
             return next;
         }

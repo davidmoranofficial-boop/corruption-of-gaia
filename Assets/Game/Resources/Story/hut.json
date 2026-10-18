@@ -1,0 +1,178 @@
+{
+  "scenes": [
+    {
+      "id": "wake",
+      "title": "Yenson's hut",
+      "safe": true,
+      "onEnter": [
+        "hud:on",
+        "clock:1:17:30",
+        "hp=60",
+        "stamina=30",
+        "energy=45",
+        "hunger=40",
+        "thirst=30",
+        "corruption=5",
+        "travel:place:hut_bed",
+        "save"
+      ],
+      "text": [
+        "Warmth, first. Then smoke, and the smell of fish, and driftwood popping in a fire.",
+        "An old man by the hearth looks up from the net he's mending."
+      ],
+      "choices": [
+        {
+          "label": "Sit up",
+          "go": "yenson"
+        }
+      ]
+    },
+    {
+      "id": "yenson",
+      "speaker": "Yenson",
+      "title": "Yenson",
+      "safe": true,
+      "text": [],
+      "extra": [
+        {
+          "when": [
+            "!flag:y_met"
+          ],
+          "text": "\"Easy. The sea nearly kept you. Name's Yenson.\""
+        },
+        {
+          "when": [
+            "flag:y_met",
+            "!flag:y_supplies"
+          ],
+          "text": "\"Feeling more yourself?\""
+        },
+        {
+          "when": [
+            "flag:y_supplies"
+          ],
+          "text": "\"Road's north, past the headland. Mind yourself out there.\""
+        }
+      ],
+      "onEnter": [
+        "flag:y_met"
+      ],
+      "choices": [
+        {
+          "label": "\"What happened to me?\"",
+          "when": [
+            "!flag:y_what"
+          ],
+          "effects": [
+            "flag:y_what"
+          ],
+          "time": 5,
+          "result": "\"Found you at the tide line this morning, tangled round a barrel. A trade boat went down off the point in the storm. You're the only one the sea gave back.\" He looks at you a moment longer. \"Lucky. Or something.\""
+        },
+        {
+          "label": "\"Where am I?\"",
+          "when": [
+            "!flag:y_where"
+          ],
+          "effects": [
+            "flag:y_where"
+          ],
+          "time": 5,
+          "result": "\"Loran. West coast. That light up the hill is Skelmed. Busiest port on this coast once. Now the king takes half of every catch, the roads have gone bad, and the merchants don't come.\""
+        },
+        {
+          "label": "Eat the stew he offers",
+          "when": [
+            "!flag:y_stew"
+          ],
+          "effects": [
+            "flag:y_stew",
+            "hunger+40",
+            "thirst+15",
+            "energy+10"
+          ],
+          "time": 20,
+          "result": "Fish stew, mostly water and bones, and the best thing you've ever eaten."
+        },
+        {
+          "label": "Thank him",
+          "when": [
+            "!flag:y_thanks"
+          ],
+          "effects": [
+            "flag:y_thanks"
+          ],
+          "train": [
+            "cha+1"
+          ],
+          "why": "talking with Yenson",
+          "result": "He waves it off. \"Sea takes enough. Wasn't letting it have you as well.\""
+        },
+        {
+          "label": "\"What should I do now?\"",
+          "when": [
+            "!flag:y_supplies"
+          ],
+          "effects": [
+            "flag:y_supplies",
+            "flag:yenson_road",
+            "item:bread+2",
+            "item:flint+1",
+            "water=4",
+            "gear:gutting_knife"
+          ],
+          "time": 10,
+          "result": "\"Can't keep you. I've barely enough for me.\" He pushes a bundle across: two heels of bread, a flint, a waterskin, and his spare gutting knife. \"Roads aren't what they were. Follow the coast road north to Skelmed. Garran the smith could use a pair of hands.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "hut_bed",
+      "title": "Your bed",
+      "safe": true,
+      "text": [
+        "A pile of old sailcloth by the wall, still warm."
+      ],
+      "choices": [
+        {
+          "label": "Sleep until morning",
+          "effects": [
+            "sleep:safe"
+          ],
+          "go": "travel"
+        },
+        {
+          "label": "Not now",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "hut_fire",
+      "title": "The hearth",
+      "safe": true,
+      "text": [
+        "Driftwood crackles in the hearth. A pot of stew hangs over it."
+      ],
+      "choices": [
+        {
+          "label": "Sit by the fire a while",
+          "time": 30,
+          "effects": [
+            "stamina+30"
+          ],
+          "go": "travel",
+          "result": "You sit and let the heat soak into you until your hands stop shaking."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    }
+  ]
+}

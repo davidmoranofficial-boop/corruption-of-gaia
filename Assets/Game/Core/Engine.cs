@@ -76,7 +76,7 @@ namespace Loran.Core
                 a.rows ??= new List<string>();
                 foreach (var ev in a.events) { ev.when ??= new List<string>(); ev.area ??= new List<int>(); ev.terrain ??= ""; ev.enemy ??= ""; ev.win ??= ""; }
                 foreach (var o in a.objects) { o.when ??= new List<string>(); o.sprite ??= ""; if (string.IsNullOrEmpty(o.facing)) o.facing = "down"; }
-                foreach (var z in a.zones) { z.when ??= new List<string>(); z.enter ??= new List<CondScene>(); foreach (var c in z.enter) c.when ??= new List<string>(); }
+                foreach (var z in a.zones) { z.to ??= ""; z.when ??= new List<string>(); z.enter ??= new List<CondScene>(); foreach (var c in z.enter) c.when ??= new List<string>(); }
             }
             foreach (var j in d.journal) j.when ??= new List<string>();
         }
@@ -112,7 +112,7 @@ namespace Loran.Core
                 seed = Environment.TickCount & 0x7fffffff,
                 minutes = 22 * 60,
             };
-            GoTo("bedroom");
+            GoTo(Creation);
         }
 
         /// <summary>Applies the character creation form. alloc is the bonus points spread over the stats.</summary>
@@ -164,7 +164,9 @@ namespace Loran.Core
             }
             MigrateRoad();
             if (S.scene == TravelId ? Area != null : S.scene == ForgeId ? S.forging != "" : scenes.ContainsKey(S.scene)) return;
-            S.scene = S.Has("arrived") && scenes.ContainsKey("village") ? "village" : "shack_visit";
+            // A scene that's been taken out (the old text pages): carry on in the world, or in Yenson's hut
+            if (Area == null) MoveTo(S.Has("arrived") || S.Has("been:skelmed") ? "skelmed" : "hut_bed");
+            S.scene = TravelId;
         }
 
         // ------------------------------------------------------------------ reading the scene
@@ -620,7 +622,11 @@ namespace Loran.Core
                     break;
                 default: throw new Exception("Unknown sleep '" + kind + "'");
             }
+            // Out in the world (in a bed, or camping), you wake standing where you slept, not in the bed's talk box
+            string scene = S.scene;
+            if (Area != null) S.scene = TravelId;
             Snapshot();
+            S.scene = scene;
             S.Toasts.Add("Saved. If you die, you'll wake from this sleep.");
         }
 
@@ -722,7 +728,7 @@ namespace Loran.Core
                         if (parts.Length > 2 && data.Material(parts[2]) == null) problems.Add(where + ": no material '" + parts[2] + "'");
                         return;
                     case "travel":
-                        if ((parts[0] == "at") && data.Spot(parts[1]).spot == null) problems.Add(where + ": no spot '" + parts[1] + "'");
+                        if ((parts[0] == "at" || parts[0] == "place") && data.Spot(parts[1]).spot == null) problems.Add(where + ": no spot '" + parts[1] + "'");
                         return;
                 }
                 if (e.StartsWith("item:"))
@@ -788,6 +794,7 @@ namespace Loran.Core
                 foreach (var z in a.zones)
                 {
                     Scene(aw + " zone", z.scene);
+                    if (!string.IsNullOrEmpty(z.to) && data.Spot(z.to).spot == null) problems.Add(aw + " zone: no spot '" + z.to + "'");
                     foreach (var w in z.when) Cond(aw + " zone", w);
                     foreach (var c in z.enter) { Scene(aw + " zone", c.scene); foreach (var w in c.when) Cond(aw + " zone", w); }
                 }
@@ -804,7 +811,7 @@ namespace Loran.Core
                     foreach (var w in ev.when) Cond(where, w);
                 }
             }
-            foreach (var need in new[] { Title, Creation, Death, Collapse, "bedroom" }) Scene("required", need);
+            foreach (var need in new[] { Title, Creation, Death, Collapse }) Scene("required", need);
             S = saved;
             return problems;
         }

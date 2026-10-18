@@ -23,7 +23,20 @@ GAME = os.path.join(HERE, '..', '..', 'Assets', 'Game')
 SPR = os.path.join(GAME, 'Resources', 'Sprites')
 T = 16
 
-SOLID = set('~TrRwkhFH')
+# Every tile letter: name, solid (can't walk on it), road (fewer fights). Written into data.json.
+TILES = [
+    ('.', 'Grass', False, False), ('g', 'Long grass', False, False), (',', 'Sand', False, False),
+    ('~', 'Sea', True, False), ('=', 'Road', False, True), ('T', 'Tree', True, False), ('r', 'Rock', True, False),
+    ('R', 'Rock pool', True, False), ('w', 'Stream', True, False), ('b', 'Bridge', False, True),
+    ('k', 'Brambles', True, False), ('h', 'Cliff', True, False), ('u', 'High ground', False, False),
+    ('s', 'Steps', False, True), ('F', 'Fence', True, False), ('H', 'Building', True, False), ('o', 'Flowers', False, False),
+    ('D', 'Door', False, True), ('c', 'Cobbles', False, True), ('P', 'Pier', False, True), ('O', 'Well', True, False),
+    ('A', 'Anvil', True, False), ('L', 'Forge', True, False), ('n', 'Barrel', True, False),
+    # indoors
+    ('p', 'Floor', False, True), ('W', 'Wall', True, False), ('x', 'Wall', True, False), ('M', 'Doorway', False, True),
+    ('f', 'Hearth', True, False), ('B', 'Bed', True, False), ('t', 'Table', True, False),
+]
+SOLID = {k for k, _, solid, _ in TILES if solid}
 
 
 def C(k):
@@ -120,6 +133,7 @@ def coast_road():
 
     # Yenson's shack, with a trodden path from the door to the road
     rect(9, 55, 13, 57, 'H')
+    setc(11, 57, 'D')
 
     # The road, two tiles wide, from the shack to the gate, with a bridge over the stream
     for y in range(0, 59):
@@ -143,7 +157,7 @@ def coast_road():
         'id': 'coast_road',
         'name': 'The coast road',
         'minutes': 2,
-        'eventChance': 3,          # % per step: something to find, someone to meet, weather
+        'eventChance': 0,          # % per step: something to find, someone to meet, weather
         'fightChance': 6,          # % per step: a fight, the old way, anywhere you walk (less on the road)
         'fightGap': 10,            # at least this many steps between fights
         'spots': [
@@ -154,8 +168,6 @@ def coast_road():
             {'id': 'stream', 'x': 10, 'y': 14, 'facing': 'left'},
         ],
         'objects': [
-            {'id': 'yenson', 'kind': 'npc', 'sprite': 'npc_yenson', 'x': 14, 'y': 57, 'facing': 'down', 'scene': 'shack_visit'},
-            {'id': 'shack_door', 'kind': 'door', 'sprite': '', 'x': 11, 'y': 57, 'scene': 'shack_visit'},
             {'id': 'sign_shack', 'kind': 'sign', 'sprite': 'obj_sign', 'x': sky + 2, 'y': 57,
              'text': 'North: Skelmed. South: Yenson. Mind the tide.'},
             {'id': 'sign_gate', 'kind': 'sign', 'sprite': 'obj_sign', 'x': road(6) + 2, 'y': 6,
@@ -171,8 +183,8 @@ def coast_road():
         'zones': [
             # Walking into these runs a scene. The wolf waits on the road north of the headland.
             {'x0': 0, 'y0': 25, 'x1': W - 1, 'y1': 26, 'scene': 'dog', 'when': ['!flag:dog_met']},
-            {'x0': road(2) - 1, 'y0': 0, 'x1': road(2) + 2, 'y1': 3, 'scene': '', 'enter': [
-                {'when': ['!flag:arrived'], 'scene': 'skelmed_arrive'}, {'scene': 'village'}]},
+            {'x0': 11, 'y0': 57, 'x1': 11, 'y1': 57, 'to': 'hut_door'},
+            {'x0': road(4) - 1, 'y0': 0, 'x1': road(4) + 2, 'y1': 4, 'to': 'village_gate'},
         ],
         'uses': [
             # Facing these tiles lets you use them.
@@ -183,19 +195,154 @@ def coast_road():
             # Fights start straight away, Final Fantasy style. win is where you go after winning.
             {'enemy': 'dog', 'win': 'ev_wolf_won', 'kind': 'fight', 'weight': 3, 'terrain': '.go=s'},
             {'enemy': 'crab', 'win': 'ev_crab_won', 'kind': 'fight', 'weight': 3, 'terrain': ','},
-            {'scene': 'ev_deer', 'kind': 'meet', 'weight': 2, 'terrain': '.go', 'when': ['!night']},
-            {'scene': 'ev_gulls', 'kind': 'meet', 'weight': 3, 'terrain': ',=', 'when': ['!night']},
-            {'scene': 'ev_mussels', 'kind': 'find', 'weight': 2, 'terrain': ',', 'when': ['!night']},
-            {'scene': 'ev_purse', 'kind': 'find', 'weight': 2, 'terrain': ',=', 'once': True},
-            {'scene': 'ev_squall', 'kind': 'weather', 'weight': 2, 'terrain': '.=,'},
-            {'scene': 'ev_rain', 'kind': 'weather', 'weight': 1, 'terrain': '.='},
         ],
         'rows': rows,
     }
     return area
 
 
-AREAS = [coast_road]
+# ============================================================================================== Yenson's hut
+
+def yenson_hut():
+    rows = [
+        'xxxxxxxxxxxx',
+        'xWWWWWfWWWWx',
+        'xBppppppppnx',
+        'xBppppppppnx',
+        'xpppptttpppx',
+        'xppppppppppx',
+        'xnppppppppnx',
+        'xxxxxMxxxxxx',
+    ]
+    return {
+        'id': 'yenson_hut',
+        'name': "Yenson's hut",
+        'minutes': 1, 'eventChance': 0, 'fightChance': 0, 'fightGap': 10,
+        'indoor': True, 'camp': False,
+        'spots': [
+            {'id': 'hut_bed', 'x': 2, 'y': 3, 'facing': 'right'},
+            {'id': 'hut_door', 'x': 5, 'y': 6, 'facing': 'up'},
+        ],
+        'objects': [
+            {'id': 'yenson', 'kind': 'npc', 'sprite': 'npc_yenson', 'x': 7, 'y': 2, 'facing': 'down', 'scene': 'yenson'},
+        ],
+        'zones': [
+            {'x0': 5, 'y0': 7, 'x1': 5, 'y1': 7, 'to': 'shack'},
+        ],
+        'uses': [
+            {'tile': 'B', 'scene': 'hut_bed'},
+            {'tile': 'f', 'scene': 'hut_fire'},
+        ],
+        'events': [],
+        'rows': rows,
+    }
+
+
+# ============================================================================================== Skelmed
+
+def skelmed():
+    W, H = 36, 28
+    g = [['.'] * W for _ in range(H)]
+    rnd = random.Random(23)
+
+    def setc(x, y, t):
+        if 0 <= x < W and 0 <= y < H: g[y][x] = t
+
+    def rect(x0, y0, x1, y1, t):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1): setc(x, y, t)
+
+    coast = lambda y: int(round(5 + 1.2 * math.sin(y / 5.0)))
+    for y in range(H):
+        c = coast(y)
+        for x in range(W):
+            if x < c: g[y][x] = '~'
+            elif x < c + 2: g[y][x] = ','
+
+    # woods round the north and east, the fence along the south with the gate in it
+    rect(0, 0, W - 1, 1, 'T')
+    for y in range(H):
+        for x in range(W - 3 + (y % 3 == 0), W): g[y][x] = 'T'
+    for x in range(W):
+        if g[26][x] != '~': g[26][x] = 'F'
+    rect(0, 27, W - 1, 27, 'T')
+    for y in range(27, H): g[y][17] = g[y][18] = 'c'
+    for y in range(26, H): g[y][17] = g[y][18] = 'c'
+
+    # the square, the well in the middle
+    rect(13, 10, 23, 16, 'c')
+    setc(18, 13, 'O')
+    # the main street from the gate up to the square
+    rect(17, 16, 18, 26, 'c')
+
+    # the harbour: a lane down to the shore and the old pier, far too long for the boats left
+    rect(coast(12) + 2, 12, 12, 13, 'c')
+    for x in range(0, coast(12) + 2):
+        g[12][x] = g[13][x] = 'P'
+
+    # houses: (x0, y0, x1, y1, door x)
+    houses = [(7, 3, 11, 6, 9), (14, 3, 20, 6, 17), (23, 3, 27, 6, 25), (8, 18, 12, 21, 10), (27, 9, 31, 13, 29),
+              (24, 18, 29, 21, 26)]
+    doors = []
+    for (x0, y0, x1, y1, dx) in houses:
+        rect(x0, y0, x1, y1, 'H')
+        doors.append((dx, y1))
+    # cobbled paths from the doors to the square
+    for (x0, y0, x1, y1, dx) in houses:
+        end = 10 if y1 < 10 else 15 if y1 < 18 else 23
+        for y in range(y1 + 1, end): setc(dx, y, 'c')
+    rect(9, 9, 13, 9, 'c')
+    rect(23, 9, 25, 9, 'c')
+    rect(23, 14, 29, 14, 'c')
+    rect(10, 22, 18, 22, 'c')
+    rect(18, 22, 29, 23, 'c')
+
+    # Garran's forge in front of the smithy: the forge itself and the anvil
+    setc(24, 22, 'L')
+    setc(28, 22, 'A')
+    setc(30, 21, 'n'); setc(30, 22, 'n')
+
+    # barrels and crates by the harbour, trees and flowers
+    for (x, y) in ((11, 11), (12, 11), (11, 14)):
+        setc(x, y, 'n')
+    for (x, y) in ((4, 4), (3, 21), (13, 23), (22, 8), (32, 16), (21, 19), (6, 23), (14, 8), (31, 24)):
+        if g[y][x] in '.,': g[y][x] = 'T'
+    for _ in range(30):
+        x, y = rnd.randrange(W), rnd.randrange(2, 26)
+        if g[y][x] == '.': g[y][x] = 'o'
+
+    rows = [''.join(r) for r in g]
+    return {
+        'id': 'skelmed',
+        'name': 'Skelmed',
+        'minutes': 1, 'eventChance': 0, 'fightChance': 0, 'fightGap': 10,
+        'camp': False,
+        'doors': doors,
+        'spots': [
+            {'id': 'village_gate', 'x': 17, 'y': 24, 'facing': 'up'},
+        ],
+        'objects': [
+            {'id': 'garran', 'kind': 'npc', 'sprite': 'npc_garran', 'x': 27, 'y': 22, 'facing': 'right', 'scene': 'smith'},
+            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 20, 'y': 13, 'facing': 'left', 'scene': 'ida'},
+            {'id': 'bess', 'kind': 'npc', 'sprite': 'npc_bess', 'x': 9, 'y': 8, 'facing': 'down', 'scene': 'bess'},
+            {'id': 'dockhand', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': 2, 'y': 13, 'facing': 'left', 'scene': 'dockhand'},
+            {'id': 'board', 'kind': 'sign', 'sprite': 'obj_sign', 'x': 15, 'y': 9,
+             'text': 'The noticeboard. One notice, months old: BY ORDER OF THE CROWN, THE HARBOUR LEVY IS RAISED TO ONE HALF.'},
+        ],
+        'zones': [
+            {'x0': 17, 'y0': 26, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
+        ],
+        'uses': [
+            {'tile': 'O', 'scene': 'well_drink'},
+            {'tile': 'A', 'scene': 'smith'},
+            {'tile': 'L', 'scene': 'smith'},
+        ],
+        'events': [],
+        'rows': rows,
+    }
+
+
+AREAS = [coast_road, yenson_hut, skelmed]
 
 # ============================================================================================== tile painting
 
@@ -258,6 +405,37 @@ def tile_painter(rows):
 
     def circle(cx, cy, r, sy=1.0):
         return {(x, y) for y in range(T) for x in range(T) if (x - cx) ** 2 + ((y - cy) * sy) ** 2 <= r * r}
+
+    def cobbles(tx, ty):
+        rnd = random.Random(tx * 41 + ty * 67)
+        for y in range(T):
+            for x in range(T):
+                put(tx, ty, x, y, 'G')
+        # rounded stones in staggered rows
+        for row in range(4):
+            off = 2 if (row + ty) % 2 else 0
+            for col in range(-1, 4):
+                x0, y0 = col * 4 + off, row * 4
+                k = rnd.choice(['y', 'y', 'Y', 'y'])
+                for y in range(y0, y0 + 3):
+                    for x in range(x0, x0 + 3):
+                        if (x - x0, y - y0) in ((0, 0), (2, 0), (0, 2), (2, 2)): continue
+                        put(tx, ty, x, y, k)
+        # soften the edge where it meets grass
+        for (dx, dy, xs, ys) in ((-1, 0, [0], range(T)), (1, 0, [T - 1], range(T)), (0, -1, range(T), [0]), (0, 1, range(T), [T - 1])):
+            if at(tx + dx, ty + dy) in ('.', 'o', 'g', 'T', 'F'):
+                for y in ys:
+                    for x in xs:
+                        if (x + y) % 3: put(tx, ty, x, y, 'F')
+
+    def floor(tx, ty):
+        for y in range(T):
+            for x in range(T):
+                k = 'D'
+                if y % 4 == 3: k = 'b'
+                elif (x + (y // 4) * 6 + tx * 4) % 16 == 0: k = 'b'
+                elif (x * 7 + y * 3 + tx) % 23 == 0: k = 'd'
+                put(tx, ty, x, y, k)
 
     for ty in range(H):
         for tx in range(W):
@@ -366,8 +544,117 @@ def tile_painter(rows):
                     for y in range(4, 15):
                         put(tx, ty, x, y, 'b'); put(tx, ty, x + 1, y, 'B')
                     put(tx, ty, x, 4, 'D')
-            elif t == 'H':
+            elif t in 'HD':
                 grass(tx, ty)
+            elif t == 'c':
+                cobbles(tx, ty)
+            elif t == 'P':
+                water(tx, ty)
+                for y in range(T):
+                    for x in range(T):
+                        if y % 4 == 3: put(tx, ty, x, y, 'B')
+                        else: put(tx, ty, x, y, 'D' if (x + y * 5 + tx * 3) % 13 else 'b')
+                if ty % 2 == 0 and at(tx, ty + 1) not in ('P',):
+                    pass
+                if at(tx, ty + 1) != 'P':
+                    for x in (2, 13):
+                        put(tx, ty, x, T - 1, 'o'); put(tx, ty, x + 1, T - 1, 'o')
+            elif t == 'O':
+                cobbles(tx, ty)
+                ring = circle(7.5, 8, 7, 1.0)
+                outline_blob(tx, ty, ring, lambda x, y: 'Y' if (x + y // 3) % 4 else 'y')
+                inner = circle(7.5, 8, 4.2, 1.0)
+                for (x, y) in inner: put(tx, ty, x, y, 'X' if y > 6 else 'w')
+                put(tx, ty, 6, 6, 'c'); put(tx, ty, 7, 6, 'c')
+            elif t == 'L':
+                cobbles(tx, ty)
+                box = {(x, y) for x in range(1, 15) for y in range(2, 15)}
+                outline_blob(tx, ty, box, lambda x, y: 'G' if (x // 3 + y // 3) % 2 else 'y')
+                for (x, y) in {(x, y) for x in range(4, 12) for y in range(5, 11)}:
+                    put(tx, ty, x, y, 'a' if (x * 3 + y) % 5 == 0 else ('r' if (x + y) % 3 else 'R'))
+            elif t == 'A':
+                cobbles(tx, ty)
+                body = {(x, y) for x in range(2, 14) for y in range(6, 9)} | {(x, y) for x in range(5, 11) for y in range(9, 12)} \
+                    | {(x, y) for x in range(4, 12) for y in range(12, 14)} | {(x, y) for x in range(0, 3) for y in range(6, 8)}
+                outline_blob(tx, ty, body, lambda x, y: 'y' if y < 7 else 'G')
+            elif t == 'n':
+                (cobbles if at(tx - 1, ty) == 'c' or at(tx + 1, ty) == 'c' or at(tx, ty + 1) == 'c' else
+                 floor if at(tx + 1, ty) == 'p' or at(tx - 1, ty) == 'p' else grass)(tx, ty)
+                body = {(x, y) for x in range(3, 13) for y in range(2, 15) if not ((x in (3, 12)) and (y in (2, 14)))}
+                outline_blob(tx, ty, body, lambda x, y: 'B' if y in (5, 11) else ('D' if x < 6 else 'b'))
+                for x in range(4, 12): put(tx, ty, x, 3, 'B')
+            elif t == 'p':
+                floor(tx, ty)
+            elif t == 'x':
+                for y in range(T):
+                    for x in range(T):
+                        put(tx, ty, x, y, 'e' if (x + y) % 7 else 'o')
+                # a lip of wall where it meets the floor
+                if at(tx, ty - 1) in ('p', 'M', 'B', 't', 'n'):
+                    for x in range(T): put(tx, ty, x, 0, 'B'); put(tx, ty, x, 1, 'b')
+                if at(tx + 1, ty) in ('p', 'n', 'B'):
+                    for y in range(T): put(tx, ty, T - 1, y, 'B'); put(tx, ty, T - 2, y, 'b')
+                if at(tx - 1, ty) in ('p', 'n', 'B'):
+                    for y in range(T): put(tx, ty, 0, y, 'B'); put(tx, ty, 1, y, 'b')
+            elif t in 'Wf':
+                # the back wall: dark planks, a beam along the top, a skirting board
+                for y in range(T):
+                    for x in range(T):
+                        k = 'b' if y % 5 else 'B'
+                        if (x + (y // 5) * 7) % 16 == 0: k = 'B'
+                        if y < 2: k = 'B'
+                        if y > 13: k = 'o' if y == 15 else 'B'
+                        put(tx, ty, x, y, k)
+                if t == 'W' and (tx * 5 + ty) % 4 == 1:
+                    # a net hung to dry
+                    for y in range(3, 12):
+                        for x in range(3, 13):
+                            if (x + y) % 3 == 0 or (x - y) % 3 == 0: put(tx, ty, x, y, 'y' if y > 4 else 'Y')
+                if t == 'f':
+                    stone = {(x, y) for x in range(1, 15) for y in range(2, 16)}
+                    outline_blob(tx, ty, stone, lambda x, y: 'y' if (x // 4 + y // 3) % 2 else 'G')
+                    arch = {(x, y) for x in range(4, 12) for y in range(7, 16)}
+                    for (x, y) in arch: put(tx, ty, x, y, 'e')
+                    for (x, y, k) in ((6, 12, 'r'), (7, 11, 'a'), (8, 12, 'r'), (9, 13, 'R'), (5, 13, 'R'), (7, 13, 'a'),
+                                      (8, 10, 'r'), (6, 14, 'b'), (7, 14, 'B'), (8, 14, 'b'), (9, 14, 'B'), (7, 12, 'a'), (8, 13, 'a')):
+                        put(tx, ty, x, y, k)
+            elif t == 'M':
+                floor(tx, ty)
+                for y in range(4, 14):
+                    for x in range(2, 14):
+                        put(tx, ty, x, y, 'o' if x in (2, 13) or y in (4, 13) else ('R' if (x + y) % 2 else 'r'))
+            elif t == 'B':
+                floor(tx, ty)
+                top = at(tx, ty - 1) != 'B'
+                bottom = at(tx, ty + 1) != 'B'
+                for y in range(T):
+                    for x in range(1, 15):
+                        if (top and y < 1) or (bottom and y > 14): continue
+                        k = 'b'
+                        if x in (1, 14): k = 'o'
+                        elif top and y < 3: k = 'o' if y == 1 else 'B'
+                        elif bottom and y > 12: k = 'o' if y == 14 else 'B'
+                        elif top and y < 9: k = 'W' if 3 < x < 12 and 3 < y < 8 else 'd'
+                        else: k = 'c' if (x + y) % 6 else 'C'
+                        if top and y == 8 and 1 < x < 14: k = 'C'
+                        put(tx, ty, x, y, k)
+            elif t == 't':
+                floor(tx, ty)
+                left = at(tx - 1, ty) != 't'
+                right = at(tx + 1, ty) != 't'
+                for y in range(2, 14):
+                    for x in range(T):
+                        if (left and x < 1) or (right and x > 14): continue
+                        k = 'D' if y < 10 else 'b'
+                        if y in (2, 13) or (left and x == 1) or (right and x == 14): k = 'o'
+                        elif y == 10: k = 'B'
+                        put(tx, ty, x, y, k)
+                # a bowl and a cup
+                if left:
+                    for (x, y) in circle(8, 6, 2.6): put(tx, ty, x, y, 'W' if y < 6 else 'Y')
+                else:
+                    for y in range(4, 8):
+                        put(tx, ty, 6, y, 'y'); put(tx, ty, 7, y, 'Y'); put(tx, ty, 8, y, 'y')
     return img, over, put
 
 
@@ -617,6 +904,9 @@ def sheet(figure, swaps):
 NPCS = {
     'npc_yenson': ('male', SKINS['olive'], HAIRS['grey'], {'d': '#6e8f8c', 'D': '#46676a', 'n': '#3a4c50', 'N': '#253236'}),
     'npc_fisher': ('male', SKINS['fair'], HAIRS['red'], {'d': '#7d6b52', 'D': '#5a4634', 'n': '#46676a', 'N': '#253236'}),
+    'npc_garran': ('male', SKINS['brown'], HAIRS['black'], {'d': '#5a4634', 'D': '#3a2d24', 'n': '#38343a', 'N': '#1e1a20'}),
+    'npc_ida': ('female', SKINS['light'], HAIRS['red'], {'d': '#566b3e', 'D': '#3b4d30', 'n': '#5a4634', 'N': '#3a2d24'}),
+    'npc_bess': ('female', SKINS['fair'], HAIRS['grey'], {'d': '#7e5a80', 'D': '#553a5a', 'n': '#38343a', 'N': '#1e1a20'}),
 }
 
 OBJECTS = {
@@ -728,10 +1018,13 @@ def main():
     data_path = os.path.join(GAME, 'Resources', 'Data', 'data.json')
     data = json.load(open(data_path))
     data['areas'] = []
+    data['tiles'] = [dict({'key': k, 'name': n}, **({'solid': True} if solid else {}), **({'road': True} if road else {}))
+                     for k, n, solid, road in TILES]
     out = os.path.join(SPR, 'World')
     os.makedirs(out, exist_ok=True)
     for make in AREAS:
         area = make()
+        extra_doors = [tuple(d) for d in area.pop('doors', [])]
         data['areas'].append(area)
         img, over, _ = tile_painter(area['rows'])
         rows = area['rows']
@@ -739,15 +1032,16 @@ def main():
         seen = set()
         for y in range(len(rows)):
             for x in range(len(rows[0])):
-                if rows[y][x] != 'H' or (x, y) in seen: continue
+                if rows[y][x] not in 'H' or (x, y) in seen: continue
                 x1 = x
                 while x1 + 1 < len(rows[0]) and rows[y][x1 + 1] == 'H': x1 += 1
                 y1 = y
                 while y1 + 1 < len(rows) and rows[y1 + 1][x] == 'H': y1 += 1
                 for yy in range(y, y1 + 1):
                     for xx in range(x, x1 + 1): seen.add((xx, yy))
-                door = next((o['x'] for o in area['objects'] if o['kind'] == 'door' and x <= o['x'] <= x1 and o['y'] == y1), None)
-                paint_house(img, x, y, x1 - x + 1, y1 - y + 1, wall='d' if door is not None else 'y', roof='R' if door is None else 'B', door_x=door)
+                door = next((xx for xx in range(x, x1 + 1) if rows[y1][xx] == 'D' or (xx, y1) in extra_doors), None)
+                paint_house(img, x, y, x1 - x + 1, y1 - y + 1, wall='d' if (x * 3 + y) % 2 == 0 else 'y',
+                            roof='B' if (x + y) % 3 else 'R', door_x=door)
         img.save(os.path.join(out, area['id'] + '.png'))
         over.save(os.path.join(out, area['id'] + '_over.png'))
     open(data_path, 'w').write(json.dumps(data, indent=2, ensure_ascii=False) + '\n')

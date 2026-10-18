@@ -4,36 +4,58 @@
       "id": "collapse",
       "place": "",
       "title": "Out cold",
-      "onEnter": ["collapse"],
-      "text": ["You pushed yourself past what your body had left. Sleep, food and drink are the only things that bring your energy back."],
+      "onEnter": [
+        "collapse"
+      ],
+      "text": [
+        "You pushed yourself past what your body had left. Sleep, food and drink are the only things that bring your energy back."
+      ],
       "choices": [
-        { "label": "Get up", "effects": ["resume"] }
+        {
+          "label": "Get up",
+          "effects": [
+            "resume"
+          ]
+        }
       ]
     },
     {
       "id": "death",
       "place": "",
       "title": "You died",
-      "text": ["{death}"],
-      "extra": [
-        { "when": ["mode:basic"], "text": "Basic mode: you'll wake at your last sleep. Anything since then didn't happen." },
-        { "when": ["mode:perma"], "text": "Permadeath: this story is over." }
-      ],
-      "choices": [
-        { "label": "Wake at your last sleep", "when": ["mode:basic"], "effects": ["revive"] },
-        { "label": "Start a new game", "effects": ["restart"] }
-      ]
-    },
-    {
-      "id": "end_slice",
-      "place": "The road inland",
-      "title": "End of the vertical slice",
       "text": [
-        "You shoulder your pack and take the road east, away from the sea. Behind you, Skelmed's harbour light comes on.",
-        "This is as far as the prototype goes. The next part is the nearest town, the tax collector, and the first big choice."
+        "{death}"
+      ],
+      "extra": [
+        {
+          "when": [
+            "mode:basic"
+          ],
+          "text": "Basic mode: you'll wake at your last sleep. Anything since then didn't happen."
+        },
+        {
+          "when": [
+            "mode:perma"
+          ],
+          "text": "Permadeath: this story is over."
+        }
       ],
       "choices": [
-        { "label": "Start a new game", "effects": ["restart"] }
+        {
+          "label": "Wake at your last sleep",
+          "when": [
+            "mode:basic"
+          ],
+          "effects": [
+            "revive"
+          ]
+        },
+        {
+          "label": "Start a new game",
+          "effects": [
+            "restart"
+          ]
+        }
       ]
     }
   ]

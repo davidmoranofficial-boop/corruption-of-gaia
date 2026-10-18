@@ -505,7 +505,7 @@ namespace Loran.UnityLayer
             Add(when, new Label("Time never stops, whatever you're doing."), "line-muted");
 
             var rep = Section(right, "REPUTATION");
-            if (!s.Has("arrived")) Add(rep, new Label("Nobody here knows you yet."), "line-muted");
+            if (!s.Has("been:skelmed")) Add(rep, new Label("Nobody here knows you yet."), "line-muted");
             else
             {
                 int v = s.Rep("skelmed");
