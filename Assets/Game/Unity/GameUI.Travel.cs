@@ -99,7 +99,7 @@ namespace Loran.UnityLayer
 
             usePrompt = Add(worldView, new Label(""), "world-prompt");
             bool canCamp = a.camp && !a.indoor;
-            var help = Add(worldView, new Label("Arrows  walk     Shift  run     Space  talk / use" + (canCamp ? "     Enter  camp" : "")), "world-help");
+            var help = Add(worldView, new Label("Arrows  walk     Shift  run     Space  talk / use" + (canCamp ? "     Enter  camp" : "") + "     I  menus"), "world-help");
             UpdatePrompt();
 
             // The box at the bottom: a story scene, a message, or the actions
@@ -113,7 +113,9 @@ namespace Loran.UnityLayer
             else if (!string.IsNullOrEmpty(s.result)) DialogueBox(null, s.result, null, null, true);
             else if (actionsOpen) DialogueBox("What now?", null, null, engine.Choices(), false, true);
 
-            help.style.display = worldView.Q(className: "dialogue") != null ? DisplayStyle.None : DisplayStyle.Flex;
+            bool talking = worldView.Q(className: "dialogue") != null;
+            help.style.display = talking ? DisplayStyle.None : DisplayStyle.Flex;
+            hud.EnableInClassList("hud-talking", talking);   // the bars step aside while the dialogue box is up
             if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
 

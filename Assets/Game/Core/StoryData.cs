@@ -43,6 +43,7 @@ namespace Loran.Core
         public int time;                                    // minutes
         public int stamina;
         public int energy;
+        public int mana;                                    // spells
         public List<string> train = new List<string>();     // e.g. "str+3"
         public string why;                                  // used in "Strength rose to 4 from splitting wood"
         public List<string> effects = new List<string>();
@@ -182,7 +183,7 @@ namespace Loran.Core
     {
         public string id, name, skill, desc;
         public int level = 2;                  // the skill level that unlocks it
-        public int stamina, energy;
+        public int stamina, energy, mana;
         public float power = 1;                // multiplies the hit
         public int hits = 1;                   // strikes in one go
         public bool first;                     // always goes before the enemy

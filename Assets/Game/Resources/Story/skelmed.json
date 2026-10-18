@@ -860,7 +860,7 @@
           ],
           "go": "travel",
           "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the flames die back to smoke.",
-          "energy": 6,
+          "mana": 8,
           "time": 5,
           "train": [
             "int+1",
@@ -882,7 +882,7 @@
           ],
           "go": "fire_after",
           "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the last of the flames die.",
-          "energy": 6,
+          "mana": 8,
           "time": 5,
           "train": [
             "int+1",
@@ -953,7 +953,7 @@
           ],
           "go": "travel",
           "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the flames die back to smoke.",
-          "energy": 6,
+          "mana": 8,
           "time": 5,
           "train": [
             "int+1",
@@ -975,7 +975,7 @@
           ],
           "go": "fire_after",
           "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the last of the flames die.",
-          "energy": 6,
+          "mana": 8,
           "time": 5,
           "train": [
             "int+1",
@@ -1046,7 +1046,7 @@
           ],
           "go": "travel",
           "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the flames die back to smoke.",
-          "energy": 6,
+          "mana": 8,
           "time": 5,
           "train": [
             "int+1",
@@ -1068,7 +1068,7 @@
           ],
           "go": "fire_after",
           "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the last of the flames die.",
-          "energy": 6,
+          "mana": 8,
           "time": 5,
           "train": [
             "int+1",

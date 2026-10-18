@@ -24,6 +24,7 @@ namespace Loran.Core
         public const float StepSeconds = 12f;
 
         public const int WaterskinSize = 4;
+        public const int DrawWaterMana = 10;
         public const int CollapseMinutes = 6 * 60;
 
         public static int MaxHp(GameState s) => 80 + s.stats[Stat.End] * 5 + (s.level - 1) * HpPerLevel;
@@ -35,6 +36,11 @@ namespace Loran.Core
         // Skills that grow with use. A skill starts untrained (0); each level needs more practice than the last.
         public const int MaxSkill = 10;
         public static float SkillToNext(int level) => 8 + level * 6;
+
+        // Mana: what spells run on. Grows with Intellect and levels; comes back slowly with time and fully with sleep.
+        public const int ManaPerLevel = 3;
+        public const float ManaRegenPerHour = 6f;
+        public static int MaxMana(GameState s) => 30 + s.stats[Stat.Int] * 5 + (s.level - 1) * ManaPerLevel;
 
         public static int MaxStamina(GameState s, GameData d)
         {
@@ -61,6 +67,7 @@ namespace Loran.Core
             s.hunger -= HungerPerHour * h;
             s.thirst -= ThirstPerHour * h;
             s.energy -= EnergyPerHour * h;
+            s.mana += ManaRegenPerHour * h;
             if (!exerting) s.stamina += StaminaRegenPerHour * h * (s.body.cold >= ColdAt ? 0.5f : 1f);
             s.corruption += CorruptionPerDay / 24f * h * CorruptionMultiplier(s) * WardFactor(s, d);
 
@@ -191,6 +198,7 @@ namespace Loran.Core
             s.corruption += CorruptionPerDay / 24f * h * CorruptionMultiplier(s) * WardFactor(s, d);
             s.energy = Math.Max(s.energy, energyAfter);
             s.stamina = MaxStamina(s, d);
+            s.mana = MaxMana(s);
             s.hp += 3f * h;
             Clamp(s, d);
         }
@@ -245,7 +253,7 @@ namespace Loran.Core
 
         // ------------------------------------------------------------------ combat numbers
 
-        public const int AttackStamina = 14, KindleStamina = 8, KindleEnergy = 4, FleeStamina = 10, DefendStaminaBack = 12;
+        public const int AttackStamina = 14, KindleStamina = 3, KindleMana = 6, FleeStamina = 10, DefendStaminaBack = 12;
         public const float CritMultiplier = 1.75f, GlanceMultiplier = 0.4f;
 
         /// <summary>Who acts first: your Agility (plus Swift gear) against the enemy's speed. Ties go to you.</summary>
@@ -294,6 +302,8 @@ namespace Loran.Core
             s.hunger = Math.Clamp(s.hunger, 0, 100);
             s.thirst = Math.Clamp(s.thirst, 0, 100);
             s.energy = Math.Clamp(s.energy, 0, 100);
+            if (s.mana < 0) s.mana = MaxMana(s);
+            s.mana = Math.Clamp(s.mana, 0, MaxMana(s));
             s.stamina = Math.Clamp(s.stamina, 0, MaxStamina(s, d));
             s.corruption = Math.Clamp(s.corruption, 0, 100);
             s.water = Math.Clamp(s.water, 0, WaterskinSize);

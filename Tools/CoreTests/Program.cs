@@ -38,6 +38,7 @@ static class Program
         Test("wounds: treating them, letting them go bad, broken bones", Wounds);
         Test("weather: rain, cold, hypothermia, a chill", Weather);
         Test("companions can die, for good", CompanionDeath);
+        Test("mana: spells use it, time and sleep bring it back", Mana);
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("random play never gets stuck, across 300 seeds", RandomPlay);
         Console.WriteLine(failures == 0 ? "\nAll tests passed." : "\n" + failures + " test(s) failed.");
         return failures == 0 ? 0 : 1;
@@ -599,6 +600,31 @@ static class Program
         Rules.Advance(warm.S, warm.data, 3 * 60, false);
         Rules.Advance(bare.S, bare.data, 3 * 60, false);
         Assert(warm.S.body.cold < bare.S.body.cold, "warm clothes keep you warmer: " + warm.S.body.cold + " vs " + bare.S.body.cold);
+    }
+
+    static void Mana()
+    {
+        var e = NewEngine();
+        e.DevStart("village");
+        e.DevSpells();
+        e.S.result = "";
+        int max = Rules.MaxMana(e.S);
+        Assert(max >= 30 && e.S.mana == max, "you start with full mana (" + e.S.mana + "/" + max + ")");
+        e.S.water = 0;
+        Assert(e.DrawWater() && e.S.water == Rules.WaterskinSize, "Draw Water fills the skin");
+        Assert(e.S.mana <= max - Rules.DrawWaterMana + 1, "and costs mana");
+        e.S.result = "";
+        e.S.mana = 2;
+        Assert(!e.DrawWater(), "not without the mana for it");
+        Rules.Advance(e.S, e.data, 60, false);
+        Assert(e.S.mana > 2 && e.S.mana < max, "mana comes back slowly with time");
+        Rules.Sleep(e.S, e.data, 8 * 60, 100);
+        Assert(e.S.mana == Rules.MaxMana(e.S), "and fully with sleep");
+
+        // An old save without mana starts full
+        e.S.mana = -1;
+        Rules.Clamp(e.S, e.data);
+        Assert(e.S.mana == Rules.MaxMana(e.S), "old saves get full mana");
     }
 
     static void CompanionDeath()

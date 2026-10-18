@@ -113,9 +113,9 @@ namespace Loran.Core
             float light = Math.Clamp(Rules.TraitSum(S, data, t => t.light), 0f, 0.5f);
             sc.choices.Add(new ChoiceDef { label = "Attack", stamina = (int)Math.Round(Rules.AttackStamina * (1 - light)), energy = 1, time = 1, effects = { "fight:attack" } });
             if (S.spells.Contains("kindle"))
-                sc.choices.Add(new ChoiceDef { label = "Cast Kindle", stamina = Rules.KindleStamina, energy = Rules.KindleEnergy, time = 1, effects = { "fight:kindle" } });
+                sc.choices.Add(new ChoiceDef { label = "Cast Kindle", stamina = Rules.KindleStamina, mana = Rules.KindleMana, time = 1, effects = { "fight:kindle" } });
             foreach (var m in UsableMoves())
-                sc.choices.Add(new ChoiceDef { label = m.name, stamina = m.stamina, energy = m.energy, time = 1, effects = { "fight:move:" + m.id } });
+                sc.choices.Add(new ChoiceDef { label = m.name, stamina = m.stamina, energy = m.energy, mana = m.mana, time = 1, effects = { "fight:move:" + m.id } });
             foreach (var it in S.items)
             {
                 var def = data.Item(it.id);

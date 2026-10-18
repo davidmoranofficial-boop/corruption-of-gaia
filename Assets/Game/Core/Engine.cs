@@ -226,6 +226,7 @@ namespace Loran.Core
             reason = null;
             if (!All(c.need)) { reason = string.IsNullOrEmpty(c.needText) ? "Not yet." : c.needText; return false; }
             if (StaminaCost(c) > 0 && S.stamina < StaminaCost(c)) { reason = "Too winded. Catch your breath first."; return false; }
+            if (c.mana > 0 && S.mana < c.mana) { reason = "Not enough mana."; return false; }
             return true;
         }
 
@@ -235,6 +236,7 @@ namespace Loran.Core
             if (c.time > 0) parts.Add(Duration(c.time));
             int st = StaminaCost(c);
             if (st > 0) parts.Add("-" + st + " stamina");
+            if (c.mana > 0) parts.Add("-" + c.mana + " mana");
             if (c.energy > 0) parts.Add("-" + c.energy + " energy");
             return string.Join(" · ", parts);
         }
@@ -282,6 +284,7 @@ namespace Loran.Core
             int staminaCost = StaminaCost(c);
             S.stamina -= staminaCost;
             S.energy -= c.energy;
+            S.mana -= c.mana;
             Rules.Advance(S, data, c.time, staminaCost > 0);
 
             foreach (var t in c.train)
@@ -394,10 +397,9 @@ namespace Loran.Core
 
         public bool DrawWater()
         {
-            if (!FreeToAct || !S.spells.Contains("draw_water") || S.energy < 6) return false;
-            Rules.Advance(S, data, 5, true);
-            S.energy -= 5;
-            S.stamina -= 5;
+            if (!FreeToAct || !S.spells.Contains("draw_water") || S.mana < Rules.DrawWaterMana) return false;
+            Rules.Advance(S, data, 5, false);
+            S.mana -= Rules.DrawWaterMana;
             S.water = Rules.WaterskinSize;
             Rules.Train(S, Stat.Int, 0.5f, "casting Draw Water");
             TrainSkill("magic", 1, "casting Draw Water");
@@ -493,6 +495,7 @@ namespace Loran.Core
                 case "hunger": return S.hunger;
                 case "thirst": return S.thirst;
                 case "stamina": return S.stamina;
+                case "mana": return S.mana;
                 case "energy": return S.energy;
                 case "corruption": return S.corruption;
                 case "day": return S.Day;
@@ -644,6 +647,7 @@ namespace Loran.Core
                 case "thirst": S.thirst = Num(S.thirst, op, num); return;
                 case "energy": S.energy = Num(S.energy, op, num); return;
                 case "stamina": S.stamina = Num(S.stamina, op, num); return;
+                case "mana": S.mana = Num(S.mana, op, num); return;
                 case "corruption":
                 {
                     float before = S.corruption;
@@ -737,6 +741,7 @@ namespace Loran.Core
             Rules.Advance(S, data, Rules.CollapseMinutes, false);
             S.energy = 30;
             S.stamina = Rules.MaxStamina(S, data);
+            S.mana = Rules.MaxMana(S);
             notes.Append("Your legs give out and the world goes dark. You come to hours later, aching.");
             if (!enteringFromSafe)
             {

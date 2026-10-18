@@ -23,8 +23,11 @@ namespace Loran.UnityLayer
         VisualElement root, hud, body, toasts;
         VisualElement main, screen, panel;               // what gets filled in
         VisualElement mainBox, screenBox, panelBox;     // the fixed areas they're shrunk to fit
-        VisualElement menuBar, overlay;
-        string openMenu = "";
+        VisualElement overlay, wheel;
+        string openMenu = "";        // a menu's id, "wheel" for the menu wheel, or "" for none
+        int wheelSel;
+        readonly List<VisualElement> wheelItems = new List<VisualElement>();
+        Label wheelName, wheelDesc;
 
         // New Game screen
         string deathMode = "basic";
@@ -105,15 +108,14 @@ namespace Loran.UnityLayer
                          && (Mathf.Abs(TravelHeight() - worldSize.y) > 4f || Mathf.Abs(TravelWidth() - worldSize.x) > 4f)) Render();
             });
 
-            menuBar = new VisualElement();
-            menuBar.AddToClassList("menu-bar");
-            root.Add(menuBar);
-
             overlay = new VisualElement();
             overlay.AddToClassList("overlay");
             overlay.RegisterCallback<PointerDownEvent>(e => { if (e.target == overlay) { openMenu = ""; Render(); } });
             (panelBox, panel) = FitBox("panel");
             overlay.Add(panelBox);
+            wheel = new VisualElement();
+            wheel.AddToClassList("wheel");
+            overlay.Add(wheel);
             body.Add(overlay);
 
             (screenBox, screen) = FitBox("screen");
@@ -188,10 +190,11 @@ namespace Loran.UnityLayer
             Show(screenBox, special);
             Show(body, !special);
             Show(hud, s.hud && !special && !battle && !forge && openMenu == "");
-            bool menusAllowed = s.hud && !special && !battle && !forge && s.scene != Engine.Death && s.scene != Engine.Collapse;
+            bool menusAllowed = MenusAllowed;
             if (!menusAllowed && !(openMenu == "dev" && !special)) openMenu = "";
-            Show(menuBar, menusAllowed);
             Show(overlay, openMenu != "");
+            Show(panelBox, openMenu != "wheel");
+            Show(wheel, openMenu == "wheel");
 
             if (s.scene == Engine.Title) RenderTitle();
             else if (s.scene == Engine.Creation) RenderCreation();
@@ -203,14 +206,27 @@ namespace Loran.UnityLayer
                 {
                     RenderHud();
                     main.EnableInClassList("main-flush", InWorld);
+                    hud.RemoveFromClassList("hud-talking");
                     if (InWorld) RenderWorld();
                     else { worldView = null; RenderStory(); }
                 }
-                if (menusAllowed) RenderMenuBar();
-                if (openMenu != "") RenderMenu();
+                if (openMenu == "wheel") RenderWheel();
+                else if (openMenu != "") RenderMenu();
             }
 
             if (s.scene != Engine.Creation) root.schedule.Execute(() => root.Focus());
+        }
+
+        /// <summary>The menus can be opened while you're out in the world (not in a fight, at the forge, or on the title screens).</summary>
+        bool MenusAllowed
+        {
+            get
+            {
+                var s = engine.S;
+                if (s.scene == Engine.Title || s.scene == Engine.Creation) return false;
+                bool battle = InBattle && engine.data.Enemy(s.enemy) != null;
+                return s.hud && !battle && s.scene != Engine.ForgeId && s.scene != Engine.Death && s.scene != Engine.Collapse;
+            }
         }
 
         static void Show(VisualElement e, bool on) => e.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
@@ -220,41 +236,12 @@ namespace Loran.UnityLayer
             var s = engine.S;
             hud.Clear();
 
-            var left = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-left");
-            var card = Add(left, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-card");
-            var nameRow = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-name-row");
-            Add(nameRow, new Label(s.name), "hud-name");
-            Add(nameRow, new Label("Lv " + s.level), "hud-level");
-            var expTrack = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-track");
-            var expFill = Add(expTrack, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-fill");
-            expFill.style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
-            foreach (var m in s.party)
-            {
-                var fd = engine.data.Follower(m.id);
-                if (fd == null) continue;
-                var trouble = Rules.Conditions(m, engine.data);
-                var line = Add(card, new Label(fd.name + "  " + Mathf.CeilToInt(Mathf.Max(0, m.hp)) + " / " + Mathf.RoundToInt(fd.hp) +
-                                               (trouble.Count > 0 ? "  ·  " + string.Join(", ", trouble) : "")), "hud-follower");
-                if (trouble.Count > 0) line.AddToClassList("hud-follower-trouble");
-            }
-            Need(card, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
-            Need(card, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a");
-            Need(card, "ENERGY", s.energy, 100, "#9d8fd0");
-            var small = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-small");
-            Need(small, "HUNGER", s.hunger, 100, "#d08a4a");
-            Need(small, "THIRST", s.thirst, 100, "#4f9b97");
-            var states = Rules.BodyStates(s.body, engine.data);
-            if (states.Count > 0)
-            {
-                var chips = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-chips");
-                foreach (var st in states)
-                    Add(chips, new Label(st), st == "cold" || st == "wet" || st == "hot" ? "hud-chip" : "hud-chip-bad");
-            }
-
-            // What you're doing: each quest you've taken, and what's left of it
+            // Top left: the quests you've taken, and what's left of each
+            var top = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-top");
+            var quests = Add(top, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-quests");
             foreach (var q in engine.ActiveQuests)
             {
-                var t = Add(left, new VisualElement { pickingMode = PickingMode.Ignore }, "tracker");
+                var t = Add(quests, new VisualElement { pickingMode = PickingMode.Ignore }, "tracker");
                 Add(t, new Label(q.name), "tracker-name");
                 var goals = engine.QuestGoals(q);
                 foreach (var (text, met, progress) in goals)
@@ -262,7 +249,8 @@ namespace Loran.UnityLayer
                 if (goals.All(g => g.met)) Add(t, new Label("→  Go back to " + q.giver), "tracker-return");
             }
 
-            var clock = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "clock-card");
+            // Top right: the clock, the place and the weather
+            var clock = Add(top, new VisualElement { pickingMode = PickingMode.Ignore }, "clock-card");
             Add(clock, new Label(Rules.Clock(s)), "clock");
             Add(clock, new Label("Day " + s.Day + "  ·  " + char.ToUpperInvariant(Rules.Season(s)[0]) + Rules.Season(s).Substring(1) + "  ·  " + Rules.TimeOfDay(s)), "clock-sub");
             var area = engine.Area;
@@ -271,9 +259,46 @@ namespace Loran.UnityLayer
             if (weather != null && area != null)
                 Add(clock, new Label(area.indoor ? weather.name + " outside" : weather.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, engine.data)) + "°C"), "clock-weather");
             if (engine.IsDev) Add(clock, new Label("DEV GAME · F1"), "clock-dev");
+
+            // Bottom left: health and mana, with anything wrong with you (and your party) just above
+            var left = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-corner");
+            left.AddToClassList("hud-bottom-left");
+            foreach (var m in s.party)
+            {
+                var fd = engine.data.Follower(m.id);
+                if (fd == null) continue;
+                var trouble = Rules.Conditions(m, engine.data);
+                var line = Add(left, new Label(fd.name + "  " + Mathf.CeilToInt(Mathf.Max(0, m.hp)) + " / " + Mathf.RoundToInt(fd.hp) +
+                                               (trouble.Count > 0 ? "  ·  " + string.Join(", ", trouble) : "")), "hud-follower");
+                if (trouble.Count > 0) line.AddToClassList("hud-follower-trouble");
+            }
+            var states = Rules.BodyStates(s.body, engine.data);
+            if (states.Count > 0)
+            {
+                var chips = Add(left, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-chips");
+                foreach (var st in states)
+                    Add(chips, new Label(st), st == "cold" || st == "wet" || st == "hot" ? "hud-chip" : "hud-chip-bad");
+            }
+            Need(left, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f").AddToClassList("need-big");
+            Need(left, "MANA", s.mana, Rules.MaxMana(s), "#4f86d8").AddToClassList("need-big");
+
+            // Bottom right: hunger and thirst side by side, with stamina (and the day's energy) under them
+            var right = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-corner");
+            right.AddToClassList("hud-bottom-right");
+            var small = Add(right, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-small");
+            Need(small, "HUNGER", s.hunger, 100, "#d08a4a");
+            Need(small, "THIRST", s.thirst, 100, "#4f9b97");
+            Need(right, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a").AddToClassList("need-big");
+            Need(right, "ENERGY", s.energy, 100, "#9d8fd0").AddToClassList("need-thin");
+
+            // Along the very bottom: experience to the next level
+            var exp = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp");
+            var expFill = Add(exp, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-fill");
+            expFill.style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
+            Add(exp, new Label("LV " + s.level + "     " + s.exp + " / " + Rules.ExpToNext(s.level) + " EXP") { pickingMode = PickingMode.Ignore }, "hud-exp-text");
         }
 
-        void Need(VisualElement parent, string name, float value, float max, string colour)
+        VisualElement Need(VisualElement parent, string name, float value, float max, string colour)
         {
             var n = Add(parent, new VisualElement { pickingMode = PickingMode.Ignore }, "need");
             if (value / max < 0.2f) n.AddToClassList("need-low");
@@ -285,6 +310,7 @@ namespace Loran.UnityLayer
             fill.style.width = Length.Percent(Mathf.Clamp01(value / max) * 100f);
             ColorUtility.TryParseHtmlString(colour, out var c);
             fill.style.backgroundColor = c;
+            return n;
         }
 
         void RenderStory()
@@ -317,29 +343,83 @@ namespace Loran.UnityLayer
 
         // ------------------------------------------------------------------ menus
 
-        static readonly (string id, string name, KeyCode key)[] Menus =
+        /// <summary>The menus, in order round the wheel (clockwise from the top). Each also has its own key.</summary>
+        static readonly (string id, string name, KeyCode key, string desc)[] Menus =
         {
-            ("inventory", "Inventory", KeyCode.I),
-            ("equipment", "Equipment", KeyCode.E),
-            ("skills", "Skills", KeyCode.K),
-            ("party", "Party", KeyCode.P),
-            ("journal", "Journal", KeyCode.J),
-            ("crafting", "Crafting", KeyCode.C),
-            ("world", "World", KeyCode.W),
-            ("survival", "Survival", KeyCode.S),
+            ("inventory", "Inventory", KeyCode.B, "Your pack, food, water and coin"),
+            ("equipment", "Equipment", KeyCode.E, "What you're wearing and wielding"),
+            ("skills", "Skills", KeyCode.K, "Stats, fighting skills and life skills"),
+            ("party", "Party", KeyCode.P, "Who travels with you, and how they're holding up"),
+            ("journal", "Journal", KeyCode.J, "Quests and what you've learned"),
+            ("crafting", "Crafting", KeyCode.C, "Make things from what you carry"),
+            ("world", "World", KeyCode.W, "Loran, the Corruption and your name"),
+            ("survival", "Survival", KeyCode.S, "Needs, weather, wounds and treatment"),
         };
 
-        void RenderMenuBar()
+        const float WheelSize = 560f, WheelRadius = 205f, WheelItem = 124f;
+
+        /// <summary>The menu wheel (I): every menu round a ring. Point at one, or turn it with the arrow keys, and open it.</summary>
+        void RenderWheel()
         {
-            menuBar.Clear();
-            foreach (var m in Menus)
+            wheel.Clear();
+            wheelItems.Clear();
+            Add(wheel, new VisualElement { pickingMode = PickingMode.Ignore }, "wheel-ring");
+            int n = Menus.Length;
+            for (int i = 0; i < n; i++)
             {
-                var id = m.id;
-                var b = Add(menuBar, new Button(() => ToggleMenu(id)) { focusable = false }, "menu-btn");
-                if (openMenu == id) b.AddToClassList("menu-btn-open");
-                Add(b, new Label(m.key.ToString()), "menu-btn-key");
-                Add(b, new Label(m.name), "menu-btn-name");
+                int idx = i;
+                float a = i / (float)n * Mathf.PI * 2f - Mathf.PI / 2f;
+                var b = Add(wheel, new Button(() => OpenFromWheel(idx)) { focusable = false }, "wheel-item");
+                b.style.left = WheelSize / 2f + Mathf.Cos(a) * WheelRadius - WheelItem / 2f;
+                b.style.top = WheelSize / 2f + Mathf.Sin(a) * WheelRadius - WheelItem / 2f;
+                Add(b, new Label(Menus[i].name) { pickingMode = PickingMode.Ignore }, "wheel-item-name");
+                Add(b, new Label(Menus[i].key.ToString()) { pickingMode = PickingMode.Ignore }, "wheel-item-key");
+                b.RegisterCallback<PointerEnterEvent>(_ => { wheelSel = idx; UpdateWheel(); });
+                wheelItems.Add(b);
             }
+            var centre = Add(wheel, new VisualElement { pickingMode = PickingMode.Ignore }, "wheel-centre");
+            wheelName = Add(centre, new Label(""), "wheel-name");
+            wheelDesc = Add(centre, new Label(""), "wheel-desc");
+            Add(centre, new Label("Enter  open     Esc  close"), "wheel-help");
+            UpdateWheel();
+        }
+
+        void UpdateWheel()
+        {
+            wheelSel = (wheelSel % Menus.Length + Menus.Length) % Menus.Length;
+            for (int i = 0; i < wheelItems.Count; i++) wheelItems[i].EnableInClassList("wheel-item-on", i == wheelSel);
+            if (wheelName != null) wheelName.text = Menus[wheelSel].name;
+            if (wheelDesc != null) wheelDesc.text = Menus[wheelSel].desc;
+        }
+
+        void OpenFromWheel(int i)
+        {
+            wheelSel = i;
+            openMenu = Menus[i].id;
+            Render();
+        }
+
+        void OpenWheel()
+        {
+            int at = Array.FindIndex(Menus, m => m.id == openMenu);
+            if (at >= 0) wheelSel = at;
+            heldDirs.Clear();
+            openMenu = "wheel";
+            Render();
+        }
+
+        /// <summary>Keys while the wheel is up: arrows turn it, Enter/Space opens, a menu's own key or 1-8 opens that one, I or Esc closes.</summary>
+        void WheelKey(KeyDownEvent e)
+        {
+            var k = e.keyCode;
+            if (k == KeyCode.Escape || k == KeyCode.I) { openMenu = ""; Render(); return; }
+            if (k == KeyCode.Return || k == KeyCode.KeypadEnter || k == KeyCode.Space) { OpenFromWheel(wheelSel); return; }
+            if (k == KeyCode.RightArrow || k == KeyCode.DownArrow) { wheelSel++; UpdateWheel(); return; }
+            if (k == KeyCode.LeftArrow || k == KeyCode.UpArrow) { wheelSel--; UpdateWheel(); return; }
+            int n = k >= KeyCode.Alpha1 && k <= KeyCode.Alpha9 ? k - KeyCode.Alpha1 : k >= KeyCode.Keypad1 && k <= KeyCode.Keypad9 ? k - KeyCode.Keypad1 : -1;
+            if (n >= 0 && n < Menus.Length) { OpenFromWheel(n); return; }
+            for (int i = 0; i < Menus.Length; i++)
+                if (k == Menus[i].key) { OpenFromWheel(i); return; }
         }
 
         void ToggleMenu(string id)
@@ -357,17 +437,12 @@ namespace Loran.UnityLayer
             if (openMenu == "dev") Add(head, new Label("DEV MODE  ·  F1"), "panel-title");
             else
             {
-                var tabs = Add(head, new VisualElement(), "tabs");
-                foreach (var m in Menus)
-                {
-                    var id = m.id;
-                    var t = Add(tabs, new Button(() => { openMenu = id; Render(); }) { focusable = false }, "tab");
-                    if (id == openMenu) t.AddToClassList("tab-open");
-                    Add(t, new Label(m.name), "tab-name");
-                    Add(t, new Label(m.key.ToString()), "tab-key");
-                }
+                var at = Array.Find(Menus, m => m.id == openMenu);
+                Add(head, new Label((at.name ?? "").ToUpperInvariant()), "panel-title");
             }
-            Add(head, new Button(() => ToggleMenu(openMenu)) { text = "×   Esc", focusable = false }, "close-btn");
+            var headRight = Add(head, new VisualElement(), "panel-head-right");
+            if (openMenu != "dev") Add(headRight, new Button(OpenWheel) { text = "◎   I  Menus", focusable = false }, "close-btn");
+            Add(headRight, new Button(() => ToggleMenu(openMenu)) { text = "×   Esc", focusable = false }, "close-btn");
 
             var cols = Add(panel, new VisualElement(), "cols");
             var left = Add(cols, new VisualElement(), "col");
@@ -435,7 +510,7 @@ namespace Loran.UnityLayer
             {
                 var b = Add(water, new Button(() => { engine.DrawWater(); AfterAction(); }) { text = "Cast Draw Water to refill it" }, "small-btn");
                 b.AddToClassList("wide-btn");
-                b.SetEnabled(free && s.energy >= 6);
+                b.SetEnabled(free && s.mana >= Rules.DrawWaterMana);
             }
             else Add(water, new Label("Refill it at a stream or a well."), "line-muted");
         }
@@ -1033,10 +1108,14 @@ namespace Loran.UnityLayer
             if (InBattle) { BattleKey(e); e.StopPropagation(); return; }
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
             if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
+            if (openMenu == "wheel") { WheelKey(e); e.StopPropagation(); return; }
             if (e.keyCode == KeyCode.Escape && openMenu != "") { openMenu = ""; Render(); e.StopPropagation(); return; }
-            if (menuBar.resolvedStyle.display == DisplayStyle.Flex)
+            if (MenusAllowed)
+            {
+                if (e.keyCode == KeyCode.I) { OpenWheel(); e.StopPropagation(); return; }
                 foreach (var m in Menus)
                     if (e.keyCode == m.key) { ToggleMenu(m.id); e.StopPropagation(); return; }
+            }
             if (openMenu != "") return;
             int n = e.keyCode >= KeyCode.Alpha1 && e.keyCode <= KeyCode.Alpha9 ? e.keyCode - KeyCode.Alpha1
                   : e.keyCode >= KeyCode.Keypad1 && e.keyCode <= KeyCode.Keypad9 ? e.keyCode - KeyCode.Keypad1

@@ -99,6 +99,7 @@ namespace Loran.Core
 
         // Needs. 100 = full/fine, 0 = empty.
         public float hp = 100, hunger = 100, thirst = 100, stamina = 100, energy = 100;
+        public float mana = -1;   // -1 = not set yet (an old save): filled up on load
 
         public int minutes;                    // in-game minutes since Day 1 00:00
         public float corruption;               // 0-100 %

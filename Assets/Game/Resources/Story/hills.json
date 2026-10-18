@@ -75,7 +75,7 @@
             "!spell:draw_water"
           ],
           "time": 30,
-          "energy": 6,
+          "mana": 6,
           "train": [
             "int+2",
             "magic+3"
@@ -94,7 +94,7 @@
             "!spell:kindle"
           ],
           "time": 30,
-          "energy": 6,
+          "mana": 6,
           "train": [
             "int+2"
           ],
@@ -142,7 +142,7 @@
             "spell:kindle",
             "!flag:brazier_lit"
           ],
-          "energy": 4,
+          "mana": 6,
           "time": 5,
           "train": [
             "int+1",

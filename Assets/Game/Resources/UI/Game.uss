@@ -29,6 +29,15 @@
 
 .hud {
     position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+/* top: quests on the left, the clock on the right */
+.hud-top {
+    position: absolute;
     left: 18px;
     right: 18px;
     top: 16px;
@@ -37,12 +46,12 @@
     align-items: flex-start;
 }
 
-.hud-left {
+.hud-quests {
     flex-direction: column;
-    width: 300px;
+    width: 320px;
 }
 
-.hud-card, .clock-card, .tracker {
+.clock-card, .tracker {
     background-color: rgba(13, 23, 27, 0.86);
     border-width: 1px;
     border-color: rgba(232, 220, 194, 0.16);
@@ -50,43 +59,58 @@
     padding: 10px 14px 8px 14px;
 }
 
-.hud-name {
-    font-size: 18px;
-    color: var(--text);
-    -unity-font-style: bold;
-    margin-bottom: 6px;
+/* bottom corners: health and mana on the left, hunger, thirst and stamina on the right */
+.hud-corner {
+    position: absolute;
+    bottom: 28px;
+    width: 300px;
+    flex-direction: column;
+    padding: 10px 14px 4px 14px;
+    background-color: rgba(13, 23, 27, 0.72);
+    border-width: 1px;
+    border-color: rgba(232, 220, 194, 0.12);
+    border-radius: 8px;
 }
 
-.hud-name-row {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: flex-end;
-}
+.hud-bottom-left { left: 18px; }
+.hud-bottom-right { right: 18px; }
+.hud-talking .hud-corner { display: none; }
 
-.hud-level {
-    font-size: 15px;
-    color: var(--lantern);
-    -unity-font-style: bold;
-    margin-bottom: 7px;
-}
-
-.hud-exp-track {
-    height: 3px;
-    background-color: var(--sea);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 8px;
+/* along the very bottom: experience */
+.hud-exp {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 16px;
+    background-color: rgba(5, 10, 12, 0.85);
+    border-top-width: 1px;
+    border-top-color: rgba(232, 220, 194, 0.16);
+    justify-content: center;
 }
 
 .hud-exp-fill {
-    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
     background-color: var(--lantern);
+    opacity: 0.75;
+}
+
+.hud-exp-text {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text);
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
 }
 
 .hud-follower {
     font-size: 13px;
     color: var(--muted);
-    margin-top: 2px;
+    margin-bottom: 4px;
+    white-space: normal;
 }
 
 .hud-follower-trouble { color: #e3a64e; }
@@ -189,6 +213,9 @@
 }
 
 .need-fill { height: 100%; border-radius: 4px; }
+.need-big .need-track { height: 11px; border-radius: 5px; }
+.need-big .need-name { font-size: 13px; color: var(--text); }
+.need-thin .need-track { height: 4px; }
 .need-low .need-name { color: var(--blood); }
 .need-low .need-value { color: var(--blood); }
 
@@ -292,7 +319,7 @@
 }
 
 .main-content {
-    padding: 200px 56px 28px 56px;
+    padding: 200px 56px 190px 56px;
     align-items: center;
 }
 
@@ -706,44 +733,6 @@
 
 /* ---------- menu bar and menus ---------- */
 
-.menu-bar {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    translate: -50% 0;
-    flex-direction: row;
-    padding: 4px;
-    background-color: rgba(13, 23, 27, 0.86);
-    border-width: 1px;
-    border-color: rgba(232, 220, 194, 0.16);
-    border-radius: 8px;
-}
-
-.menu-btn {
-    flex-direction: row;
-    align-items: center;
-    margin: 0 2px;
-    padding: 5px 12px;
-    background-color: rgba(0, 0, 0, 0);
-    border-width: 0;
-    border-radius: 6px;
-}
-
-.menu-btn:hover { background-color: var(--hull-hi); }
-.menu-btn-open { background-color: var(--line); }
-
-.menu-btn-name {
-    font-size: 16px;
-    color: var(--text);
-}
-
-.menu-btn-key {
-    font-size: 12px;
-    color: var(--lantern);
-    -unity-font-style: bold;
-    margin-right: 7px;
-}
-
 .overlay {
     position: absolute;
     left: 0;
@@ -793,35 +782,102 @@
     margin-left: 10px;
 }
 
-.tabs {
-    flex-direction: row;
+/* ---------- the menu wheel (I) ---------- */
+
+.wheel {
+    width: 560px;
+    height: 560px;
 }
 
-.tab {
-    flex-direction: row;
+.wheel-ring {
+    position: absolute;
+    left: 75px;
+    top: 75px;
+    width: 410px;
+    height: 410px;
+    border-radius: 205px;
+    border-width: 2px;
+    border-color: rgba(232, 220, 194, 0.18);
+    background-color: rgba(13, 23, 27, 0.55);
+}
+
+.wheel-item {
+    position: absolute;
+    width: 124px;
+    height: 124px;
+    margin: 0;
+    padding: 0;
+    border-radius: 62px;
+    border-width: 2px;
+    border-color: var(--line);
+    background-color: var(--hull);
     align-items: center;
-    padding: 8px 16px;
-    margin: 0 4px 0 0;
-    background-color: rgba(0, 0, 0, 0);
-    border-width: 0;
-    border-bottom-width: 3px;
-    border-color: rgba(0, 0, 0, 0);
-    border-radius: 0;
+    justify-content: center;
+    transition-property: scale, border-color, background-color;
+    transition-duration: 0.12s;
 }
 
-.tab:hover { background-color: var(--hull-hi); }
-.tab-open { border-bottom-color: var(--lantern); background-color: var(--hull-hi); }
+.wheel-item-on {
+    border-color: var(--lantern);
+    background-color: var(--hull-hi);
+    scale: 1.1 1.1;
+}
 
-.tab-name {
-    font-size: 18px;
+.wheel-item-name {
+    font-size: 17px;
     color: var(--text);
+    -unity-font-style: bold;
 }
 
-.tab-key {
+.wheel-item-on .wheel-item-name { color: var(--lantern); }
+
+.wheel-item-key {
     font-size: 12px;
     color: var(--muted);
-    margin-left: 8px;
+    margin-top: 4px;
 }
+
+.wheel-centre {
+    position: absolute;
+    left: 165px;
+    top: 165px;
+    width: 230px;
+    height: 230px;
+    border-radius: 115px;
+    background-color: var(--sea);
+    border-width: 1px;
+    border-color: var(--line);
+    align-items: center;
+    justify-content: center;
+    padding: 0 26px;
+}
+
+.wheel-name {
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--lantern);
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.wheel-desc {
+    font-size: 14px;
+    color: var(--text);
+    white-space: normal;
+    -unity-text-align: middle-center;
+    margin-bottom: 10px;
+}
+
+.wheel-help {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.panel-head-right {
+    flex-direction: row;
+}
+
+.panel-head-right .close-btn { margin-left: 8px; }
 
 .close-btn {
     font-size: 15px;
@@ -1408,8 +1464,9 @@
 
 .world-help {
     position: absolute;
-    left: 18px;
-    bottom: 16px;
+    left: 50%;
+    translate: -50% 0;
+    bottom: 26px;
     font-size: 14px;
     color: var(--muted);
     background-color: rgba(13, 23, 27, 0.7);
@@ -1421,7 +1478,7 @@
 .world-prompt {
     position: absolute;
     left: 50%;
-    bottom: 26px;
+    bottom: 64px;
     translate: -50% 0;
     font-size: 20px;
     color: var(--sea);

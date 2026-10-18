@@ -177,6 +177,7 @@ namespace Loran.Core
             S.hp = Rules.MaxHp(S);
             S.hunger = S.thirst = S.energy = 100;
             S.stamina = Rules.MaxStamina(S, data);
+            S.mana = Rules.MaxMana(S);
             S.water = Rules.WaterskinSize;
         }
 

@@ -204,7 +204,7 @@
             "spell:kindle"
           ],
           "time": 10,
-          "energy": 4,
+          "mana": 6,
           "effects": [
             "corruption-0.2"
           ],

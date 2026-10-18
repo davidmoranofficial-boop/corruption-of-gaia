@@ -111,6 +111,7 @@ namespace Loran.UnityLayer
             playerCard.AddToClassList("card-player");
             Add(playerCard, new Label(s.name), "fighter-name");
             Bar(playerCard, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f", 1, false);
+            Bar(playerCard, "MANA", s.mana, Rules.MaxMana(s), "#4f86d8", 4, false);
             Bar(playerCard, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a", 2, false);
             Bar(playerCard, "ENERGY", s.energy, 100, "#9d8fd0", 3, false);
             var weapon = s.InSlot("weapon");
@@ -303,7 +304,7 @@ namespace Loran.UnityLayer
         void Resolve(ChoiceView cv, int quality)
         {
             var s = engine.S;
-            before = new[] { s.enemyHp, s.hp, s.stamina, s.energy };
+            before = new[] { s.enemyHp, s.hp, s.stamina, s.energy, s.mana };
             engine.Act(cv.def, quality);
             battleMenu = "";
             var events = engine.Events.ToList();

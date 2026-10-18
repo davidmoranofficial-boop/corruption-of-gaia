@@ -2090,8 +2090,8 @@
       "skill": "magic",
       "level": 3,
       "desc": "Kindle pushed as far as it goes: a burst of fire.",
-      "stamina": 10,
-      "energy": 8,
+      "stamina": 4,
+      "mana": 14,
       "power": 1.6,
       "need": "spell:kindle"
     }
