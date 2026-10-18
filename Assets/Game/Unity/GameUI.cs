@@ -913,6 +913,7 @@ namespace Loran.UnityLayer
             var inner = Add(screen, new VisualElement(), "screen-inner");
             Add(inner, new Label("CORRUPTION OF GAIA"), "game-title");
             Add(inner, new Label("VERTICAL SLICE PROTOTYPE"), "game-sub");
+            Add(inner, new Label("UPDATE: 18 OCT, LAPTOP TEST"), "game-sub");   // bumped with each update so you can see it arrived
 
             Add(inner, new Label("HOW DEATH WORKS  ·  LOCKED FOR THIS PLAYTHROUGH"), "field-label");
             var row = Add(inner, new VisualElement(), "option-row");
