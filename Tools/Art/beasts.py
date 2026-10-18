@@ -71,6 +71,63 @@ def wolf():
     return g, W, H
 
 
+
+def boar():
+    """A wild boar side on, facing left: humped shoulders, short legs, long snout, hooked tusks."""
+    W, H = 60, 40
+    def far(d):
+        d.polygon([(19, 27), (23, 27), (23, 37), (24, 39), (19, 39)], fill=255)                     # far front leg
+        d.polygon([(42, 26), (47, 26), (47, 37), (48, 39), (43, 39)], fill=255)                     # far hind leg
+    def body(d):
+        d.ellipse((14, 6, 36, 31), fill=255)                       # big humped shoulders
+        d.ellipse((26, 10, 54, 31), fill=255)                      # body
+        d.polygon([(16, 10), (6, 15), (2, 21), (3, 25), (12, 27), (20, 26)], fill=255)   # head, sloping down
+        d.polygon([(2, 21), (0, 22), (0, 26), (4, 26)], fill=255)  # snout end
+        d.polygon([(13, 9), (16, 3), (19, 10)], fill=255)          # ear
+        d.polygon([(53, 16), (57, 14), (58, 17), (54, 20)], fill=255)  # tail
+    def near(d):
+        d.polygon([(14, 25), (19, 25), (19, 36), (20, 39), (14, 39), (15, 36)], fill=255)          # near front leg
+        d.polygon([(36, 24), (45, 24), (44, 30), (45, 37), (46, 39), (40, 39), (40, 31)], fill=255)  # near hind leg
+    mf, mb, mn = mask(W, H, far), mask(W, H, body), mask(W, H, near)
+    on = lambda x, y: 0 <= x < W and 0 <= y < H and (mb.getpixel((x, y)) or mn.getpixel((x, y)))
+    g = [['.'] * W for _ in range(H)]
+    for y in range(H):
+        for x in range(W):
+            if mf.getpixel((x, y)):
+                g[y][x] = 'o' if y >= 37 else 'B'
+            if not on(x, y):
+                continue
+            top = y
+            while top > 0 and on(x, top - 1): top -= 1
+            bottom = y
+            while bottom < H - 1 and on(x, bottom + 1): bottom += 1
+            depth, under = y - top, bottom - y
+            is_leg = mn.getpixel((x, y)) and not mb.getpixel((x, y))
+            if is_leg:
+                ch = 'o' if y >= 37 else ('B' if x % 3 == 0 else 'b')
+            elif depth <= 1:
+                ch = 'o' if x % 2 else 'B'                 # bristly ridge
+            elif depth <= 3:
+                ch = 'B'
+            elif under <= 1:
+                ch = 'B'
+            elif x < 6:
+                ch = 'D'                                   # pale snout
+            elif depth <= 7 and (x + y) % 4 == 0:
+                ch = 'D'
+            else:
+                ch = 'b'
+            g[y][x] = ch
+    for (x, y) in ((26, 12), (30, 11), (34, 12), (38, 13), (42, 14), (46, 15), (28, 9), (22, 8)):
+        if g[y][x] != '.': g[y][x] = 'o'                   # bristles along the back
+    g[0 + 22][1] = g[23][1] = 'e'                          # nostril
+    g[15][9], g[15][10] = 'a', 'e'                         # small mean eye
+    for (x, y) in ((5, 23), (5, 22), (6, 21), (6, 20), (7, 20)):
+        g[y][x] = 'W'                                      # tusk
+    g[6][15] = g[7][15] = 'Q'
+    return g, W, H
+
+
 if __name__ == '__main__':
     import sys
     sys.path.insert(0, '.')

@@ -86,13 +86,14 @@ namespace Loran.UnityLayer
             root.RegisterCallback<KeyDownEvent>(OnKey);
             root.RegisterCallback<KeyUpEvent>(e => { if (engine.S.scene == Engine.ForgeId) ForgeKeyUp(e); else WorldKeyUp(e); });
 
-            hud = new VisualElement();
-            hud.AddToClassList("hud");
-            root.Add(hud);
-
             body = new VisualElement();
             body.AddToClassList("body");
             root.Add(body);
+
+            // The HUD floats over the top of the world: your needs on the left, the clock on the right
+            hud = new VisualElement { pickingMode = PickingMode.Ignore };
+            hud.AddToClassList("hud");
+            root.Add(hud);
 
             (mainBox, main) = FitBox("main");
             body.Add(mainBox);
@@ -176,7 +177,7 @@ namespace Loran.UnityLayer
             if (!forge && forgeStage != 3) { forgeStage = -1; stageRunning = false; }
             Show(screenBox, special);
             Show(body, !special);
-            Show(hud, s.hud && !special && !battle && !forge);
+            Show(hud, s.hud && !special && !battle && !forge && openMenu == "");
             bool menusAllowed = s.hud && !special && !battle && !forge && s.scene != Engine.Death && s.scene != Engine.Collapse;
             if (!menusAllowed && !(openMenu == "dev" && !special)) openMenu = "";
             Show(menuBar, menusAllowed);
@@ -191,6 +192,7 @@ namespace Loran.UnityLayer
                 else
                 {
                     RenderHud();
+                    main.EnableInClassList("main-flush", InWorld);
                     if (InWorld) RenderWorld();
                     else { worldView = null; RenderStory(); }
                 }
@@ -208,28 +210,43 @@ namespace Loran.UnityLayer
             var s = engine.S;
             hud.Clear();
 
-            var row = Add(hud, new VisualElement(), "hud-row");
-            var needs = Add(row, new VisualElement(), "needs");
-            Need(needs, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
-            Need(needs, "HUNGER", s.hunger, 100, "#d08a4a");
-            Need(needs, "THIRST", s.thirst, 100, "#4f9b97");
-            Need(needs, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a");
-            Need(needs, "ENERGY", s.energy, 100, "#9d8fd0");
+            var left = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-left");
+            var card = Add(left, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-card");
+            Add(card, new Label(s.name), "hud-name");
+            Need(card, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
+            Need(card, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a");
+            Need(card, "ENERGY", s.energy, 100, "#9d8fd0");
+            var small = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-small");
+            Need(small, "HUNGER", s.hunger, 100, "#d08a4a");
+            Need(small, "THIRST", s.thirst, 100, "#4f9b97");
 
-            var clock = Add(row, new VisualElement(), "clock-box");
-            Add(clock, new Label("Day " + s.Day + "  ·  " + Rules.Clock(s)), "clock");
-            Add(clock, new Label(Rules.TimeOfDay(s)), "clock-sub");
-            if (engine.IsDev) Add(clock, new Label("DEV GAME · F1"), "clock-sub");
+            // What you're doing: each quest you've taken, and what's left of it
+            foreach (var q in engine.ActiveQuests)
+            {
+                var t = Add(left, new VisualElement { pickingMode = PickingMode.Ignore }, "tracker");
+                Add(t, new Label(q.name), "tracker-name");
+                var goals = engine.QuestGoals(q);
+                foreach (var (text, met, progress) in goals)
+                    Add(t, new Label((met ? "√  " : "•  ") + text + (progress != "" ? "  " + progress : "")), met ? "tracker-goal-done" : "tracker-goal");
+                if (goals.All(g => g.met)) Add(t, new Label("→  Go back to " + q.giver), "tracker-return");
+            }
+
+            var clock = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "clock-card");
+            Add(clock, new Label(Rules.Clock(s)), "clock");
+            Add(clock, new Label("Day " + s.Day + "  ·  " + Rules.TimeOfDay(s)), "clock-sub");
+            var area = engine.Area;
+            if (area != null) Add(clock, new Label(area.name), "clock-place");
+            if (engine.IsDev) Add(clock, new Label("DEV GAME · F1"), "clock-dev");
         }
 
         void Need(VisualElement parent, string name, float value, float max, string colour)
         {
-            var n = Add(parent, new VisualElement(), "need");
+            var n = Add(parent, new VisualElement { pickingMode = PickingMode.Ignore }, "need");
             if (value / max < 0.2f) n.AddToClassList("need-low");
-            var head = Add(n, new VisualElement(), "need-head");
+            var head = Add(n, new VisualElement { pickingMode = PickingMode.Ignore }, "need-head");
             Add(head, new Label(name), "need-name");
             Add(head, new Label(Mathf.CeilToInt(value) + " / " + Mathf.RoundToInt(max)), "need-value");
-            var track = Add(n, new VisualElement(), "need-track");
+            var track = Add(n, new VisualElement { pickingMode = PickingMode.Ignore }, "need-track");
             var fill = Add(track, new VisualElement(), "need-fill");
             fill.style.width = Length.Percent(Mathf.Clamp01(value / max) * 100f);
             ColorUtility.TryParseHtmlString(colour, out var c);
@@ -282,10 +299,10 @@ namespace Loran.UnityLayer
             foreach (var m in Menus)
             {
                 var id = m.id;
-                var b = Add(menuBar, new Button(() => ToggleMenu(id)), "menu-btn");
+                var b = Add(menuBar, new Button(() => ToggleMenu(id)) { focusable = false }, "menu-btn");
                 if (openMenu == id) b.AddToClassList("menu-btn-open");
-                Add(b, new Label(m.name), "menu-btn-name");
                 Add(b, new Label(m.key.ToString()), "menu-btn-key");
+                Add(b, new Label(m.name), "menu-btn-name");
             }
         }
 
@@ -301,9 +318,20 @@ namespace Loran.UnityLayer
             panel.Clear();
 
             var head = Add(panel, new VisualElement(), "panel-head");
-            var name = openMenu == "dev" ? "Dev mode  (F1)" : Menus.First(m => m.id == openMenu).name;
-            Add(head, new Label(name.ToUpperInvariant()), "panel-title");
-            Add(head, new Button(() => ToggleMenu(openMenu)) { text = "Close  (Esc)" }, "small-btn");
+            if (openMenu == "dev") Add(head, new Label("DEV MODE  ·  F1"), "panel-title");
+            else
+            {
+                var tabs = Add(head, new VisualElement(), "tabs");
+                foreach (var m in Menus)
+                {
+                    var id = m.id;
+                    var t = Add(tabs, new Button(() => { openMenu = id; Render(); }) { focusable = false }, "tab");
+                    if (id == openMenu) t.AddToClassList("tab-open");
+                    Add(t, new Label(m.name), "tab-name");
+                    Add(t, new Label(m.key.ToString()), "tab-key");
+                }
+            }
+            Add(head, new Button(() => ToggleMenu(openMenu)) { text = "×   Esc", focusable = false }, "close-btn");
 
             var cols = Add(panel, new VisualElement(), "cols");
             var left = Add(cols, new VisualElement(), "col");
@@ -329,16 +357,30 @@ namespace Loran.UnityLayer
 
             var pack = Section(left, "PACK");
             if (s.items.Count == 0) Add(pack, new Label("Your pack is empty."), "line-muted");
+            if (s.items.All(i => i.id != invSel)) invSel = s.items.Count > 0 ? s.items[0].id : "";
+            var grid = Add(pack, new VisualElement(), "slot-grid");
             foreach (var it in s.items.ToList())
             {
-                var def = d.Item(it.id);
-                var r = Add(pack, new VisualElement(), "item-row");
-                var text = Add(r, new VisualElement(), "item-text");
-                Add(text, new Label(def.name + (it.count > 1 ? "  ×" + it.count : "")), "line");
+                var id = it.id;
+                var slot = Add(grid, new Button(() => { invSel = id; Render(); }) { focusable = false }, "slot");
+                if (id == invSel) slot.AddToClassList("slot-selected");
+                Icon(slot, id, 3);
+                if (it.count > 1) Add(slot, new Label(it.count.ToString()), "slot-count");
+            }
+            var sel = s.items.FirstOrDefault(i => i.id == invSel);
+            if (sel != null)
+            {
+                var def = d.Item(sel.id);
+                var detail = Add(left, new VisualElement(), "detail");
+                Icon(detail, sel.id, 4);
+                var text = Add(detail, new VisualElement(), "item-text");
+                Add(text, new Label(def.name + (sel.count > 1 ? "  ×" + sel.count : "")), "detail-name");
                 if (!string.IsNullOrEmpty(def.desc)) Add(text, new Label(def.desc), "line-muted");
                 if (def.food)
                 {
-                    var b = Add(r, new Button(() => { engine.Eat(it.id); AfterAction(); }) { text = "Eat" }, "small-btn");
+                    Add(text, new Label("Food  ·  hunger +" + def.hunger + (def.energy > 0 ? "  ·  energy +" + def.energy : "")), "gear-stats");
+                    var b = Add(text, new Button(() => { engine.Eat(sel.id); AfterAction(); }) { text = "Eat", focusable = false }, "small-btn");
+                    b.AddToClassList("detail-btn");
                     b.SetEnabled(free);
                 }
             }
@@ -459,10 +501,34 @@ namespace Loran.UnityLayer
         void MenuJournal(VisualElement left, VisualElement right)
         {
             var s = engine.S;
-            var tasks = Section(left, "WHAT YOU'RE DOING");
+            var quests = Section(left, "QUESTS");
+            var active = engine.ActiveQuests.ToList();
+            if (active.Count == 0) Add(quests, new Label("Nobody's asked anything of you right now."), "line-muted");
+            foreach (var q in active)
+            {
+                var card = Add(quests, new VisualElement(), "quest");
+                var top = Add(card, new VisualElement(), "quest-top");
+                Add(top, new Label(q.name), "quest-name");
+                Add(top, new Label(q.giver), "quest-giver");
+                Add(card, new Label(q.desc), "line-muted");
+                var goals = engine.QuestGoals(q);
+                foreach (var (text, met, progress) in goals)
+                    Add(card, new Label((met ? "√  " : "•  ") + text + (progress != "" ? "   " + progress : "")), met ? "quest-goal-done" : "quest-goal");
+                if (goals.All(g => g.met)) Add(card, new Label("→  Go back to " + q.giver + "."), "quest-return");
+            }
+            var done = engine.FinishedQuests.ToList();
+            if (done.Count > 0)
+            {
+                var finished = Section(left, "DONE");
+                foreach (var q in done) Add(finished, new Label("√  " + q.name), "quest-goal-done");
+            }
+
             var journal = engine.Journal();
-            if (journal.Count == 0) Add(tasks, new Label("Nothing written down yet."), "line-muted");
-            foreach (var e in journal) Add(tasks, new Label(e), "journal-entry");
+            if (journal.Count > 0)
+            {
+                var tasks = Section(right, "NEXT");
+                foreach (var e in journal) Add(tasks, new Label(e), "journal-entry");
+            }
 
             var notes = Section(right, "THIS PLAYTHROUGH");
             Add(notes, new Label("Death mode: " + (s.deathMode == "perma" ? "Permadeath. If you die, it's over." : "Basic. If you die, you wake at your last sleep.")), "line");
@@ -556,6 +622,8 @@ namespace Loran.UnityLayer
             if (v > -40) return "Disliked";
             return "Despised";
         }
+
+        string invSel = "";
 
         static VisualElement Section(VisualElement parent, string head)
         {

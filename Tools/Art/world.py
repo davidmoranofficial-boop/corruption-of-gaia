@@ -17,6 +17,7 @@ Tile letters:
 import json, math, os, random
 from PIL import Image
 from palette import PAL, SKINS, HAIRS
+import terrain
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAME = os.path.join(HERE, '..', '..', 'Assets', 'Game')
@@ -50,7 +51,8 @@ def hexc(h):
 # ============================================================================================== the coast road
 
 def coast_road():
-    W, H = 30, 64
+    """The coast road: from Yenson's shack, and the copse south of it, north along the shore to Skelmed's gate."""
+    W, H = 32, 120
     g = [['.'] * W for _ in range(H)]
 
     def setc(x, y, t):
@@ -62,139 +64,165 @@ def coast_road():
                 if keep is None or (0 <= y < H and 0 <= x < W and g[y][x] in keep): setc(x, y, t)
 
     rnd = random.Random(11)
-    coast = lambda y: int(round(4 + 1.6 * math.sin(y / 6.5) + (max(0, y - 40) / 5.0)))
-    road = lambda y: int(round(15 + 2.6 * math.sin(y / 8.0 + 0.6)))
+    # the shore: wavy, with a bay biting inland halfway down
+    coast = lambda y: int(round(4 + 1.6 * math.sin(y / 6.5) + 5.5 * math.exp(-((y - 60) / 6.5) ** 2)))
+    road = lambda y: int(round(16 + 3.0 * math.sin(y / 9.0 + 0.6) + 1.6 * math.sin(y / 21.0) + 2.0 * math.exp(-((y - 60) / 8.0) ** 2)))
+    SHACK_Y = 92            # the bottom row of the shack, where its door is
+    ROAD_END = SHACK_Y + 1
+    DOOR_X = 19
 
-    # Sea and shore
     for y in range(H):
         c = coast(y)
         for x in range(W):
             if x < c: g[y][x] = '~'
             elif x < c + 2 + (y % 7 == 3): g[y][x] = ','
 
-    # The wood along the east side, ragged
+    # the wood along the east side, ragged
     for y in range(H):
-        edge = 25 + int(round(1.5 * math.sin(y / 4.3) + rnd.uniform(-0.4, 0.4)))
+        edge = 27 + int(round(1.5 * math.sin(y / 4.3) + rnd.uniform(-0.4, 0.4)))
         for x in range(edge, W): g[y][x] = 'T'
 
-    # The stream, running from the wood down to the sea
+    # the stream, from the wood down to the sea
+    stream_y = lambda x: int(round(12 + 1.2 * math.sin(x / 3.5)))
     for x in range(W):
-        y0 = int(round(12 + 1.2 * math.sin(x / 3.5)))
+        y0 = stream_y(x)
         for y in (y0, y0 + 1):
             if g[y][x] != '~': g[y][x] = 'w'
 
-    # The headland: high ground ringed by a cliff, steps up on the west side
-    hx0, hy0, hx1, hy1 = 18, 29, 24, 37
-    rect(hx0, hy0, hx1, hy1, 'h')
-    rect(hx0 + 1, hy0 + 1, hx1 - 1, hy1 - 1, 'u')
-    setc(hx0, 33, 's')
-    setc(hx0 - 1, 33, '.')
+    # the headland: a rounded rise ringed by a low cliff, steps up its west side
+    hcx, hcy = 23.0, 33
+    for y in range(26, 41):
+        for x in range(17, 30):
+            d = ((x - hcx) / 3.9) ** 2 + ((y - hcy) / 4.9) ** 2
+            if d <= 1.0: setc(x, y, 'h')
+            if d <= 0.5: setc(x, y, 'u')
+    steps_x = next(x for x in range(W) if g[33][x] == 'h')
+    setc(steps_x, 33, 's')
 
-    # Patches of long grass
-    for (x0, y0, x1, y1) in ((18, 17, 23, 22), (19, 41, 23, 47), (9, 30, 12, 35), (8, 18, 11, 22), (16, 52, 20, 56)):
+    # long grass
+    for (x0, y0, x1, y1) in ((19, 17, 24, 22), (8, 18, 11, 22), (9, 28, 12, 34), (20, 46, 25, 52), (10, 70, 13, 76),
+                             (19, 64, 23, 70), (17, 80, 22, 85)):
         for y in range(y0, y1 + 1):
             for x in range(x0, x1 + 1):
                 if g[y][x] == '.' and not ((x in (x0, x1)) and (y in (y0, y1))): g[y][x] = 'g'
 
-    # Tree clumps and lone trees
-    for (x, y) in ((20, 6), (21, 6), (20, 7), (11, 24), (12, 25), (22, 24), (23, 25), (10, 41), (11, 42),
-                   (21, 50), (22, 50), (22, 51), (7, 9), (12, 16), (23, 10), (17, 27), (13, 47), (14, 60),
-                   (20, 60), (21, 61), (22, 59)):
+    # trees, alone and in clumps
+    for (x, y) in ((20, 6), (21, 6), (20, 7), (11, 24), (12, 25), (23, 24), (24, 25), (10, 42), (11, 43), (22, 56),
+                   (23, 56), (23, 57), (7, 9), (12, 16), (24, 10), (18, 27), (13, 48), (14, 79), (21, 77), (22, 78),
+                   (23, 76), (9, 52), (25, 87), (26, 88), (7, 86), (8, 87)):
         if g[y][x] in '.g': g[y][x] = 'T'
-
-    # Flowers
-    for _ in range(40):
-        x, y = rnd.randrange(W), rnd.randrange(4, H)
+    for _ in range(45):
+        x, y = rnd.randrange(W), rnd.randrange(5, 94)
         if g[y][x] == '.': g[y][x] = 'o'
 
-    # Brambles on the stream's south bank
+    # brambles on the stream's south bank
     for x in (19, 20, 21, 22):
-        y = int(round(12 + 1.2 * math.sin(x / 3.5))) + 2
+        y = stream_y(x) + 2
         if g[y][x] in '.og': g[y][x] = 'k'
 
-    # Tide pools on the beach
+    # tide pools in the bay
     pools = []
-    for (x, y, t) in ((5, 44, 'r'), (6, 44, 'R'), (6, 45, 'r'), (5, 46, 'R'), (7, 46, 'r'), (6, 47, 'r'), (4, 43, 'r')):
-        x = max(x, coast(y))
+    for (dx, y, t) in ((0, 60, 'r'), (1, 60, 'R'), (1, 61, 'r'), (0, 62, 'R'), (2, 62, 'r'), (1, 63, 'r'), (0, 59, 'r')):
+        x = coast(y) + dx
         g[y][x] = t
         if t == 'R': pools.append((x, y))
 
-    # Rocks here and there
-    for (x, y) in ((8, 13), (16, 38), (24, 39), (13, 50), (7, 27), (24, 16)):
+    # rocks here and there
+    for (x, y) in ((8, 13), (17, 38), (25, 44), (14, 54), (7, 27), (25, 16), (12, 82), (19, 90)):
         if g[y][x] in '.o': g[y][x] = 'r'
 
-    # Skelmed's fence across the top, with the gate on the road, and the first roofs beyond
+    # Skelmed's fence across the top, the gate on the road, the first roofs beyond
     rect(0, 0, W - 1, 3, '.')
     for x in range(W):
         if g[4][x] != '~': g[4][x] = 'F'
     rect(2, 0, 7, 2, 'H')
     rect(19, 0, 24, 2, 'H')
-    rect(25, 0, W - 1, 3, 'T')
+    rect(27, 0, W - 1, 3, 'T')
 
-    # Yenson's shack, with a trodden path from the door to the road
-    rect(9, 55, 13, 57, 'H')
-    setc(11, 57, 'D')
+    # the copse south of the shack: trees in clumps round a spring and a clearing
+    crnd = random.Random(5)
+    for y in range(ROAD_END + 2, H):
+        for x in range(coast(y) + 3, W):
+            if g[y][x] in '.go' and crnd.random() < (0.32 if y < H - 4 else 0.95):
+                g[y][x] = 'T'
+    spring = [(9, 104), (10, 104), (11, 104), (9, 105), (10, 105), (11, 105), (10, 103)]
+    clear = [(8, 101, 15, 108), (17, 106, 24, 113), (18, 93, 20, 101), (12, 99, 19, 101), (17, 99, 19, 106)]
+    for (x0, y0, x1, y1) in clear:
+        rect(x0, y0, x1, y1, '.', keep='T.go')
+    for (x, y) in spring: setc(x, y, 'w')
+    # a trodden path from the shack down to the spring and on to the clearing
+    for y in range(ROAD_END, 101): setc(DOOR_X, y, '=')
+    for x in range(12, DOOR_X): setc(x, 100, '=')
+    for y in range(100, 107): setc(18, y, '=')
 
-    # The road, two tiles wide, from the shack to the gate, with a bridge over the stream
-    for y in range(0, 59):
+    # Yenson's shack, a path from its door to the road
+    rect(DOOR_X - 2, SHACK_Y - 2, DOOR_X + 2, SHACK_Y, 'H')
+    setc(DOOR_X, SHACK_Y, 'D')
+
+    # the road, two tiles wide, from the shack to the gate, with a bridge over the stream
+    for y in range(0, ROAD_END + 1):
         x = road(y)
         for xx in (x, x + 1):
             setc(xx, y, 'b' if g[y][xx] == 'w' else '=')
-    for x in range(11, road(58) + 1):
-        setc(x, 58, '=')
-    for y in range(0, 4):
-        x = road(y)
-        for xx in (x - 1, x + 2):
-            if g[y][xx] == 'H': continue
-    # The path up to the headland steps
-    for x in range(road(33) + 2, hx0 - 1):
+    for x in range(road(ROAD_END), DOOR_X + 1):
+        setc(x, ROAD_END, '=')
+    # the path up to the headland steps
+    for x in range(road(33) + 2, steps_x):
         setc(x, 33, '=')
 
     rows = [''.join(r) for r in g]
-    rx = road(25)
-    sky = road(58)
+    rx = road(41)
+    north = [0, 5, W - 1, ROAD_END - 4]            # fights happen north of the shack, not round it or in the copse
     area = {
         'id': 'coast_road',
         'name': 'The coast road',
         'minutes': 2,
-        'eventChance': 0,          # % per step: something to find, someone to meet, weather
+        'eventChance': 0,
         'fightChance': 6,          # % per step: a fight, the old way, anywhere you walk (less on the road)
         'fightGap': 10,            # at least this many steps between fights
         'spots': [
-            {'id': 'shack', 'x': 11, 'y': 58, 'facing': 'down'},
+            {'id': 'shack', 'x': DOOR_X, 'y': ROAD_END, 'facing': 'down'},
             {'id': 'skelmed', 'x': road(5), 'y': 5, 'facing': 'down'},
             {'id': 'pools', 'x': pools[0][0] + 1, 'y': pools[0][1], 'facing': 'left'},
-            {'id': 'headland', 'x': 21, 'y': 33, 'facing': 'down'},
+            {'id': 'headland', 'x': 23, 'y': 33, 'facing': 'down'},
             {'id': 'stream', 'x': 10, 'y': 14, 'facing': 'left'},
+            {'id': 'spring', 'x': 12, 'y': 104, 'facing': 'left'},
         ],
         'objects': [
-            {'id': 'sign_shack', 'kind': 'sign', 'sprite': 'obj_sign', 'x': sky + 2, 'y': 57,
+            {'id': 'sign_shack', 'kind': 'sign', 'sprite': 'obj_sign', 'x': road(ROAD_END) - 1, 'y': ROAD_END - 1,
              'text': 'North: Skelmed. South: Yenson. Mind the tide.'},
             {'id': 'sign_gate', 'kind': 'sign', 'sprite': 'obj_sign', 'x': road(6) + 2, 'y': 6,
              'text': 'SKELMED. Nets, rope, fish. Mind the dogs. The word "dogs" has been scratched out and "wolves" written over it.'},
             {'id': 'pools', 'kind': 'spot', 'sprite': '', 'x': pools[0][0], 'y': pools[0][1], 'scene': 'pools'},
-            {'id': 'crate', 'kind': 'item', 'sprite': 'obj_crate', 'x': coast(52) + 1, 'y': 52, 'scene': 'ev_crate', 'once': True},
-            {'id': 'fisher', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': coast(38) + 1, 'y': 38, 'facing': 'left',
+            {'id': 'crate', 'kind': 'item', 'sprite': 'obj_crate', 'x': coast(80) + 1, 'y': 80, 'scene': 'ev_crate', 'once': True},
+            {'id': 'fisher', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': coast(70) + 1, 'y': 70, 'facing': 'left',
              'scene': 'ev_fisher', 'once': True, 'when': ['!night']},
-            {'id': 'lookout', 'kind': 'spot', 'sprite': 'obj_cairn', 'x': 22, 'y': 31, 'scene': 'lookout_climb'},
-            {'id': 'wolf', 'kind': 'npc', 'sprite': 'obj_wolf', 'x': rx, 'y': 24, 'facing': 'down', 'when': ['!flag:dog_met'], 'scene': 'dog'},
+            {'id': 'lookout', 'kind': 'spot', 'sprite': 'obj_cairn', 'x': 24, 'y': 31, 'scene': 'lookout_climb'},
+            {'id': 'wolf', 'kind': 'npc', 'sprite': 'obj_wolf', 'x': rx, 'y': 41, 'facing': 'down', 'when': ['!flag:dog_met'], 'scene': 'dog'},
             {'id': 'gulls', 'kind': 'item', 'sprite': 'obj_gulls', 'x': coast(21) + 1, 'y': 21, 'scene': 'ev_taint', 'once': True},
+            {'id': 'log1', 'kind': 'item', 'sprite': 'obj_log', 'x': 14, 'y': 103, 'scene': 'deadfall', 'once': True},
+            {'id': 'log2', 'kind': 'item', 'sprite': 'obj_log', 'x': 9, 'y': 107, 'scene': 'deadfall', 'once': True},
+            {'id': 'log3', 'kind': 'item', 'sprite': 'obj_log', 'x': 16, 'y': 98, 'scene': 'deadfall', 'once': True},
+            {'id': 'log4', 'kind': 'item', 'sprite': 'obj_log', 'x': 22, 'y': 107, 'scene': 'deadfall', 'once': True},
+            {'id': 'log5', 'kind': 'item', 'sprite': 'obj_log', 'x': 19, 'y': 112, 'scene': 'deadfall', 'once': True},
+            {'id': 'boar', 'kind': 'npc', 'sprite': 'obj_boar', 'x': 21, 'y': 110, 'facing': 'left', 'scene': 'boar',
+             'when': ['quest:boar', '!flag:boar_killed']},
         ],
         'zones': [
-            # Walking into these runs a scene. The wolf waits on the road north of the headland.
-            {'x0': 0, 'y0': 25, 'x1': W - 1, 'y1': 26, 'scene': 'dog', 'when': ['!flag:dog_met']},
-            {'x0': 11, 'y0': 57, 'x1': 11, 'y1': 57, 'to': 'hut_door'},
+            {'x0': DOOR_X, 'y0': SHACK_Y, 'x1': DOOR_X, 'y1': SHACK_Y, 'to': 'hut_door'},
             {'x0': road(4) - 1, 'y0': 0, 'x1': road(4) + 2, 'y1': 4, 'to': 'village_gate'},
+            # the wolf waits on the road below the headland; the boar charges when you get close
+            {'x0': 0, 'y0': 42, 'x1': W - 1, 'y1': 43, 'scene': 'dog', 'when': ['!flag:dog_met']},
+            {'x0': 18, 'y0': 107, 'x1': 24, 'y1': 113, 'scene': 'boar', 'when': ['quest:boar', '!flag:boar_killed', '!flag:boar_seen']},
         ],
         'uses': [
-            # Facing these tiles lets you use them.
             {'tile': 'w', 'scene': 'stream_drink'},
             {'tile': 'k', 'scene': 'brambles'},
         ],
         'events': [
             # Fights start straight away, Final Fantasy style. win is where you go after winning.
-            {'enemy': 'dog', 'win': 'ev_wolf_won', 'kind': 'fight', 'weight': 3, 'terrain': '.go=s'},
-            {'enemy': 'crab', 'win': 'ev_crab_won', 'kind': 'fight', 'weight': 3, 'terrain': ','},
+            {'enemy': 'dog', 'win': 'ev_wolf_won', 'kind': 'fight', 'weight': 3, 'terrain': '.go=s', 'area': north},
+            {'enemy': 'crab', 'win': 'ev_crab_won', 'kind': 'fight', 'weight': 3, 'terrain': ',', 'area': north},
         ],
         'rows': rows,
     }
@@ -658,35 +686,114 @@ def tile_painter(rows):
     return img, over, put
 
 
-# Buildings are painted over their H tiles as one picture each.
-def paint_house(img, x0, y0, w, h, wall='d', roof='R', door_x=None):
+# Buildings are painted over their H tiles as one picture each: a pitched roof seen from the front and above,
+# the front wall with its door and windows, a chimney, and a shadow cast down and to the right.
+ROOFS = {
+    'slate': ('c', 'C', 'n', 'N'),      # light, mid, dark, darkest
+    'thatch': ('a', 'A', 'b', 'B'),
+    'tile': ('r', 'R', 'm', 'o'),
+}
+WALLS = {
+    'plank': ('d', 'D', 'b'),
+    'stone': ('Y', 'y', 'G'),
+}
+
+
+def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None):
     px = img.load()
     X0, Y0, X1, Y1 = x0 * T, y0 * T, (x0 + w) * T - 1, (y0 + h) * T - 1
-    roof_h = int((Y1 - Y0) * 0.55)
-    for Y in range(Y0, Y1 + 1):
-        for X in range(X0, X1 + 1):
-            if Y < Y0 + roof_h:
-                k = roof if ((Y - Y0) % 4) else ('m' if roof == 'R' else 'B')
-                if X in (X0, X1) or Y == Y0: k = 'o'
+    rl, rm, rd, rx = ROOFS[roof]
+    wl, wm, wd = WALLS[wall]
+    roof_h = int((Y1 - Y0 + 1) * 0.58)
+    RY = Y0 + roof_h                      # where the roof's front edge meets the wall
+
+    def put(X, Y, k):
+        if 0 <= X < img.width and 0 <= Y < img.height: px[X, Y] = C(k)
+
+    def darken(X, Y):
+        if 0 <= X < img.width and 0 <= Y < img.height:
+            r, g, b, a = px[X, Y]
+            px[X, Y] = (int(r * 0.62), int(g * 0.62), int(b * 0.7), a)
+
+    # shadow on the ground, down and to the right
+    for Y in range(Y0 + 6, Y1 + 5):
+        for X in range(X1 + 1, X1 + 5):
+            darken(X, Y)
+    for Y in range(Y1 + 1, Y1 + 4):
+        for X in range(X0 + 3, X1 + 5):
+            darken(X, Y)
+
+    # the front wall
+    for Y in range(RY, Y1 + 1):
+        for X in range(X0 + 1, X1):
+            if wall == 'plank':
+                k = wd if (X - X0) % 6 == 0 else (wl if (X - X0) % 6 == 1 else wm)
             else:
-                k = wall if ((X - X0) % 8) else ('D' if wall == 'd' else 'g')
-                if X in (X0, X1) or Y == Y1: k = 'o'
-                if Y == Y0 + roof_h: k = 'B'
-            px[X, Y] = C(k)
-    # windows
-    for wx in range(X0 + 6, X1 - 8, 22):
-        for Y in range(Y0 + roof_h + 5, Y0 + roof_h + 11):
-            for X in range(wx, wx + 7):
-                px[X, Y] = C('o' if X in (wx, wx + 6) or Y in (Y0 + roof_h + 5, Y0 + roof_h + 10) else 'n')
+                row = (Y - RY) // 4
+                k = wd if (Y - RY) % 4 == 3 or (X - X0 + row * 3) % 8 == 0 else (wl if (X + Y) % 5 == 0 else wm)
+            if Y <= RY + 2: k = 'o' if Y == RY else 'B'      # the shadow under the eaves
+            if Y >= Y1 - 1: k = 'g' if wall == 'stone' else 'B'
+            put(X, Y, k)
+        put(X0, Y, 'o'); put(X1, Y, 'o')
+    for X in range(X0, X1 + 1): put(X, Y1, 'o')
+
+    # the roof: courses of shingles or straw, lit from the top left, a ridge along the top
+    for Y in range(Y0, RY + 1):
+        for X in range(X0 - 1, X1 + 2):
+            t = (Y - Y0) / max(1, roof_h)
+            course = (Y - Y0) // 3
+            k = rm
+            if (Y - Y0) % 3 == 2: k = rd
+            elif roof == 'thatch' and (X + course * 2) % 5 == 0: k = rl
+            elif roof != 'thatch' and (X - X0 + (course % 2) * 3) % 6 == 0: k = rd
+            if t < 0.18: k = rl if (Y - Y0) % 3 != 2 else rm
+            if X >= X1 - 2: k = rd
+            if X in (X0 - 1, X1 + 1) or Y == Y0 or Y == RY: k = 'o'
+            put(X, Y, k)
+    for X in range(X0 + 1, X1): put(X, Y0 + 1, rl)
+
+    # windows with shutters and sills
+    windows = []
+    span = list(range(X0 + 7, X1 - 9, 20))
+    for wx in span:
+        if door_x is not None and abs(wx + 4 - (door_x * T + 8)) < 14: continue
+        windows.append(wx)
+    wy = RY + 5
+    for wx in windows:
+        for Y in range(wy, wy + 7):
+            for X in range(wx, wx + 8):
+                k = 'n'
+                if X in (wx, wx + 7) or Y in (wy, wy + 6): k = 'o'
+                elif X == wx + 4: k = 'b'
+                elif (X, Y) in ((wx + 1, wy + 1), (wx + 5, wy + 1)): k = 'c'
+                elif Y >= wy + 4: k = 'N'
+                put(X, Y, k)
+        for Y in range(wy, wy + 7):
+            put(wx - 2, Y, 'B'); put(wx - 1, Y, 'b'); put(wx + 8, Y, 'b'); put(wx + 9, Y, 'B')
+        for X in range(wx - 1, wx + 9): put(X, wy + 7, 'd')
+
+    # the door, with a step in front
     if door_x is not None:
         DX = door_x * T + 3
-        for Y in range(Y1 - 12, Y1):
+        top = Y1 - 13
+        for Y in range(top, Y1):
             for X in range(DX, DX + 10):
-                px[X, Y] = C('o' if X in (DX, DX + 9) or Y == Y1 - 12 else ('B' if (X - DX) % 3 else 'b'))
-    # chimney smoke stack
-    for Y in range(Y0 - 2, Y0 + 6):
-        for X in range(X1 - 12, X1 - 7):
-            if Y >= Y0 - 2: px[X, Y] = C('o' if X in (X1 - 12, X1 - 8) else 'G')
+                k = 'B' if (X - DX) % 3 == 0 else 'b'
+                if X in (DX, DX + 9) or Y == top: k = 'o'
+                if Y == top + 1 and X in (DX + 1, DX + 8): k = 'o'
+                put(X, Y, k)
+        put(DX + 7, top + 7, 'a')
+        for X in range(DX - 1, DX + 11):
+            put(X, Y1, 'y'); put(X, Y1 + 1, 'G')
+
+    # chimney
+    cx = X1 - 12
+    for Y in range(Y0 - 5, Y0 + 7):
+        for X in range(cx, cx + 6):
+            k = 'G' if (Y + X) % 4 else 'y'
+            if X in (cx, cx + 5) or Y == Y0 - 5: k = 'o'
+            if Y == Y0 - 4 and X not in (cx, cx + 5): k = 'g'
+            put(X, Y, k)
 
 
 # ============================================================================================== walking sprites
@@ -982,6 +1089,42 @@ OBJECTS = {
 ...ooo.oo.ooo...
 ................
 """,
+    'obj_log': """
+................
+................
+................
+................
+................
+................
+...oooooooooo...
+..obbBbbbBbbDo..
+.oDdbbbbbbbbddo.
+.odDbBbbbbBbDdo.
+..obbbbbBbbbbo..
+...oooooooooo...
+....v......v....
+................
+................
+................
+""",
+    'obj_boar': """
+................
+................
+................
+....oo..........
+...oBBoooooo....
+..obBBBBBBBBoo..
+.oDbaBBbBbBbBBo.
+oDDbbbbbbbbbbbBo
+oeWbbbDbbbbbbBo.
+.oWobbbbbbbbbBo.
+..oo.oBbooBbBo..
+.....oBo.oBo....
+.....oo..oo.....
+................
+................
+................
+""",
     'obj_gulls': """
 ................
 ................
@@ -1026,7 +1169,10 @@ def main():
         area = make()
         extra_doors = [tuple(d) for d in area.pop('doors', [])]
         data['areas'].append(area)
-        img, over, _ = tile_painter(area['rows'])
+        if area.get('indoor'):
+            img, over, _ = tile_painter(area['rows'])
+        else:
+            img, over = terrain.paint(area['rows'])
         rows = area['rows']
         # buildings: find each block of H tiles and paint a house over it
         seen = set()
@@ -1040,8 +1186,9 @@ def main():
                 for yy in range(y, y1 + 1):
                     for xx in range(x, x1 + 1): seen.add((xx, yy))
                 door = next((xx for xx in range(x, x1 + 1) if rows[y1][xx] == 'D' or (xx, y1) in extra_doors), None)
-                paint_house(img, x, y, x1 - x + 1, y1 - y + 1, wall='d' if (x * 3 + y) % 2 == 0 else 'y',
-                            roof='B' if (x + y) % 3 else 'R', door_x=door)
+                pick = (x * 7 + y * 3) % 6
+                paint_house(img, x, y, x1 - x + 1, y1 - y + 1, wall='stone' if pick in (1, 4) else 'plank',
+                            roof=('thatch', 'slate', 'tile')[pick % 3], door_x=door)
         img.save(os.path.join(out, area['id'] + '.png'))
         over.save(os.path.join(out, area['id'] + '_over.png'))
     open(data_path, 'w').write(json.dumps(data, indent=2, ensure_ascii=False) + '\n')

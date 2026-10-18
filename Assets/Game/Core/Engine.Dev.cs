@@ -39,7 +39,8 @@ namespace Loran.Core
             S.water = Rules.WaterskinSize;
             S.AddItem("bread", 2);
             S.AddItem("flint", 1);
-            foreach (var f in new[] { "y_met", "y_what", "y_where", "y_stew", "y_thanks", "y_supplies", "yenson_road", "dog_met" })
+            foreach (var f in new[] { "y_met", "y_what", "y_where", "y_stew", "y_thanks", "y_supplies", "yenson_road", "dog_met",
+                                     "quest_done:water", "quest_done:firewood", "quest_done:boar", "boar_seen", "boar_killed" })
                 if (!S.Has(f)) S.flags.Add(f);
             if (data.Gear("gutting_knife") != null) MakeGear("gutting_knife", null, null);
             DevRefill();
@@ -57,7 +58,8 @@ namespace Loran.Core
                     Jump(TravelId);
                     break;
                 case "hut":
-                    S.flags.RemoveAll(f => f.StartsWith("y_") || f == "yenson_road" || f == "dog_met");
+                    S.flags.RemoveAll(f => f.StartsWith("y_") || f.StartsWith("quest") || f.StartsWith("boar_") || f == "yenson_road" || f == "dog_met");
+                    S.gearItems.RemoveAll(g => g.id == "gutting_knife");
                     Jump("wake");
                     break;
                 case "road":

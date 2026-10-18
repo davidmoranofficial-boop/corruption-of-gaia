@@ -37,13 +37,13 @@ namespace Loran.UnityLayer
         float TravelHeight()
         {
             float h = mainBox != null ? mainBox.layout.height : float.NaN;
-            return float.IsNaN(h) || h < 400 ? 900f : h - 56f;
+            return float.IsNaN(h) || h < 400 ? 900f : h;
         }
 
         float TravelWidth()
         {
             float w = mainBox != null ? mainBox.layout.width : float.NaN;
-            return float.IsNaN(w) || w < 600 ? 1700f : w - 112f;
+            return float.IsNaN(w) || w < 600 ? 1700f : w;
         }
 
         // ------------------------------------------------------------------ drawing
@@ -89,9 +89,8 @@ namespace Loran.UnityLayer
             PlaceYou(new Vector2(s.ax, s.ay), moving ? 1 + stepCount % 2 : 0);
 
             usePrompt = Add(worldView, new Label(""), "world-prompt");
-            Add(worldView, new Label(a.name.ToUpperInvariant()), "world-name");
             bool canCamp = a.camp && !a.indoor;
-            Add(worldView, new Label("Arrows: walk   Shift: run   Space: talk / use" + (canCamp ? "   Enter: camp" : "")), "world-help");
+            var help = Add(worldView, new Label("Arrows  walk     Shift  run     Space  talk / use" + (canCamp ? "     Enter  camp" : "")), "world-help");
             UpdatePrompt();
 
             // The box at the bottom: a story scene, a message, or the actions
@@ -105,6 +104,7 @@ namespace Loran.UnityLayer
             else if (!string.IsNullOrEmpty(s.result)) DialogueBox(null, s.result, null, null, true);
             else if (actionsOpen) DialogueBox("What now?", null, null, engine.Choices(), false, true);
 
+            help.style.display = worldView.Q(className: "dialogue") != null ? DisplayStyle.None : DisplayStyle.Flex;
             if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
 

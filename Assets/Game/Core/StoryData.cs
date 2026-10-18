@@ -64,6 +64,7 @@ namespace Loran.Core
         public List<AreaDef> areas = new List<AreaDef>();
         public List<SpellDef> spells = new List<SpellDef>();
         public List<JournalDef> journal = new List<JournalDef>();
+        public List<QuestDef> quests = new List<QuestDef>();
         public List<string> builds = new List<string>();
         public List<string> hair = new List<string>();
         public List<string> skins = new List<string>();
@@ -130,6 +131,28 @@ namespace Loran.Core
     }
     [Serializable] public class SpellDef { public string id, name, desc; }
     [Serializable] public class JournalDef { public string text; public List<string> when = new List<string>(); }
+
+    /// <summary>
+    /// A job someone gives you. Started with the effect quest:id and finished with complete:id (usually when you
+    /// hand it in). The goals are what the quest log and the tracker show; a goal is met when its count reaches
+    /// target (count is a value like item:firewood) or, without a count, when its condition holds.
+    /// Conditions: quest:id (taken and not finished), ready:id (taken and every goal met), done:id (finished).
+    /// </summary>
+    [Serializable]
+    public class QuestDef
+    {
+        public string id, name, giver, desc;
+        public List<QuestGoal> goals = new List<QuestGoal>();
+    }
+
+    [Serializable]
+    public class QuestGoal
+    {
+        public string text;
+        public string count;                   // e.g. item:firewood
+        public int target;
+        public string when;                    // or a condition, e.g. flag:boar_killed
+    }
 
     /// <summary>One kind of tile in the walkable areas, keyed by the letter used in an area's rows.</summary>
     [Serializable]
@@ -248,6 +271,7 @@ namespace Loran.Core
         public TraitDef Trait(string id) => Find(file.traits, x => x.id, id);
         public MaterialDef Material(string id) => Find(file.materials, x => x.id, id);
         public SpellDef Spell(string id) => Find(file.spells, x => x.id, id);
+        public QuestDef Quest(string id) => Find(file.quests, x => x.id, id);
         public AreaDef Area(string id) => Find(file.areas, x => x.id, id);
         public TileDef Tile(char key)
         {

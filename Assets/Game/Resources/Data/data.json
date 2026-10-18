@@ -81,6 +81,30 @@
       "hunger": 8,
       "thirst": -4,
       "energy": 2
+    },
+    {
+      "id": "bucket",
+      "name": "Yenson's bucket",
+      "desc": "A wooden bucket, bound with rope. Empty."
+    },
+    {
+      "id": "water_bucket",
+      "name": "Bucket of water",
+      "desc": "Spring water for Yenson's pot. Heavy."
+    },
+    {
+      "id": "firewood",
+      "name": "Deadwood",
+      "desc": "An armful of dry fallen branches."
+    },
+    {
+      "id": "boar_meat",
+      "name": "Smoked boar",
+      "desc": "Yenson's work: dark, salty and rich.",
+      "food": true,
+      "hunger": 40,
+      "thirst": -8,
+      "energy": 8
     }
   ],
   "enemies": [
@@ -147,6 +171,41 @@
           "id": "shell",
           "name": "hunkers down behind its shell",
           "tell": "It pulls its legs in and hunkers behind its shell.",
+          "power": 0,
+          "guard": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "id": "boar",
+      "name": "Wild boar",
+      "rank": "F",
+      "desc": "A bristle-backed boar as heavy as a man, with tusks like hooks. It's been rooting round the spring for weeks and has stopped being afraid of anyone.",
+      "hp": 38,
+      "atkMin": 3,
+      "atkMax": 6,
+      "speed": 3,
+      "art": "boar",
+      "moves": [
+        {
+          "id": "gore",
+          "name": "hooks at you with its tusks",
+          "tell": "It swings its head low, tusks first.",
+          "power": 1,
+          "weight": 5
+        },
+        {
+          "id": "charge",
+          "name": "charges you down",
+          "tell": "It paws the ground and drops its head. It's going to charge.",
+          "power": 1.7,
+          "weight": 3
+        },
+        {
+          "id": "snort",
+          "name": "stamps and snorts",
+          "tell": "It backs off a step, snorting, watching you.",
           "power": 0,
           "guard": true,
           "weight": 2
@@ -394,7 +453,7 @@
     {
       "text": "Talk to Yenson.",
       "when": [
-        "!flag:y_supplies"
+        "!flag:y_met"
       ]
     },
     {
@@ -446,25 +505,25 @@
       "spots": [
         {
           "id": "shack",
-          "x": 11,
-          "y": 58,
+          "x": 19,
+          "y": 93,
           "facing": "down"
         },
         {
           "id": "skelmed",
-          "x": 17,
+          "x": 19,
           "y": 5,
           "facing": "down"
         },
         {
           "id": "pools",
-          "x": 7,
-          "y": 44,
+          "x": 12,
+          "y": 60,
           "facing": "left"
         },
         {
           "id": "headland",
-          "x": 21,
+          "x": 23,
           "y": 33,
           "facing": "down"
         },
@@ -473,6 +532,12 @@
           "x": 10,
           "y": 14,
           "facing": "left"
+        },
+        {
+          "id": "spring",
+          "x": 12,
+          "y": 104,
+          "facing": "left"
         }
       ],
       "objects": [
@@ -480,15 +545,15 @@
           "id": "sign_shack",
           "kind": "sign",
           "sprite": "obj_sign",
-          "x": 20,
-          "y": 57,
+          "x": 10,
+          "y": 92,
           "text": "North: Skelmed. South: Yenson. Mind the tide."
         },
         {
           "id": "sign_gate",
           "kind": "sign",
           "sprite": "obj_sign",
-          "x": 20,
+          "x": 21,
           "y": 6,
           "text": "SKELMED. Nets, rope, fish. Mind the dogs. The word \"dogs\" has been scratched out and \"wolves\" written over it."
         },
@@ -496,16 +561,16 @@
           "id": "pools",
           "kind": "spot",
           "sprite": "",
-          "x": 6,
-          "y": 44,
+          "x": 11,
+          "y": 60,
           "scene": "pools"
         },
         {
           "id": "crate",
           "kind": "item",
           "sprite": "obj_crate",
-          "x": 9,
-          "y": 52,
+          "x": 5,
+          "y": 80,
           "scene": "ev_crate",
           "once": true
         },
@@ -514,7 +579,7 @@
           "kind": "npc",
           "sprite": "npc_fisher",
           "x": 4,
-          "y": 38,
+          "y": 70,
           "facing": "left",
           "scene": "ev_fisher",
           "once": true,
@@ -526,7 +591,7 @@
           "id": "lookout",
           "kind": "spot",
           "sprite": "obj_cairn",
-          "x": 22,
+          "x": 24,
           "y": 31,
           "scene": "lookout_climb"
         },
@@ -534,8 +599,8 @@
           "id": "wolf",
           "kind": "npc",
           "sprite": "obj_wolf",
-          "x": 14,
-          "y": 24,
+          "x": 15,
+          "y": 41,
           "facing": "down",
           "when": [
             "!flag:dog_met"
@@ -550,32 +615,102 @@
           "y": 21,
           "scene": "ev_taint",
           "once": true
+        },
+        {
+          "id": "log1",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 14,
+          "y": 103,
+          "scene": "deadfall",
+          "once": true
+        },
+        {
+          "id": "log2",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 9,
+          "y": 107,
+          "scene": "deadfall",
+          "once": true
+        },
+        {
+          "id": "log3",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 16,
+          "y": 98,
+          "scene": "deadfall",
+          "once": true
+        },
+        {
+          "id": "log4",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 22,
+          "y": 107,
+          "scene": "deadfall",
+          "once": true
+        },
+        {
+          "id": "log5",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 19,
+          "y": 112,
+          "scene": "deadfall",
+          "once": true
+        },
+        {
+          "id": "boar",
+          "kind": "npc",
+          "sprite": "obj_boar",
+          "x": 21,
+          "y": 110,
+          "facing": "left",
+          "scene": "boar",
+          "when": [
+            "quest:boar",
+            "!flag:boar_killed"
+          ]
         }
       ],
       "zones": [
         {
+          "x0": 19,
+          "y0": 92,
+          "x1": 19,
+          "y1": 92,
+          "to": "hut_door"
+        },
+        {
+          "x0": 18,
+          "y0": 0,
+          "x1": 21,
+          "y1": 4,
+          "to": "village_gate"
+        },
+        {
           "x0": 0,
-          "y0": 25,
-          "x1": 29,
-          "y1": 26,
+          "y0": 42,
+          "x1": 31,
+          "y1": 43,
           "scene": "dog",
           "when": [
             "!flag:dog_met"
           ]
         },
         {
-          "x0": 11,
-          "y0": 57,
-          "x1": 11,
-          "y1": 57,
-          "to": "hut_door"
-        },
-        {
-          "x0": 16,
-          "y0": 0,
-          "x1": 19,
-          "y1": 4,
-          "to": "village_gate"
+          "x0": 18,
+          "y0": 107,
+          "x1": 24,
+          "y1": 113,
+          "scene": "boar",
+          "when": [
+            "quest:boar",
+            "!flag:boar_killed",
+            "!flag:boar_seen"
+          ]
         }
       ],
       "uses": [
@@ -594,81 +729,149 @@
           "win": "ev_wolf_won",
           "kind": "fight",
           "weight": 3,
-          "terrain": ".go=s"
+          "terrain": ".go=s",
+          "area": [
+            0,
+            5,
+            31,
+            89
+          ]
         },
         {
           "enemy": "crab",
           "win": "ev_crab_won",
           "kind": "fight",
           "weight": 3,
-          "terrain": ","
+          "terrain": ",",
+          "area": [
+            0,
+            5,
+            31,
+            89
+          ]
         }
       ],
       "rows": [
-        "..HHHHHH........==.HHHHHHTTTTT",
-        "..HHHHHH.........==HHHHHHTTTTT",
-        "..HHHHHH.........==HHHHHHTTTTT",
-        ".................==......TTTTT",
-        "~~~~~FFFFFFFFFFFF==FFFFFFFFFFF",
-        "~~~~~,,..........==.......TTTT",
-        "~~~~~,,...........==TT....TTTT",
-        "~~~~~,,...........==T......TTT",
-        "~~~~~~,,....o.....==.......TTT",
-        "~~~~~~,,..........==.......TTT",
-        "~~~~~~,,,........==....T..TTTT",
-        "~~~~~~,,....owwwwbbww.....TTTT",
-        "~~~~~~,,..wwwwwwwbbwwwwwoTTTTT",
-        "~~~~~wwwwwwww....==kkwwwwwwwww",
-        "~~~~~wwwww.......==..kk.wwwwww",
-        "~~~~~,,..........==.....TTTTTT",
-        "~~~~~,,.....T...==......rTTTTT",
-        "~~~~~,,,........==.gggg.TTTTTT",
-        "~~~~~,,..gg.....==ggggggTTTTTT",
-        "~~~~,,..gggg...==.ggggggTTTTTT",
-        "~~~~,,..gggg..o==.gggggTTTTTTT",
-        "~~~~,,..gggg...==.gggggTTTTTTT",
-        "~~~~,,...gg...==...gggg.TTTTTT",
-        "~~~,,.........==.......TTTTTTT",
-        "~~~,,,.....T..==......T.TTTTTT",
-        "~~~,,.......T.==...o...TTTTTTT",
-        "~~~,,........==.........TTTTTT",
-        "~~~,,..r...o.==..T.......TTTTT",
-        "~~~,,........==..........TTTTT",
-        "~~,,.o.......==...hhhhhhh.TTTT",
-        "~~,,......ggo==...huuuuuh.TTTT",
-        "~~,,,....ggg==....huuuuuh.TTTT",
-        "~~,,.....ggg==....huuuuuh.TTTT",
-        "~~~,,....ggg=====.suuuuuh..TTT",
-        "~~~,,....ggg==....huuuuuh.TTTT",
-        "~~~,,.....gg==....huuuuuhoTTTT",
-        "~~~,,........==...huuuuuh..TTT",
-        "~~~,,........==...hhhhhhh.TTTT",
-        "~~~,,,.......==.r.........TTTT",
-        "~~~~,,.......==.........r.TTTT",
-        "~~~~,,.......==.....o....TTTTT",
-        "~~~~,,o...T...==....ggg..TTTTT",
-        "~~~~~,,....T..==...gggggTTTTTT",
-        "~~~~~r,.......==...gggggTTTTTT",
-        "~~~~~~R,.......==..gggggTTTTTT",
-        "~~~~~~r,,....o.==..gggggTTTTTT",
-        "~~~~~~Rr.......==..gggggTTTTTT",
-        "~~~~~~~r,....T.==...gggTTTTTTT",
-        "~~~~~~~,,.......==......TTTTTT",
-        "~~~~~~~,,.......==......TTTTTT",
-        "~~~~~~~~,,...r..==...TTTTTTTTT",
-        "~~~~~~~~,,.......==...T.TTTTTT",
-        "~~~~~~~~,,,......==g.....TTTTT",
-        "~~~~~~~~,,......g==gg....TTTTT",
-        "~~~~~~~~,,......g==gg....TTTTT",
-        "~~~~~~~~,HHHHH..g==gg....TTTTT",
-        "~~~~~~~~,HHHHH...g==.....TTTTT",
-        "~~~~~~~~,HHDHH.o..==......TTTT",
-        "~~~~~~~~,,.=========......TTTT",
-        "~~~~~~~~,,,...........T...TTTT",
-        "~~~~~~~~,,....T.....T.....TTTT",
-        "~~~~~~~~,,...........T....TTTT",
-        "~~~~~~~~,,.................TTT",
-        "~~~~~~~~,,.................TTT"
+        "..HHHHHH..........==HHHHH..TTTTT",
+        "..HHHHHH..........==HHHHH..TTTTT",
+        "..HHHHHH..........==HHHHH..TTTTT",
+        "...................==......TTTTT",
+        "~~~~~FFFFFFFFFFFFFF==FFFFFFFFFFF",
+        "~~~~~,,............==.......TTTT",
+        "~~~~~,,............==T......TTTT",
+        "~~~~~,,............==........TTT",
+        "~~~~~~,,............==....o..TTT",
+        "~~~~~~,,...........o==.......TTT",
+        "~~~~~~,,,...........==.oT...TTTT",
+        "~~~~~~,,.....wwwwwwwb=......TTTT",
+        "~~~~~~,,..wwwwwwwwwwbbww...TTTTT",
+        "~~~~~wwwwwwww......k=bwwwwwwwwww",
+        "~~~~~wwwww.........==kk.wwwwwwww",
+        "~~~~~,,............==.o...TTTTTT",
+        "~~~~~,,.o...T......==....r.TTTTT",
+        "~~~~~,,,...........==ggg..TTTTTT",
+        "~~~~~,,..gg........==gggg.TTTTTT",
+        "~~~~,,..gggg.......==gggg.TTTTTT",
+        "~~~~,,..gggg......==gggggTTTTTTT",
+        "~~~~,,..gggg......==gggggTTTTTTT",
+        "~~~~,,...gg.......==gggg..TTTTTT",
+        "~~~,,............==......TTTTTTT",
+        "~~~,,,.....T.....==....T..TTTTTT",
+        "~~~,,.......T....==.....T.TTTTTT",
+        "~~~,,...........==........TTTTTT",
+        "~~~,,..r........==T........TTTTT",
+        "~~~,,.....gg....==.........TTTTT",
+        "~~,,.....gggg...==...hhhhh..TTTT",
+        "~~,,.....gggg..==...hhuuuhh.TTTT",
+        "~~,,,....ggggo.==...huuuuuh.TTTT",
+        "~~,,.....gggg..==...huuuuuh.TTTT",
+        "~~~,,....gggg..=====suuuuuh..TTT",
+        "~~~,,...o.gg...==...huuuuuh.TTTT",
+        "~~~,,..........==...huuuuuh.TTTT",
+        "~~~,,..........==...hhuuuhh.oTTT",
+        "~~~,,..o.......==....hhhhh..TTTT",
+        "~~~,,,.........==r..........TTTT",
+        "~~~~,,.........==...........TTTT",
+        "~~~~,,.........==..........TTTTT",
+        "~~~~,,.....o...==..........TTTTT",
+        "~~~~,,....T....==.........TTTTTT",
+        "~~~~~,,....T...==.........TTTTTT",
+        "~~~~~,,........==........rTTTTTT",
+        "~~~~~,,,........==........TTTTTT",
+        "~~~~~,,.........==...gggg.TTTTTT",
+        "~~~~~,,.........==..gggggTTTTTTT",
+        "~~~~~~,,o....T..==..ggggggTTTTTT",
+        "~~~~~~,,.........==.ggggggTTTTTT",
+        "~~~~~~,,.........==.gggggTTTTTTT",
+        "~~~~~~,,..........==ggggggTTTTTT",
+        "~~~~~~~,,,........==.gggg..TTTTT",
+        "~~~~~~~,,.........==....o..TTTTT",
+        "~~~~~~~~,,....r....==......TTTTT",
+        "~~~~~~~~,,.........==......TTTTT",
+        "~~~~~~~~~,,.........==TT...TTTTT",
+        "~~~~~~~~~,,......o..==.T....TTTT",
+        "~~~~~~~~~~,,.........==.....TTTT",
+        "~~~~~~~~~~r,,........==.....TTTT",
+        "~~~~~~~~~~rR.........==.....TTTT",
+        "~~~~~~~~~,r..........==.....TTTT",
+        "~~~~~~~~~R,r.........==......TTT",
+        "~~~~~~~~,r...........==......TTT",
+        "~~~~~~~,,...........g==.....TTTT",
+        "~~~~~~,,...........g==gg....TTTT",
+        "~~~~~,,,...........g==gg...TTTTT",
+        "~~~~,,.............g==gg...TTTTT",
+        "~~~~,,.............==ggg...TTTTT",
+        "~~~,,..............==ggg..TTTTTT",
+        "~~~,,......gg......==gg...TTTTTT",
+        "~~~,,.....gggg....==......TTTTTT",
+        "~~~,,.....gggg....==...o.TTTTTTT",
+        "~~~,,,....gggg....==......TTTTTT",
+        "~~~,,.....gggg...==......TTTTTTT",
+        "~~~,,.....gggg...==.......TTTTTT",
+        "~~~,,......gg...==.....T.TTTTTTT",
+        "~~~,,...........==...T....TTTTTT",
+        "~~~,,...........==....T...TTTTTT",
+        "~~~,,.........T==.........TTTTTT",
+        "~~~~,,,.o......==.gggg.....TTTTT",
+        "~~~~,,........==.gggggg...oTTTTT",
+        "~~~~,,......r.==.gggggg....TTTTT",
+        "~~~~,,........==.gggggg.....TTTT",
+        "~~~~~,,......==..gggggg.....TTTT",
+        "~~~~~,,......==...gggg......TTTT",
+        "~~~~~,,T.....==..............TTT",
+        "~~~~~,,,T...==...........T...TTT",
+        "~~~~~,,.....==............T.TTTT",
+        "~~~~~,,.....==...............TTT",
+        "~~~~~~,,....==...HHHHH......TTTT",
+        "~~~~~~,,....==...HHHHH......TTTT",
+        "~~~~~~,,....==...HHDHH......TTTT",
+        "~~~~~~,,...=========....o..TTTTT",
+        "~~~~~~,,,..........=.......TTTTT",
+        "~~~~~,,.......T....=.T..TTTTTTTT",
+        "~~~~~,,...T.T.TT.T.=.T...TTTTTTT",
+        "~~~~~,,.....T.TTTT.=..T..TTTTTTT",
+        "~~~~~,,...T.T..T...=.T.T..TTTTTT",
+        "~~~~~,,............=......TTTTTT",
+        "~~~~~,,.TTTT========.....TTTTTTT",
+        "~~~~,,,T..........=..T...TTTTTTT",
+        "~~~~,,............=..TT...TTTTTT",
+        "~~~~,,....w.......=...T.T.TTTTTT",
+        "~~~~,,...www......=....T..TTTTTT",
+        "~~~,,....www......=.T..T..TTTTTT",
+        "~~~,,.T...........=......TTTTTTT",
+        "~~~,,.....................TTTTTT",
+        "~~~,,,.....................TTTTT",
+        "~~~,,..T..T.T..T.........T.TTTTT",
+        "~~~,,......T.T..T..........TTTTT",
+        "~~,,..T....................TTTTT",
+        "~~,,.....T..TT..............TTTT",
+        "~~,,.TT.T..T.TT.T...........TTTT",
+        "~~,,..T.....T.T..TT..T..T.TTTTTT",
+        "~~~,,,.T....T.TT..TT...T..T..TTT",
+        "~~~,,.TTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "~~~,,.TTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "~~~,,.TTTTTTTTTTTTT.TTTTTTTTTTTT",
+        "~~~,,.TTTT.TTTTTT.TTTTTTTTTTTTTT"
       ]
     },
     {
@@ -1004,6 +1207,46 @@
       "key": "t",
       "name": "Table",
       "solid": true
+    }
+  ],
+  "quests": [
+    {
+      "id": "water",
+      "name": "Water for the pot",
+      "giver": "Yenson",
+      "desc": "Yenson wants his bucket filled at the spring in the copse south of his shack.",
+      "goals": [
+        {
+          "text": "Fill the bucket at the spring",
+          "count": "item:water_bucket",
+          "target": 1
+        }
+      ]
+    },
+    {
+      "id": "firewood",
+      "name": "Deadwood",
+      "giver": "Yenson",
+      "desc": "The fire needs feeding. There's fallen wood all over the copse.",
+      "goals": [
+        {
+          "text": "Gather deadwood in the copse",
+          "count": "item:firewood",
+          "target": 3
+        }
+      ]
+    },
+    {
+      "id": "boar",
+      "name": "The boar at the spring",
+      "giver": "Yenson",
+      "desc": "A boar has been tearing up the ground round the spring, and it's getting bolder. Yenson's too old to go after it.",
+      "goals": [
+        {
+          "text": "Kill the boar in the copse",
+          "when": "flag:boar_killed"
+        }
+      ]
     }
   ]
 }

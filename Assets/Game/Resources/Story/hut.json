@@ -43,9 +43,31 @@
         {
           "when": [
             "flag:y_met",
-            "!flag:y_supplies"
+            "!quest:water",
+            "!done:water"
           ],
           "text": "\"Feeling more yourself?\""
+        },
+        {
+          "when": [
+            "quest:water",
+            "!ready:water"
+          ],
+          "text": "\"Spring's in the copse, south of the shack. Follow the path.\""
+        },
+        {
+          "when": [
+            "quest:firewood",
+            "!ready:firewood"
+          ],
+          "text": "\"Dry stuff, mind. Three good armfuls.\""
+        },
+        {
+          "when": [
+            "quest:boar",
+            "!ready:boar"
+          ],
+          "text": "\"That boar's by the spring, more often than not. Go careful.\""
         },
         {
           "when": [
@@ -109,20 +131,63 @@
           "result": "He waves it off. \"Sea takes enough. Wasn't letting it have you as well.\""
         },
         {
-          "label": "\"What should I do now?\"",
+          "label": "\"What can I do for you?\"",
           "when": [
-            "!flag:y_supplies"
+            "!quest:water",
+            "!done:water"
           ],
+          "time": 5,
           "effects": [
+            "quest:water",
+            "item:bucket+1"
+          ],
+          "result": "\"Can't keep you for nothing. Earn your keep a day or two, and I'll see you right for the road.\" He nods at a wooden bucket by the door. \"Spring's in the copse south of here. Fill that, and we'll talk about supper.\""
+        },
+        {
+          "label": "\"Here's your water.\"",
+          "when": [
+            "ready:water"
+          ],
+          "time": 10,
+          "effects": [
+            "item:water_bucket-1",
+            "complete:water",
+            "quest:firewood",
+            "hunger+20"
+          ],
+          "result": "He tips it into the pot and hands you a bowl of what was in there before. \"Good. Fire wants feeding too. There's deadwood all over that copse. Three good armfuls.\""
+        },
+        {
+          "label": "\"Here's the firewood.\"",
+          "when": [
+            "ready:firewood"
+          ],
+          "time": 10,
+          "effects": [
+            "item:firewood-3",
+            "complete:firewood",
+            "quest:boar",
+            "gear:gutting_knife"
+          ],
+          "result": "He stacks it by the hearth, then goes quiet for a moment. \"One more thing. There's a boar been tearing up the ground round the spring. Big brute, and bolder every week. I'm too old to go after it. You're not.\" He holds out his gutting knife, handle first. \"Mind the tusks.\""
+        },
+        {
+          "label": "\"The boar's dead.\"",
+          "when": [
+            "ready:boar"
+          ],
+          "time": 15,
+          "effects": [
+            "complete:boar",
             "flag:y_supplies",
             "flag:yenson_road",
+            "item:boar_meat+2",
             "item:bread+2",
             "item:flint+1",
             "water=4",
-            "gear:gutting_knife"
+            "coins+5"
           ],
-          "time": 10,
-          "result": "\"Can't keep you. I've barely enough for me.\" He pushes a bundle across: two heels of bread, a flint, a waterskin, and his spare gutting knife. \"Roads aren't what they were. Follow the coast road north to Skelmed. Garran the smith could use a pair of hands.\""
+          "result": "Yenson whistles through his teeth. \"Well. Didn't think you had it in you.\" He pushes a bundle across the floor: smoked boar from the last one he had, two heels of bread, a flint and a full waterskin, and five coppers on top. \"That's what I've got. Follow the coast road north to Skelmed. Garran the smith could use a pair of hands like yours.\""
         },
         {
           "label": "\"Goodbye.\"",

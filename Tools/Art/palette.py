@@ -9,6 +9,9 @@ PAL = {
     's': '#c49a7a', 'S': '#a3785c', 'q': '#7e563f', 'Q': '#55392a',  # skin, light to dark
     'h': '#4a3426', 'H': '#2c1f18', 'j': '#7a5838', 'J': '#a88a5a',  # hair
     'f': '#7d8f52', 'F': '#566b3e', 'v': '#3b4d30', 'V': '#263322',  # greens
+    'i': '#697d48',  # mid green, between f and F
+    'z': '#b5a07c',  # pale sand
+    'l': '#29424f',  # deep water, between w and X
     'c': '#6e8f8c', 'C': '#46676a', 'n': '#3a4c50', 'N': '#253236',  # teals / slate cloth
     'w': '#34505e', 'X': '#1f3340',  # water
     'r': '#a8523a', 'R': '#7a3328', 'm': '#4a2020',  # reds, blood

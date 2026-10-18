@@ -68,9 +68,9 @@ static class Program
         Pick(e, "Where am I");
         Assert(e.S.result.Contains("Loran"), "his answer should show");
         Pick(e, "Eat the stew");
-        Pick(e, "What should I do now");
-        Assert(e.S.Count("bread") == 2 && e.S.water == 4, "Yenson should give supplies");
-        Assert(e.Journal().Any(j => j.Contains("Skelmed")), "the journal should point to Skelmed");
+        Pick(e, "What can I do for you");
+        Assert(e.Check("quest:water") && e.S.Count("bucket") == 1, "Yenson should ask for water and lend his bucket");
+        Assert(e.ActiveQuests.Count() == 1 && !e.QuestGoals(e.data.Quest("water"))[0].met, "the water quest should be open");
         Pick(e, "Goodbye");
         Assert(e.Travelling && e.Area.id == "yenson_hut", "should be free to walk round the hut");
 
@@ -81,12 +81,43 @@ static class Program
         Pick(e, "Sleep until morning");
         Assert(e.S.Day == 2 && e.S.Hour == 6 && e.Travelling, "should wake on day 2 at 06:00, was day " + e.S.Day + " " + Rules.Clock(e.S));
 
-        // Talk to Yenson again, then out of the door
-        UseThing(e, "yenson");
-        Assert(e.S.scene == "yenson" && e.Paragraphs().Any(t => t.Contains("Road's north")), "Yenson should send you on your way");
-        Pick(e, "Goodbye");
+        // Yenson's jobs: water from the spring, deadwood from the copse, the boar
         LeaveHut(e);
         Assert(e.Area.id == "coast_road" && AtSpot(e, "shack"), "the door should put you outside the shack");
+        int t0 = e.S.minutes;
+        var sp = e.data.Spot("spring").spot;
+        WalkUntil(e, (sp.x, sp.y), () => e.S.ax == sp.x && e.S.ay == sp.y);
+        e.Face("left");
+        e.Choose(e.UseChoice());
+        Pick(e, "Fill Yenson's bucket");
+        Assert(e.Check("ready:water"), "a full bucket should finish the goal");
+        BackToYenson(e);
+        Pick(e, "Here's your water");
+        Assert(e.Check("done:water") && e.Check("quest:firewood") && e.S.Count("bucket") == 0 && e.S.Count("water_bucket") == 0, "handing in the water should start the firewood");
+        Pick(e, "Goodbye");
+        LeaveHut(e);
+        foreach (var log in new[] { "log1", "log2", "log3" }) { UseThing(e, log); Pick(e, "Gather it"); }
+        Assert(e.S.Count("firewood") == 3 && e.Check("ready:firewood"), "three armfuls of deadwood");
+        BackToYenson(e);
+        Pick(e, "Here's the firewood");
+        Assert(e.Check("quest:boar") && e.S.InSlot("weapon")?.id == "gutting_knife", "Yenson should send you after the boar with his knife");
+        Pick(e, "Goodbye");
+        LeaveHut(e);
+        var boar = e.Area.objects.First(o => o.id == "boar");
+        WalkUntil(e, (boar.x - 1, boar.y), () => e.S.scene == "boar");
+        Pick(e, "Fight it");
+        Assert(e.S.inCombat && e.S.enemy == "boar", "the boar should fight");
+        for (int i = 0; i < 80 && e.S.inCombat; i++) StepToward(e, (0, 0));
+        Assert(e.S.scene == "boar_won" && e.Check("ready:boar"), "should beat the boar, was " + e.S.scene);
+        Pick(e, "Walk on");
+        Assert(e.Objects().All(o => o.id != "boar"), "the boar should be gone");
+        BackToYenson(e);
+        Pick(e, "The boar's dead");
+        Assert(e.Check("done:boar") && !e.ActiveQuests.Any() && e.S.coins >= 5 && e.S.Count("bread") == 2 && e.S.water == 4, "Yenson should pay you and send you off");
+        Assert(e.Journal().Any(j => j.Contains("Skelmed")), "the journal should point to Skelmed");
+        Console.WriteLine("    Yenson's three jobs took " + Engine.Duration(e.S.minutes - t0));
+        Pick(e, "Goodbye");
+        LeaveHut(e);
 
         e.S.stepsSinceFight = -1000;   // this run is about the story; random fights are tested on their own
         WalkUntil(e, Gate(e), () => e.S.scene == "dog");
@@ -114,7 +145,11 @@ static class Program
         Assert(e.S.gearItems.Any(g => g.id == "gutting_knife" && !g.equipped), "Yenson's knife should go back in the pack");
         UseThing(e, "garran");
         var buy = e.Choices().First(c => c.def.label.Contains("3 coppers"));
-        Assert(!buy.enabled && buy.reason.Contains("coppers"), "iron costs coin you don't have yet");
+        Assert(buy.enabled, "Yenson's coppers should buy a bar of iron");
+        int coins = e.S.coins;
+        e.S.coins = 1;
+        Assert(!e.Choices().First(c => c.def.label.Contains("3 coppers")).enabled, "iron costs coin you don't have");
+        e.S.coins = coins;
         Pick(e, "Another time");
 
         // Out through the gate and back down the road
@@ -283,7 +318,7 @@ static class Program
     {
         var e = NewEngine();
         ToHut(e);
-        Pick(e, "What should I do now");
+        e.DevGear("gutting_knife", "F");
         var gk = e.S.InSlot("weapon");
         Assert(gk != null && gk.rank == "F" && gk.traits.Count == 0, "basic gear is F rank with no traits");
 
@@ -343,7 +378,7 @@ static class Program
         var wolf = a.objects.First(o => o.id == "wolf");
         Assert(e.ObjectAt(wolf.x, wolf.y) == null, "the wolf should be gone from the road");
         WalkUntil(e, Gate(e), () => e.Area.id == "skelmed");
-        Assert(e.S.minutes - t0 >= 90, "the walk should take a good while, took " + (e.S.minutes - t0) + " min");
+        Assert(e.S.minutes - t0 >= 150, "the walk should take a good while, took " + (e.S.minutes - t0) + " min");
         Assert(!e.Choices().Any(), "no camping in the village");
 
         // The well
@@ -380,7 +415,7 @@ static class Program
 
         // Everything you can use, in every area, opens a scene that leads back out
         foreach (var area in e.data.file.areas)
-            foreach (var o in area.objects.Where(o => !string.IsNullOrEmpty(o.scene) && o.id != "wolf"))
+            foreach (var o in area.objects.Where(o => !string.IsNullOrEmpty(o.scene) && o.id != "wolf" && o.id != "boar"))
             {
                 var v = NewEngine();
                 v.DevStart(area.id == "skelmed" ? "village" : area.id == "yenson_hut" ? "hut" : "road");
@@ -621,12 +656,25 @@ static class Program
         Walk(e, "Go", "Sit up");
     }
 
-    /// <summary>Supplied by Yenson and standing outside his door.</summary>
+    /// <summary>Yenson's jobs done (as if), supplied, and standing outside his door.</summary>
     static void ToRoad(Engine e, int seed = 1)
     {
         ToHut(e, seed);
-        Walk(e, "What should I do now", "Goodbye");
+        foreach (var f in new[] { "quest_done:water", "quest_done:firewood", "quest_done:boar", "boar_killed", "y_supplies", "yenson_road" }) e.S.flags.Add(f);
+        e.S.AddItem("bread", 2);
+        e.S.AddItem("flint", 1);
+        e.S.water = 4;
+        e.DevGear("gutting_knife", "F");
+        Pick(e, "Goodbye");
         LeaveHut(e);
+    }
+
+    /// <summary>From anywhere on the coast road, back into the hut and talking to Yenson.</summary>
+    static void BackToYenson(Engine e)
+    {
+        var door = e.Area.zones.First(z => z.to == "hut_door");
+        WalkUntil(e, (door.x0, door.y0), () => e.Area.id == "yenson_hut");
+        UseThing(e, "yenson");
     }
 
     /// <summary>Walks out of the hut's door (or, with back, from outside the door back in and up to Yenson).</summary>

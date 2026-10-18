@@ -333,9 +333,22 @@
       "id": "stream_drink",
       "title": "The stream",
       "text": [
-        "Cold, clear water running fast over stones."
+        "Cold, clear water."
       ],
       "choices": [
+        {
+          "label": "Fill Yenson's bucket",
+          "when": [
+            "item:bucket"
+          ],
+          "time": 5,
+          "effects": [
+            "item:bucket-1",
+            "item:water_bucket+1"
+          ],
+          "go": "travel",
+          "result": "You fill the bucket to the brim. It's heavier than it looks."
+        },
         {
           "label": "Drink and fill your waterskin",
           "time": 10,
@@ -406,6 +419,82 @@
       "choices": [
         {
           "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "deadfall",
+      "title": "Deadwood",
+      "text": [
+        "A fallen branch, grey and dry."
+      ],
+      "choices": [
+        {
+          "label": "Gather it",
+          "time": 10,
+          "stamina": 4,
+          "train": [
+            "str+1"
+          ],
+          "why": "gathering wood",
+          "effects": [
+            "item:firewood+1"
+          ],
+          "go": "travel",
+          "result": "You snap it into lengths and bundle it under your arm."
+        }
+      ]
+    },
+    {
+      "id": "boar",
+      "title": "The boar",
+      "onEnter": [
+        "flag:boar_seen"
+      ],
+      "text": [
+        "A boar comes out of the bracken, bristles up, head low. It's bigger than you expected. It doesn't run."
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:boar:boar_won:boar_fled"
+          ]
+        },
+        {
+          "label": "Back away",
+          "go": "travel",
+          "result": "You back off slowly. The boar snorts and goes back to rooting, but it doesn't take its eyes off you."
+        }
+      ]
+    },
+    {
+      "id": "boar_won",
+      "title": "Still",
+      "onEnter": [
+        "flag:boar_killed"
+      ],
+      "text": [
+        "The boar goes down in the leaf litter and doesn't get up. Your hands are shaking.",
+        "Yenson will want to hear about this."
+      ],
+      "choices": [
+        {
+          "label": "Walk on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "boar_fled",
+      "title": "Away",
+      "text": [
+        "You run, crashing through the bracken, until you're sure it isn't behind you."
+      ],
+      "choices": [
+        {
+          "label": "Catch your breath",
           "go": "travel"
         }
       ]

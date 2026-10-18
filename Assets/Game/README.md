@@ -87,6 +87,12 @@ An area has `spots` (named places to put the player, used by the effect `travel:
 
 `events` happen as you walk. `"kind": "fight"` events start a battle with `enemy` straight away, the old Final Fantasy way, and go to `win` afterwards; `fightChance` is the % per step (halved on roads), and there are always at least `fightGap` steps between fights. Other events open `scene` (`eventChance` % per step). `terrain` limits an event to some tile letters, `once` events happen once, and an event scene sends the player back out with `"go": "travel"`.
 
+## Quests
+
+Quests live under `quests` in `data.json`: an `id`, a `name`, who gives it (`giver`), a line of description and its `goals`. A goal is met when the value `count` (like `item:firewood`) reaches `target`, or, without a count, when its `when` condition holds. The effect `quest:<id>` gives a quest (it shows on the HUD tracker and in the Journal) and `complete:<id>` finishes it, usually in the giver's talk scene. Conditions: `quest:<id>` (taken, not finished), `ready:<id>` (taken and every goal met, so the giver can offer the hand-in line) and `done:<id>` (finished).
+
+Yenson's three jobs run one after the other: fill his bucket at the spring in the copse south of the shack, bring three armfuls of deadwood, then kill the boar by the spring. He pays you with supplies and five coppers and sends you north to Skelmed.
+
 ## Enemies and combat
 
 Each enemy has a rank, health, an attack range, a `speed` (compared with your Agility to see who acts first) and `moves`. Each move has a `tell`, which is shown before the enemy acts, a `power` that multiplies its attack, and a `weight` for how often it's picked. A move with `"guard": true` means the enemy holds back and your hits do half damage that round.

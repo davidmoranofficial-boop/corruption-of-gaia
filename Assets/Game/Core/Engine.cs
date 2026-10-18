@@ -79,6 +79,8 @@ namespace Loran.Core
                 foreach (var z in a.zones) { z.to ??= ""; z.when ??= new List<string>(); z.enter ??= new List<CondScene>(); foreach (var c in z.enter) c.when ??= new List<string>(); }
             }
             foreach (var j in d.journal) j.when ??= new List<string>();
+            d.quests ??= new List<QuestDef>();
+            foreach (var q in d.quests) q.goals ??= new List<QuestGoal>();
         }
 
         /// <summary>Missing lists in the JSON become empty lists, whichever JSON library loaded them.</summary>
@@ -226,6 +228,25 @@ namespace Loran.Core
             if (h == 0) return m + " min";
             return m == 0 ? h + " h" : h + " h " + m + " min";
         }
+
+        /// <summary>A quest's goals as they stand: what to do, whether it's done, and progress like "2/3".</summary>
+        public List<(string text, bool met, string progress)> QuestGoals(QuestDef q)
+        {
+            var list = new List<(string, bool, string)>();
+            foreach (var g in q.goals)
+            {
+                if (!string.IsNullOrEmpty(g.count))
+                {
+                    int have = (int)Value(g.count);
+                    list.Add((g.text, have >= g.target, Math.Min(have, g.target) + "/" + g.target));
+                }
+                else list.Add((g.text, Check(g.when), ""));
+            }
+            return list;
+        }
+
+        public IEnumerable<QuestDef> ActiveQuests => data.file.quests.Where(q => S.Has("quest:" + q.id));
+        public IEnumerable<QuestDef> FinishedQuests => data.file.quests.Where(q => S.Has("quest_done:" + q.id));
 
         public List<string> Journal()
         {
@@ -427,6 +448,9 @@ namespace Loran.Core
                 case "background": return S.background == arg;
                 case "gender": return S.gender == arg;
                 case "night": return S.Hour >= 20 || S.Hour < 5;
+                case "quest": return S.Has("quest:" + arg);
+                case "done": return S.Has("quest_done:" + arg);
+                case "ready": return S.Has("quest:" + arg) && QuestGoals(data.Quest(arg) ?? throw new Exception("Unknown quest '" + arg + "'")).All(g => g.met);
                 default: throw new Exception("Unknown condition '" + cond + "'");
             }
         }
@@ -493,6 +517,22 @@ namespace Loran.Core
                     if (!string.IsNullOrEmpty(cl.stat)) S.stats[Stat.Parse(cl.stat)] += cl.statBonus;
                     S.stamina += cl.staminaBonus;
                     S.Toasts.Add("You are now " + Article(cl.name) + " " + cl.name + ".");
+                    return;
+                }
+                case "quest":
+                {
+                    var q = data.Quest(arg) ?? throw new Exception("Unknown quest '" + arg + "'");
+                    if (S.Has("quest:" + q.id) || S.Has("quest_done:" + q.id)) return;
+                    S.flags.Add("quest:" + q.id);
+                    S.Toasts.Add("New quest: " + q.name);
+                    return;
+                }
+                case "complete":
+                {
+                    var q = data.Quest(arg) ?? throw new Exception("Unknown quest '" + arg + "'");
+                    S.flags.Remove("quest:" + q.id);
+                    if (!S.Has("quest_done:" + q.id)) S.flags.Add("quest_done:" + q.id);
+                    S.Toasts.Add("Quest complete: " + q.name);
                     return;
                 }
                 case "hud": S.hud = arg == "on"; return;
@@ -719,6 +759,9 @@ namespace Loran.Core
                         if (parts.Length > 2 && data.Material(parts[2]) == null) problems.Add(where + ": no material '" + parts[2] + "'");
                         return;
                     case "spell": if (data.Spell(parts[0]) == null) problems.Add(where + ": no spell '" + parts[0] + "'"); return;
+                    case "quest": case "complete":
+                        if (data.Quest(parts[0]) == null) problems.Add(where + ": no quest '" + parts[0] + "'");
+                        return;
                     case "flag": case "unflag": case "hud": case "save": case "clock": case "sleep":
                     case "fight": case "collapse": case "revive": case "restart": case "resume": return;
                     case "forge":
@@ -763,6 +806,13 @@ namespace Loran.Core
                 }
             }
             foreach (var j in data.file.journal) foreach (var c in j.when) Cond("journal \"" + j.text + "\"", c);
+            foreach (var q in data.file.quests)
+                foreach (var g in q.goals)
+                {
+                    if (!string.IsNullOrEmpty(g.count)) { try { Value(g.count); } catch (Exception ex) { problems.Add("quest " + q.id + ": " + ex.Message); } }
+                    else if (!string.IsNullOrEmpty(g.when)) Cond("quest " + q.id, g.when);
+                    else problems.Add("quest " + q.id + ": a goal with nothing to check");
+                }
             foreach (var m in data.file.materials)
                 foreach (var t in m.traits)
                     if (data.Trait(t) == null) problems.Add("material " + m.id + ": no trait '" + t + "'");

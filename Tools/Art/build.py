@@ -240,6 +240,78 @@ GEAR = {
 }
 
 ICON_ONLY = {
+    'bread': [
+        "................", "................", "................", "................",
+        "....oooooooo....", "...oDddddddDo...", "..oDdJdddJddDo..", "..odddddddddDo..",
+        "..oDDdddddDDbo..", "..obDDDDDDDbbo..", "...obbbbbbbbo...", "....oooooooo....",
+    ],
+    'fish': [
+        "................", "................", "................", "................",
+        "..........oo....", ".....ooooodoo...", "...ooyYYYyyDo.o.", "..oeYYyyyyyyDoDo",
+        "..oyyyyyyyyyDDDo", "...ooGGGGGGDoo.o", ".....oooooooo...",
+    ],
+    'mussels': [
+        "................", "................", "................", "................",
+        "................", "....ooo...ooo...", "...oNnno.oNnno..", "..oNnCnNoNnCnNo.",
+        "..oNnnnNoNnnnNo.", "...oNNNo.oNNNo..", "....ooo...ooo...",
+    ],
+    'berries': [
+        "................", "................", "................", ".......Fv.......",
+        "......FvF.......", "....ooo.ooo.....", "...ouupoupuo....", "...oupuooupuo...",
+        "....ooouupuo....", "....oupuooo.....", "....ouupo.......", ".....ooo........",
+    ],
+    'flint': [
+        "................", "................", "................", "................",
+        "......oooo......", ".....oyYYyo.....", "....oGyYyyGo....", "....oGGyyGGo....",
+        ".....oGGGGo.....", "......oooo......",
+    ],
+    'gem': [
+        "................", "................", "................", "................",
+        "......oooo......", ".....offfFo.....", "....offfFFvo....", "....oFfFFvvo....",
+        ".....oFvvvo.....", "......oVVo......", ".......oo.......",
+    ],
+    'crab_meat': [
+        "................", "................", "................", "................",
+        "................", "....oooooo......", "...ordrrrrro....", "...orrdrRrrRo...",
+        "....oRRRRRRo....", ".....oooooo.....",
+    ],
+    'mushrooms': [
+        "................", "................", "................", "....oooo........",
+        "...odddDo.oooo..", "..oddddDDodddDo.", "..ooooooooddDDo.", "....oWo..ooooo..",
+        "....oWo...oWo...", "....oWo...oWo...", "....ooo...ooo...",
+    ],
+    'hazelnuts': [
+        "................", "................", "................", "................",
+        "......FF........", ".....ofFo.......", "....obDDbo.ooo..", "....oDdDbooDdbo.",
+        "....obDDbooDDbo.", ".....oboo.obbo..", "......o....oo...",
+    ],
+    'samphire': [
+        "................", "................", "................", "...f..f...f.....",
+        "...F.fF..fF..f..", "...FfF...F..fF..", "....F..f.F.fF...", "....F.fF.FfF....",
+        ".....FF..FF.....", "......vvvv......", "......vvvv......",
+    ],
+    'bucket': [
+        "................", "................", "................", "....oooooooo....",
+        "...o........o...", "...oooooooooo...", "...obDbDbDbbo...", "...oDbDbDbDbo...",
+        "...oyyyyyyyyo...", "....obDbDbbo....", "....oDbDbDbo....", "....oyyyyyyo....",
+        ".....oooooo.....",
+    ],
+    'water_bucket': [
+        "................", "................", "................", "....oooooooo....",
+        "...o........o...", "...oooooooooo...", "...ocwwcwwcwo...", "...oDbDbDbDbo...",
+        "...oyyyyyyyyo...", "....obDbDbbo....", "....oDbDbDbo....", "....oyyyyyyo....",
+        ".....oooooo.....",
+    ],
+    'firewood': [
+        "................", "................", "................", "................",
+        "..oo........oo..", ".oDDoooooooobDo.", ".odbbbbbbbbbbdo.", ".oDDoooooooobDo.",
+        "..ooooooooooooo.", ".oDdbbbbbbbbbbo.", ".oddbbbbbbbbbDo.", "..ooooooooooooo.",
+    ],
+    'boar_meat': [
+        "................", "................", "................", "................",
+        "....ooooooo.....", "...omRRRRRmo....", "..omRrrRRRRmoo..", "..omRRRRRrRmoWo.",
+        "..ommRRRRRmmoWo.", "...ommmmmmmooo..", "....ooooooo.....",
+    ],
     'copper_ring': [
         "................",
         "................",
@@ -288,6 +360,9 @@ def main():
     from beasts import wolf
     g, w, h = wolf()
     made.append(save(render(g), 'Enemies', 'wolf.png'))
+    from beasts import boar
+    g, w, h = boar()
+    made.append(save(render(g), 'Enemies', 'boar.png'))
     from backdrops import BACKDROPS
     for name, paint in BACKDROPS.items():
         made.append(save(paint(), 'Backdrops', name + '.png'))
