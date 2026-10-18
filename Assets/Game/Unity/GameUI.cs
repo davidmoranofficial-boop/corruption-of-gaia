@@ -218,9 +218,15 @@ namespace Loran.UnityLayer
             var expTrack = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-track");
             var expFill = Add(expTrack, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-fill");
             expFill.style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
-            var fol = engine.Follower;
-            if (fol != null)
-                Add(card, new Label("With you: " + fol.name + "  " + Mathf.CeilToInt(Mathf.Max(0, s.followerHp)) + " / " + Mathf.RoundToInt(fol.hp)), "hud-follower");
+            foreach (var m in s.party)
+            {
+                var fd = engine.data.Follower(m.id);
+                if (fd == null) continue;
+                var trouble = Rules.Conditions(m, engine.data);
+                var line = Add(card, new Label(fd.name + "  " + Mathf.CeilToInt(Mathf.Max(0, m.hp)) + " / " + Mathf.RoundToInt(fd.hp) +
+                                               (trouble.Count > 0 ? "  ·  " + string.Join(", ", trouble) : "")), "hud-follower");
+                if (trouble.Count > 0) line.AddToClassList("hud-follower-trouble");
+            }
             Need(card, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
             Need(card, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a");
             Need(card, "ENERGY", s.energy, 100, "#9d8fd0");
@@ -296,6 +302,7 @@ namespace Loran.UnityLayer
             ("inventory", "Inventory", KeyCode.I),
             ("equipment", "Equipment", KeyCode.E),
             ("skills", "Skills", KeyCode.K),
+            ("party", "Party", KeyCode.P),
             ("journal", "Journal", KeyCode.J),
             ("crafting", "Crafting", KeyCode.C),
             ("world", "World", KeyCode.W),
@@ -351,6 +358,7 @@ namespace Loran.UnityLayer
                 case "inventory": MenuInventory(left, right); break;
                 case "equipment": MenuEquipment(left, right); break;
                 case "skills": MenuSkills(left, right); break;
+                case "party": MenuParty(left, right); break;
                 case "journal": MenuJournal(left, right); break;
                 case "crafting": MenuCrafting(left, right); break;
                 case "world": MenuWorld(left, right); break;
@@ -511,14 +519,65 @@ namespace Loran.UnityLayer
             Add(life, new Label("These grow as you do the work. Every level makes that work lighter: less stamina, up to 40% less."), "line-muted");
             foreach (var sk in d.file.skills.Where(k => k.kind == "life")) SkillRow(life, sk);
 
-            var fol = engine.Follower;
-            var with = Section(right, "WITH YOU");
-            if (fol == null) Add(with, new Label("Nobody. Some jobs are better done with company."), "line-muted");
-            else
+        }
+
+        void MenuParty(VisualElement left, VisualElement right)
+        {
+            var s = engine.S;
+            var d = engine.data;
+            bool free = engine.FreeToAct;
+
+            var who = Section(left, "YOUR PARTY  ·  " + s.party.Count + " OF " + Rules.PartyMax);
+            if (s.party.Count == 0) Add(who, new Label("Nobody's walking with you. Some jobs are better done with company, and some people out there are worth finding."), "line-muted");
+            var foods = s.items.Where(i => d.Item(i.id)?.food == true && i.count > 0).ToList();
+            foreach (var m in s.party)
             {
-                Add(with, new Label(fol.name + "  ·  " + Mathf.CeilToInt(Mathf.Max(0, s.followerHp)) + " / " + Mathf.RoundToInt(fol.hp) + " health"), "line");
-                Add(with, new Label(fol.desc + " Fights at your side; rests when you sleep."), "line-muted");
+                var f = d.Follower(m.id);
+                if (f == null) continue;
+                var card = Add(who, new VisualElement(), "party-card");
+                var top = Add(card, new VisualElement(), "party-top");
+                Add(top, new Label(f.name), "detail-name");
+                var trouble = Rules.Conditions(m, d);
+                var state = Add(top, new Label(m.hp <= 0 ? "down" : trouble.Count == 0 ? "doing well" : string.Join(", ", trouble)), "party-state");
+                if (trouble.Count > 0 || m.hp <= 0) state.AddToClassList("party-state-bad");
+                if (!string.IsNullOrEmpty(f.desc)) Add(card, new Label(f.desc), "line-muted");
+                if (!string.IsNullOrEmpty(f.until) && engine.All(f.untilWhen)) Add(card, new Label(f.until), "line");
+                Need(card, "HEALTH", Mathf.Max(0, m.hp), f.hp, "#c8573f");
+                var small = Add(card, new VisualElement(), "hud-small");
+                Need(small, "HUNGER", m.hunger, 100, "#d08a4a");
+                Need(small, "THIRST", m.thirst, 100, "#4f9b97");
+                var small2 = Add(card, new VisualElement(), "hud-small");
+                Need(small2, "ENERGY", m.energy, 100, "#9d8fd0");
+                Need(small2, "SPIRITS", m.morale, 100, "#d4b45a");
+                int power = Mathf.RoundToInt(Rules.PartyPower(m, d) * 100);
+                Add(card, new Label("Fights at " + power + "% of their best."), "line-muted");
+                if (!string.IsNullOrEmpty(f.quest))
+                {
+                    var q = d.Quest(f.quest);
+                    string status = engine.Check("done:" + f.quest) ? "done" : engine.Check("quest:" + f.quest) ? "under way" : "not started";
+                    if (q != null) Add(card, new Label("Their quest: " + q.name + " (" + status + ")"), "line");
+                }
+                var row = Add(card, new VisualElement(), "party-btns");
+                string id = m.id;
+                foreach (var food in foods)
+                {
+                    var it = d.Item(food.id);
+                    string fid = food.id;
+                    var b = Add(row, new Button(() => { engine.Feed(id, fid); AfterAction(); }) { text = "Give " + it.name.ToLowerInvariant() + " (" + food.count + ")", focusable = false }, "small-btn");
+                    b.SetEnabled(free);
+                }
+                var w = Add(row, new Button(() => { engine.GiveWater(id); AfterAction(); }) { text = "Give water (" + s.water + ")", focusable = false }, "small-btn");
+                w.SetEnabled(free && s.water > 0);
             }
+
+            var how = Section(right, "LOOKING AFTER A PARTY");
+            Add(how, new Label("Your party gets hungry, thirsty and tired just like you, and they live off your supplies. When you sleep, anyone hungry eats from your pack and anyone thirsty drinks from your waterskin. If there's nothing to give them, they go without."), "line-muted");
+            Add(how, new Label("Each trouble (hungry, thirsty, exhausted, wounded, low spirits) makes them fight worse. Going without, cold camps and being knocked down lower their spirits; a bed, a meal and helping with their own quest raise them. Let their spirits hit nothing and most will leave you."), "line-muted");
+            var sup = Section(right, "SUPPLIES");
+            int meals = foods.Sum(i => i.count);
+            Add(sup, new Label(meals + " thing" + (meals == 1 ? "" : "s") + " to eat  ·  " + s.water + " of " + Rules.WaterskinSize + " drinks of water"), "line");
+            int mouths = 1 + s.party.Count;
+            Add(sup, new Label("That's " + mouths + " mouth" + (mouths == 1 ? "" : "s") + " to feed."), "line-muted");
         }
 
         void SkillRow(VisualElement parent, SkillDef sk)

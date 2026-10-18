@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Loran.Core
 {
@@ -61,12 +62,89 @@ namespace Loran.Core
 
             if (s.hunger <= 0) s.hp -= StarveDamagePerHour * h;
             if (s.thirst <= 0) s.hp -= StarveDamagePerHour * h;
+            AdvanceParty(s, d, h, false, 0);
             Clamp(s, d);
+        }
+
+        // ------------------------------------------------------------------ party
+
+        public const int PartyMax = 3;
+        public const float NeedLowAt = 25, TiredAt = 20, WoundedAt = 0.4f, MoraleLowAt = 25;
+        public const float MoraleLossPerHour = 1.5f;   // for each need that's low
+        public const float MoraleRestPerHour = 0.5f;   // when nothing's wrong, spirits slowly recover (up to 60)
+
+        /// <summary>A party member's troubles right now: hungry, thirsty, exhausted, wounded, low spirits.</summary>
+        public static List<string> Conditions(PartyMember m, GameData d)
+        {
+            var c = new List<string>();
+            var f = d.Follower(m.id);
+            if (m.hunger <= 0) c.Add("starving"); else if (m.hunger < NeedLowAt) c.Add("hungry");
+            if (m.thirst <= 0) c.Add("parched"); else if (m.thirst < NeedLowAt) c.Add("thirsty");
+            if (m.energy < TiredAt) c.Add("exhausted");
+            if (f != null && m.hp > 0 && m.hp < f.hp * WoundedAt) c.Add("wounded");
+            if (m.morale < MoraleLowAt) c.Add("low spirits");
+            return c;
+        }
+
+        /// <summary>How hard a party member hits: each trouble takes 15% off, down to 40%.</summary>
+        public static float PartyPower(PartyMember m, GameData d) => Math.Max(0.4f, 1f - 0.15f * Conditions(m, d).Count);
+
+        /// <summary>Time passes for your party too: they get hungry, thirsty and tired, and unhappy if it goes on.</summary>
+        static void AdvanceParty(GameState s, GameData d, float h, bool sleeping, float energyAfter)
+        {
+            for (int i = s.party.Count - 1; i >= 0; i--)
+            {
+                var m = s.party[i];
+                var f = d.Follower(m.id);
+                float app = f?.appetite ?? 1;
+                if (sleeping)
+                {
+                    m.hunger -= 2f * h * app;
+                    m.thirst -= 3f * h * app;
+                    m.energy = Math.Max(m.energy, energyAfter);
+                    if (m.hp > 0) m.hp += 3f * h;
+                }
+                else
+                {
+                    m.hunger -= HungerPerHour * h * app;
+                    m.thirst -= ThirstPerHour * h * app;
+                    m.energy -= EnergyPerHour * h;
+                    int low = (m.hunger < NeedLowAt ? 1 : 0) + (m.thirst < NeedLowAt ? 1 : 0) + (m.energy < TiredAt ? 1 : 0);
+                    if (low > 0) m.morale -= MoraleLossPerHour * low * h;
+                    else if (m.morale < 60) m.morale = Math.Min(60, m.morale + MoraleRestPerHour * h);
+                }
+                if (m.hunger <= 0) m.hp -= StarveDamagePerHour * h;
+                if (m.thirst <= 0) m.hp -= StarveDamagePerHour * h;
+                ClampMember(m, f);
+
+                // Tell the player when something new goes wrong
+                string name = f?.name ?? m.id;
+                var now = Conditions(m, d);
+                foreach (var c in now)
+                    if (!m.conditions.Contains(c)) s.Toasts.Add(name + (c == "low spirits" ? " is in low spirits." : " is " + c + "."));
+                m.conditions = now;
+
+                if (m.morale <= 0 && (f == null || f.leaves))
+                {
+                    s.party.RemoveAt(i);
+                    s.Toasts.Add(name + " has had enough, and leaves you.");
+                }
+            }
+        }
+
+        public static void ClampMember(PartyMember m, FollowerDef f)
+        {
+            m.hunger = Math.Clamp(m.hunger, 0, 100);
+            m.thirst = Math.Clamp(m.thirst, 0, 100);
+            m.energy = Math.Clamp(m.energy, 0, 100);
+            m.morale = Math.Clamp(m.morale, f != null && !f.leaves ? 1 : 0, 100);
+            if (f != null) m.hp = Math.Clamp(m.hp, m.hp <= 0 ? -1000 : 0, f.hp);
         }
 
         public static void Sleep(GameState s, GameData d, int minutes, float energyAfter)
         {
             float h = minutes / 60f;
+            AdvanceParty(s, d, h, true, energyAfter);
             s.minutes += minutes;
             s.hunger -= 2f * h;
             s.thirst -= 3f * h;

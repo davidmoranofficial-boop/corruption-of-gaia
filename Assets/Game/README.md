@@ -54,7 +54,7 @@ Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen
 
 Put `!` in front of any condition to flip it. Join conditions with `|` when either will do: `!done:lodge|!done:quarry`.
 
-`flag:name`, `item:bread`, `spell:kindle`, `follower:rook` (`follower:` alone means anyone), `skill:dagger>=2`, `level>=3`, `gear`, `gear:knife`, `mode:basic`, `mode:perma`, `background:runner`, `gender:female`, `night`, and comparisons such as `coins>=3`, `water<4`, `rep:skelmed>=10`, `energy<20`, `stat:str>=5`, `item:bread>=2`, `day>=3`.
+`flag:name`, `item:bread`, `spell:kindle`, `follower:rook` (in your party; `follower:` alone means anyone), `party>=2`, `morale:rook<30`, `skill:dagger>=2`, `level>=3`, `gear`, `gear:knife`, `mode:basic`, `mode:perma`, `background:runner`, `gender:female`, `night`, and comparisons such as `coins>=3`, `water<4`, `rep:skelmed>=10`, `energy<20`, `stat:str>=5`, `item:bread>=2`, `day>=3`.
 
 ### Effects (`effects`, `onEnter`)
 
@@ -69,7 +69,8 @@ Put `!` in front of any condition to flip it. Join conditions with `|` when eith
 | `water=4` | Fill the waterskin |
 | `spell:draw_water`, `gear:knife`, `give:hunting_bow` | Learn a spell; give and equip gear at its own rank (usually F); `give` puts it in the pack without equipping |
 | `exp:20` | Give EXP |
-| `follow:rook` / `unfollow` | Someone joins you, or goes home |
+| `follow:rook` / `unfollow:rook` (`unfollow` alone: everyone) | Someone joins your party (if there's room), or leaves it |
+| `morale:rook+10` | Lift or lower a party member's spirits |
 | `forge:knife:D:green_gem` | Put a piece on the anvil and play the forge game. Quality decides the rank (a material gives +1 rank, quality 75+ gives +1, below 30 it's crude), never above the rank given. After forging, the player goes where the choice's `go` points |
 | `craft:knife:E:green_gem` | Make gear at a rank (F to S). Above F it rolls traits from the material's list (or from all traits if no material) |
 | `sleep:safe` / `sleep:rough` / `sleep:camp` | Sleep until morning. Sleeping saves: in basic mode you wake here if you die |
@@ -100,7 +101,7 @@ Skelmed has three tutorial jobs, in any order:
 - **Garran** (forge, `quarry`): dig three lumps of ore at the quarry with his pick, bring them back, forge your first piece. A green gem in the spoil heap can be shown to him (he lets you set it) or pocketed.
 - **Orlen** (cottage in the hills, `orlen`): learn Draw Water and Kindle, light his brazier, then the net shed in the village catches fire. Put out its three fires with Draw Water or wet nets, or stay put and let it burn.
 
-After the lodge job Ida asks one more thing (`pack`): Rook comes with you, with a hunting bow for you, to kill the pack leader in its den in the north-east of the hills. That's the first boss. With all three jobs done, Mira at the guild post puts your name in the guild book and gives you a guild card. Bess at the inn rents beds and sells bread.
+After the lodge job Ida asks one more thing (`pack`): Rook comes with you, with a hunting bow for you, to kill the pack leader in its den in the north-east of the hills. That's the first boss. Rook turns up hungry and Ida gives you a fish for him, which teaches feeding your party. He's a temporary companion: after the wolf he has business in the town inland and walks with you that far (`flag:rook_escort`), then goes his own way. With all three jobs done, Mira at the guild post puts your name in the guild book and gives you a guild card. Bess at the inn rents beds and sells bread.
 
 ## Levels and skills
 
@@ -110,9 +111,11 @@ There are no classes. Quests (`exp` on the quest) and fights (`exp` on the enemy
 
 Skills go up to 10. The Skills menu (K) shows them all.
 
-## Followers
+## Party
 
-`followers` in `data.json` are people who can walk with you (`follow:<id>`). A follower walks one step behind you, attacks after you in fights, and can be hit. If they go down they get back up at a quarter health after the fight, and sleep heals them.
+`followers` in `data.json` are people who can join your party (`follow:<id>`), up to three at once (`Rules.PartyMax`). They walk in a line behind you, each attacks after you in a fight, and the enemy sometimes goes for them instead. If they go down they get back up at a quarter health after the fight.
+
+A party lives off your supplies, so recruiting someone is a real cost. Each member has the same hunger, thirst and energy as you (`appetite` makes some eat faster), plus spirits (`morale`). At night, whoever's hungry eats from your pack and whoever's thirsty drinks from your waterskin; if there's nothing, they go without. You can also feed them or pass the waterskin from the Party menu (P). Being hungry, thirsty, exhausted, wounded or in low spirits each takes 15% off how hard they hit. Going without, cold camps and being knocked down lower their spirits; a bed, food and finishing their own `quest` raise them. At zero spirits a companion leaves, unless they have `leaves: false` (a story companion like Rook). `until` and `untilWhen` show a line in the Party menu for someone who's only with you for a while.
 
 ## Enemies and combat
 

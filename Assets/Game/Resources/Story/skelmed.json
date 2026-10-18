@@ -463,7 +463,7 @@
             "quest:pack",
             "!ready:pack"
           ],
-          "text": "\"The den's past the quarry, up in the north-east corner of the hills. Keep Rook behind you. Bring him back.\""
+          "text": "\"The den's past the quarry, up in the north-east corner of the hills. Keep Rook fed and behind you. Bring him back.\""
         },
         {
           "when": [
@@ -528,9 +528,10 @@
           "effects": [
             "quest:pack",
             "follow:rook",
-            "give:hunting_bow"
+            "give:hunting_bow",
+            "item:fish+1"
           ],
-          "result": "Ida's quiet for a moment. \"The wolves. They didn't used to come down this far, and they didn't used to have eyes like that. Rook says there's one leading them: a big grey brute with a scar across its muzzle, denning past the quarry. Kill the leader and the rest will scatter.\" She whistles, and Rook comes round the side of the lodge with two bows. He hands you the older one. \"He goes with you,\" says Ida. \"He knows the hills. You know how to finish a job.\""
+          "result": "Ida's quiet for a moment. \"The wolves. They didn't used to come down this far, and they didn't used to have eyes like that. Rook says there's one leading them: a big grey brute with a scar across its muzzle, denning past the quarry. Kill the leader and the rest will scatter.\" She whistles, and Rook comes round the side of the lodge with two bows. He hands you the older one. \"He goes with you,\" says Ida. \"He knows the hills. You know how to finish a job.\" She pushes a fish into your hands. \"And he's not eaten since yesterday, the fool. Feed him before you go up there. A hungry man shoots wide.\""
         },
         {
           "label": "\"The pack leader's dead.\"",
@@ -540,12 +541,12 @@
           "time": 15,
           "effects": [
             "complete:pack",
-            "unfollow",
             "coins+10",
             "rep:skelmed+10",
-            "item:fish+2"
+            "item:fish+2",
+            "flag:rook_escort"
           ],
-          "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses ten coppers on you, and this time she won't hear a word about it. Rook goes inside without saying anything, but he punches your arm on the way past."
+          "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses ten coppers on you, and this time she won't hear a word about it. Rook clears his throat. \"I've business in the town inland. Pelts to sell, and a man there who owes the lodge money.\" He shrugs his bow higher on his shoulder. \"Roads are bad. I'll walk with you as far as the town, if you're going. After that you're on your own.\""
         },
         {
           "label": "\"What now?\"",
@@ -558,7 +559,7 @@
           "effects": [
             "flag:ida_town"
           ],
-          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks at your guild card. \"Somebody ought to go and see. Somebody with a card like that.\""
+          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks at your guild card. \"Somebody ought to go and see. Somebody with a card like that.\" She nods at Rook. \"And he'll see you as far as the town. Feed him. He won't ask.\""
         },
         {
           "label": "\"Goodbye.\"",

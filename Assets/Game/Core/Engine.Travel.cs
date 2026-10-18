@@ -224,13 +224,7 @@ namespace Loran.Core
             redirect = TravelId;
             var (dx, dy) = Dir(S.facing);
             if (Blocked(S.ax + dx, S.ay + dy)) return;
-            if (S.follower != "")
-            {
-                // your follower steps into the tile you just left
-                S.followerFacing = S.fx < S.ax ? "right" : S.fx > S.ax ? "left" : S.fy < S.ay ? "down" : S.fy > S.ay ? "up" : S.facing;
-                S.fx = S.ax;
-                S.fy = S.ay;
-            }
+            PartyFollows(S.ax, S.ay);   // your party steps into the tiles ahead of them
             S.ax += dx;
             S.ay += dy;
             S.stepsSinceFight++;

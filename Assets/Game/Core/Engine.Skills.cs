@@ -105,40 +105,167 @@ namespace Loran.Core
             return (int)Math.Round(c.stamina * (1 - cut));
         }
 
-        // ------------------------------------------------------------------ followers
+        // ------------------------------------------------------------------ party
 
-        public FollowerDef Follower => data.Follower(S.follower);
-        public bool FollowerUp => Follower != null && S.followerHp > 0;
+        /// <summary>The first person in your party (the one right behind you), or null.</summary>
+        public FollowerDef Follower => S.party.Count > 0 ? data.Follower(S.party[0].id) : null;
+        public PartyMember Member(string id) => S.party.FirstOrDefault(m => m.id == id);
+        public IEnumerable<PartyMember> PartyUp => S.party.Where(m => m.hp > 0 && data.Follower(m.id) != null);
+        public bool FollowerUp => PartyUp.Any();
 
-        /// <summary>Puts your follower a step behind you (or on your tile if there's no room).</summary>
+        /// <summary>Someone joins your party, if there's room.</summary>
+        public bool Join(string id)
+        {
+            var f = data.Follower(id) ?? throw new Exception("Unknown follower '" + id + "'");
+            if (Member(id) != null) return true;
+            if (S.party.Count >= Rules.PartyMax) { S.Toasts.Add("Your party is full. " + f.name + " can't come."); return false; }
+            S.party.Add(new PartyMember { id = f.id, hp = f.hp, hunger = f.hunger, thirst = f.thirst, energy = f.energy, morale = f.morale });
+            PlaceFollower();
+            var m = Member(id);
+            m.conditions = Rules.Conditions(m, data);
+            S.Toasts.Add(f.name + " joins your party.");
+            if (!S.Has("party_hint"))
+            {
+                S.flags.Add("party_hint");
+                S.Toasts.Add("Your party eats your food and drinks your water. Press P to see how they're doing.");
+            }
+            return true;
+        }
+
+        public void Leave(string id)
+        {
+            var m = Member(id);
+            if (m == null) return;
+            S.party.Remove(m);
+            S.Toasts.Add((data.Follower(id)?.name ?? id) + " goes their own way.");
+        }
+
+        /// <summary>Lines your party up behind you, one step apart (or on your tile if there's no room).</summary>
         void PlaceFollower()
         {
-            if (S.follower == "") return;
             var (dx, dy) = Dir(S.facing);
-            int bx = S.ax - dx, by = S.ay - dy;
-            bool ok = Area != null && !Blocked(bx, by);
-            S.fx = ok ? bx : S.ax;
-            S.fy = ok ? by : S.ay;
-            S.followerFacing = S.facing;
+            int px = S.ax, py = S.ay;
+            foreach (var m in S.party)
+            {
+                int bx = px - dx, by = py - dy;
+                bool ok = Area != null && InBounds(Area, bx, by) && !Blocked(bx, by);
+                if (ok) { px = bx; py = by; }
+                m.x = px; m.y = py;
+                m.facing = S.facing;
+            }
         }
 
-        /// <summary>Your follower's turn in a fight: one attack on the enemy.</summary>
+        /// <summary>You step forward: each member steps into the tile the one ahead of them just left.</summary>
+        void PartyFollows(int oldX, int oldY)
+        {
+            int px = oldX, py = oldY;
+            foreach (var m in S.party)
+            {
+                int ox = m.x, oy = m.y;
+                if (ox == px && oy == py) continue;   // already there (bunched up)
+                m.facing = ox < px ? "right" : ox > px ? "left" : oy < py ? "down" : oy > py ? "up" : m.facing;
+                m.x = px; m.y = py;
+                px = ox; py = oy;
+            }
+        }
+
+        /// <summary>Your party's turn in a fight: each one standing attacks. Hunger, thirst and tiredness make them weaker.</summary>
         void FollowerActs(EnemyDef e, EnemyMove move, List<string> lines)
         {
-            var f = Follower;
-            float dmg = Roll(f.atkMin, f.atkMax);
-            if (move.guard) dmg *= 0.5f;
-            int dealt = Math.Max(1, (int)Math.Round(dmg));
-            S.enemyHp -= dealt;
-            lines.Add(f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");
-            Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = dealt, text = dealt.ToString() });
+            int i = 0;
+            foreach (var m in S.party.ToList())
+            {
+                int index = i++;
+                var f = data.Follower(m.id);
+                if (f == null || m.hp <= 0 || S.enemyHp <= 0) continue;
+                float dmg = Roll(f.atkMin, f.atkMax) * Rules.PartyPower(m, data);
+                if (move.guard) dmg *= 0.5f;
+                int dealt = Math.Max(1, (int)Math.Round(dmg));
+                S.enemyHp -= dealt;
+                lines.Add(f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");
+                Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = dealt, text = dealt.ToString() });
+            }
         }
 
-        /// <summary>After a fight, a follower who went down gets back up, hurt.</summary>
+        /// <summary>After a fight: anyone who went down gets back up, hurt. Fighting tires everyone.</summary>
         void FollowerAfterFight()
         {
-            var f = Follower;
-            if (f != null && S.followerHp <= 0) S.followerHp = Math.Max(1, f.hp * 0.25f);
+            foreach (var m in S.party)
+            {
+                var f = data.Follower(m.id);
+                if (f == null) continue;
+                if (m.hp <= 0) { m.hp = Math.Max(1, f.hp * 0.25f); m.morale -= 5; }
+                m.energy -= 3;
+                Rules.ClampMember(m, f);
+            }
+        }
+
+        /// <summary>Gives a party member something to eat from your pack.</summary>
+        public bool Feed(string memberId, string itemId)
+        {
+            var m = Member(memberId);
+            var it = data.Item(itemId);
+            var f = data.Follower(memberId);
+            if (!FreeToAct || m == null || f == null || it == null || !it.food || S.Count(itemId) <= 0) return false;
+            S.AddItem(itemId, -1);
+            Rules.Advance(S, data, 5, false);
+            m.hunger += it.hunger;
+            m.thirst += it.thirst;
+            m.energy += it.energy;
+            m.morale += m.hunger < 60 ? 6 : 2;
+            Rules.ClampMember(m, f);
+            m.conditions = Rules.Conditions(m, data);
+            S.result = "You give " + f.name + " the " + it.name.ToLowerInvariant() + ".";
+            GoTo(S.scene);
+            return true;
+        }
+
+        /// <summary>Passes the waterskin to a party member.</summary>
+        public bool GiveWater(string memberId)
+        {
+            var m = Member(memberId);
+            var f = data.Follower(memberId);
+            if (!FreeToAct || m == null || f == null || S.water <= 0) return false;
+            S.water--;
+            Rules.Advance(S, data, 2, false);
+            m.thirst += 35;
+            m.energy += 4;
+            m.morale += 2;
+            Rules.ClampMember(m, f);
+            m.conditions = Rules.Conditions(m, data);
+            S.result = "You pass " + f.name + " the waterskin.";
+            GoTo(S.scene);
+            return true;
+        }
+
+        /// <summary>
+        /// At night your party shares your supplies: whoever's hungry eats from your pack, whoever's thirsty
+        /// drinks from your waterskin. If there isn't enough, they go without, and it shows in their spirits.
+        /// A bed lifts everyone; a cold camp doesn't.
+        /// </summary>
+        void PartyAtNight(string kind, bool fire, StringBuilder notes)
+        {
+            foreach (var m in S.party)
+            {
+                var f = data.Follower(m.id);
+                if (f == null) continue;
+                var said = new List<string>();
+                if (m.hunger < 70)
+                {
+                    var food = S.items.Where(x => data.Item(x.id)?.food == true && x.count > 0)
+                                      .OrderBy(x => data.Item(x.id).hunger).Select(x => x.id).FirstOrDefault();
+                    if (food != null) { var it = data.Item(food); S.AddItem(food, -1); m.hunger += it.hunger; m.thirst += it.thirst; said.Add("eats " + Article(it.name) + " " + it.name.ToLowerInvariant()); }
+                    else { m.morale -= 10; said.Add("goes to sleep hungry"); }
+                }
+                if (m.thirst < 70)
+                {
+                    if (S.water > 0) { S.water--; m.thirst += 35; said.Add("drinks from your waterskin"); }
+                    else { m.morale -= 8; said.Add("has nothing to drink"); }
+                }
+                m.morale += kind == "safe" ? 10 : kind == "camp" && !fire ? -6 : 2;
+                Rules.ClampMember(m, f);
+                if (said.Count > 0) notes.Append(" " + f.name + " " + string.Join(" and ", said) + ".");
+            }
         }
     }
 }

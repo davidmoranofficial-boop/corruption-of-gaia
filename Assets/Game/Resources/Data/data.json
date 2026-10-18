@@ -565,6 +565,13 @@
         "flag:guild_member",
         "done:pack"
       ]
+    },
+    {
+      "text": "Rook is walking with you as far as the town inland. He has business there.",
+      "when": [
+        "follower:rook",
+        "flag:rook_escort"
+      ]
     }
   ],
   "builds": [
@@ -1922,11 +1929,20 @@
       "id": "rook",
       "name": "Rook",
       "sprite": "npc_rook",
-      "desc": "Ida's son. Quiet, quick, and a better shot than he lets on.",
+      "desc": "One of Ida's hunters. Young, quiet, and a better shot than he lets on.",
       "hp": 60,
       "atkMin": 4,
       "atkMax": 8,
-      "attack": "looses an arrow at"
+      "attack": "looses an arrow at",
+      "hunger": 20,
+      "thirst": 60,
+      "energy": 80,
+      "morale": 55,
+      "leaves": false,
+      "until": "Walking with you as far as the town inland, where he has business. Then he goes his own way.",
+      "untilWhen": [
+        "flag:rook_escort"
+      ]
     }
   ]
 }

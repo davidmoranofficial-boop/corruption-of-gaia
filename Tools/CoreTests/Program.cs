@@ -34,6 +34,7 @@ static class Program
         Test("forging: how well you play sets the rank", Forging);
         Test("dev mode quick starts and cheats", DevMode);
         Test("levels, skills, moves and followers", Progression);
+        Test("a party eats, drinks, tires and can walk out on you", Party);
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("random play never gets stuck, across 300 seeds", RandomPlay);
         Console.WriteLine(failures == 0 ? "\nAll tests passed." : "\n" + failures + " test(s) failed.");
         return failures == 0 ? 0 : 1;
@@ -221,7 +222,7 @@ static class Program
         // Ida's last job: the pack leader, with Rook beside you
         Keep(e); UseThing(e, "ida");
         Pick(e, "Anything else");
-        Assert(e.Check("quest:pack") && e.S.follower == "rook" && e.S.gearItems.Any(g => g.id == "hunting_bow" && !g.equipped), "Ida should send Rook with you, and a bow");
+        Assert(e.Check("quest:pack") && e.Member("rook") != null && e.S.gearItems.Any(g => g.id == "hunting_bow" && !g.equipped), "Ida should send Rook with you, and a bow");
         Leave(e);
         int lv0 = e.S.level;
         Keep(e); ToArea(e, "hills_gate");
@@ -233,13 +234,13 @@ static class Program
         int rounds = 0;
         for (; rounds < 200 && e.S.inCombat; rounds++) StepToward(e, (0, 0));
         Assert(e.S.scene == "den_won", "should beat the pack leader with Rook, was " + e.S.scene);
-        Console.WriteLine("    pack leader took " + rounds + " rounds, hp " + e.S.hp + ", Rook " + e.S.followerHp);
+        Console.WriteLine("    pack leader took " + rounds + " rounds, hp " + e.S.hp + ", Rook " + e.Member("rook").hp + " (" + string.Join(", ", Rules.Conditions(e.Member("rook"), e.data)) + ")");
         Pick(e, "Skin it");
         Assert(e.S.Count("wolf_pelt") == 1 && e.Check("ready:pack"), "the pelt, and the job ready");
         Keep(e); ToArea(e, "skelmed_north");
         Keep(e); UseThing(e, "ida");
         Pick(e, "The pack leader");
-        Assert(e.Check("done:pack") && e.S.follower == "" && e.S.level > lv0, "Rook goes home, the job's done and you've levelled");
+        Assert(e.Check("done:pack") && e.Member("rook") != null && e.Check("flag:rook_escort") && e.S.level > lv0, "the job's done, you've levelled, and Rook walks on with you to the town");
         Leave(e);
 
         Keep(e); UseThing(e, "garran");
@@ -342,21 +343,94 @@ static class Program
         // Followers walk behind you, fight beside you and go home
         var b = NewEngine();
         b.DevStart("boss");
-        Assert(b.S.follower == "rook" && b.FollowerUp, "Rook should be with you");
-        int fx = b.S.fx, fy = b.S.fy;
+        Assert(b.Member("rook") != null && b.FollowerUp, "Rook should be with you");
         int px = b.S.ax, py = b.S.ay;
         StepToward(b, (b.S.ax, b.S.ay - 1));
-        Assert(b.S.fx == px && b.S.fy == py, "Rook steps into the tile you left");
+        Assert(b.S.party[0].x == px && b.S.party[0].y == py, "Rook steps into the tile you left");
         var save = Json.Write(b.S);
         var b2 = NewEngine();
         b2.LoadState(Json.Read<GameState>(save));
-        Assert(b2.S.follower == "rook" && b2.S.followerHp == b.S.followerHp, "Rook survives a save");
+        Assert(b2.Member("rook") != null && b2.Member("rook").hp == b.Member("rook").hp && b2.Member("rook").hunger == b.Member("rook").hunger, "Rook survives a save");
         WalkUntil(b, (29, 5), () => b.S.scene == "den");
         Pick(b, "Fight it");
         float ehp = b.S.enemyHp;
         b.Act(b.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
         Assert(b.S.enemyHp < ehp || !b.S.inCombat, "Rook should hit the pack leader even when you defend");
     }
+
+    static void Party()
+    {
+        var e = NewEngine();
+        e.DevStart("village");
+        // Two made-up companions to fill out a party
+        e.data.file.followers.Add(new FollowerDef { id = "t_wren", name = "Wren", sprite = "npc_rook", hp = 50, atkMin = 3, atkMax = 5, quest = "pack" });
+        e.data.file.followers.Add(new FollowerDef { id = "t_bram", name = "Bram", sprite = "npc_rook", hp = 80, atkMin = 5, atkMax = 9, appetite = 2 });
+        e.data.file.followers.Add(new FollowerDef { id = "t_extra", name = "Extra", sprite = "npc_rook", hp = 10 });
+        e.Choose(Ch("follow:rook")); e.Choose(Ch("follow:t_wren")); e.Choose(Ch("follow:t_bram"));
+        Assert(e.S.party.Count == 3, "three in the party");
+        e.Choose(Ch("follow:t_extra"));
+        Assert(e.S.party.Count == 3 && e.Member("t_extra") == null, "a party holds three");
+
+        // They walk in a line behind you
+        e.S.result = "";
+        for (int i = 0; i < 4; i++)
+        {
+            int px = e.S.ax, py = e.S.ay;
+            var c = e.StepChoice(false);
+            if (c == null) { e.Face(e.S.facing == "down" ? "left" : "down"); continue; }
+            e.Choose(c);
+            Assert(e.S.party[0].x == px && e.S.party[0].y == py, "the first one steps where you were");
+            e.S.result = "";
+        }
+
+        // Rook starts hungry; feeding him fixes it and lifts him
+        var rook = e.Member("rook");
+        Rules.Advance(e.S, e.data, 2 * 60, false);
+        Assert(Rules.Conditions(rook, e.data).Contains("hungry") || rook.hunger < 40, "Rook should be getting hungry, was " + rook.hunger);
+        e.S.items.Add(new ItemStack { id = "fish", count = 1 });
+        float m0 = rook.morale;
+        Assert(e.Feed("rook", "fish") && rook.hunger > 40 && rook.morale > m0 && e.S.Count("fish") == 0, "feeding Rook should fill him and cheer him up");
+        e.S.water = 1;
+        float t0 = rook.thirst;
+        Assert(e.GiveWater("rook") && rook.thirst > t0 && e.S.water == 0, "sharing the waterskin");
+
+        // A hungry appetite empties the pack at camp
+        var bram = e.Member("t_bram");
+        bram.hunger = rook.hunger = 90;
+        Rules.Advance(e.S, e.data, 6 * 60, false);
+        Assert(bram.hunger < rook.hunger, "a big eater gets hungry faster");
+        e.S.items.RemoveAll(i => e.data.Item(i.id)?.food == true);
+        e.S.items.Add(new ItemStack { id = "bread", count = 1 });
+        e.S.water = 0;
+        float wrenMorale = e.Member("t_wren").morale;
+        e.S.result = "";
+        e.Choose(Ch("sleep:camp"));
+        Assert(e.S.Count("bread") == 0, "someone ate the bread");
+        Assert(e.S.result.Contains("goes to sleep hungry") || e.S.result.Contains("nothing to drink"), "with no supplies, someone goes without: " + e.S.result);
+
+        // Neglect: spirits fall; most companions leave, a story companion stays
+        foreach (var m in e.S.party) { m.hunger = 0; m.thirst = 0; m.morale = 5; m.hp = 1000; }
+        e.S.hp = 1000;
+        Rules.Advance(e.S, e.data, 4 * 60, false);
+        Assert(e.Member("t_bram") == null && e.Member("t_wren") == null, "neglected companions walk out");
+        Assert(e.Member("rook") != null, "Rook stays to the town, however he feels");
+
+        // A companion's own quest lifts their spirits
+        var q = NewEngine();
+        q.DevStart("village");
+        q.data.file.followers.Add(new FollowerDef { id = "t_wren", name = "Wren", sprite = "npc_rook", hp = 50, atkMin = 3, atkMax = 5, quest = "pack" });
+        q.Choose(Ch("follow:t_wren"));
+        float before = q.Member("t_wren").morale;
+        q.Choose(Ch("complete:pack"));
+        Assert(q.Member("t_wren").morale >= before + 25, "doing Wren's quest should lift her");
+
+        // Hunger and tiredness weaken them in a fight
+        var w = new PartyMember { id = "rook", hp = 60, hunger = 10, thirst = 10, energy = 10, morale = 60 };
+        Assert(Rules.PartyPower(w, e.data) < 0.6f, "a starving, parched, exhausted companion fights badly");
+    }
+
+    /// <summary>A throwaway choice that applies some effects, for tests.</summary>
+    static ChoiceDef Ch(params string[] effects) => new ChoiceDef { label = "test", effects = effects.ToList() };
 
     static void SaveLoad()
     {
@@ -714,7 +788,7 @@ static class Program
             if (id == "forge_iron") { Pick(e, "An iron cap"); Assert(e.S.scene == "forge", "should be at the anvil"); e.FinishForge(1, 1, 1); Assert(e.Travelling, "back in the village"); }
             if (id == "fire") Assert(e.Objects().Count(o => o.id.StartsWith("fire")) == 3, "the net shed should be burning");
             if (id == "guild") { e.Choose(e.UseChoice()); Assert(e.S.scene == "mira" && e.Choices().Any(c => c.enabled && c.def.label.Contains("guild book")), "Mira's book should be open to you"); }
-            if (id == "boss") { Assert(e.S.follower == "rook", "Rook should be with you"); WalkUntil(e, (29, 5), () => e.S.scene == "den"); Pick(e, "Fight it"); Assert(e.S.inCombat && e.S.enemy == "pack_leader", "should face the pack leader"); }
+            if (id == "boss") { Assert(e.Member("rook") != null, "Rook should be with you"); WalkUntil(e, (29, 5), () => e.S.scene == "den"); Pick(e, "Fight it"); Assert(e.S.inCombat && e.S.enemy == "pack_leader", "should face the pack leader"); }
             if (id == "dog") { e.DevWinFight(); Pick(e, "Walk on"); Assert(e.S.scene == "travel", "winning should go back to the road"); }
         }
         var d = NewEngine();

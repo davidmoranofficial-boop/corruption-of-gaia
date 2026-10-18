@@ -21,6 +21,19 @@ namespace Loran.Core
 
     [Serializable] public class ItemStack { public string id; public int count; }
     [Serializable] public class RepEntry { public string place; public int value; }
+    /// <summary>Someone in your party: their health, needs and mood, and where they stand in the world.</summary>
+    [Serializable]
+    public class PartyMember
+    {
+        public string id = "";
+        public float hp;
+        public float hunger = 80, thirst = 80, energy = 90;   // the same needs as yours, 0 to 100
+        public float morale = 60;                            // 0 to 100: at 0 they leave you
+        public int x, y;
+        public string facing = "down";
+        public List<string> conditions = new List<string>(); // hungry, thirsty, exhausted, wounded, low (spirits), as last told to the player
+    }
+
     [Serializable] public class SkillEntry { public string id; public int level; public float xp; }
 
     /// <summary>
@@ -84,7 +97,9 @@ namespace Loran.Core
         public int exp;                        // towards the next level
         public List<SkillEntry> skills = new List<SkillEntry>();
 
-        // Someone walking with you: who, their health, where they are (a step behind you) and which way they face
+        // Your party: the people walking with you, in the order they walk behind you
+        public List<PartyMember> party = new List<PartyMember>();
+        // old saves only: the single follower from before parties
         public string follower = "";
         public float followerHp;
         public int fx, fy;
@@ -155,7 +170,11 @@ namespace Loran.Core
             battleLog ??= new List<string>();
             skills ??= new List<SkillEntry>();
             if (level < 1) level = 1;
-            follower ??= ""; if (string.IsNullOrEmpty(followerFacing)) followerFacing = "down";
+            party ??= new List<PartyMember>();
+            if (!string.IsNullOrEmpty(follower) && party.Count == 0)
+                party.Add(new PartyMember { id = follower, hp = followerHp, x = fx, y = fy, facing = followerFacing ?? "down" });
+            follower = "";
+            foreach (var m in party) { m.facing ??= "down"; m.conditions ??= new List<string>(); }
             enemyMove ??= "";
             travelRoute ??= ""; area ??= ""; if (string.IsNullOrEmpty(facing)) facing = "down";
             forging ??= ""; forgeMaterial ??= ""; forgeMax ??= ""; forgeNext ??= ""; forgeIntro ??= "";

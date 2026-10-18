@@ -327,15 +327,17 @@ namespace Loran.Core
             }
 
             float hit = Roll(e.atkMin, e.atkMax) * move.power;
-            // Sometimes it goes for your follower instead
-            if (FollowerUp && Roll(1, 100) <= 30)
+            // Sometimes it goes for someone in your party instead
+            var up = PartyUp.ToList();
+            if (up.Count > 0 && Roll(1, 100) <= 20 + 10 * up.Count)
             {
-                var f = Follower;
+                var m = up[Roll(0, up.Count - 1)];
+                var f = data.Follower(m.id);
                 int ft = Math.Max(1, (int)Math.Round(hit));
-                S.followerHp -= ft;
+                m.hp -= ft;
                 lines.Add(foe + " " + move.name.Replace("your", f.name + "'s").Replace(" you", " " + f.name) + " for " + ft + ".");
-                Events.Add(new BattleEvent { target = "follower", kind = "hit", amount = ft, text = ft.ToString() });
-                if (S.followerHp <= 0) lines.Add(f.name + " goes down!");
+                Events.Add(new BattleEvent { target = "follower" + S.party.IndexOf(m), kind = "hit", amount = ft, text = ft.ToString() });
+                if (m.hp <= 0) lines.Add(f.name + " goes down!");
                 return;
             }
             if (S.defending)

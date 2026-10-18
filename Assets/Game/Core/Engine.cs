@@ -53,6 +53,7 @@ namespace Loran.Core
             d.moves ??= new List<MoveDef>();
             foreach (var m in d.moves) m.need ??= "";
             d.followers ??= new List<FollowerDef>();
+            foreach (var f in d.followers) { f.untilWhen ??= new List<string>(); f.until ??= ""; f.quest ??= ""; }
             d.backgrounds ??= new List<BackgroundDef>();
             d.gear ??= new List<GearDef>();
             d.traits ??= new List<TraitDef>();
@@ -453,7 +454,7 @@ namespace Loran.Core
                 case "flag": return S.Has(arg);
                 case "item": return S.Count(arg) > 0;
                 case "spell": return S.spells.Contains(arg);
-                case "follower": return arg == "" ? S.follower != "" : S.follower == arg;
+                case "follower": return arg == "" ? S.party.Count > 0 : Member(arg) != null;
                 case "gear": return arg == "" ? S.gearItems.Count > 0 : S.gearItems.Any(g => g.id == arg);
                 case "mode": return S.deathMode == arg;
                 case "background": return S.background == arg;
@@ -471,6 +472,8 @@ namespace Loran.Core
             if (key.StartsWith("rep:")) return S.Rep(key.Substring(4));
             if (key.StartsWith("item:")) return S.Count(key.Substring(5));
             if (key.StartsWith("stat:")) return S.stats[Stat.Parse(key.Substring(5))];
+            if (key.StartsWith("morale:")) return Member(key.Substring(7))?.morale ?? 0;
+            if (key == "party") return S.party.Count;
             if (key.StartsWith("skill:")) return data.Skill(key.Substring(6)) != null ? SkillLevel(key.Substring(6)) : throw new Exception("Unknown skill '" + key.Substring(6) + "'");
             switch (key)
             {
@@ -523,19 +526,21 @@ namespace Loran.Core
                                  (item.traits.Count > 0 ? ", " + string.Join(", ", item.traits.Select(t => data.Trait(t)?.name ?? t)) : "") + ").");
                     return;
                 }
-                case "follow":
+                case "follow": Join(arg); return;
+                case "unfollow":
+                    // unfollow:<id> sends one person home; unfollow alone, everyone
+                    foreach (var m in S.party.Where(m => arg == "" || m.id == arg).ToList()) Leave(m.id);
+                    return;
+                case "morale":
                 {
-                    var f = data.Follower(arg) ?? throw new Exception("Unknown follower '" + arg + "'");
-                    S.follower = f.id;
-                    S.followerHp = f.hp;
-                    PlaceFollower();
-                    S.Toasts.Add(f.name + " is walking with you.");
+                    // morale:rook+10
+                    int sign = arg.IndexOfAny(new[] { '+', '-' });
+                    var m = Member(arg.Substring(0, sign));
+                    if (m == null) return;
+                    m.morale += float.Parse(arg.Substring(sign), System.Globalization.CultureInfo.InvariantCulture);
+                    Rules.ClampMember(m, data.Follower(m.id));
                     return;
                 }
-                case "unfollow":
-                    if (S.follower != "") S.Toasts.Add((data.Follower(S.follower)?.name ?? S.follower) + " goes their own way.");
-                    S.follower = "";
-                    return;
                 case "give":
                 {
                     // give:gear  puts a piece of gear in your pack without putting it on
@@ -560,6 +565,13 @@ namespace Loran.Core
                     if (first) S.flags.Add("quest_done:" + q.id);
                     S.Toasts.Add("Quest complete: " + q.name);
                     if (first && q.exp > 0) GainExp(q.exp, "");
+                    // Doing a companion's own quest lifts their spirits
+                    foreach (var m in S.party.Where(m => data.Follower(m.id)?.quest == q.id))
+                    {
+                        m.morale += 30;
+                        Rules.ClampMember(m, data.Follower(m.id));
+                        S.Toasts.Add(data.Follower(m.id).name + " won't forget this.");
+                    }
                     return;
                 }
                 case "hud": S.hud = arg == "on"; return;
@@ -656,6 +668,8 @@ namespace Loran.Core
         void Sleep(string kind, StringBuilder notes)
         {
             int mins = Rules.MinutesUntilMorning(S);
+            var partyNotes = new StringBuilder();
+            PartyAtNight(kind, kind != "camp" || S.Count("flint") > 0, partyNotes);
             switch (kind)
             {
                 case "safe":
@@ -689,8 +703,7 @@ namespace Loran.Core
                     break;
                 default: throw new Exception("Unknown sleep '" + kind + "'");
             }
-            var fol = data.Follower(S.follower);
-            if (fol != null) S.followerHp = fol.hp;
+            notes.Append(partyNotes);
             // Out in the world (in a bed, or camping), you wake standing where you slept, not in the bed's talk box
             string scene = S.scene;
             if (Area != null) S.scene = TravelId;
@@ -774,6 +787,7 @@ namespace Loran.Core
                 int colon = e.IndexOf(':');
                 string head = colon < 0 ? e : e.Substring(0, colon);
                 var parts = colon < 0 ? new string[0] : e.Substring(colon + 1).Split(':');
+                string arg = colon < 0 ? "" : e.Substring(colon + 1);
                 switch (head)
                 {
                     case "combat":
@@ -782,7 +796,8 @@ namespace Loran.Core
                     case "check": Scene(where, parts[2]); Scene(where, parts[3]); return;
                     case "follow": if (data.Follower(parts[0]) == null) problems.Add(where + ": no follower '" + parts[0] + "'"); return;
                     case "give": if (data.Gear(parts[0]) == null) problems.Add(where + ": no gear '" + parts[0] + "'"); return;
-                    case "unfollow": return;
+                    case "unfollow": if (arg != "" && data.Follower(arg) == null) problems.Add(where + ": no follower '" + arg + "'"); return;
+                    case "morale": { int sg = arg.IndexOfAny(new[] { '+', '-' }); if (sg < 0 || data.Follower(arg.Substring(0, sg)) == null) problems.Add(where + ": bad morale '" + arg + "'"); return; }
                     case "exp": if (!int.TryParse(parts[0], out _)) problems.Add(where + ": exp needs a number"); return;
                     case "gear": if (data.Gear(parts[0]) == null) problems.Add(where + ": no gear '" + parts[0] + "'"); return;
                     case "craft":
@@ -838,6 +853,11 @@ namespace Loran.Core
                 }
             }
             foreach (var j in data.file.journal) foreach (var c in j.when) Cond("journal \"" + j.text + "\"", c);
+            foreach (var f in data.file.followers)
+            {
+                foreach (var c in f.untilWhen) Cond("follower " + f.id, c);
+                if (f.quest != "" && data.Quest(f.quest) == null) problems.Add("follower " + f.id + ": no quest '" + f.quest + "'");
+            }
             foreach (var q in data.file.quests)
                 foreach (var g in q.goals)
                 {

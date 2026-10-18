@@ -32,7 +32,8 @@ namespace Loran.UnityLayer
 
         // Bars animate from what they showed before the action to what they are now.
         float[] before;
-        VisualElement enemyCard, playerCard, arena, enemyPic, playerPic, followerSpot, followerPic;
+        VisualElement enemyCard, playerCard, arena, enemyPic, playerPic;
+        readonly List<VisualElement> followerSpots = new List<VisualElement>(), followerPics = new List<VisualElement>();
 
         bool InBattle => engine.S.inCombat || outro;
 
@@ -73,14 +74,19 @@ namespace Loran.UnityLayer
             playerPic = PlayerDoll(playerSpot, scale);
             if (s.hp <= 0) playerSpot.AddToClassList("portrait-down");
 
-            // Whoever's fighting with you stands a little behind you
-            followerSpot = followerPic = null;
-            var fol = engine.Follower;
-            if (fol != null)
+            // Your party stands a little behind you, staggered so everyone can be seen
+            followerSpots.Clear();
+            followerPics.Clear();
+            for (int pi = 0; pi < s.party.Count; pi++)
             {
-                followerSpot = Add(arena, new VisualElement(), "spot-follower");
-                int fk = scale * 2;
-                var box = Add(followerSpot, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
+                var m = s.party[pi];
+                var fol = engine.data.Follower(m.id);
+                if (fol == null) { followerSpots.Add(null); followerPics.Add(null); continue; }
+                var spot = Add(arena, new VisualElement(), "spot-follower");
+                spot.style.left = Length.Percent(5 - pi * 3.5f);
+                spot.style.bottom = Length.Percent(9 + pi * 14);
+                int fk = Mathf.Max(2, scale * 2 - pi);
+                var box = Add(spot, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
                 box.style.position = Position.Relative;
                 box.style.width = 16 * fk;
                 box.style.height = 24 * fk;
@@ -90,15 +96,17 @@ namespace Loran.UnityLayer
                 sheet.style.top = -3 * 24 * fk;      // the row facing right
                 var tex = Sprite("Walk/" + fol.sprite);
                 if (tex != null) sheet.style.backgroundImage = new StyleBackground(tex);
-                followerPic = box;
-                if (s.followerHp <= 0) followerSpot.AddToClassList("portrait-down");
-                var tag = Add(followerSpot, new VisualElement(), "follower-tag");
-                Add(tag, new Label(fol.name), "follower-name");
+                if (m.hp <= 0) spot.AddToClassList("portrait-down");
+                var tag = Add(spot, new VisualElement(), "follower-tag");
+                var trouble = Rules.Conditions(m, engine.data);
+                Add(tag, new Label(fol.name + (trouble.Count > 0 ? "  ·  " + trouble[0] : "")), "follower-name");
                 var ft = Add(tag, new VisualElement(), "need-track");
                 var ff = Add(ft, new VisualElement(), "need-fill");
-                ff.style.width = Length.Percent(Mathf.Clamp01(s.followerHp / fol.hp) * 100f);
+                ff.style.width = Length.Percent(Mathf.Clamp01(m.hp / fol.hp) * 100f);
                 ColorUtility.TryParseHtmlString("#c8573f", out var fc);
                 ff.style.backgroundColor = fc;
+                followerSpots.Add(spot);
+                followerPics.Add(box);
             }
 
             enemySpot = Add(arena, new VisualElement(), "spot-enemy");
@@ -323,16 +331,20 @@ namespace Loran.UnityLayer
                 var e = ev;
                 root.schedule.Execute(() =>
                 {
-                    var card = e.target == "enemy" ? enemyCard : e.target == "follower" ? followerSpot : playerCard;
+                    int fi = e.target.StartsWith("follower") && int.TryParse(e.target.Substring(8), out var n) ? n : -1;
+                    var fSpot = fi >= 0 && fi < followerSpots.Count ? followerSpots[fi] : null;
+                    var fPic = fi >= 0 && fi < followerPics.Count ? followerPics[fi] : null;
+                    bool isF = e.target.StartsWith("follower");
+                    var card = e.target == "enemy" ? enemyCard : isF ? fSpot : playerCard;
                     if (card == null) return;
-                    var spot = e.target == "enemy" ? enemySpot : e.target == "follower" ? followerSpot : playerSpot;
+                    var spot = e.target == "enemy" ? enemySpot : isF ? fSpot : playerSpot;
                     string cls = e.kind == "crit" ? "pop-crit" : e.kind == "glance" ? "pop-glance" : e.kind == "heal" ? "pop-heal"
                                : e.kind == "parry" ? "pop-perfect" : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
                     Popup(spot ?? card, e.text, cls, 0);
                     if (e.kind == "hit" || e.kind == "crit" || e.kind == "glance")
                     {
                         Flash(card);
-                        var pic = e.target == "enemy" ? enemyPic : e.target == "follower" ? followerPic : playerPic;
+                        var pic = e.target == "enemy" ? enemyPic : isF ? fPic : playerPic;
                         HitFlash(pic);
                         Shake(pic, e.kind == "crit" ? 12f : 6f);
                         Shake(e.kind == "crit" ? (e.target == "player" ? arena : card) : card, e.kind == "crit" ? 14f : e.kind == "glance" ? 4f : 8f);

@@ -121,7 +121,7 @@ namespace Loran.Core
         public string need = "";               // a condition, e.g. spell:kindle
     }
 
-    /// <summary>Someone who walks with you and fights at your side.</summary>
+    /// <summary>Someone who can join your party: walks with you, fights at your side, and eats your food.</summary>
     [Serializable]
     public class FollowerDef
     {
@@ -129,6 +129,12 @@ namespace Loran.Core
         public float hp;
         public int atkMin, atkMax;
         public string attack = "strikes at";   // "looses an arrow at"
+        public float appetite = 1;             // how fast they get hungry and thirsty, compared with you
+        public float hunger = 80, thirst = 80, energy = 90, morale = 60;   // how they are when they join
+        public bool leaves = true;             // false: they stick with you however low their spirits get (a story companion)
+        public string quest = "";              // their own quest, if they have one: doing it lifts their spirits
+        public string until = "";              // a companion who's only with you for a while: how long (shown in the Party menu)
+        public List<string> untilWhen = new List<string>();   // when that line shows
     }
     [Serializable] public class BackgroundDef { public string id, name, desc, stat; }
     [Serializable]

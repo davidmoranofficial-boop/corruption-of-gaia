@@ -89,6 +89,39 @@
     margin-top: 2px;
 }
 
+.hud-follower-trouble { color: #e3a64e; }
+
+.party-card {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background-color: rgba(14, 22, 26, 0.5);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 6px;
+}
+
+.party-top {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.party-state {
+    font-size: 14px;
+    color: #7fae6a;
+}
+
+.party-state-bad { color: #e3a64e; }
+
+.party-btns {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.party-btns .small-btn { margin: 0 6px 6px 0; }
+
 .skill-exp {
     width: 100px;
     font-size: 15px;
