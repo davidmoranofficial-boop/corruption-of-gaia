@@ -561,7 +561,9 @@
 
 .col {
     flex-grow: 1;
+    flex-shrink: 1;
     flex-basis: 0;
+    min-width: 0;
     margin-right: 40px;
 }
 
@@ -937,6 +939,8 @@
 .item-text {
     flex-grow: 1;
     flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
 }
 
 .need-row {
@@ -1288,6 +1292,7 @@
 .gear-stats {
     font-size: 16px;
     color: var(--moss);
+    white-space: normal;
 }
 
 .gear-trait {
@@ -1810,6 +1815,8 @@
 .worn-slots {
     flex-grow: 1;
     flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
 }
 
 .create-look {

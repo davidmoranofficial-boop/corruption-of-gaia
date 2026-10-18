@@ -147,8 +147,17 @@ namespace Loran.UnityLayer
 
         const float MinScale = 0.55f;
 
+        /// <summary>How many times a fit box has rescaled lately, so a layout that keeps flipping gets frozen.</summary>
+        class FitState { public int changes; public float since; }
+
         static void Refit(VisualElement box, VisualElement content)
         {
+            // Guard against a loop: rescaling changes the layout, which can ask for another rescale.
+            // If it flips more than a few times in a second, stop and keep what we have.
+            var st = content.userData as FitState ?? (FitState)(content.userData = new FitState { since = Time.realtimeSinceStartup });
+            if (Time.realtimeSinceStartup - st.since > 1f) { st.changes = 0; st.since = Time.realtimeSinceStartup; }
+            if (st.changes >= 6) return;
+
             float availW = box.contentRect.width, availH = box.contentRect.height;
             float natural = content.layout.height;   // unscaled height at the current width
             if (availW <= 0 || availH <= 0 || float.IsNaN(natural) || natural <= 0) return;
@@ -159,6 +168,7 @@ namespace Loran.UnityLayer
             // Content gets wider as it shrinks, so it reflows shorter; only settle on changes that matter.
             if (Mathf.Abs(k - current) < 0.01f && Mathf.Abs(content.layout.width - availW / current) < 1f) return;
             if (k > current && k - current < 0.03f && content.layout.height * current <= availH) return;   // fits already; don't wobble
+            st.changes++;
             content.style.width = availW / k;
             content.style.scale = new StyleScale(new Scale(new Vector2(k, k)));
         }
