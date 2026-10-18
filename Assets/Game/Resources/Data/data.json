@@ -144,6 +144,11 @@
       "id": "guild_card",
       "name": "Guild card",
       "desc": "A square of waxed leather with the guild seal, your name and the mark of your class."
+    },
+    {
+      "id": "wolf_pelt",
+      "name": "Pack leader's pelt",
+      "desc": "A huge grey pelt, black along the spine. Proof, if anyone doubts you."
     }
   ],
   "enemies": [
@@ -180,7 +185,8 @@
           "weight": 2
         }
       ],
-      "art": "wolf"
+      "art": "wolf",
+      "exp": 12
     },
     {
       "id": "crab",
@@ -214,7 +220,8 @@
           "guard": true,
           "weight": 2
         }
-      ]
+      ],
+      "exp": 10
     },
     {
       "id": "boar",
@@ -249,33 +256,53 @@
           "guard": true,
           "weight": 2
         }
+      ],
+      "exp": 25
+    },
+    {
+      "id": "pack_leader",
+      "name": "The pack leader",
+      "rank": "E",
+      "boss": true,
+      "size": 1.35,
+      "exp": 90,
+      "art": "wolf_alpha",
+      "desc": "The biggest wolf you've ever seen, grey going black along the spine, with an old scar across its muzzle. Its eyes burn yellow, and the other wolves won't come near it.",
+      "hp": 120,
+      "atkMin": 6,
+      "atkMax": 10,
+      "speed": 5,
+      "moves": [
+        {
+          "id": "maul",
+          "name": "mauls you",
+          "tell": "It paces towards you, head low, jaws open.",
+          "power": 1,
+          "weight": 5
+        },
+        {
+          "id": "lunge",
+          "name": "lunges at your throat",
+          "tell": "It drops low and its back legs bunch. It's going to lunge.",
+          "power": 1.7,
+          "weight": 3
+        },
+        {
+          "id": "howl",
+          "name": "throws back its head and howls",
+          "tell": "It stops and fills its chest. The air goes still.",
+          "power": 0,
+          "guard": true,
+          "weight": 2
+        },
+        {
+          "id": "frenzy",
+          "name": "tears into you in a frenzy",
+          "tell": "Its hackles rise and froth flecks its jaws. It's about to go wild.",
+          "power": 2.1,
+          "weight": 1
+        }
       ]
-    }
-  ],
-  "classes": [
-    {
-      "id": "adventurer",
-      "name": "Adventurer",
-      "desc": "Travelling, surviving and fighting. More stamina for the road.",
-      "stat": "agi",
-      "statBonus": 1,
-      "staminaBonus": 15
-    },
-    {
-      "id": "blacksmith",
-      "name": "Blacksmith",
-      "desc": "Crafting, mining and defence. Stronger arms.",
-      "stat": "str",
-      "statBonus": 2,
-      "staminaBonus": 0
-    },
-    {
-      "id": "mage",
-      "name": "Mage",
-      "desc": "Magic, intellect and enchanting. A sharper mind.",
-      "stat": "int",
-      "statBonus": 2,
-      "staminaBonus": 0
     }
   ],
   "backgrounds": [
@@ -316,7 +343,8 @@
       "name": "Gutting knife",
       "slot": "weapon",
       "desc": "Yenson's spare. Made for fish, not fights, but it has a point.",
-      "damage": 2
+      "damage": 2,
+      "skill": "dagger"
     },
     {
       "id": "knife",
@@ -324,7 +352,8 @@
       "slot": "weapon",
       "part": "pommel",
       "desc": "Plain and sharp, and you made it.",
-      "damage": 4
+      "damage": 4,
+      "skill": "dagger"
     },
     {
       "id": "buckler",
@@ -332,7 +361,8 @@
       "slot": "offhand",
       "part": "boss",
       "desc": "A small round shield of boiled hide on an iron rim.",
-      "guard": 0.3
+      "guard": 0.3,
+      "skill": "shield"
     },
     {
       "id": "gloves",
@@ -408,7 +438,18 @@
       "twoHanded": true,
       "part": "haft",
       "desc": "A long-hafted axe made for felling trees. It takes both hands, and it hits like it.",
-      "damage": 7
+      "damage": 7,
+      "skill": "axe"
+    },
+    {
+      "id": "hunting_bow",
+      "name": "Hunting bow",
+      "slot": "weapon",
+      "twoHanded": true,
+      "part": "grip",
+      "skill": "bow",
+      "desc": "Rook's old bow, ash and sinew, worn smooth where the hand goes. It takes both hands.",
+      "damage": 5
     }
   ],
   "traits": [
@@ -506,22 +547,23 @@
       "text": "Find work in Skelmed. Ida at the hunters' lodge, Garran at the forge and old Orlen up in the hills could all use a hand.",
       "when": [
         "flag:been:skelmed",
-        "!class:"
+        "!done:lodge|!done:quarry|!done:orlen"
       ]
     },
     {
-      "text": "You've tried all three. Mira at the guild post says to put your hand on the class stone in her yard.",
+      "text": "You've helped Ida, Garran and Orlen. Mira at the guild post will put your name in the guild's book.",
       "when": [
         "done:lodge",
         "done:quarry",
         "done:orlen",
-        "!class:"
+        "!flag:guild_member"
       ]
     },
     {
       "text": "Ida says Skelmed's troubles come down the road from the town inland. (The road inland opens in the next part of the game.)",
       "when": [
-        "class:"
+        "flag:guild_member",
+        "done:pack"
       ]
     }
   ],
@@ -1060,14 +1102,6 @@
           "scene": "mira"
         },
         {
-          "id": "stone",
-          "kind": "item",
-          "sprite": "obj_stone",
-          "x": 32,
-          "y": 11,
-          "scene": "class_stone"
-        },
-        {
           "id": "fire1",
           "kind": "item",
           "sprite": "obj_fire",
@@ -1262,7 +1296,23 @@
           "x": 9,
           "y": 29,
           "facing": "right",
-          "scene": "rook"
+          "scene": "rook",
+          "when": [
+            "!follower:rook"
+          ]
+        },
+        {
+          "id": "alpha",
+          "kind": "npc",
+          "sprite": "obj_wolf_alpha",
+          "x": 29,
+          "y": 3,
+          "facing": "down",
+          "scene": "den",
+          "when": [
+            "quest:pack",
+            "!flag:alpha_dead"
+          ]
         },
         {
           "id": "snare1",
@@ -1324,6 +1374,18 @@
           "x1": 17,
           "y1": 39,
           "to": "skelmed_north"
+        },
+        {
+          "x0": 26,
+          "y0": 2,
+          "x1": 31,
+          "y1": 6,
+          "scene": "den",
+          "when": [
+            "quest:pack",
+            "!flag:alpha_dead",
+            "!flag:den_found"
+          ]
         }
       ],
       "uses": [
@@ -1354,9 +1416,9 @@
       "rows": [
         "TTTTTTTTTTTTTTT.TTTTTTT.TTTT.TTTT.",
         "TTTTTTTThhuuuuuuuuuuuuuuuhhTTTTTTT",
-        ".T.....Thhhuuuuuuuuuuuuuhhh.....TT",
+        ".T.....Thhhuuuuuuuuuuuuuhhhr..rrTT",
         "TTTTT.T.hhhuuuuuuuuuuuuuhhh.....TT",
-        "TT....T..hhhuuuuuuuuuuuhhhT.....TT",
+        "TT....T..hhhuuuuuuuuuuuhhhT....rTT",
         "TTT.TT...hhhhuuuuuuuuuhhhh......TT",
         "TT......TThhhhuuuuuuuhhhh......TTT",
         "TT......T...hhhhhhhhhhh.........TT",
@@ -1564,7 +1626,8 @@
           "count": "item:water_bucket",
           "target": 1
         }
-      ]
+      ],
+      "exp": 15
     },
     {
       "id": "firewood",
@@ -1577,7 +1640,8 @@
           "count": "item:firewood",
           "target": 3
         }
-      ]
+      ],
+      "exp": 15
     },
     {
       "id": "boar",
@@ -1589,7 +1653,8 @@
           "text": "Kill the boar in the copse",
           "when": "flag:boar_killed"
         }
-      ]
+      ],
+      "exp": 30
     },
     {
       "id": "lodge",
@@ -1611,7 +1676,8 @@
           "text": "Fill the water butt with two pails from the hill stream",
           "when": "flag:butt_full"
         }
-      ]
+      ],
+      "exp": 40
     },
     {
       "id": "quarry",
@@ -1631,7 +1697,8 @@
           "text": "Forge your first piece of gear",
           "when": "flag:smith_done"
         }
-      ]
+      ],
+      "exp": 40
     },
     {
       "id": "orlen",
@@ -1655,7 +1722,211 @@
           "text": "Put out the fire at the net shed",
           "when": "flag:fire_out"
         }
+      ],
+      "exp": 40
+    },
+    {
+      "id": "pack",
+      "name": "The pack leader",
+      "giver": "Ida",
+      "exp": 100,
+      "desc": "The yellow-eyed wolves have a leader: a huge grey brute with a scarred muzzle, denning past the quarry. Ida wants it dead, and she's sent Rook with you.",
+      "goals": [
+        {
+          "text": "Find the den past the quarry, with Rook",
+          "when": "flag:den_found"
+        },
+        {
+          "text": "Kill the pack leader",
+          "when": "flag:alpha_dead"
+        }
       ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "unarmed",
+      "name": "Fists",
+      "kind": "combat",
+      "desc": "Fighting with nothing in your hands."
+    },
+    {
+      "id": "dagger",
+      "name": "Daggers",
+      "kind": "combat",
+      "desc": "Knives and daggers: quick, close and light on stamina."
+    },
+    {
+      "id": "axe",
+      "name": "Axes",
+      "kind": "combat",
+      "desc": "Heavy, slow swings that hit like a falling tree."
+    },
+    {
+      "id": "bow",
+      "name": "Bows",
+      "kind": "combat",
+      "desc": "Shooting from a distance. Hard to learn, hard to stop."
+    },
+    {
+      "id": "shield",
+      "name": "Shields",
+      "kind": "combat",
+      "desc": "Blocking and parrying with a shield in your off hand."
+    },
+    {
+      "id": "magic",
+      "name": "Magic",
+      "kind": "combat",
+      "desc": "Casting spells. Makes every spell hit harder."
+    },
+    {
+      "id": "mining",
+      "name": "Mining",
+      "kind": "life",
+      "desc": "Digging ore and stone. Each level makes the work lighter."
+    },
+    {
+      "id": "smithing",
+      "name": "Smithing",
+      "kind": "life",
+      "desc": "Working the forge. Each level adds 3 to the quality of what you make, and makes the work lighter."
+    },
+    {
+      "id": "woodcutting",
+      "name": "Woodcutting",
+      "kind": "life",
+      "desc": "Gathering and splitting wood. Each level makes the work lighter."
+    },
+    {
+      "id": "hunting",
+      "name": "Hunting",
+      "kind": "life",
+      "desc": "Snares, tracking and game. Each level makes the work lighter."
+    }
+  ],
+  "moves": [
+    {
+      "id": "haymaker",
+      "name": "Haymaker",
+      "skill": "unarmed",
+      "level": 2,
+      "desc": "A wild, swinging punch: hard, but tiring.",
+      "stamina": 20,
+      "power": 1.6
+    },
+    {
+      "id": "headbutt",
+      "name": "Headbutt",
+      "skill": "unarmed",
+      "level": 4,
+      "desc": "Crude, but it rattles them: the enemy loses its next action.",
+      "stamina": 18,
+      "power": 0.8,
+      "stagger": true
+    },
+    {
+      "id": "quick_stab",
+      "name": "Quick stab",
+      "skill": "dagger",
+      "level": 2,
+      "desc": "A fast jab that always strikes before the enemy.",
+      "stamina": 8,
+      "power": 0.8,
+      "first": true,
+      "timing": false
+    },
+    {
+      "id": "twin_cut",
+      "name": "Twin cut",
+      "skill": "dagger",
+      "level": 4,
+      "desc": "Two cuts in one motion.",
+      "stamina": 22,
+      "power": 0.65,
+      "hits": 2
+    },
+    {
+      "id": "cleave",
+      "name": "Cleave",
+      "skill": "axe",
+      "level": 2,
+      "desc": "A huge overhead swing.",
+      "stamina": 26,
+      "power": 1.8
+    },
+    {
+      "id": "sunder",
+      "name": "Sunder",
+      "skill": "axe",
+      "level": 4,
+      "desc": "Smashes straight through a guard.",
+      "stamina": 24,
+      "power": 1.3,
+      "pierce": true
+    },
+    {
+      "id": "aimed_shot",
+      "name": "Aimed shot",
+      "skill": "bow",
+      "level": 2,
+      "desc": "Take a breath, aim, loose.",
+      "stamina": 16,
+      "power": 1.7
+    },
+    {
+      "id": "pinning_shot",
+      "name": "Pinning shot",
+      "skill": "bow",
+      "level": 4,
+      "desc": "An arrow through the paw: the enemy loses its next action.",
+      "stamina": 18,
+      "power": 0.9,
+      "stagger": true
+    },
+    {
+      "id": "shield_bash",
+      "name": "Shield bash",
+      "skill": "shield",
+      "level": 2,
+      "desc": "Slam them with the shield: the enemy loses its next action.",
+      "stamina": 16,
+      "power": 0.6,
+      "stagger": true,
+      "timing": false
+    },
+    {
+      "id": "rim_strike",
+      "name": "Rim strike",
+      "skill": "shield",
+      "level": 4,
+      "desc": "Drive the shield's rim through their guard.",
+      "stamina": 18,
+      "power": 1.1,
+      "pierce": true
+    },
+    {
+      "id": "flare",
+      "name": "Flare",
+      "skill": "magic",
+      "level": 3,
+      "desc": "Kindle pushed as far as it goes: a burst of fire.",
+      "stamina": 10,
+      "energy": 8,
+      "power": 1.6,
+      "need": "spell:kindle"
+    }
+  ],
+  "followers": [
+    {
+      "id": "rook",
+      "name": "Rook",
+      "sprite": "npc_rook",
+      "desc": "Ida's son. Quiet, quick, and a better shot than he lets on.",
+      "hp": 60,
+      "atkMin": 4,
+      "atkMax": 8,
+      "attack": "looses an arrow at"
     }
   ]
 }

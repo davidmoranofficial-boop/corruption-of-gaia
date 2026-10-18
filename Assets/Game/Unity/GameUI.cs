@@ -212,7 +212,15 @@ namespace Loran.UnityLayer
 
             var left = Add(hud, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-left");
             var card = Add(left, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-card");
-            Add(card, new Label(s.name), "hud-name");
+            var nameRow = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-name-row");
+            Add(nameRow, new Label(s.name), "hud-name");
+            Add(nameRow, new Label("Lv " + s.level), "hud-level");
+            var expTrack = Add(card, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-track");
+            var expFill = Add(expTrack, new VisualElement { pickingMode = PickingMode.Ignore }, "hud-exp-fill");
+            expFill.style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
+            var fol = engine.Follower;
+            if (fol != null)
+                Add(card, new Label("With you: " + fol.name + "  " + Mathf.CeilToInt(Mathf.Max(0, s.followerHp)) + " / " + Mathf.RoundToInt(fol.hp)), "hud-follower");
             Need(card, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
             Need(card, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a");
             Need(card, "ENERGY", s.energy, 100, "#9d8fd0");
@@ -287,6 +295,7 @@ namespace Loran.UnityLayer
         {
             ("inventory", "Inventory", KeyCode.I),
             ("equipment", "Equipment", KeyCode.E),
+            ("skills", "Skills", KeyCode.K),
             ("journal", "Journal", KeyCode.J),
             ("crafting", "Crafting", KeyCode.C),
             ("world", "World", KeyCode.W),
@@ -341,6 +350,7 @@ namespace Loran.UnityLayer
             {
                 case "inventory": MenuInventory(left, right); break;
                 case "equipment": MenuEquipment(left, right); break;
+                case "skills": MenuSkills(left, right); break;
                 case "journal": MenuJournal(left, right); break;
                 case "crafting": MenuCrafting(left, right); break;
                 case "world": MenuWorld(left, right); break;
@@ -469,11 +479,6 @@ namespace Loran.UnityLayer
             }
             Add(stats, new Label("Stats grow with practice. The bar shows progress to the next point."), "line-muted");
 
-            var cls = d.Class(s.playerClass);
-            var path = Section(right, "CLASS");
-            Add(path, new Label(cls != null ? cls.name : "No class yet"), "line");
-            Add(path, new Label(cls != null ? cls.desc + " Your class tree is still to come." : "You'll choose one at a class stone, once you've seen what the world needs."), "line-muted");
-
             var spells = Section(right, "SPELLS");
             if (s.spells.Count == 0) Add(spells, new Label("You don't know any magic yet."), "line-muted");
             foreach (var id in s.spells)
@@ -481,6 +486,52 @@ namespace Loran.UnityLayer
                 var def = d.Spell(id);
                 Add(spells, new Label(def.name + "  ·  " + def.desc), "line");
             }
+        }
+
+        /// <summary>Your level, and every skill: how far along it is and what it unlocks.</summary>
+        void MenuSkills(VisualElement left, VisualElement right)
+        {
+            var s = engine.S;
+            var d = engine.data;
+
+            var lvl = Section(left, "LEVEL");
+            var r0 = Add(lvl, new VisualElement(), "stat-row");
+            Add(r0, new Label("Level " + s.level), "stat-name");
+            Add(r0, new Label(s.exp + " / " + Rules.ExpToNext(s.level)), "skill-exp");
+            var t0 = Add(r0, new VisualElement(), "xp-track");
+            Add(t0, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
+            Add(lvl, new Label("Experience comes from fights and finished jobs. Each level adds " + Rules.HpPerLevel + " health and " + Rules.StaminaPerLevel + " stamina."), "line-muted");
+
+            var combat = Section(left, "COMBAT SKILLS");
+            Add(combat, new Label("These grow as you fight with them and unlock moves, under Skills in a fight. Using now: " +
+                                  (d.Skill(engine.WeaponSkill())?.name ?? "Fists") + (engine.HasShield() ? " and Shields" : "") + "."), "line-muted");
+            foreach (var sk in d.file.skills.Where(k => k.kind == "combat")) SkillRow(combat, sk);
+
+            var life = Section(right, "LIFE SKILLS");
+            Add(life, new Label("These grow as you do the work. Every level makes that work lighter: less stamina, up to 40% less."), "line-muted");
+            foreach (var sk in d.file.skills.Where(k => k.kind == "life")) SkillRow(life, sk);
+
+            var fol = engine.Follower;
+            var with = Section(right, "WITH YOU");
+            if (fol == null) Add(with, new Label("Nobody. Some jobs are better done with company."), "line-muted");
+            else
+            {
+                Add(with, new Label(fol.name + "  ·  " + Mathf.CeilToInt(Mathf.Max(0, s.followerHp)) + " / " + Mathf.RoundToInt(fol.hp) + " health"), "line");
+                Add(with, new Label(fol.desc + " Fights at your side; rests when you sleep."), "line-muted");
+            }
+        }
+
+        void SkillRow(VisualElement parent, SkillDef sk)
+        {
+            int lv = engine.SkillLevel(sk.id);
+            var r = Add(parent, new VisualElement(), "stat-row");
+            Add(r, new Label(sk.name), "stat-name");
+            Add(r, new Label(lv.ToString()), "stat-value");
+            var t = Add(r, new VisualElement(), "xp-track");
+            Add(t, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(engine.SkillProgress(sk.id)) * 100f);
+            Add(parent, new Label(sk.desc), "skill-desc");
+            foreach (var m in engine.data.file.moves.Where(m => m.skill == sk.id))
+                Add(parent, new Label((lv >= m.level ? "√  " : "Lv " + m.level + "  ") + m.name + ": " + m.desc), lv >= m.level ? "skill-move" : "skill-move-locked");
         }
 
         void GearText(VisualElement row, GearItem g)

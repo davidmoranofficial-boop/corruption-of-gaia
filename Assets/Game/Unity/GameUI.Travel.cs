@@ -16,7 +16,9 @@ namespace Loran.UnityLayer
         const int Tile = 16;
         const float WalkSeconds = 0.2f, RunSeconds = 0.11f;
 
-        VisualElement worldView, worldLayer, playerBox, playerSheet;
+        VisualElement worldView, worldLayer, playerBox, playerSheet, followerBox, followerSheet;
+        Vector2 followerFrom, followerTo;
+        string followerWalkFacing = "down";
         Label usePrompt;
         readonly Dictionary<string, (VisualElement box, VisualElement sheet)> objectSprites = new Dictionary<string, (VisualElement, VisualElement)>();
         readonly Dictionary<string, string> npcFacing = new Dictionary<string, string>();
@@ -71,12 +73,13 @@ namespace Loran.UnityLayer
             // People and things, then you, drawn top to bottom so whoever is lower stands in front
             var things = engine.Objects().Where(o => !string.IsNullOrEmpty(o.sprite)).OrderBy(o => o.y).ToList();
             bool youDrawn = false;
+            followerBox = followerSheet = null;
             foreach (var o in things)
             {
-                if (!youDrawn && o.y > s.ay) { DrawYou(); youDrawn = true; }
+                if (!youDrawn && o.y > s.ay) { DrawYouAndFollower(); youDrawn = true; }
                 DrawObject(o);
             }
-            if (!youDrawn) DrawYou();
+            if (!youDrawn) DrawYouAndFollower();
 
             var over = Sprite("World/" + a.id + "_over");
             if (over != null)
@@ -87,6 +90,7 @@ namespace Loran.UnityLayer
             if (engine.Check("night") && !a.indoor) Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-night");
 
             PlaceYou(new Vector2(s.ax, s.ay), moving ? 1 + stepCount % 2 : 0);
+            PlaceFollowerSprite(new Vector2(s.fx, s.fy), s.followerFacing, 0);
 
             usePrompt = Add(worldView, new Label(""), "world-prompt");
             bool canCamp = a.camp && !a.indoor;
@@ -191,6 +195,30 @@ namespace Loran.UnityLayer
             (playerBox, playerSheet) = Walker(PlayerSheet());
         }
 
+        /// <summary>You, and whoever's walking with you (drawn behind you when they're above you on the screen).</summary>
+        void DrawYouAndFollower()
+        {
+            var s = engine.S;
+            var fol = engine.Follower;
+            if (fol != null && s.fy <= s.ay) DrawFollower(fol);
+            DrawYou();
+            if (fol != null && s.fy > s.ay) DrawFollower(fol);
+        }
+
+        void DrawFollower(FollowerDef fol)
+        {
+            (followerBox, followerSheet) = Walker("Walk/" + fol.sprite);
+        }
+
+        void PlaceFollowerSprite(Vector2 tile, string facing, int frame)
+        {
+            if (followerBox == null) return;
+            int k = worldScale, T = Tile * k;
+            followerBox.style.left = Mathf.Round(tile.x * T);
+            followerBox.style.top = Mathf.Round(tile.y * T - 8 * k);
+            SetFrame(followerSheet, facing, frame);
+        }
+
         void DrawObject(WorldObj o)
         {
             int k = worldScale, T = Tile * k;
@@ -252,6 +280,8 @@ namespace Loran.UnityLayer
             {
                 float t = Mathf.Clamp01((Time.realtimeSinceStartup - moveStart) / moveSeconds);
                 PlaceYou(Vector2.Lerp(moveFrom, moveTo, t), t < 0.55f ? 1 + stepCount % 2 : 0);
+                if (followerBox != null && followerFrom != followerTo)
+                    PlaceFollowerSprite(Vector2.Lerp(followerFrom, followerTo, t), followerWalkFacing, t < 0.55f ? 1 + (stepCount + 1) % 2 : 0);
                 if (t < 1f) return;
                 moving = false;
                 var step = pendingStep;
@@ -270,6 +300,7 @@ namespace Loran.UnityLayer
                 RenderHud();
                 UpdatePrompt();
                 PlaceYou(new Vector2(s.ax, s.ay), 0);
+                PlaceFollowerSprite(new Vector2(s.fx, s.fy), s.followerFacing, 0);
             }
             if (!FreeToWalk) return;
             if (heldDirs.Count == 0)
@@ -293,6 +324,10 @@ namespace Loran.UnityLayer
             var (dx, dy) = Engine.Dir(dir);
             moveFrom = new Vector2(s.ax, s.ay);
             moveTo = moveFrom + new Vector2(dx, dy);
+            followerFrom = new Vector2(s.fx, s.fy);
+            followerTo = moveFrom;
+            var fd = followerTo - followerFrom;
+            followerWalkFacing = fd.x > 0 ? "right" : fd.x < 0 ? "left" : fd.y > 0 ? "down" : fd.y < 0 ? "up" : s.followerFacing;
             moveSeconds = c.label == "Run" ? RunSeconds : WalkSeconds;
             moveStart = Time.realtimeSinceStartup;
             pendingStep = c;

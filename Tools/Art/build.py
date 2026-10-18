@@ -190,6 +190,19 @@ def wood_axe():
     return g
 
 
+def hunting_bow():
+    g = blank()
+    # a curved stave held upright, bowing out in front of you, the string a pale line nearer the body
+    for y in range(17, 41):
+        t = (y - 29) / 12.0
+        x = 22 + int(round(4 * (1 - t * t)))
+        g[y][x] = 'b' if y % 4 else 'B'
+        if g[y][21] == '.': g[y][21] = 'W'
+    for y in range(27, 31):
+        g[y][26] = 'Q'                         # the grip
+    return g
+
+
 def buckler():
     g = blank()
     cx, cy = 9, 22
@@ -231,6 +244,7 @@ GEAR = {
     'gutting_knife': (gutting_knife, False),
     'knife': (iron_knife(), False),
     'wood_axe': (wood_axe(), False),
+    'hunting_bow': (hunting_bow(), False),
     'buckler': (buckler(), True),
     'gloves': (gloves(), False),
     'iron_cap': (load('helmet.txt'), False),
@@ -398,6 +412,12 @@ def main():
     from beasts import wolf
     g, w, h = wolf()
     made.append(save(render(g), 'Enemies', 'wolf.png'))
+    # the pack leader: the same wolf, darker, black along the spine, a scar across the muzzle and hot yellow eyes
+    alpha = recolour(g, {'Y': 'y', 'y': 'G', 'G': 'g', 'g': 'o', 'W': 'Y'})
+    for (x, y) in ((3, 12), (4, 13), (5, 13), (6, 14), (7, 14)):
+        if alpha[y][x] != '.': alpha[y][x] = 'r'
+    alpha[11][9], alpha[11][10] = 'a', 'r'
+    made.append(save(render(alpha), 'Enemies', 'wolf_alpha.png'))
     from beasts import boar
     g, w, h = boar()
     made.append(save(render(g), 'Enemies', 'boar.png'))

@@ -57,6 +57,66 @@
     margin-bottom: 6px;
 }
 
+.hud-name-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.hud-level {
+    font-size: 15px;
+    color: var(--lantern);
+    -unity-font-style: bold;
+    margin-bottom: 7px;
+}
+
+.hud-exp-track {
+    height: 3px;
+    background-color: var(--sea);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.hud-exp-fill {
+    height: 100%;
+    background-color: var(--lantern);
+}
+
+.hud-follower {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.skill-exp {
+    width: 100px;
+    font-size: 15px;
+    color: var(--muted);
+}
+
+.skill-desc {
+    font-size: 14px;
+    color: var(--muted);
+    white-space: normal;
+    margin: 0 0 3px 0;
+}
+
+.skill-move, .skill-move-locked {
+    font-size: 14px;
+    white-space: normal;
+    margin: 0 0 2px 12px;
+}
+
+.skill-move {
+    color: var(--text);
+}
+
+.skill-move-locked {
+    color: var(--muted);
+    opacity: 0.7;
+}
+
 .hud-small {
     flex-direction: row;
     justify-content: space-between;
@@ -1702,6 +1762,36 @@
 }
 
 .spot-player { left: 17%; }
+
+.spot-follower {
+    position: absolute;
+    bottom: 9%;
+    left: 5%;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.follower-tag {
+    width: 120px;
+    margin-top: 6px;
+    padding: 4px 8px;
+    background-color: rgba(14, 22, 26, 0.86);
+    border-radius: 6px;
+}
+
+.follower-name {
+    font-size: 14px;
+    color: var(--text);
+    -unity-font-style: bold;
+}
+
+.boss-tag {
+    font-size: 13px;
+    color: #e3a64e;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    margin: 2px 0 4px 0;
+}
 .spot-enemy { right: 15%; }
 
 .battle .fighter-card {

@@ -435,7 +435,8 @@
           "time": 10,
           "stamina": 4,
           "train": [
-            "str+1"
+            "str+1",
+            "woodcutting+2"
           ],
           "why": "gathering wood",
           "effects": [

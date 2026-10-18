@@ -21,6 +21,7 @@ namespace Loran.Core
 
     [Serializable] public class ItemStack { public string id; public int count; }
     [Serializable] public class RepEntry { public string place; public int value; }
+    [Serializable] public class SkillEntry { public string id; public int level; public float xp; }
 
     /// <summary>
     /// One piece of gear the player owns. Each one is its own object, so two "iron knives" can have
@@ -78,7 +79,16 @@ namespace Loran.Core
         public string gear = "";               // old saves only: the single piece of gear from before gear ranks
         public List<GearItem> gearItems = new List<GearItem>();
         public int nextGearId = 1;
-        public string playerClass = "";
+        public string playerClass = "";        // old saves only: classes were taken out
+        public int level = 1;
+        public int exp;                        // towards the next level
+        public List<SkillEntry> skills = new List<SkillEntry>();
+
+        // Someone walking with you: who, their health, where they are (a step behind you) and which way they face
+        public string follower = "";
+        public float followerHp;
+        public int fx, fy;
+        public string followerFacing = "down";
         public List<RepEntry> rep = new List<RepEntry>();
 
         // Combat (JsonUtility can't store a null object, so these are flat fields)
@@ -88,6 +98,7 @@ namespace Loran.Core
         public string combatWin = "", combatFlee = "";
         public bool defending;
         public string enemyMove = "";          // what the enemy is about to do (shown to the player as a tell)
+        public int enemyStun;                  // actions the enemy loses (staggered)
         public int round;
         public List<string> battleLog = new List<string>();
 
@@ -142,6 +153,9 @@ namespace Loran.Core
             gearItems ??= new List<GearItem>();
             foreach (var g in gearItems) g.traits ??= new List<string>();
             battleLog ??= new List<string>();
+            skills ??= new List<SkillEntry>();
+            if (level < 1) level = 1;
+            follower ??= ""; if (string.IsNullOrEmpty(followerFacing)) followerFacing = "down";
             enemyMove ??= "";
             travelRoute ??= ""; area ??= ""; if (string.IsNullOrEmpty(facing)) facing = "down";
             forging ??= ""; forgeMaterial ??= ""; forgeMax ??= ""; forgeNext ??= ""; forgeIntro ??= "";

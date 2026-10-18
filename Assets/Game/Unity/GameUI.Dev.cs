@@ -37,6 +37,8 @@ namespace Loran.UnityLayer
             Add(row, new Button(() => Cheat(() => engine.DevCoins(20))) { text = "+20 coppers" }, "dev-btn");
             Add(row, new Button(() => Cheat(engine.DevItems)) { text = "Give every item" }, "dev-btn");
             Add(row, new Button(() => Cheat(engine.DevSpells)) { text = "Learn all spells" }, "dev-btn");
+            Add(row, new Button(() => Cheat(engine.DevLevel)) { text = "Level up" }, "dev-btn");
+            Add(row, new Button(() => Cheat(engine.DevSkills)) { text = "All skills +1" }, "dev-btn");
             if (s.inCombat) Add(row, new Button(() => Cheat(engine.DevWinFight, true)) { text = "Win this fight" }, "dev-btn");
             Add(row, new Button(() => Cheat(() => engine.DevTime(6))) { text = "Morning" }, "dev-btn");
             Add(row, new Button(() => Cheat(() => engine.DevTime(21))) { text = "Night" }, "dev-btn");

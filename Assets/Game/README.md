@@ -9,7 +9,7 @@ Press **Play** in any scene. `Unity/GameBoot.cs` builds the whole game at startu
 | `Core/` | The rules: time, needs, corruption, stats, combat, saving, and the engine that runs the story. Plain C# with no Unity code, so it can be tested outside Unity. |
 | `Unity/` | The screen: HUD, story text, choices, side panel, New Game and character creation. Built with UI Toolkit from code. |
 | `Resources/Story/` | The story, one JSON file per area. **This is where the writing lives.** |
-| `Resources/Data/data.json` | Items, enemies, classes, backgrounds, gear, spells and journal entries. |
+| `Resources/Data/data.json` | Items, enemies, skills, moves, followers, backgrounds, gear, spells and journal entries. |
 | `Resources/UI/Game.uss` | Colours, sizes and fonts for the screen. |
 | `../../Tools/CoreTests/` | Automated playthroughs. Run `dotnet run --project Tools/CoreTests` from the repo root. |
 
@@ -17,7 +17,7 @@ All the balancing numbers (how fast hunger drains, how fast corruption grows, an
 
 ## Dev mode
 
-Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen. Quick starts drop a ready-made test character into any part of the game (the forge, either fight, the road, the class stone and more). You can also jump to any scene, refill everything, give coins, items and spells, change stats, set the time, win a fight, or make any gear at any rank. A game that has used dev mode is never autosaved, so your real save is safe. The quick starts live in `Core/Engine.Dev.cs`.
+Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen. Quick starts drop a ready-made test character into any part of the game (the forge, either fight, the road, the guild, the pack leader boss and more). You can also jump to any scene, refill everything, give coins, items and spells, change stats, set the time, win a fight, level up, raise every skill, or make any gear at any rank. A game that has used dev mode is never autosaved, so your real save is safe. The quick starts live in `Core/Engine.Dev.cs`.
 
 ## Writing a scene
 
@@ -54,7 +54,7 @@ Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen
 
 Put `!` in front of any condition to flip it. Join conditions with `|` when either will do: `!done:lodge|!done:quarry`.
 
-`flag:name`, `item:bread`, `spell:kindle`, `class` (has any class), `class:mage`, `gear`, `gear:knife`, `mode:basic`, `mode:perma`, `background:runner`, `gender:female`, `night`, and comparisons such as `coins>=3`, `water<4`, `rep:skelmed>=10`, `energy<20`, `stat:str>=5`, `item:bread>=2`, `day>=3`.
+`flag:name`, `item:bread`, `spell:kindle`, `follower:rook` (`follower:` alone means anyone), `skill:dagger>=2`, `level>=3`, `gear`, `gear:knife`, `mode:basic`, `mode:perma`, `background:runner`, `gender:female`, `night`, and comparisons such as `coins>=3`, `water<4`, `rep:skelmed>=10`, `energy<20`, `stat:str>=5`, `item:bread>=2`, `day>=3`.
 
 ### Effects (`effects`, `onEnter`)
 
@@ -67,7 +67,9 @@ Put `!` in front of any condition to flip it. Join conditions with `|` when eith
 | `corruption+0.3`, `corruption-0.2` | Push the corruption meter up or down |
 | `hunger+40`, `thirst+20`, `energy+10`, `stamina+10`, `hp+10` (or `=` to set) | Needs |
 | `water=4` | Fill the waterskin |
-| `spell:draw_water`, `gear:knife`, `class:mage` | Learn a spell, give and equip gear at its own rank (usually F), take a class |
+| `spell:draw_water`, `gear:knife`, `give:hunting_bow` | Learn a spell; give and equip gear at its own rank (usually F); `give` puts it in the pack without equipping |
+| `exp:20` | Give EXP |
+| `follow:rook` / `unfollow` | Someone joins you, or goes home |
 | `forge:knife:D:green_gem` | Put a piece on the anvil and play the forge game. Quality decides the rank (a material gives +1 rank, quality 75+ gives +1, below 30 it's crude), never above the rank given. After forging, the player goes where the choice's `go` points |
 | `craft:knife:E:green_gem` | Make gear at a rank (F to S). Above F it rolls traits from the material's list (or from all traits if no material) |
 | `sleep:safe` / `sleep:rough` / `sleep:camp` | Sleep until morning. Sleeping saves: in basic mode you wake here if you die |
@@ -81,7 +83,7 @@ Gear in `data.json` is the base: name, slot (`weapon`, `offhand`, `body`, `hands
 
 ## The walkable world
 
-The whole game happens in the world now: there are no text pages. Areas are top-down maps you walk round tile by tile with the arrow keys (Shift runs, Space talks to or uses what you face, Enter makes camp where that's allowed). There are four: the coast road, Yenson's hut (an inside area), the village of Skelmed and the hills above it (the lane north out of the village). A thing in `World` sprites taller than 16 pixels (the class stone) stands up out of its tile. People talk in a box at the bottom of the screen; a scene's `speaker` puts their name on it. Each area lives under `areas` in `data.json` and is made by `Tools/Art/world.py` (run `python3 Tools/Art/build.py`), which also paints its picture, so to change an area, edit that script. The tile letters are listed under `tiles` (`solid` ones can't be walked on; `road` ones have fewer fights).
+The whole game happens in the world now: there are no text pages. Areas are top-down maps you walk round tile by tile with the arrow keys (Shift runs, Space talks to or uses what you face, Enter makes camp where that's allowed). There are four: the coast road, Yenson's hut (an inside area), the village of Skelmed and the hills above it (the lane north out of the village). A thing in `World` sprites taller than 16 pixels stands up out of its tile. People talk in a box at the bottom of the screen; a scene's `speaker` puts their name on it. Each area lives under `areas` in `data.json` and is made by `Tools/Art/world.py` (run `python3 Tools/Art/build.py`), which also paints its picture, so to change an area, edit that script. The tile letters are listed under `tiles` (`solid` ones can't be walked on; `road` ones have fewer fights).
 
 An area has `spots` (named places to put the player, used by the effect `travel:at:<spot>`), `objects` (people, signs, doors and things: facing one and pressing Space opens its `scene` or shows its `text`; `once` ones vanish after use; `when` says when they're there), `zones` (walking into the rectangle runs `scene`, or moves you to the spot `to`, which is how doors and the village gate work; or runs the first of `enter` whose `when` holds) and `uses` (facing a kind of tile, like the stream, the well or a bed, opens a scene). `indoor` areas have no night shade, and `camp: false` stops camping. Going into an area sets the flag `been:<area id>`.
 
@@ -93,16 +95,28 @@ Quests live under `quests` in `data.json`: an `id`, a `name`, who gives it (`giv
 
 Yenson's three jobs run one after the other: fill his bucket at the spring in the copse south of the shack, bring three armfuls of deadwood, then kill the boar by the spring. He pays you with supplies and five coppers and sends you north to Skelmed.
 
-Skelmed has three tutorial jobs, in any order, one for each class:
+Skelmed has three tutorial jobs, in any order:
 - **Ida** (hunters' lodge, `lodge`): three hares from Rook's snares in the hills (a wolf is robbing the last one), four logs split at the chopping block, and the water butt filled with two pails from the hill stream. She pays five coppers and fish; you can turn the coin down or push for more.
 - **Garran** (forge, `quarry`): dig three lumps of ore at the quarry with his pick, bring them back, forge your first piece. A green gem in the spoil heap can be shown to him (he lets you set it) or pocketed.
 - **Orlen** (cottage in the hills, `orlen`): learn Draw Water and Kindle, light his brazier, then the net shed in the village catches fire. Put out its three fires with Draw Water or wet nets, or stay put and let it burn.
 
-With all three done, the class stone in the guild post's yard lets you pick Adventurer, Blacksmith or Mage, and Mira gives you a guild card. Bess at the inn rents beds and sells bread.
+After the lodge job Ida asks one more thing (`pack`): Rook comes with you, with a hunting bow for you, to kill the pack leader in its den in the north-east of the hills. That's the first boss. With all three jobs done, Mira at the guild post puts your name in the guild book and gives you a guild card. Bess at the inn rents beds and sells bread.
+
+## Levels and skills
+
+There are no classes. Quests (`exp` on the quest) and fights (`exp` on the enemy) give EXP, and each level adds health and stamina and heals you (`Core/Rules.cs`). Skills, under `skills` in `data.json`, grow by doing:
+- **Combat skills** (`kind: combat`): Fists, Dagger, Axe, Bow, Shield, Magic. Attacking trains the skill of the weapon in hand (gear has a `skill`), blocking with a shield trains Shield, casting trains Magic. Each skill adds damage and unlocks `moves` at set levels, which show in the fight menu while you hold the right weapon. A move can hit more than once (`hits`), go first (`first`), stun (`stagger`), ignore a guard (`pierce`), or skip the timing bar (`timing: false`).
+- **Life skills** (`kind: life`): Mining, Smithing, Woodcutting, Hunting. A choice's `train` list can name a skill (`mining+4`). Each level makes that work cost less stamina, and Smithing raises forge quality.
+
+Skills go up to 10. The Skills menu (K) shows them all.
+
+## Followers
+
+`followers` in `data.json` are people who can walk with you (`follow:<id>`). A follower walks one step behind you, attacks after you in fights, and can be hit. If they go down they get back up at a quarter health after the fight, and sleep heals them.
 
 ## Enemies and combat
 
-Each enemy has a rank, health, an attack range, a `speed` (compared with your Agility to see who acts first) and `moves`. Each move has a `tell`, which is shown before the enemy acts, a `power` that multiplies its attack, and a `weight` for how often it's picked. A move with `"guard": true` means the enemy holds back and your hits do half damage that round.
+Each enemy has a rank, health, `exp`, an optional `boss` flag and `size` (how big it's drawn), an attack range, a `speed` (compared with your Agility to see who acts first) and `moves`. Each move has a `tell`, which is shown before the enemy acts, a `power` that multiplies its attack, and a `weight` for how often it's picked. A move with `"guard": true` means the enemy holds back and your hits do half damage that round.
 
 Attacking and defending use the timing bar. A perfect press is a critical hit (or a parry when defending), a good press is a normal hit, and a mistimed one glances off.
 

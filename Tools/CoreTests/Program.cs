@@ -20,7 +20,7 @@ static class Program
     {
         Root = FindRoot();
         Test("content has no broken links", ContentIsValid);
-        Test("full playthrough: hut, coast road, Skelmed's jobs, class stone", FullPlaythrough);
+        Test("full playthrough: hut, coast road, Skelmed's jobs, the pack leader, the guild", FullPlaythrough);
         Test("save and load round trip", SaveLoad);
         Test("dying in basic mode wakes you at your last sleep", BasicDeath);
         Test("dying in permadeath ends the game", PermaDeath);
@@ -33,6 +33,7 @@ static class Program
         Test("walking the coast road", Travel);
         Test("forging: how well you play sets the rank", Forging);
         Test("dev mode quick starts and cheats", DevMode);
+        Test("levels, skills, moves and followers", Progression);
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("random play never gets stuck, across 300 seeds", RandomPlay);
         Console.WriteLine(failures == 0 ? "\nAll tests passed." : "\n" + failures + " test(s) failed.");
         return failures == 0 ? 0 : 1;
@@ -127,7 +128,7 @@ static class Program
         Assert(e.Travelling && AtSpot(e, "village_gate"), "the gate should take you into Skelmed");
         Assert(e.Journal().Any(j => j.Contains("Garran") && j.Contains("Orlen")), "the journal should point to the people with work");
 
-        // Skelmed's three jobs: Ida's lodge, Garran's quarry, Orlen's lessons. Then the class stone.
+        // Skelmed's three jobs: Ida's lodge, Garran's quarry, Orlen's lessons. Then the pack leader and the guild.
         foreach (var food in e.S.items.Where(i => e.data.Item(i.id).food).Select(i => i.id).ToList()) e.Eat(food);
         e.S.result = "";
         e.S.stepsSinceFight = -100000;
@@ -144,9 +145,11 @@ static class Program
         Pick(e, "Is there any work");
         Assert(e.Check("quest:quarry") && e.S.Count("pick") == 1, "Garran should send you to the quarry with his pick");
         Pick(e, "Another time");
-        Keep(e); UseThing(e, "stone");
-        Assert(e.S.scene == "class_stone" && !e.Choices().Any(c => c.def.label.Contains("become")), "the stone does nothing before the three jobs");
-        Pick(e, "Step away");
+        Keep(e); UseThing(e, "mira");
+        Assert(e.S.scene == "mira" && !e.Choices().Any(c => c.def.label.Contains("guild book")), "no guild book before the three jobs");
+        Pick(e, "How do I join");
+        Assert(e.S.result.Contains("all three"), "Mira should say to help all three");
+        Leave(e);
 
         Keep(e); ToArea(e, "hills_gate");
         Assert(e.Area.id == "skelmed_hills" && AtSpot(e, "hills_gate"), "the lane north should lead up into the hills");
@@ -215,6 +218,30 @@ static class Program
         Pick(e, "Take it and thank her");
         Assert(e.Check("done:lodge") && e.S.coins == c0 + 5 && e.S.Count("hare") == 0 && e.S.Count("pail") == 0, "the lodge job is done and paid");
 
+        // Ida's last job: the pack leader, with Rook beside you
+        Keep(e); UseThing(e, "ida");
+        Pick(e, "Anything else");
+        Assert(e.Check("quest:pack") && e.S.follower == "rook" && e.S.gearItems.Any(g => g.id == "hunting_bow" && !g.equipped), "Ida should send Rook with you, and a bow");
+        Leave(e);
+        int lv0 = e.S.level;
+        Keep(e); ToArea(e, "hills_gate");
+        Assert(e.Objects().All(o => o.id != "rook"), "Rook walks with you now, not at his snares");
+        Keep(e);
+        WalkUntil(e, (29, 5), () => e.S.scene == "den");
+        Pick(e, "Fight it");
+        Assert(e.S.inCombat && e.S.enemy == "pack_leader", "the pack leader should fight");
+        int rounds = 0;
+        for (; rounds < 200 && e.S.inCombat; rounds++) StepToward(e, (0, 0));
+        Assert(e.S.scene == "den_won", "should beat the pack leader with Rook, was " + e.S.scene);
+        Console.WriteLine("    pack leader took " + rounds + " rounds, hp " + e.S.hp + ", Rook " + e.S.followerHp);
+        Pick(e, "Skin it");
+        Assert(e.S.Count("wolf_pelt") == 1 && e.Check("ready:pack"), "the pelt, and the job ready");
+        Keep(e); ToArea(e, "skelmed_north");
+        Keep(e); UseThing(e, "ida");
+        Pick(e, "The pack leader");
+        Assert(e.Check("done:pack") && e.S.follower == "" && e.S.level > lv0, "Rook goes home, the job's done and you've levelled");
+        Leave(e);
+
         Keep(e); UseThing(e, "garran");
         Pick(e, "I've got the ore");
         Assert(e.Check("flag:ore_in") && e.S.Count("ore") == 0 && e.S.Count("pick") == 0, "Garran takes the ore and his pick back");
@@ -236,16 +263,18 @@ static class Program
         e.S.coins = coins;
         Pick(e, "Another time");
 
-        Assert(e.Journal().Any(j => j.Contains("class stone")), "the journal should point to the class stone");
-        Keep(e); UseThing(e, "stone");
-        Pick(e, "The anvil");
-        Assert(e.S.scene == "guild_card" && e.S.playerClass == "blacksmith" && e.S.Count("guild_card") == 1, "the stone should make you a blacksmith and Mira give you a card");
-        Pick(e, "Thank you");
+        Assert(e.Journal().Any(j => j.Contains("guild's book")), "the journal should point to Mira's book");
+        Keep(e); UseThing(e, "mira");
+        Pick(e, "Put your name in the guild book");
+        Assert(e.Check("flag:guild_member") && e.S.Count("guild_card") == 1, "Mira should put you in the book and give you a card");
+        Leave(e);
         Keep(e); UseThing(e, "ida");
         Pick(e, "What now");
         Assert(e.S.result.Contains("town inland"), "Ida should point you inland");
         Pick(e, "Goodbye");
-        Assert(!e.ActiveQuests.Any() && e.FinishedQuests.Count() == 6, "all six jobs done");
+        Assert(!e.ActiveQuests.Any() && e.FinishedQuests.Count() == 7, "all seven jobs done");
+        Assert(e.SkillLevel("mining") >= 1 && e.SkillLevel("smithing") >= 1 && e.SkillLevel("magic") >= 1 && e.S.level >= 3,
+               "doing things should grow skills and level: " + string.Join(", ", e.S.skills.Select(k => k.id + " " + k.level)) + ", level " + e.S.level);
         Console.WriteLine("    Skelmed's three jobs took " + Engine.Duration(e.S.minutes - t1) + ", rep " + e.S.Rep("skelmed") + ", gear " + knife.name + " (" + knife.rank + ")");
 
         // Out through the gate and back down the road
@@ -254,6 +283,79 @@ static class Program
         Assert(!e.SceneIds.Any(id => id == "village" || id == "bedroom" || id == "inn" || id == "guild"), "the old text pages should be gone");
         Console.WriteLine("    finished on day " + e.S.Day + " at " + Rules.Clock(e.S) + ", corruption " + e.S.corruption.ToString("0.00") +
                           "%, stats " + string.Join("/", e.S.stats) + ", journal: " + string.Join(" | ", e.Journal()));
+    }
+
+    /// <summary>Chooses the last option until you're back out walking.</summary>
+    static void Leave(Engine e)
+    {
+        for (int i = 0; i < 10 && e.S.scene != "travel"; i++) e.Choose(e.Choices().Where(c => c.enabled).Last().def);
+        Assert(e.S.scene == "travel", "should be back out, was " + e.S.scene);
+    }
+
+    static void Progression()
+    {
+        // EXP and levels
+        var e = NewEngine();
+        e.DevStart("village");
+        Assert(e.S.level == 1 && e.S.exp == 0, "start at level 1");
+        int hp1 = Rules.MaxHp(e.S), st1 = Rules.MaxStamina(e.S, e.data);
+        e.GainExp(Rules.ExpToNext(1), "test");
+        Assert(e.S.level == 2 && e.S.exp == 0 && Rules.MaxHp(e.S) > hp1 && Rules.MaxStamina(e.S, e.data) > st1 && e.S.hp == Rules.MaxHp(e.S), "a level up should raise and refill hp");
+
+        // Skills grow with use and unlock moves
+        Assert(e.WeaponSkill() == "dagger", "the gutting knife is a dagger");
+        Assert(!e.UsableMoves().Any(m => m.skill == "dagger"), "no dagger moves at level 0");
+        for (int i = 0; i < 40 && e.SkillLevel("dagger") < 2; i++) e.TrainSkill("dagger", 3, "test");
+        Assert(e.SkillLevel("dagger") == 2 && e.UsableMoves().Any(m => m.id == "quick_stab"), "dagger 2 unlocks Quick Stab");
+        for (int i = 0; i < 2000; i++) e.TrainSkill("dagger", 5, "test");
+        Assert(e.SkillLevel("dagger") == Rules.MaxSkill, "skills cap out");
+
+        // Attacking trains your weapon's skill, and a fight gives EXP
+        var f = NewEngine();
+        f.DevStart("dog");
+        int exp0 = f.S.exp;
+        f.Act(f.Choices().First(c => c.def.label == "Attack").def, Engine.TimingPerfect);
+        Assert(f.SkillProgress("dagger") > 0 || f.SkillLevel("dagger") > 0, "attacking with a knife trains daggers");
+        for (int i = 0; i < 100 && f.S.inCombat; i++) StepToward(f, (0, 0));
+        Assert(f.S.level > 1 || f.S.exp > exp0, "winning a fight gives EXP");
+
+        // Moves show up in a fight once you know them, and only for the weapon in hand
+        var m = NewEngine();
+        m.DevStart("dog");
+        m.TrainSkill("dagger", 100, "test");
+        m.TrainSkill("bow", 100, "test");
+        var skills = m.Choices().Where(c => Engine.CommandOf(c.def) == "skill").Select(c => c.def.label).ToList();
+        Assert(skills.Any(l => l.Contains(m.data.Move("quick_stab").name)) && !skills.Any(l => l.Contains(m.data.Move("aimed_shot").name)),
+               "dagger moves with a knife, no bow moves: " + string.Join(", ", skills));
+        float hpBefore = m.S.enemyHp;
+        m.Act(m.Choices().First(c => c.def.label.Contains(m.data.Move("quick_stab").name)).def, Engine.TimingGood);
+        Assert(m.S.enemyHp < hpBefore || !m.S.inCombat, "Quick Stab should hurt");
+
+        // Life skills make the work easier
+        var w = NewEngine();
+        w.DevStart("village");
+        var chop = new ChoiceDef { label = "work", stamina = 20, train = new List<string> { "woodcutting+1" } };
+        int before = w.StaminaCost(chop);
+        for (int i = 0; i < 2000; i++) w.TrainSkill("woodcutting", 5, "test");
+        Assert(w.StaminaCost(chop) < before, "a skilled woodcutter tires less");
+
+        // Followers walk behind you, fight beside you and go home
+        var b = NewEngine();
+        b.DevStart("boss");
+        Assert(b.S.follower == "rook" && b.FollowerUp, "Rook should be with you");
+        int fx = b.S.fx, fy = b.S.fy;
+        int px = b.S.ax, py = b.S.ay;
+        StepToward(b, (b.S.ax, b.S.ay - 1));
+        Assert(b.S.fx == px && b.S.fy == py, "Rook steps into the tile you left");
+        var save = Json.Write(b.S);
+        var b2 = NewEngine();
+        b2.LoadState(Json.Read<GameState>(save));
+        Assert(b2.S.follower == "rook" && b2.S.followerHp == b.S.followerHp, "Rook survives a save");
+        WalkUntil(b, (29, 5), () => b.S.scene == "den");
+        Pick(b, "Fight it");
+        float ehp = b.S.enemyHp;
+        b.Act(b.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
+        Assert(b.S.enemyHp < ehp || !b.S.inCombat, "Rook should hit the pack leader even when you defend");
     }
 
     static void SaveLoad()
@@ -518,11 +620,13 @@ static class Program
                 if (area.id == "yenson_hut") Walk(v, "Sit up", "Goodbye");
                 if (o.id.StartsWith("fire") || o.id == "orlen_fire") { v.S.flags.Add("fire_started"); v.S.spells.Add("draw_water"); }
                 if (o.id == "brazier_lit") v.S.flags.Add("brazier_lit");
+                if (o.id == "alpha") v.S.flags.Add("quest:pack");
                 if (!v.All(o.when)) throw new Exception(o.id + " isn't there to test");
                 v.S.coins = 20;
                 v.S.flags.Add("dog_met");
                 v.S.stepsSinceFight = -1000;
-                UseThing(v, o.id);
+                if (o.id == "alpha") WalkUntil(v, (29, 5), () => v.S.scene == "den");   // the den's edge stops you first
+                else UseThing(v, o.id);
                 Assert(v.S.scene != "travel" || v.S.inCombat, "using " + o.id + " should open its scene");
                 for (int i = 0; i < 30 && (v.S.scene != "travel" || v.S.inCombat) && v.S.scene != "death"; i++)
                 {
@@ -596,7 +700,7 @@ static class Program
         var expect = new Dictionary<string, string>
         {
             { "village", "travel" }, { "road", "travel" }, { "hut", "wake" }, { "forge_first", "smith" }, { "forge_iron", "smith" },
-            { "hills", "travel" }, { "fire", "travel" }, { "stone", "travel" },
+            { "hills", "travel" }, { "fire", "travel" }, { "guild", "travel" }, { "boss", "travel" },
             { "dog", "travel" }, { "crab", "travel" },
         };
         foreach (var (id, _) in Engine.DevStarts)
@@ -609,7 +713,8 @@ static class Program
             if (id == "forge_first") { Pick(e, "An iron knife"); Assert(e.S.scene == "forge", "should be at the anvil"); }
             if (id == "forge_iron") { Pick(e, "An iron cap"); Assert(e.S.scene == "forge", "should be at the anvil"); e.FinishForge(1, 1, 1); Assert(e.Travelling, "back in the village"); }
             if (id == "fire") Assert(e.Objects().Count(o => o.id.StartsWith("fire")) == 3, "the net shed should be burning");
-            if (id == "stone") { e.Choose(e.UseChoice()); Assert(e.Choices().Count(c => c.def.label.Contains("become")) == 3, "the stone should offer three classes"); }
+            if (id == "guild") { e.Choose(e.UseChoice()); Assert(e.S.scene == "mira" && e.Choices().Any(c => c.enabled && c.def.label.Contains("guild book")), "Mira's book should be open to you"); }
+            if (id == "boss") { Assert(e.S.follower == "rook", "Rook should be with you"); WalkUntil(e, (29, 5), () => e.S.scene == "den"); Pick(e, "Fight it"); Assert(e.S.inCombat && e.S.enemy == "pack_leader", "should face the pack leader"); }
             if (id == "dog") { e.DevWinFight(); Pick(e, "Walk on"); Assert(e.S.scene == "travel", "winning should go back to the road"); }
         }
         var d = NewEngine();

@@ -49,7 +49,10 @@ namespace Loran.Core
         {
             d.items ??= new List<ItemDef>();
             d.enemies ??= new List<EnemyDef>();
-            d.classes ??= new List<ClassDef>();
+            d.skills ??= new List<SkillDef>();
+            d.moves ??= new List<MoveDef>();
+            foreach (var m in d.moves) m.need ??= "";
+            d.followers ??= new List<FollowerDef>();
             d.backgrounds ??= new List<BackgroundDef>();
             d.gear ??= new List<GearDef>();
             d.traits ??= new List<TraitDef>();
@@ -211,15 +214,16 @@ namespace Loran.Core
         {
             reason = null;
             if (!All(c.need)) { reason = string.IsNullOrEmpty(c.needText) ? "Not yet." : c.needText; return false; }
-            if (c.stamina > 0 && S.stamina < c.stamina) { reason = "Too winded. Catch your breath first."; return false; }
+            if (StaminaCost(c) > 0 && S.stamina < StaminaCost(c)) { reason = "Too winded. Catch your breath first."; return false; }
             return true;
         }
 
-        public static string Cost(ChoiceDef c)
+        public string Cost(ChoiceDef c)
         {
             var parts = new List<string>();
             if (c.time > 0) parts.Add(Duration(c.time));
-            if (c.stamina > 0) parts.Add("-" + c.stamina + " stamina");
+            int st = StaminaCost(c);
+            if (st > 0) parts.Add("-" + st + " stamina");
             if (c.energy > 0) parts.Add("-" + c.energy + " energy");
             return string.Join(" · ", parts);
         }
@@ -264,14 +268,16 @@ namespace Loran.Core
         {
             if (!Allowed(c, out _)) return;
 
-            S.stamina -= c.stamina;
+            int staminaCost = StaminaCost(c);
+            S.stamina -= staminaCost;
             S.energy -= c.energy;
-            Rules.Advance(S, data, c.time, c.stamina > 0);
+            Rules.Advance(S, data, c.time, staminaCost > 0);
 
             foreach (var t in c.train)
             {
                 var (key, op, num) = Split(t);
-                Rules.Train(S, Stat.Parse(key), num, c.why);
+                if (data.Skill(key) != null) TrainSkill(key, num, c.why);
+                else Rules.Train(S, Stat.Parse(key), num, c.why);
             }
 
             var notes = new StringBuilder();
@@ -383,6 +389,7 @@ namespace Loran.Core
             S.stamina -= 5;
             S.water = Rules.WaterskinSize;
             Rules.Train(S, Stat.Int, 0.5f, "casting Draw Water");
+            TrainSkill("magic", 1, "casting Draw Water");
             Rules.Clamp(S, data);
             S.result = "You call water out of the air. It trickles into the skin until it's full.";
             GoTo(S.scene);
@@ -446,7 +453,7 @@ namespace Loran.Core
                 case "flag": return S.Has(arg);
                 case "item": return S.Count(arg) > 0;
                 case "spell": return S.spells.Contains(arg);
-                case "class": return arg == "" ? S.playerClass != "" : S.playerClass == arg;
+                case "follower": return arg == "" ? S.follower != "" : S.follower == arg;
                 case "gear": return arg == "" ? S.gearItems.Count > 0 : S.gearItems.Any(g => g.id == arg);
                 case "mode": return S.deathMode == arg;
                 case "background": return S.background == arg;
@@ -464,6 +471,7 @@ namespace Loran.Core
             if (key.StartsWith("rep:")) return S.Rep(key.Substring(4));
             if (key.StartsWith("item:")) return S.Count(key.Substring(5));
             if (key.StartsWith("stat:")) return S.stats[Stat.Parse(key.Substring(5))];
+            if (key.StartsWith("skill:")) return data.Skill(key.Substring(6)) != null ? SkillLevel(key.Substring(6)) : throw new Exception("Unknown skill '" + key.Substring(6) + "'");
             switch (key)
             {
                 case "coins": return S.coins;
@@ -475,6 +483,7 @@ namespace Loran.Core
                 case "energy": return S.energy;
                 case "corruption": return S.corruption;
                 case "day": return S.Day;
+                case "level": return S.level;
                 case "hour": return S.Hour;
                 default: throw new Exception("Unknown value '" + key + "'");
             }
@@ -514,15 +523,27 @@ namespace Loran.Core
                                  (item.traits.Count > 0 ? ", " + string.Join(", ", item.traits.Select(t => data.Trait(t)?.name ?? t)) : "") + ").");
                     return;
                 }
-                case "class":
+                case "follow":
                 {
-                    var cl = data.Class(arg) ?? throw new Exception("Unknown class '" + arg + "'");
-                    S.playerClass = cl.id;
-                    if (!string.IsNullOrEmpty(cl.stat)) S.stats[Stat.Parse(cl.stat)] += cl.statBonus;
-                    S.stamina += cl.staminaBonus;
-                    S.Toasts.Add("You are now " + Article(cl.name) + " " + cl.name + ".");
+                    var f = data.Follower(arg) ?? throw new Exception("Unknown follower '" + arg + "'");
+                    S.follower = f.id;
+                    S.followerHp = f.hp;
+                    PlaceFollower();
+                    S.Toasts.Add(f.name + " is walking with you.");
                     return;
                 }
+                case "unfollow":
+                    if (S.follower != "") S.Toasts.Add((data.Follower(S.follower)?.name ?? S.follower) + " goes their own way.");
+                    S.follower = "";
+                    return;
+                case "give":
+                {
+                    // give:gear  puts a piece of gear in your pack without putting it on
+                    var item = MakeGear(arg, null, null, equip: false);
+                    S.Toasts.Add("New gear: " + item.name + " (" + item.rank + " rank). It's in your pack.");
+                    return;
+                }
+                case "exp": GainExp(int.Parse(arg), ""); return;
                 case "quest":
                 {
                     var q = data.Quest(arg) ?? throw new Exception("Unknown quest '" + arg + "'");
@@ -535,8 +556,10 @@ namespace Loran.Core
                 {
                     var q = data.Quest(arg) ?? throw new Exception("Unknown quest '" + arg + "'");
                     S.flags.Remove("quest:" + q.id);
-                    if (!S.Has("quest_done:" + q.id)) S.flags.Add("quest_done:" + q.id);
+                    bool first = !S.Has("quest_done:" + q.id);
+                    if (first) S.flags.Add("quest_done:" + q.id);
                     S.Toasts.Add("Quest complete: " + q.name);
+                    if (first && q.exp > 0) GainExp(q.exp, "");
                     return;
                 }
                 case "hud": S.hud = arg == "on"; return;
@@ -666,6 +689,8 @@ namespace Loran.Core
                     break;
                 default: throw new Exception("Unknown sleep '" + kind + "'");
             }
+            var fol = data.Follower(S.follower);
+            if (fol != null) S.followerHp = fol.hp;
             // Out in the world (in a bed, or camping), you wake standing where you slept, not in the bed's talk box
             string scene = S.scene;
             if (Area != null) S.scene = TravelId;
@@ -755,7 +780,10 @@ namespace Loran.Core
                         if (data.Enemy(parts[0]) == null) problems.Add(where + ": no enemy '" + parts[0] + "'");
                         Scene(where, parts[1]); Scene(where, parts[2]); return;
                     case "check": Scene(where, parts[2]); Scene(where, parts[3]); return;
-                    case "class": if (data.Class(parts[0]) == null) problems.Add(where + ": no class '" + parts[0] + "'"); return;
+                    case "follow": if (data.Follower(parts[0]) == null) problems.Add(where + ": no follower '" + parts[0] + "'"); return;
+                    case "give": if (data.Gear(parts[0]) == null) problems.Add(where + ": no gear '" + parts[0] + "'"); return;
+                    case "unfollow": return;
+                    case "exp": if (!int.TryParse(parts[0], out _)) problems.Add(where + ": exp needs a number"); return;
                     case "gear": if (data.Gear(parts[0]) == null) problems.Add(where + ": no gear '" + parts[0] + "'"); return;
                     case "craft":
                         if (parts.Length < 2 || data.Gear(parts[0]) == null) problems.Add(where + ": no gear '" + parts[0] + "'");
@@ -805,7 +833,7 @@ namespace Loran.Core
                     foreach (var e in ch.effects) Effect(where, e);
                     foreach (var t in ch.train)
                     {
-                        try { Stat.Parse(Split(t).key); } catch (Exception ex) { problems.Add(where + ": " + ex.Message); }
+                        try { var k = Split(t).key; if (data.Skill(k) == null) Stat.Parse(k); } catch (Exception ex) { problems.Add(where + ": " + ex.Message); }
                     }
                 }
             }

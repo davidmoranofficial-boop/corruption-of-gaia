@@ -21,13 +21,19 @@ namespace Loran.Core
         public const int WaterskinSize = 4;
         public const int CollapseMinutes = 6 * 60;
 
-        public static int MaxHp(GameState s) => 80 + s.stats[Stat.End] * 5;
+        public static int MaxHp(GameState s) => 80 + s.stats[Stat.End] * 5 + (s.level - 1) * HpPerLevel;
+
+        // Levels: experience from fights and finished jobs. Each level adds health and stamina.
+        public const int HpPerLevel = 8, StaminaPerLevel = 4;
+        public static int ExpToNext(int level) => 30 + level * 30;
+
+        // Skills that grow with use. A skill starts untrained (0); each level needs more practice than the last.
+        public const int MaxSkill = 10;
+        public static float SkillToNext(int level) => 8 + level * 6;
 
         public static int MaxStamina(GameState s, GameData d)
         {
-            int bonus = 0;
-            var c = d.Class(s.playerClass);
-            if (c != null) bonus += c.staminaBonus;
+            int bonus = (s.level - 1) * StaminaPerLevel;
             foreach (var g in s.Equipped) bonus += g.stamina;
             bonus += (int)TraitSum(s, d, t => t.stamina);
             return 70 + s.stats[Stat.End] * 6 + bonus;

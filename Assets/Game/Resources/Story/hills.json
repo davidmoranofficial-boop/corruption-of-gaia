@@ -77,7 +77,8 @@
           "time": 30,
           "energy": 6,
           "train": [
-            "int+2"
+            "int+2",
+            "magic+3"
           ],
           "why": "learning magic",
           "effects": [
@@ -144,7 +145,8 @@
           "energy": 4,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Kindle",
           "effects": [
@@ -208,9 +210,16 @@
         },
         {
           "when": [
-            "done:lodge"
+            "done:lodge",
+            "!done:pack"
           ],
           "text": "\"Ma says you're all right. That's high praise, from her.\""
+        },
+        {
+          "when": [
+            "done:pack"
+          ],
+          "text": "\"Still can't believe we did it. Don't tell Ma I said that.\""
         }
       ],
       "choices": [
@@ -257,7 +266,8 @@
           ],
           "time": 10,
           "train": [
-            "agi+1"
+            "agi+1",
+            "hunting+3"
           ],
           "why": "setting snares",
           "effects": [
@@ -295,7 +305,8 @@
           ],
           "time": 10,
           "train": [
-            "agi+1"
+            "agi+1",
+            "hunting+3"
           ],
           "why": "setting snares",
           "effects": [
@@ -351,12 +362,100 @@
         {
           "label": "Take it",
           "time": 10,
+          "train": [
+            "hunting+3"
+          ],
+          "why": "checking snares",
           "effects": [
             "item:hare+1",
             "flag:snare3_done"
           ],
           "go": "travel",
           "result": "That's the snare line done."
+        }
+      ]
+    },
+    {
+      "id": "den",
+      "title": "The den",
+      "onEnter": [
+        "flag:den_found"
+      ],
+      "text": [
+        "Bones, old and new, scattered round a hollow under the rocks. Something huge gets up out of it, unhurried, and shakes itself. Grey going black along the spine, a scar across its muzzle, and eyes like two coals."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook nocks an arrow beside you. His hands are shaking, but the arrow isn't. \"That's him,\" he breathes."
+        },
+        {
+          "when": [
+            "!follower:rook"
+          ],
+          "text": "You're on your own. That's a bad idea."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:pack_leader:den_won:den_fled"
+          ]
+        },
+        {
+          "label": "Back off, for now",
+          "go": "travel",
+          "result": "You back away slowly. The pack leader watches you go, and doesn't bother to follow."
+        }
+      ]
+    },
+    {
+      "id": "den_fled",
+      "title": "Away",
+      "text": [
+        "You break away and run, and the pack leader lets you. It doesn't need to chase. It knows where you'll be."
+      ],
+      "choices": [
+        {
+          "label": "Catch your breath",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "den_won",
+      "title": "The pack leader",
+      "text": [
+        "The great wolf goes down at last, and doesn't get up. Up close, under the grey, its skin is mottled purple, like a bruise that never healed."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook lowers his bow and sits down hard on a rock. \"We did it,\" he says, as if he doesn't believe it. Then, more quietly: \"Did you see its eyes?\""
+        }
+      ],
+      "onEnter": [
+        "flag:alpha_dead",
+        "corruption-0.3"
+      ],
+      "choices": [
+        {
+          "label": "Skin it and take the pelt to Ida",
+          "time": 30,
+          "train": [
+            "hunting+4"
+          ],
+          "why": "skinning",
+          "effects": [
+            "item:wolf_pelt+1"
+          ],
+          "go": "travel",
+          "result": "It's heavy, bloody work, and it takes a while."
         }
       ]
     },
@@ -430,7 +529,8 @@
           "energy": 3,
           "train": [
             "str+1",
-            "end+1"
+            "end+1",
+            "mining+4"
           ],
           "why": "mining",
           "effects": [

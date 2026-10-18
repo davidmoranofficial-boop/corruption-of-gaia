@@ -35,7 +35,7 @@ namespace Loran.Core
         /// Makes a new piece of gear and puts it on, moving whatever was in that slot to the pack.
         /// rank defaults to the base gear's own rank. Above F, it rolls traits: from the material's list if there is one, otherwise from all traits.
         /// </summary>
-        public GearItem MakeGear(string baseId, string rank, string materialId, float statScale = 1f, string namePrefix = null)
+        public GearItem MakeGear(string baseId, string rank, string materialId, float statScale = 1f, string namePrefix = null, bool equip = true)
         {
             var def = data.Gear(baseId) ?? throw new Exception("Unknown gear '" + baseId + "'");
             var mat = data.Material(materialId);
@@ -72,7 +72,7 @@ namespace Loran.Core
                 item.desc = (item.desc + " " + mat.desc.Replace("{part}", string.IsNullOrEmpty(def.part) ? "metal" : def.part)).Trim();
 
             S.gearItems.Add(item);
-            Equip(item.uid, force: true);
+            if (equip) Equip(item.uid, force: true);
             return item;
         }
 

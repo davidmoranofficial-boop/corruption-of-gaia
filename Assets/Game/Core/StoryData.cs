@@ -55,7 +55,9 @@ namespace Loran.Core
     {
         public List<ItemDef> items = new List<ItemDef>();
         public List<EnemyDef> enemies = new List<EnemyDef>();
-        public List<ClassDef> classes = new List<ClassDef>();
+        public List<SkillDef> skills = new List<SkillDef>();
+        public List<MoveDef> moves = new List<MoveDef>();
+        public List<FollowerDef> followers = new List<FollowerDef>();
         public List<BackgroundDef> backgrounds = new List<BackgroundDef>();
         public List<GearDef> gear = new List<GearDef>();
         public List<TraitDef> traits = new List<TraitDef>();
@@ -80,6 +82,9 @@ namespace Loran.Core
         public int atkMin, atkMax;
         public int speed = 3;                  // compared with your Agility: the faster side acts first
         public string art = "";                // sprite in Resources/Sprites/Enemies (defaults to the id)
+        public int exp;                        // experience for beating it
+        public float size = 1;                 // how big it's drawn in battle (a boss is bigger)
+        public bool boss;
         public List<EnemyMove> moves = new List<EnemyMove>();
     }
 
@@ -93,7 +98,38 @@ namespace Loran.Core
         public bool guard;                     // it holds back: your hits do half damage this round
         public int weight = 1;                 // how often it picks this move
     }
-    [Serializable] public class ClassDef { public string id, name, desc, stat; public int statBonus, staminaBonus; }
+
+    /// <summary>
+    /// A skill that grows with use. Combat skills (daggers, axes, bows, shields, fists, magic) grow by fighting with them
+    /// and unlock moves; life skills (mining, smithing, woodcutting, hunting) grow by doing the work and make it easier.
+    /// </summary>
+    [Serializable] public class SkillDef { public string id, name, kind = "combat", desc; }
+
+    /// <summary>A combat move a skill unlocks at a level. It shows under Skills in a fight while you can use it.</summary>
+    [Serializable]
+    public class MoveDef
+    {
+        public string id, name, skill, desc;
+        public int level = 2;                  // the skill level that unlocks it
+        public int stamina, energy;
+        public float power = 1;                // multiplies the hit
+        public int hits = 1;                   // strikes in one go
+        public bool first;                     // always goes before the enemy
+        public bool stagger;                   // the enemy loses its next action
+        public bool pierce;                    // ignores the enemy holding back
+        public bool timing = true;             // uses the timing bar
+        public string need = "";               // a condition, e.g. spell:kindle
+    }
+
+    /// <summary>Someone who walks with you and fights at your side.</summary>
+    [Serializable]
+    public class FollowerDef
+    {
+        public string id, name, sprite, desc;
+        public float hp;
+        public int atkMin, atkMax;
+        public string attack = "strikes at";   // "looses an arrow at"
+    }
     [Serializable] public class BackgroundDef { public string id, name, desc, stat; }
     [Serializable]
     public class GearDef
@@ -103,6 +139,7 @@ namespace Loran.Core
         public bool twoHanded;                 // a weapon that takes both hands, so no shield
         public string rank = "F";              // the rank it has when found or given plainly
         public string part = "";               // where a gem goes, e.g. "pommel"
+        public string skill = "";              // the combat skill a weapon or shield trains: dagger, axe, bow, shield
         public int damage, stamina;
         public float guard;
     }
@@ -142,6 +179,7 @@ namespace Loran.Core
     public class QuestDef
     {
         public string id, name, giver, desc;
+        public int exp;                        // experience for finishing it
         public List<QuestGoal> goals = new List<QuestGoal>();
     }
 
@@ -265,7 +303,9 @@ namespace Loran.Core
 
         public ItemDef Item(string id) => Find(file.items, x => x.id, id);
         public EnemyDef Enemy(string id) => Find(file.enemies, x => x.id, id);
-        public ClassDef Class(string id) => Find(file.classes, x => x.id, id);
+        public SkillDef Skill(string id) => Find(file.skills, x => x.id, id);
+        public MoveDef Move(string id) => Find(file.moves, x => x.id, id);
+        public FollowerDef Follower(string id) => Find(file.followers, x => x.id, id);
         public BackgroundDef Background(string id) => Find(file.backgrounds, x => x.id, id);
         public GearDef Gear(string id) => Find(file.gear, x => x.id, id);
         public TraitDef Trait(string id) => Find(file.traits, x => x.id, id);

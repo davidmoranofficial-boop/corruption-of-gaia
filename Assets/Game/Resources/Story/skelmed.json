@@ -453,13 +453,28 @@
         {
           "when": [
             "done:lodge",
-            "!class:"
+            "!quest:pack",
+            "!done:pack"
           ],
-          "text": "\"Go and see the others, if you haven't. Garran at the forge. Old Orlen up the hill. Then Mira at the guild post. She's got a stone you'll want to see.\""
+          "text": "\"Larder's full for once. But there's something else, and it's been eating at me.\""
         },
         {
           "when": [
-            "class:"
+            "quest:pack",
+            "!ready:pack"
+          ],
+          "text": "\"The den's past the quarry, up in the north-east corner of the hills. Keep Rook behind you. Bring him back.\""
+        },
+        {
+          "when": [
+            "done:pack",
+            "!flag:guild_member"
+          ],
+          "text": "\"Go and see the others, if you haven't. Garran at the forge. Old Orlen up the hill. Then Mira at the guild post. She'll want your name in her book.\""
+        },
+        {
+          "when": [
+            "flag:guild_member"
           ],
           "text": "\"Guild card and all. Look at you.\""
         }
@@ -503,9 +518,40 @@
           "result": "\"The levy happened. Half of every catch to the crown, and the collector takes his own bite on top. The young ones went inland. The merchants stopped coming when the roads went bad.\" She spits. \"Wolves on the coast road. Wolves. In my grandmother's day you'd never see one this side of the hills.\""
         },
         {
+          "label": "\"Anything else?\"",
+          "when": [
+            "done:lodge",
+            "!quest:pack",
+            "!done:pack"
+          ],
+          "time": 10,
+          "effects": [
+            "quest:pack",
+            "follow:rook",
+            "give:hunting_bow"
+          ],
+          "result": "Ida's quiet for a moment. \"The wolves. They didn't used to come down this far, and they didn't used to have eyes like that. Rook says there's one leading them: a big grey brute with a scar across its muzzle, denning past the quarry. Kill the leader and the rest will scatter.\" She whistles, and Rook comes round the side of the lodge with two bows. He hands you the older one. \"He goes with you,\" says Ida. \"He knows the hills. You know how to finish a job.\""
+        },
+        {
+          "label": "\"The pack leader's dead.\"",
+          "when": [
+            "ready:pack"
+          ],
+          "time": 15,
+          "effects": [
+            "complete:pack",
+            "unfollow",
+            "coins+10",
+            "rep:skelmed+10",
+            "item:fish+2"
+          ],
+          "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses ten coppers on you, and this time she won't hear a word about it. Rook goes inside without saying anything, but he punches your arm on the way past."
+        },
+        {
           "label": "\"What now?\"",
           "when": [
-            "class:",
+            "flag:guild_member",
+            "done:pack",
             "!flag:ida_town"
           ],
           "time": 5,
@@ -599,7 +645,8 @@
           "stamina": 12,
           "energy": 2,
           "train": [
-            "str+1"
+            "str+1",
+            "woodcutting+3"
           ],
           "why": "splitting wood",
           "effects": [
@@ -691,38 +738,27 @@
       "extra": [
         {
           "when": [
-            "!class:"
+            "!flag:guild_member"
           ],
           "text": "\"Guild post. Smallest one in Loran, probably. One room, one desk, one clerk, and you're looking at her. Mira.\""
         },
         {
           "when": [
-            "!class:",
+            "!flag:guild_member",
             "done:lodge",
             "done:quarry",
             "done:orlen"
           ],
-          "text": "\"Hunters, forge, magic, all three? Then go and put your hand on the stone.\""
+          "text": "\"Hunters, forge, magic, all three? I've heard. Everyone's heard. Come and put your name in the book.\""
         },
         {
           "when": [
-            "class:"
+            "flag:guild_member"
           ],
           "text": "\"Lost your card already? No? Good. I hate paperwork.\""
         }
       ],
       "choices": [
-        {
-          "label": "\"What's the stone for?\"",
-          "when": [
-            "!flag:mira_stone"
-          ],
-          "time": 5,
-          "effects": [
-            "flag:mira_stone"
-          ],
-          "result": "\"That's how the guild sorts people. Put your hand on it and it shows you what you are. Adventurer, smith, mage.\" She shrugs. \"Only it never works on folk who haven't tried their hand at anything. So try everything first. Ida, Garran and old Orlen up the hill will all find you work.\""
-        },
         {
           "label": "\"What does the guild do?\"",
           "when": [
@@ -732,150 +768,36 @@
           "effects": [
             "flag:mira_guild"
           ],
-          "result": "\"Keeps a list of who can do what, and sends them where they're needed. Used to be a lot of sending, when this was a port. Now it's mostly me and the list.\" She taps a ledger with three names in it. \"Guild halls in the towns teach as well. You want to learn another trade later, that's where you go. It takes time, mind.\""
+          "result": "\"Keeps a book of who can do what, and sends them where they're needed. Used to be a lot of sending, when this was a port. Now it's mostly me and the book.\" She taps a ledger with three names in it. \"We don't care what you call yourself. Blades, bows, spells, hammers, whatever. Show you can be trusted with a job and you're in.\""
+        },
+        {
+          "label": "\"How do I join?\"",
+          "when": [
+            "!flag:guild_member",
+            "!done:lodge|!done:quarry|!done:orlen"
+          ],
+          "time": 5,
+          "result": "\"Do some good round here first. Ida, Garran and old Orlen up the hill all need a hand. Help all three and I'll put your name in the book.\""
+        },
+        {
+          "label": "Put your name in the guild book",
+          "when": [
+            "!flag:guild_member",
+            "done:lodge",
+            "done:quarry",
+            "done:orlen"
+          ],
+          "time": 15,
+          "effects": [
+            "flag:guild_member",
+            "item:guild_card+1",
+            "exp:20",
+            "rep:skelmed+3"
+          ],
+          "result": "Mira writes your name under the other three in a careful hand, then presses a card into your palm: a stiff square of waxed leather with the guild seal and your name. \"Welcome to the guild, {name}. Don't lose it. I hate paperwork.\""
         },
         {
           "label": "\"Goodbye.\"",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "class_stone",
-      "title": "The class stone",
-      "safe": true,
-      "text": [
-        "A standing stone taller than you, carved with three rings worn soft by the weather: a road, an anvil, and an open hand with a flame in it."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!class:",
-            "!done:lodge|!done:quarry|!done:orlen"
-          ],
-          "text": "It's cold under your hand. Nothing happens."
-        },
-        {
-          "when": [
-            "!class:",
-            "!done:lodge"
-          ],
-          "text": "You haven't worked with the hunters yet."
-        },
-        {
-          "when": [
-            "!class:",
-            "!done:quarry"
-          ],
-          "text": "You haven't worked with Garran at the forge yet."
-        },
-        {
-          "when": [
-            "!class:",
-            "!done:orlen"
-          ],
-          "text": "You haven't learnt anything from old Orlen yet."
-        },
-        {
-          "when": [
-            "!class:",
-            "done:lodge",
-            "done:quarry",
-            "done:orlen"
-          ],
-          "text": "Under your hand the stone is warm, like a wall in the sun. Three rings, three roads. You can only walk one of them first."
-        },
-        {
-          "when": [
-            "class:"
-          ],
-          "text": "The ring you chose still glows faintly as you pass."
-        }
-      ],
-      "choices": [
-        {
-          "label": "The road: become an Adventurer",
-          "when": [
-            "!class:",
-            "done:lodge",
-            "done:quarry",
-            "done:orlen"
-          ],
-          "effects": [
-            "class:adventurer",
-            "item:guild_card+1",
-            "flag:guild_member"
-          ],
-          "go": "guild_card"
-        },
-        {
-          "label": "The anvil: become a Blacksmith",
-          "when": [
-            "!class:",
-            "done:lodge",
-            "done:quarry",
-            "done:orlen"
-          ],
-          "effects": [
-            "class:blacksmith",
-            "item:guild_card+1",
-            "flag:guild_member"
-          ],
-          "go": "guild_card"
-        },
-        {
-          "label": "The flame: become a Mage",
-          "when": [
-            "!class:",
-            "done:lodge",
-            "done:quarry",
-            "done:orlen"
-          ],
-          "effects": [
-            "class:mage",
-            "item:guild_card+1",
-            "flag:guild_member"
-          ],
-          "go": "guild_card"
-        },
-        {
-          "label": "Step away",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "guild_card",
-      "speaker": "Mira",
-      "title": "Your guild card",
-      "safe": true,
-      "text": [
-        "The ring under your hand flares, and the glow runs down into the grass. Mira is out of the door before it fades, a card already in her hand: a stiff square of waxed leather with the guild seal, your name, and the mark of the road you chose.",
-        "\"Welcome to the guild, {name}. Don't lose it. I hate paperwork.\""
-      ],
-      "extra": [
-        {
-          "when": [
-            "class:adventurer"
-          ],
-          "text": "\"Adventurer. Good. We need people who'll actually go places.\""
-        },
-        {
-          "when": [
-            "class:blacksmith"
-          ],
-          "text": "\"Smith. Garran will be pleased. He'll pretend he isn't.\""
-        },
-        {
-          "when": [
-            "class:mage"
-          ],
-          "text": "\"Mage. Orlen will want to know. Go easy on him, he'll cry.\""
-        }
-      ],
-      "choices": [
-        {
-          "label": "\"Thank you.\"",
           "go": "travel"
         }
       ]
@@ -916,7 +838,8 @@
           "energy": 6,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Draw Water"
         },
@@ -937,7 +860,8 @@
           "energy": 6,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Draw Water"
         },
@@ -1007,7 +931,8 @@
           "energy": 6,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Draw Water"
         },
@@ -1028,7 +953,8 @@
           "energy": 6,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Draw Water"
         },
@@ -1098,7 +1024,8 @@
           "energy": 6,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Draw Water"
         },
@@ -1119,7 +1046,8 @@
           "energy": 6,
           "time": 5,
           "train": [
-            "int+1"
+            "int+1",
+            "magic+3"
           ],
           "why": "casting Draw Water"
         },

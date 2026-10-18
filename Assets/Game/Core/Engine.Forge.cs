@@ -59,6 +59,7 @@ namespace Loran.Core
         {
             float q = 100f * (0.35f * Math.Clamp(heat, 0, 1) + 0.45f * Math.Clamp(hammer, 0, 1) + 0.2f * Math.Clamp(quench, 0, 1));
             q += (S.stats[Stat.Str] - 3) * 2f;
+            q += SkillLevel("smithing") * 3f;     // practice at the anvil shows
             return (int)Math.Round(Math.Clamp(q, 0f, 100f));
         }
 
@@ -75,6 +76,7 @@ namespace Loran.Core
             var item = MakeGear(S.forging, Rules.Ranks[rank].ToString(), mat?.id, crude ? 0.8f : 1f, crude ? "Crude" : null);
             Rules.Train(S, Stat.Str, 1f + hammer, "working the forge");
             Rules.Train(S, Stat.Int, 0.5f + quench * 0.5f, "working the forge");
+            TrainSkill("smithing", 6 + q / 20f, "working the forge");
 
             notes.Append("Quality " + q + " out of 100. ");
             notes.Append(q >= 90 ? "Garran takes it from you and turns it in the light for a long time. \"Where did you learn that?\""

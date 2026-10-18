@@ -44,9 +44,10 @@ namespace Loran.Core
         public bool PlayerActsFirst => Rules.Speed(S, data) >= (data.Enemy(S.enemy)?.speed ?? 0);
 
         /// <summary>Does this combat choice use the timing bar?</summary>
-        public static bool NeedsTiming(ChoiceDef c)
+        public bool NeedsTiming(ChoiceDef c)
         {
             string e = c.effects.Count > 0 ? c.effects[0] : "";
+            if (e.StartsWith("fight:move:")) return data.Move(e.Substring(11))?.timing == true;
             return e == "fight:attack" || e == "fight:kindle" || e == "fight:defend";
         }
 
@@ -55,7 +56,7 @@ namespace Loran.Core
         {
             string e = c.effects.Count > 0 ? c.effects[0] : "";
             if (e == "fight:attack") return "attack";
-            if (e == "fight:kindle") return "skill";
+            if (e == "fight:kindle" || e.StartsWith("fight:move:")) return "skill";
             if (e.StartsWith("fight:eat:") || e == "fight:drink") return "item";
             if (e == "fight:defend") return "defend";
             if (e == "fight:flee") return "flee";
@@ -80,6 +81,7 @@ namespace Loran.Core
             S.combatFlee = flee;
             S.defending = false;
             S.round = 1;
+            S.enemyStun = 0;
             S.battleLog.Clear();
             S.enemyMove = PickMove(e).id;
             Events.Clear();
@@ -112,6 +114,8 @@ namespace Loran.Core
             sc.choices.Add(new ChoiceDef { label = "Attack", stamina = (int)Math.Round(Rules.AttackStamina * (1 - light)), energy = 1, time = 1, effects = { "fight:attack" } });
             if (S.spells.Contains("kindle"))
                 sc.choices.Add(new ChoiceDef { label = "Cast Kindle", stamina = Rules.KindleStamina, energy = Rules.KindleEnergy, time = 1, effects = { "fight:kindle" } });
+            foreach (var m in UsableMoves())
+                sc.choices.Add(new ChoiceDef { label = m.name, stamina = m.stamina, energy = m.energy, time = 1, effects = { "fight:move:" + m.id } });
             foreach (var it in S.items)
             {
                 var def = data.Item(it.id);
@@ -134,8 +138,9 @@ namespace Loran.Core
             var lines = new List<string>();
 
             S.defending = kind == "defend";
-            // Defending and the enemy holding back always happen at the start of the round.
-            bool enemyFirst = !S.defending && !move.guard && !PlayerActsFirst;
+            var mv = kind.StartsWith("move:") ? data.Move(kind.Substring(5)) : null;
+            // Defending, quick moves and the enemy holding back always happen at the start of the round.
+            bool enemyFirst = !S.defending && !move.guard && !PlayerActsFirst && !(mv != null && mv.first);
 
             if (enemyFirst)
             {
@@ -145,17 +150,20 @@ namespace Loran.Core
             }
 
             PlayerActs(kind, e, move, lines);
+            if (S.inCombat && S.enemyHp > 0 && FollowerUp) FollowerActs(e, move, lines);
 
             if (S.inCombat && S.enemyHp <= 0)
             {
                 lines.Add(Cap(FoeName(e)) + " goes down and stays down.");
                 S.inCombat = false;
                 fightRedirect = S.combatWin;
+                GainExp(e.exp, "for beating " + FoeName(e));
             }
             else if (S.inCombat && !enemyFirst)
             {
                 EnemyActs(e, move, lines);
             }
+            if (!S.inCombat) FollowerAfterFight();
 
             if (S.inCombat && S.hp > 0)
             {
@@ -177,11 +185,12 @@ namespace Loran.Core
         void PlayerActs(string kind, EnemyDef e, EnemyMove move, List<string> lines)
         {
             string foe = FoeName(e);
+            var mv = kind.StartsWith("move:") ? data.Move(kind.Substring(5)) ?? throw new Exception("Unknown move '" + kind + "'") : null;
             switch (kind)
             {
                 case "attack":
                 {
-                    float dmg = 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + Roll(-1, 2);
+                    float dmg = WeaponHit();
                     int dealt = HitEnemy(dmg, move, out string how);
                     lines.Add(how == "crit" ? "A perfect strike! You hit " + foe + " for " + dealt + "."
                             : how == "glance" ? "You mistime it, and the blow only glances " + foe + ". " + dealt + " damage."
@@ -189,19 +198,22 @@ namespace Loran.Core
                     if (move.guard) lines.Add("It was ready for you, so the blow lands half as hard.");
                     Rules.Train(S, Stat.Str, 1f, "fighting");
                     Rules.Train(S, Stat.Agi, pendingTiming == TimingPerfect ? 1f : 0.5f, "fighting");
+                    TrainSkill(WeaponSkill(), pendingTiming == TimingPerfect ? 3 : 2, "fighting");
                     break;
                 }
                 case "kindle":
                 {
-                    float dmg = 6 + S.stats[Stat.Int] * 2f + Roll(0, 2);
+                    float dmg = SpellHit();
                     int dealt = HitEnemy(dmg, move, out string how);
                     lines.Add(how == "crit" ? "Fire leaps from your hand and engulfs " + foe + ". " + dealt + " damage!"
                             : how == "glance" ? "The spark sputters and only singes " + foe + ". " + dealt + " damage."
                             : "Fire snaps from your fingers and catches " + foe + " for " + dealt + ".");
                     Rules.Train(S, Stat.Int, 1f, "casting Kindle");
+                    TrainSkill("magic", 3, "casting Kindle");
                     break;
                 }
                 case "defend":
+                    if (HasShield()) TrainSkill("shield", 1.5f, "blocking");
                     S.stamina += Rules.DefendStaminaBack;
                     lines.Add(pendingTiming == TimingPerfect ? "You read it perfectly and set yourself to turn the blow."
                             : pendingTiming == TimingGood ? "You brace yourself and get your breath back."
@@ -235,6 +247,7 @@ namespace Loran.Core
                     break;
                 }
                 default:
+                    if (mv != null) { UseMove(mv, e, move, lines); break; }
                     if (kind.StartsWith("eat:"))
                     {
                         string id = kind.Substring(4);
@@ -255,14 +268,41 @@ namespace Loran.Core
             Rules.Clamp(S, data);
         }
 
-        /// <summary>Applies timing, fire and the enemy's guard to a hit, and records it.</summary>
+        /// <summary>A hit with what's in your hand: Strength, the weapon, and how well you know it.</summary>
+        float WeaponHit() => 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + SkillLevel(WeaponSkill()) * 0.8f + Roll(-1, 2);
+
+        float SpellHit() => 6 + S.stats[Stat.Int] * 2f + SkillLevel("magic") * 1.5f + Roll(0, 2);
+
+        void UseMove(MoveDef m, EnemyDef e, EnemyMove move, List<string> lines)
+        {
+            string foe = FoeName(e);
+            int total = 0;
+            string how = "hit";
+            for (int i = 0; i < Math.Max(1, m.hits) && S.enemyHp > 0; i++)
+            {
+                float dmg = (m.skill == "magic" ? SpellHit() : WeaponHit()) * m.power;
+                total += HitEnemy(dmg, m.pierce ? null : move, out how);
+            }
+            lines.Add(m.name + (how == "crit" ? ", perfectly timed! " : how == "glance" ? ", but you mistime it. " : ". ") +
+                      Cap(foe) + " takes " + total + ".");
+            if (m.stagger && S.enemyHp > 0)
+            {
+                S.enemyStun = 1;
+                lines.Add(Cap(foe) + " reels.");
+            }
+            TrainSkill(m.skill, how == "crit" ? 4 : 3, "fighting");
+            if (m.skill == "magic") Rules.Train(S, Stat.Int, 1f, "casting");
+            else Rules.Train(S, Stat.Str, 1f, "fighting");
+        }
+
+        /// <summary>Applies timing, fire and the enemy's guard to a hit, and records it. move null = ignores its guard.</summary>
         int HitEnemy(float dmg, EnemyMove move, out string how)
         {
             how = pendingTiming == TimingPerfect ? "crit" : pendingTiming == TimingMiss ? "glance" : "hit";
             if (how == "crit") dmg *= Rules.CritMultiplier + Rules.TraitSum(S, data, t => t.crit);
             else if (how == "glance") dmg *= Rules.GlanceMultiplier;
             dmg += Rules.TraitSum(S, data, t => t.fire);
-            if (move.guard) dmg *= 0.5f;
+            if (move != null && move.guard) dmg *= 0.5f;
             int dealt = Math.Max(1, (int)Math.Round(dmg));
             S.enemyHp -= dealt;
             Events.Add(new BattleEvent { target = "enemy", kind = how, amount = dealt, text = dealt.ToString() });
@@ -272,6 +312,13 @@ namespace Loran.Core
         void EnemyActs(EnemyDef e, EnemyMove move, List<string> lines)
         {
             string foe = Cap(FoeName(e));
+            if (S.enemyStun > 0)
+            {
+                S.enemyStun--;
+                lines.Add(foe + " is still reeling and can't act.");
+                Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Staggered" });
+                return;
+            }
             if (move.guard || move.power <= 0)
             {
                 lines.Add(foe + " " + move.name + ".");
@@ -280,6 +327,17 @@ namespace Loran.Core
             }
 
             float hit = Roll(e.atkMin, e.atkMax) * move.power;
+            // Sometimes it goes for your follower instead
+            if (FollowerUp && Roll(1, 100) <= 30)
+            {
+                var f = Follower;
+                int ft = Math.Max(1, (int)Math.Round(hit));
+                S.followerHp -= ft;
+                lines.Add(foe + " " + move.name.Replace("your", f.name + "'s").Replace(" you", " " + f.name) + " for " + ft + ".");
+                Events.Add(new BattleEvent { target = "follower", kind = "hit", amount = ft, text = ft.ToString() });
+                if (S.followerHp <= 0) lines.Add(f.name + " goes down!");
+                return;
+            }
             if (S.defending)
             {
                 if (pendingTiming == TimingPerfect)
@@ -290,11 +348,13 @@ namespace Loran.Core
                     Events.Add(new BattleEvent { target = "player", kind = "parry", text = "Parry!" });
                     Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = counter, text = counter.ToString() });
                     Rules.Train(S, Stat.Agi, 1f, "parrying");
+                    if (HasShield()) TrainSkill("shield", 2, "parrying");
                     if (S.enemyHp <= 0)
                     {
                         lines.Add(foe + " goes down and stays down.");
                         S.inCombat = false;
                         fightRedirect = S.combatWin;
+                        GainExp(e.exp, "for beating " + FoeName(e));
                     }
                     return;
                 }
