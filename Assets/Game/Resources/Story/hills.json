@@ -1,0 +1,479 @@
+{
+  "scenes": [
+    {
+      "id": "orlen",
+      "speaker": "Orlen",
+      "title": "Orlen",
+      "safe": true,
+      "text": [],
+      "onEnter": [
+        "flag:orlen_met"
+      ],
+      "extra": [
+        {
+          "when": [
+            "!quest:orlen",
+            "!done:orlen"
+          ],
+          "text": "An old man in a robe that was royal blue a long time ago is pinching dead leaves off his herbs. \"You'll be the one from the sea. Orlen Vey. I was mage to the court in Zaron, once, when that meant something.\""
+        },
+        {
+          "when": [
+            "quest:orlen",
+            "!spell:draw_water"
+          ],
+          "text": "\"Water first. It's everywhere: in the air, in the ground, in you. Ask it to come.\""
+        },
+        {
+          "when": [
+            "quest:orlen",
+            "spell:draw_water",
+            "!spell:kindle"
+          ],
+          "text": "\"Good. Now the other side of it.\""
+        },
+        {
+          "when": [
+            "quest:orlen",
+            "spell:kindle",
+            "!flag:brazier_lit"
+          ],
+          "text": "\"The brazier, then. Light it.\""
+        },
+        {
+          "when": [
+            "done:orlen",
+            "flag:fire_ignored"
+          ],
+          "text": "Orlen doesn't look up from his herbs. \"I've nothing to say to you.\""
+        },
+        {
+          "when": [
+            "done:orlen",
+            "!flag:fire_ignored"
+          ],
+          "text": "\"Come by whenever you like. Magic's mostly practice, and I've no one else to bore.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Will you teach me magic?\"",
+          "when": [
+            "!quest:orlen",
+            "!done:orlen"
+          ],
+          "time": 10,
+          "effects": [
+            "quest:orlen"
+          ],
+          "result": "He looks at you properly for the first time. \"Everyone has a little. Most never find it. Let's see if you're most.\" He sets an empty cup on the garden wall. \"Water first. Ask it to come.\""
+        },
+        {
+          "label": "Try to fill the cup",
+          "when": [
+            "quest:orlen",
+            "!spell:draw_water"
+          ],
+          "time": 30,
+          "energy": 6,
+          "train": [
+            "int+2"
+          ],
+          "why": "learning magic",
+          "effects": [
+            "spell:draw_water"
+          ],
+          "result": "Nothing. Nothing. Then a cold bead forms on the rim, and another, and the cup fills from the bottom up. \"There,\" says Orlen. \"Draw Water. It'll fill your waterskin, and it'll put out a small fire, which matters more than you'd think.\""
+        },
+        {
+          "label": "\"What comes next?\"",
+          "when": [
+            "quest:orlen",
+            "spell:draw_water",
+            "!spell:kindle"
+          ],
+          "time": 30,
+          "energy": 6,
+          "train": [
+            "int+2"
+          ],
+          "why": "learning magic",
+          "effects": [
+            "spell:kindle"
+          ],
+          "result": "\"Fire. The same pull, the other way.\" It takes you longer this time, and when the spark comes it nearly takes your eyebrows. Orlen chuckles. \"Kindle. A spark, no more. Light my brazier there and we'll call it a day.\""
+        },
+        {
+          "label": "\"What happened in Zaron?\"",
+          "when": [
+            "!flag:orlen_zaron"
+          ],
+          "time": 15,
+          "effects": [
+            "flag:orlen_zaron"
+          ],
+          "result": "\"King Melvin was a good man once. Fair. Stubborn. Then, a few years ago, something changed in him. His eyes went flat. He stopped sleeping. The taxes started.\" Orlen's hands go still on his herbs. \"I told him something was wrong, and he thanked me for my service and sent me here. It isn't only him. Animals with yellow eyes. Wells that taste of iron. Something is getting into things.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "brazier",
+      "title": "Orlen's brazier",
+      "text": [
+        "An iron brazier full of dry kindling."
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:brazier_lit"
+          ],
+          "text": "It's burning steadily. Orlen keeps feeding it sprigs of something that smells of pine."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Cast Kindle",
+          "when": [
+            "spell:kindle",
+            "!flag:brazier_lit"
+          ],
+          "energy": 4,
+          "time": 5,
+          "train": [
+            "int+1"
+          ],
+          "why": "casting Kindle",
+          "effects": [
+            "flag:brazier_lit"
+          ],
+          "go": "mage_fire"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "mage_fire",
+      "title": "Smoke",
+      "text": [
+        "The kindling catches with a soft whump. Orlen opens his mouth to say something, and a bell starts clanging down in the village.",
+        "You both turn. Black smoke is rising from the harbour. \"The net shed,\" says Orlen. \"Dry nets go up like straw.\" He's already reaching for his stick. \"Well. Lesson two.\""
+      ],
+      "choices": [
+        {
+          "label": "Run down to the village",
+          "effects": [
+            "flag:fire_started"
+          ],
+          "go": "travel",
+          "result": "You run. Orlen follows as fast as his old legs let him."
+        },
+        {
+          "label": "Stay here. It's not your shed",
+          "effects": [
+            "flag:fire_ignored",
+            "complete:orlen",
+            "rep:skelmed-10",
+            "corruption+0.4"
+          ],
+          "go": "travel",
+          "result": "Orlen looks at you for a long moment, then goes down the hill alone. By the time the bell stops, the net shed is ash, and half the nets in Skelmed with it."
+        }
+      ]
+    },
+    {
+      "id": "rook",
+      "speaker": "Rook",
+      "title": "Rook",
+      "text": [],
+      "extra": [
+        {
+          "when": [
+            "!quest:lodge",
+            "!done:lodge"
+          ],
+          "text": "A wiry boy with Ida's red hair. \"Snares are mine. Hands off, unless Ma says.\""
+        },
+        {
+          "when": [
+            "quest:lodge"
+          ],
+          "text": "\"Ma sent you? Rook. Snares are along this track, three of them. The last one's right up at the top. Something's been robbing it. I don't go up there now.\""
+        },
+        {
+          "when": [
+            "done:lodge"
+          ],
+          "text": "\"Ma says you're all right. That's high praise, from her.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Got a spare hare?\"",
+          "when": [
+            "quest:lodge",
+            "item:hare<3",
+            "flag:snare1_done",
+            "flag:snare2_done",
+            "flag:snare3_done"
+          ],
+          "time": 60,
+          "effects": [
+            "item:hare+1"
+          ],
+          "result": "Rook sighs and takes you down a line of his own you didn't know about. There's one hare in it. \"Don't tell Ma.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "snare1",
+      "title": "A snare",
+      "text": [
+        "A hare hangs limp in the wire loop of one of Rook's snares."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!quest:lodge"
+          ],
+          "text": "Rook's snare. Not yours to take."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Take the hare and reset the snare",
+          "when": [
+            "quest:lodge"
+          ],
+          "time": 10,
+          "train": [
+            "agi+1"
+          ],
+          "why": "setting snares",
+          "effects": [
+            "item:hare+1",
+            "flag:snare1_done"
+          ],
+          "go": "travel",
+          "result": "You work the hare free and set the loop again the way Rook had it."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "snare2",
+      "title": "A snare",
+      "text": [
+        "Another of Rook's snares, and another hare in it."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!quest:lodge"
+          ],
+          "text": "Rook's snare. Not yours to take."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Take the hare and reset the snare",
+          "when": [
+            "quest:lodge"
+          ],
+          "time": 10,
+          "train": [
+            "agi+1"
+          ],
+          "why": "setting snares",
+          "effects": [
+            "item:hare+1",
+            "flag:snare2_done"
+          ],
+          "go": "travel",
+          "result": "Two. You're getting the knack of the wire."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "snare3",
+      "title": "The last snare",
+      "text": [
+        "A wolf has its muzzle in the last snare, tearing at what's left of a hare. It lifts its head and looks at you. Yellow eyes."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!quest:lodge"
+          ],
+          "text": "It goes back to eating. It's not your snare, and not your fight."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "when": [
+            "quest:lodge"
+          ],
+          "effects": [
+            "combat:dog:snare3_won:travel"
+          ]
+        },
+        {
+          "label": "Back away",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "snare3_won",
+      "title": "The snare robber",
+      "text": [
+        "The wolf lies still. The hare it was eating is ruined, but in the brush beside the snare there's a second one, fresh, that it hadn't got to yet."
+      ],
+      "choices": [
+        {
+          "label": "Take it",
+          "time": 10,
+          "effects": [
+            "item:hare+1",
+            "flag:snare3_done"
+          ],
+          "go": "travel",
+          "result": "That's the snare line done."
+        }
+      ]
+    },
+    {
+      "id": "hill_stream",
+      "title": "The hill stream",
+      "text": [
+        "The hill stream runs quick and cold over the stones."
+      ],
+      "choices": [
+        {
+          "label": "Fill the pail",
+          "when": [
+            "item:pail"
+          ],
+          "time": 5,
+          "effects": [
+            "item:pail-1",
+            "item:water_pail+1"
+          ],
+          "go": "travel",
+          "result": "You fill the pail. It's heavy, and the path down is steep."
+        },
+        {
+          "label": "Drink and fill your waterskin",
+          "time": 10,
+          "effects": [
+            "water=4",
+            "thirst+20"
+          ],
+          "go": "travel",
+          "result": "It tastes of moss and stone. You drink, then fill the skin."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "quarry_dig",
+      "title": "The rock face",
+      "text": [
+        "Rusty seams run through the rock where the old quarrymen stopped cutting."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!item:pick"
+          ],
+          "text": "You'd need a pick. Garran has one."
+        },
+        {
+          "when": [
+            "item:pick",
+            "item:ore>=3"
+          ],
+          "text": "That's three good lumps. Enough for Garran."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Swing the pick",
+          "when": [
+            "item:pick",
+            "item:ore<3",
+            "!flag:ore_in"
+          ],
+          "time": 30,
+          "stamina": 20,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "end+1"
+          ],
+          "why": "mining",
+          "effects": [
+            "item:ore+1"
+          ],
+          "result": "Chips fly, and your arms ring with every blow. At last a lump of ore comes away, heavy and red-brown."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "quarry_gem",
+      "title": "A glint",
+      "text": [
+        "Something in the spoil heap at the foot of the rock face catches the light: a green stone the size of a fingernail, clear as bottle glass."
+      ],
+      "choices": [
+        {
+          "label": "Take it, to show Garran",
+          "time": 5,
+          "effects": [
+            "item:gem+1",
+            "flag:gem_found"
+          ],
+          "go": "travel",
+          "result": "You wrap it in a scrap of cloth."
+        },
+        {
+          "label": "Pocket it. Nobody would ever know",
+          "time": 5,
+          "effects": [
+            "item:gem+1",
+            "flag:gem_found",
+            "flag:gem_hidden",
+            "corruption+0.25"
+          ],
+          "go": "travel",
+          "result": "It goes in your pocket, and stays there."
+        }
+      ]
+    }
+  ]
+}

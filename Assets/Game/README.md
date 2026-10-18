@@ -52,7 +52,7 @@ Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen
 
 ### Conditions (`when`, `need`, `extra`)
 
-Put `!` in front of any condition to flip it.
+Put `!` in front of any condition to flip it. Join conditions with `|` when either will do: `!done:lodge|!done:quarry`.
 
 `flag:name`, `item:bread`, `spell:kindle`, `class` (has any class), `class:mage`, `gear`, `gear:knife`, `mode:basic`, `mode:perma`, `background:runner`, `gender:female`, `night`, and comparisons such as `coins>=3`, `water<4`, `rep:skelmed>=10`, `energy<20`, `stat:str>=5`, `item:bread>=2`, `day>=3`.
 
@@ -81,7 +81,7 @@ Gear in `data.json` is the base: name, slot (`weapon`, `offhand`, `body`, `hands
 
 ## The walkable world
 
-The whole game happens in the world now: there are no text pages. Areas are top-down maps you walk round tile by tile with the arrow keys (Shift runs, Space talks to or uses what you face, Enter makes camp where that's allowed). There are three: the coast road, Yenson's hut (an inside area) and the village of Skelmed. People talk in a box at the bottom of the screen; a scene's `speaker` puts their name on it. Each area lives under `areas` in `data.json` and is made by `Tools/Art/world.py` (run `python3 Tools/Art/build.py`), which also paints its picture, so to change an area, edit that script. The tile letters are listed under `tiles` (`solid` ones can't be walked on; `road` ones have fewer fights).
+The whole game happens in the world now: there are no text pages. Areas are top-down maps you walk round tile by tile with the arrow keys (Shift runs, Space talks to or uses what you face, Enter makes camp where that's allowed). There are four: the coast road, Yenson's hut (an inside area), the village of Skelmed and the hills above it (the lane north out of the village). A thing in `World` sprites taller than 16 pixels (the class stone) stands up out of its tile. People talk in a box at the bottom of the screen; a scene's `speaker` puts their name on it. Each area lives under `areas` in `data.json` and is made by `Tools/Art/world.py` (run `python3 Tools/Art/build.py`), which also paints its picture, so to change an area, edit that script. The tile letters are listed under `tiles` (`solid` ones can't be walked on; `road` ones have fewer fights).
 
 An area has `spots` (named places to put the player, used by the effect `travel:at:<spot>`), `objects` (people, signs, doors and things: facing one and pressing Space opens its `scene` or shows its `text`; `once` ones vanish after use; `when` says when they're there), `zones` (walking into the rectangle runs `scene`, or moves you to the spot `to`, which is how doors and the village gate work; or runs the first of `enter` whose `when` holds) and `uses` (facing a kind of tile, like the stream, the well or a bed, opens a scene). `indoor` areas have no night shade, and `camp: false` stops camping. Going into an area sets the flag `been:<area id>`.
 
@@ -92,6 +92,13 @@ An area has `spots` (named places to put the player, used by the effect `travel:
 Quests live under `quests` in `data.json`: an `id`, a `name`, who gives it (`giver`), a line of description and its `goals`. A goal is met when the value `count` (like `item:firewood`) reaches `target`, or, without a count, when its `when` condition holds. The effect `quest:<id>` gives a quest (it shows on the HUD tracker and in the Journal) and `complete:<id>` finishes it, usually in the giver's talk scene. Conditions: `quest:<id>` (taken, not finished), `ready:<id>` (taken and every goal met, so the giver can offer the hand-in line) and `done:<id>` (finished).
 
 Yenson's three jobs run one after the other: fill his bucket at the spring in the copse south of the shack, bring three armfuls of deadwood, then kill the boar by the spring. He pays you with supplies and five coppers and sends you north to Skelmed.
+
+Skelmed has three tutorial jobs, in any order, one for each class:
+- **Ida** (hunters' lodge, `lodge`): three hares from Rook's snares in the hills (a wolf is robbing the last one), four logs split at the chopping block, and the water butt filled with two pails from the hill stream. She pays five coppers and fish; you can turn the coin down or push for more.
+- **Garran** (forge, `quarry`): dig three lumps of ore at the quarry with his pick, bring them back, forge your first piece. A green gem in the spoil heap can be shown to him (he lets you set it) or pocketed.
+- **Orlen** (cottage in the hills, `orlen`): learn Draw Water and Kindle, light his brazier, then the net shed in the village catches fire. Put out its three fires with Draw Water or wet nets, or stay put and let it burn.
+
+With all three done, the class stone in the guild post's yard lets you pick Adventurer, Blacksmith or Mage, and Mira gives you a guild card. Bess at the inn rents beds and sells bread.
 
 ## Enemies and combat
 

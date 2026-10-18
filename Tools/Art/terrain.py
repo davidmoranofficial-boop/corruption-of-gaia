@@ -56,7 +56,7 @@ def ground_class(rows, x, y):
     if t in '=D': return DIRT
     if t in 'cOAL': return COBBLE
     if t == 'n': return COBBLE if near('c') else GRASS
-    if t in 'uhs': return HIGH
+    if t in 'uhsq': return HIGH
     if t in 'rR': return SAND if near(',~') else GRASS
     if t == 'H': return GRASS
     return GRASS
@@ -298,6 +298,18 @@ def paint(rows, seed=1):
                         if (x, y + 1) not in pts or (x + 1, y) not in pts: cv.put(x, y, 'g')
                         elif (x, y - 1) not in pts or (x - 1, y) not in pts: cv.put(x, y, 'G' if y > cy else 'y')
                     cv.put(int(cx) - 2, int(cy) - 2, 'W')
+            elif t == 'q':
+                # seams of rusty ore and the odd glint in the rock face
+                for _ in range(7):
+                    fx, fy = X0 + r.randint(1, 13), Y0 + r.randint(6, 13)
+                    for dx in range(r.randint(1, 3)):
+                        cv.put(fx + dx, fy, 'R' if (dx + fy) % 2 else 'r')
+                    cv.put(fx, fy + 1, 'm')
+                cv.put(X0 + r.randint(3, 12), Y0 + r.randint(6, 12), 'a')
+                # pick marks
+                for _ in range(3):
+                    fx, fy = X0 + r.randint(2, 12), Y0 + r.randint(5, 12)
+                    cv.put(fx, fy, 'W'); cv.put(fx + 1, fy + 1, 'g')
             elif t == 'k':
                 cx, cy = X0 + 8, Y0 + 9
                 for (x, y) in blob(cx + 1, cy + 4, 7, 3): cv.shade(x, y)

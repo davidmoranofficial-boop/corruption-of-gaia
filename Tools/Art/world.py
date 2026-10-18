@@ -12,7 +12,7 @@ Tile letters:
   =  road           T  tree                       r  rock          R  rock pool
   w  stream         b  bridge                     k  bramble       h  cliff
   u  high ground    s  steps                      F  fence         H  building
-  o  flowers
+  o  flowers        q  ore seam (in a cliff face)
 """
 import json, math, os, random
 from PIL import Image
@@ -33,6 +33,7 @@ TILES = [
     ('s', 'Steps', False, True), ('F', 'Fence', True, False), ('H', 'Building', True, False), ('o', 'Flowers', False, False),
     ('D', 'Door', False, True), ('c', 'Cobbles', False, True), ('P', 'Pier', False, True), ('O', 'Well', True, False),
     ('A', 'Anvil', True, False), ('L', 'Forge', True, False), ('n', 'Barrel', True, False),
+    ('q', 'Ore seam', True, False),
     # indoors
     ('p', 'Floor', False, True), ('W', 'Wall', True, False), ('x', 'Wall', True, False), ('M', 'Doorway', False, True),
     ('f', 'Hearth', True, False), ('B', 'Bed', True, False), ('t', 'Table', True, False),
@@ -325,6 +326,13 @@ def skelmed():
     rect(10, 22, 18, 22, 'c')
     rect(18, 22, 29, 23, 'c')
 
+    # the lane north out of the village, up into the hills
+    for y in range(0, 10):
+        setc(12, y, '='); setc(13, y, '=')
+
+    # the net shed down by the harbour
+    rect(8, 15, 10, 16, 'H')
+
     # Garran's forge in front of the smithy: the forge itself and the anvil
     setc(24, 22, 'L')
     setc(28, 22, 'A')
@@ -337,7 +345,7 @@ def skelmed():
         if g[y][x] in '.,': g[y][x] = 'T'
     for _ in range(30):
         x, y = rnd.randrange(W), rnd.randrange(2, 26)
-        if g[y][x] == '.': g[y][x] = 'o'
+        if g[y][x] == '.' and not (11 <= x <= 14 and y < 3): g[y][x] = 'o'
 
     rows = [''.join(r) for r in g]
     return {
@@ -348,10 +356,26 @@ def skelmed():
         'doors': doors,
         'spots': [
             {'id': 'village_gate', 'x': 17, 'y': 24, 'facing': 'up'},
+            {'id': 'skelmed_north', 'x': 12, 'y': 2, 'facing': 'down'},
         ],
         'objects': [
             {'id': 'garran', 'kind': 'npc', 'sprite': 'npc_garran', 'x': 27, 'y': 22, 'facing': 'right', 'scene': 'smith'},
-            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 20, 'y': 13, 'facing': 'left', 'scene': 'ida'},
+            # the hunters' lodge is the long house at the top; its chopping block and water butt stand outside
+            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 19, 'y': 8, 'facing': 'down', 'scene': 'ida'},
+            {'id': 'block', 'kind': 'item', 'sprite': 'obj_block', 'x': 21, 'y': 6, 'scene': 'chop'},
+            {'id': 'butt', 'kind': 'item', 'sprite': 'obj_butt', 'x': 15, 'y': 7, 'scene': 'butt'},
+            # the guild post is the house east of the square; the class stone stands in its yard
+            {'id': 'mira', 'kind': 'npc', 'sprite': 'npc_mira', 'x': 30, 'y': 14, 'facing': 'left', 'scene': 'mira'},
+            {'id': 'stone', 'kind': 'item', 'sprite': 'obj_stone', 'x': 32, 'y': 11, 'scene': 'class_stone'},
+            # the net shed fire, once it's started
+            {'id': 'fire1', 'kind': 'item', 'sprite': 'obj_fire', 'x': 9, 'y': 14, 'scene': 'fire1',
+             'when': ['flag:fire_started', '!flag:fire1_out']},
+            {'id': 'fire2', 'kind': 'item', 'sprite': 'obj_fire', 'x': 11, 'y': 16, 'scene': 'fire2',
+             'when': ['flag:fire_started', '!flag:fire2_out']},
+            {'id': 'fire3', 'kind': 'item', 'sprite': 'obj_fire', 'x': 7, 'y': 16, 'scene': 'fire3',
+             'when': ['flag:fire_started', '!flag:fire3_out']},
+            {'id': 'orlen_fire', 'kind': 'npc', 'sprite': 'npc_orlen', 'x': 13, 'y': 15, 'facing': 'left', 'scene': 'orlen_at_fire',
+             'when': ['flag:fire_started', '!flag:fire_out']},
             {'id': 'bess', 'kind': 'npc', 'sprite': 'npc_bess', 'x': 9, 'y': 8, 'facing': 'down', 'scene': 'bess'},
             {'id': 'dockhand', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': 2, 'y': 13, 'facing': 'left', 'scene': 'dockhand'},
             {'id': 'board', 'kind': 'sign', 'sprite': 'obj_sign', 'x': 15, 'y': 9,
@@ -359,6 +383,7 @@ def skelmed():
         ],
         'zones': [
             {'x0': 17, 'y0': 26, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
+            {'x0': 12, 'y0': 0, 'x1': 13, 'y1': 0, 'to': 'hills_gate'},
         ],
         'uses': [
             {'tile': 'O', 'scene': 'well_drink'},
@@ -370,7 +395,136 @@ def skelmed():
     }
 
 
-AREAS = [coast_road, yenson_hut, skelmed]
+# ============================================================================================== the hills
+
+def hills():
+    """The hills north of Skelmed: Rook's snare line in the woods to the west, the stream, old Orlen's cottage,
+    and Garran's old quarry at the top."""
+    W, H = 34, 40
+    g = [['.'] * W for _ in range(H)]
+    rnd = random.Random(31)
+
+    def setc(x, y, t):
+        if 0 <= x < W and 0 <= y < H: g[y][x] = t
+
+    def rect(x0, y0, x1, y1, t, keep=None):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if keep is None or (0 <= y < H and 0 <= x < W and g[y][x] in keep): setc(x, y, t)
+
+    # the path from the village (bottom) winding up to the quarry (top)
+    path = lambda y: int(round(16 + 2.5 * math.sin(y / 6.0) - 1.5 * math.sin(y / 13.0)))
+
+    # woods: thick round the edges, scattered inside, thicker in the west where the snares are
+    for y in range(H):
+        for x in range(W):
+            edge = min(x, W - 1 - x, y)
+            p = 0.95 if edge < 2 else (0.30 if x < 12 else 0.12)
+            if rnd.random() < p: g[y][x] = 'T'
+    rect(0, H - 1, W - 1, H - 1, 'T')
+
+    # the quarry: a bite out of the hillside, high ground behind a rock face with seams of ore in it
+    for y in range(1, 9):
+        for x in range(8, 27):
+            d = ((x - 17) / 9.5) ** 2 + ((y - 1) / 7.5) ** 2
+            if d <= 1.0: setc(x, y, 'h')
+            if d <= 0.55: setc(x, y, 'u')
+    for y in range(9, 13):                # the quarry floor: gravel and spoil, spilling out from under the face
+        for x in range(8, 27):
+            if ((x - 17) / 8.2) ** 2 + ((y - 8.6) / 3.3) ** 2 <= 1 and g[y][x] not in 'hqu': setc(x, y, ',')
+    for x in range(12, 23):
+        if g[8][x] == 'h' and x % 3 != 1: setc(x, 8, 'q')
+    for (x, y) in ((11, 10), (23, 10), (20, 11), (13, 11), (24, 9)):
+        setc(x, y, 'r')
+
+    # the stream, from the woods in the east down to the west
+    stream_y = lambda x: int(round(19 + 1.4 * math.sin(x / 4.0)))
+    for x in range(W):
+        y0 = stream_y(x)
+        for y in (y0, y0 + 1): setc(x, y, 'w')
+
+    # old Orlen's cottage on the slope east of the path, herbs round it
+    rect(22, 26, 27, 29, '.')
+    rect(21, 30, 28, 33, '.')
+    rect(23, 26, 26, 29, 'H')
+    for (x, y) in ((22, 30), (27, 30), (28, 31), (21, 32), (28, 33), (22, 33)):
+        setc(x, y, 'o')
+    for y in range(30, 34): setc(24, y, '=')
+
+    # clearings along the snare line in the west woods
+    for (x0, y0, x1, y1) in ((3, 24, 8, 28), (4, 12, 9, 16), (2, 6, 6, 10), (6, 28, 14, 30), (6, 16, 9, 24), (4, 9, 8, 13)):
+        rect(x0, y0, x1, y1, '.', keep='T.')
+    # long grass
+    for (x0, y0, x1, y1) in ((4, 25, 7, 27), (25, 13, 29, 16), (19, 33, 21, 36), (3, 13, 5, 15)):
+        rect(x0, y0, x1, y1, 'g', keep='.')
+    for _ in range(25):
+        x, y = rnd.randrange(W), rnd.randrange(12, H - 1)
+        if g[y][x] == '.': g[y][x] = 'o'
+    for (x, y) in ((28, 22), (10, 33), (13, 24)):
+        if g[y][x] in '.o': g[y][x] = 'r'
+
+    # the path itself, two wide, with a footbridge over the stream; a track off it to Orlen's door
+    # and a narrower one west along the snare line
+    prev = None
+    for y in range(9, H):
+        x = path(16) if 16 <= y <= 22 else path(y)
+        lo, hi = (x, x + 1) if prev is None else (min(x, prev), max(x, prev) + 1)
+        for xx in range(lo, hi + 1):
+            setc(xx, y, 'b' if g[y][xx] == 'w' else '=')
+        prev = x
+    for x in range(path(31) + 2, 25): setc(x, 31, '=')
+    for x in range(5, path(29)):
+        if g[29][x] != 'w': setc(x, 29, '=')
+    for y in range(13, 29): setc(7, y, 'b' if g[y][7] == 'w' else '=')
+    for x in range(4, 8): setc(x, 13, '=')
+    # the bottom gate: the lane down to the village
+    gx = path(H - 1)
+    for y in range(H - 3, H): setc(gx, y, '='); setc(gx + 1, y, '=')
+
+    rows = [''.join(r) for r in g]
+    snares = [(4, 26), (8, 14), (3, 8)]
+    return {
+        'id': 'skelmed_hills',
+        'name': 'The hills above Skelmed',
+        'minutes': 2, 'eventChance': 0, 'fightChance': 4, 'fightGap': 14,
+        'doors': [(24, 29)],
+        'spots': [
+            {'id': 'hills_gate', 'x': gx, 'y': H - 3, 'facing': 'up'},
+        ],
+        'objects': [
+            {'id': 'orlen', 'kind': 'npc', 'sprite': 'npc_orlen', 'x': 26, 'y': 31, 'facing': 'left', 'scene': 'orlen',
+             'when': ['!flag:fire_started|flag:fire_out']},
+            {'id': 'brazier', 'kind': 'item', 'sprite': 'obj_brazier', 'x': 22, 'y': 30, 'scene': 'brazier',
+             'when': ['!flag:brazier_lit']},
+            {'id': 'brazier_lit', 'kind': 'item', 'sprite': 'obj_brazier_lit', 'x': 22, 'y': 30, 'scene': 'brazier',
+             'when': ['flag:brazier_lit']},
+            {'id': 'rook', 'kind': 'npc', 'sprite': 'npc_rook', 'x': 9, 'y': 29, 'facing': 'right', 'scene': 'rook'},
+            {'id': 'snare1', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[0][0], 'y': snares[0][1], 'scene': 'snare1',
+             'when': ['!flag:snare1_done']},
+            {'id': 'snare2', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[1][0], 'y': snares[1][1], 'scene': 'snare2',
+             'when': ['!flag:snare2_done']},
+            {'id': 'snare3', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[2][0], 'y': snares[2][1], 'scene': 'snare3',
+             'when': ['!flag:snare3_done']},
+            {'id': 'glint', 'kind': 'item', 'sprite': 'obj_glint', 'x': 21, 'y': 10, 'scene': 'quarry_gem',
+             'when': ['!flag:gem_found']},
+            {'id': 'sign_hills', 'kind': 'sign', 'sprite': 'obj_sign', 'x': path(36) + 2, 'y': 36,
+             'text': 'Up: the old quarry. Right: O. Vey. Left: SNARES, KEEP OFF. (Rook)'},
+        ],
+        'zones': [
+            {'x0': gx, 'y0': H - 1, 'x1': gx + 1, 'y1': H - 1, 'to': 'skelmed_north'},
+        ],
+        'uses': [
+            {'tile': 'w', 'scene': 'hill_stream'},
+            {'tile': 'q', 'scene': 'quarry_dig'},
+        ],
+        'events': [
+            {'enemy': 'dog', 'win': 'ev_wolf_won', 'kind': 'fight', 'weight': 1, 'terrain': '.go', 'area': [0, 0, W - 1, H - 6]},
+        ],
+        'rows': rows,
+    }
+
+
+AREAS = [coast_road, yenson_hut, skelmed, hills]
 
 # ============================================================================================== tile painting
 
@@ -1014,6 +1168,10 @@ NPCS = {
     'npc_garran': ('male', SKINS['brown'], HAIRS['black'], {'d': '#5a4634', 'D': '#3a2d24', 'n': '#38343a', 'N': '#1e1a20'}),
     'npc_ida': ('female', SKINS['light'], HAIRS['red'], {'d': '#566b3e', 'D': '#3b4d30', 'n': '#5a4634', 'N': '#3a2d24'}),
     'npc_bess': ('female', SKINS['fair'], HAIRS['grey'], {'d': '#7e5a80', 'D': '#553a5a', 'n': '#38343a', 'N': '#1e1a20'}),
+    # old Orlen in a robe that was royal blue once; Mira the guild clerk; Rook, Ida's son
+    'npc_orlen': ('male', SKINS['fair'], HAIRS['grey'], {'d': '#46676a', 'D': '#253236', 'n': '#46676a', 'N': '#253236'}),
+    'npc_mira': ('female', SKINS['olive'], HAIRS['black'], {'d': '#a08c6c', 'D': '#7d6b52', 'n': '#3a4c50', 'N': '#253236'}),
+    'npc_rook': ('male', SKINS['light'], HAIRS['red'], {'d': '#566b3e', 'D': '#3b4d30', 'n': '#7d6b52', 'N': '#5a4634'}),
 }
 
 OBJECTS = {
@@ -1143,13 +1301,175 @@ oeWbbbDbbbbbbBo.
 ................
 ................
 """,
+    # a snare: a bent sapling and a wire loop by a run in the grass
+    'obj_snare': """
+................
+................
+..........oo....
+.........obo....
+........obo.....
+.......obo......
+......obo.......
+......obo.......
+.....obo..ooo...
+.....obo.oY.Yo..
+.....obo.Y...Y..
+....obbo.oY.Yo..
+....oBBo..ooo...
+...ovvvvo.......
+................
+................
+""",
+    # the lodge's chopping block, an axe bitten into it, split wood beside
+    'obj_block': """
+................
+.........oo.....
+........oyYo....
+.......oyYo.....
+......obyo......
+.....obBo.......
+....oooooooo....
+...odddddddDo...
+...oDdbdddDbo...
+...obbbbbbbbo...
+...oDbBbbBbBo...
+...obbbbbbbbo...
+...obBbbbbBbo...
+....oooooooo....
+....vvvvvvvv....
+................
+""",
+    # a water butt: a big barrel with a lid, a ladle hung on it
+    'obj_butt': """
+................
+...oooooooooo...
+..obbbbbbbbbbo..
+..oBBBBBBBBBBo..
+..oDdddDDdddDo..
+..odDdddDdddDo..
+..oBBBBBBBBBBo..
+..oDdddDddddWo..
+..odDddDdddWWo..
+..oDdddDddddWo..
+..oBBBBBBBBBBo..
+..oDdddDddddDo..
+..odDddDdddDDo..
+...oooooooooo...
+...vvvvvvvvvv...
+................
+""",
+    # something glinting in the spoil heap
+    'obj_glint': """
+................
+................
+................
+................
+.......W........
+.......W........
+.....WWfWW......
+.......W........
+....ooo.Wooo....
+...oyyYooyYYo...
+..oyGyyyGyyyGo..
+.oGyyGyyyGGyyGo.
+.oGGyGGGyGyGGGo.
+..ooooooooooooo.
+................
+................
+""",
+    'obj_brazier': """
+................
+................
+................
+................
+................
+...oooooooooo...
+...oGgggggggo...
+...oybBbBbBgo...
+...ooyyyyyyoo...
+....oGyyyyGo....
+.....oGyyGo.....
+......oGGo......
+.....oGooGo.....
+....oGo..oGo....
+....oo....oo....
+................
+""",
+    'obj_brazier_lit': """
+.......a........
+......aa..a.....
+.....araa.a.....
+....aarRaaa.....
+....arRRrRa.....
+...oarRRRrao....
+...oGarrraGo....
+...oybBbBbBgo...
+...ooyyyyyyoo...
+....oGyyyyGo....
+.....oGyyGo.....
+......oGGo......
+.....oGooGo.....
+....oGo..oGo....
+....oo....oo....
+................
+""",
+    'obj_fire': """
+......a.........
+.....aa....a....
+.....ara..aa....
+....aarRa.ara...
+...aarRRaarRa...
+...arRRRRrRRaa..
+..aarRmRRRmRra..
+..arRRmmRmmRRa..
+..aRRmmmmmmRRa..
+..aRmmGGGGmmRa..
+..oRmGgGgGGmRo..
+..obBbBbBbBbBo..
+...oooooooooo...
+....g.g..g.g....
+................
+................
+""",
+    # the class stone: taller than a man, three rings carved in it (16 x 28, stands up out of its tile)
+    'obj_stone': """
+.....oooooo.....
+....oYYyyyyo....
+...oYYyyyyyGo...
+...oYyyyyyyGo...
+...oYyygggyGo...
+...oYygGGGgGo...
+...oYygGGGgGo...
+...oYyygggyGo...
+...oYyyyyyyGo...
+...oYyyyyyyGo...
+...oYyygggyGo...
+...oYygGGGgGo...
+...oYygGGGgGo...
+...oYyygggyGo...
+...oYyyyyyyGo...
+...oYyyyyyyGo...
+...oYyygggyGo...
+...oYygGGGgGo...
+...oYygGGGgGo...
+...oYyygggyGo...
+...oYyyyyyyGo...
+...oYvyyyyGGo...
+...ovFvyyGvGo...
+..ovFvvyyvFvGo..
+..oGvyyyGGvFgo..
+.oooooooooooooo.
+.vvvvvvvvvvvvvv.
+................
+""",
 }
 
 
 def object_sprite(text):
-    rows = [list(r.ljust(16, '.')[:16]) for r in text.strip('\n').split('\n')]
-    img = Image.new('RGBA', (16, 16), (0, 0, 0, 0))
-    for y, r in enumerate(rows[:16]):
+    lines = text.strip('\n').split('\n')
+    rows = [list(r.ljust(16, '.')[:16]) for r in lines]
+    img = Image.new('RGBA', (16, max(16, len(rows))), (0, 0, 0, 0))
+    for y, r in enumerate(rows):
         for x, ch in enumerate(r):
             if ch != '.': img.putpixel((x, y), C(ch))
     return img

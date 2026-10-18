@@ -206,10 +206,12 @@ namespace Loran.UnityLayer
             var e = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-thing");
             var tex = Sprite("World/" + o.sprite);
             if (tex != null) e.style.backgroundImage = new StyleBackground(tex);
+            // a tall thing (the class stone) stands up out of its tile
+            int extra = tex != null ? Mathf.Max(0, tex.height - Tile) * k : 0;
             e.style.width = T;
-            e.style.height = T;
+            e.style.height = T + extra;
             e.style.left = o.x * T;
-            e.style.top = o.y * T;
+            e.style.top = o.y * T - extra;
         }
 
         /// <summary>Puts you on a (possibly in-between) tile and moves the camera to keep you in the middle.</summary>

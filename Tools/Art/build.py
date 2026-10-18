@@ -312,6 +312,44 @@ ICON_ONLY = {
         "....ooooooo.....", "...omRRRRRmo....", "..omRrrRRRRmoo..", "..omRRRRRrRmoWo.",
         "..ommRRRRRmmoWo.", "...ommmmmmmooo..", "....ooooooo.....",
     ],
+    'hare': [
+        "................", "................", "................", "...oo...........",
+        "..oyGo..........", "..oyGGo.........", "...oyGGoooooo...", "...oeyyyyyyyyo..",
+        "..oyyyyyyyyyGGo.", "..oGyyyyyyyGGGWo", "...ooGGooGGGGoo.", "....oGo..oGGo...",
+        "....oo....ooo...",
+    ],
+    'split_wood': [
+        "................", "................", "................", "................",
+        "......oooo......", ".....odddDo.....", "....odJddDbo....", "...odJdddDbbo...",
+        "...oDDDbbbbbo...", "....obbbbbbo.oo.", ".oo..oooooo.odDo", "odDo......odDbDo",
+        "obbDooooooobbbo.", ".ooooooooooooo..",
+    ],
+    'pail': [
+        "................", "................", "................", "................",
+        ".....oooooo.....", "....o......o....", "...oooooooooo...", "...oyGyyGyyGo...",
+        "...oGyyGyyGyo...", "....oyGyyGyo....", "....oGyyGyGo....", ".....oooooo.....",
+    ],
+    'water_pail': [
+        "................", "................", "................", "................",
+        ".....oooooo.....", "....o......o....", "...oooooooooo...", "...ocwwcwwcwo...",
+        "...oGyyGyyGyo...", "....oyGyyGyo....", "....oGyyGyGo....", ".....oooooo.....",
+    ],
+    'ore': [
+        "................", "................", "................", "................",
+        "......ooooo.....", "....ooGRyGGo....", "...oGRRyGrGGo...", "..oyGGRGGRRGgo..",
+        "..oGyRrGGGyRgo..", "...oGGGRGGGgo...", "....oooooooo....",
+    ],
+    'pick': [
+        "................", "................", "..ooo......ooo..", ".oYyyoooooooyYo.",
+        "..ooGyyyyyyyGoo.", "....oooobooooo..", ".......obo......", ".......obo......",
+        ".......obo......", ".......obo......", ".......obo......", ".......obo......",
+        ".......oBo......", "........o.......",
+    ],
+    'guild_card': [
+        "................", "................", "................", "..oooooooooooo..",
+        "..odddddddddDo..", "..odaadddbbbDo..", "..odaAdddddddo..", "..odddddbbbbDo..",
+        "..odbbbbddddDo..", "..odddddddddDo..", "..oDDDDDDDDDDo..", "..oooooooooooo..",
+    ],
     'copper_ring': [
         "................",
         "................",

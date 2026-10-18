@@ -20,6 +20,9 @@ namespace Loran.Core
             ("village", "Skelmed"),
             ("road", "Walk the coast road"),
             ("hut", "Wake in Yenson's hut"),
+            ("hills", "The hills above Skelmed"),
+            ("fire", "The net shed fire"),
+            ("stone", "The class stone"),
             ("forge_first", "Forge: your first gear"),
             ("forge_iron", "Forge: buy iron"),
             ("dog", "Fight the wolf"),
@@ -67,13 +70,33 @@ namespace Loran.Core
                     MoveTo("shack");
                     Jump(TravelId);
                     break;
+                case "hills":
+                    MoveTo("hills_gate");
+                    Jump(TravelId);
+                    break;
+                case "fire":
+                    foreach (var f in new[] { "quest:orlen", "orlen_met", "brazier_lit", "fire_started" }) Flag(f);
+                    S.spells.Add("draw_water");
+                    S.spells.Add("kindle");
+                    MoveTo("village_gate");
+                    S.ax = 12; S.ay = 13; S.facing = "left";
+                    Jump(TravelId);
+                    break;
+                case "stone":
+                    foreach (var f in new[] { "quest_done:lodge", "quest_done:quarry", "quest_done:orlen", "smith_done", "fire_out" }) Flag(f);
+                    MoveTo("village_gate");
+                    S.ax = 32; S.ay = 12; S.facing = "up";
+                    Jump(TravelId);
+                    break;
                 case "forge_first":
                     MoveTo("village_gate");
+                    foreach (var f in new[] { "quest:quarry", "g_met", "ore_in" }) Flag(f);
                     Jump("smith");
                     break;
                 case "forge_iron":
                     MoveTo("village_gate");
                     Flag("smith_done");
+                    Flag("quest_done:quarry");
                     S.coins = 30;
                     Jump("smith");
                     break;

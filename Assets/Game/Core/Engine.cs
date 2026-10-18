@@ -152,6 +152,8 @@ namespace Loran.Core
             S = state;
             MigrateGear();
             MigrateScene();
+            // Saves from before Garran's quarry job: if you've already made your first gear, the job's done
+            if (S.Has("smith_done") && !S.Has("quest_done:quarry")) S.flags.Add("quest_done:quarry");
             if (S.Has("created")) GiveClothes();
         }
 
@@ -409,6 +411,8 @@ namespace Loran.Core
 
         public bool Check(string cond)
         {
+            // a|b holds when either does
+            if (cond.IndexOf('|') >= 0) return cond.Split('|').Any(Check);
             bool neg = cond.StartsWith("!");
             if (neg) cond = cond.Substring(1);
             bool v = Eval(cond);
