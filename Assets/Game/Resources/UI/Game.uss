@@ -2117,3 +2117,11 @@
     color: var(--muted);
     -unity-text-align: middle-right;
 }
+
+/* ---------- skill points ---------- */
+.skill-points { font-size: 16px; letter-spacing: 2px; color: var(--muted); margin-top: 6px; }
+.skill-points-have { color: var(--lantern); -unity-font-style: bold; }
+.move-row { flex-direction: row; align-items: center; justify-content: space-between; }
+.move-row > Label { flex-shrink: 1; min-width: 0; white-space: normal; }
+.skill-move-ready { color: var(--lantern); font-size: 14px; margin: 2px 0 2px 12px; }
+.move-why { font-size: 12px; color: var(--muted); margin-left: 8px; }

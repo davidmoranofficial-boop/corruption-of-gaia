@@ -505,7 +505,8 @@ namespace Loran.UnityLayer
             }
 
             var purse = Section(right, "PURSE");
-            Add(purse, new Label(s.coins + " copper" + (s.coins == 1 ? "" : "s")), "big-line");
+            Add(purse, new Label(Rules.Money(s.coins)), "big-line");
+            Add(purse, new Label("100 copper make a silver, 100 silver a gold, 100 gold a platinum. A week's honest work pays about 30 silver."), "line-muted");
 
             var water = Section(right, "WATERSKIN");
             var wr = Add(water, new VisualElement(), "item-row");
@@ -609,7 +610,10 @@ namespace Loran.UnityLayer
             Add(r0, new Label(s.exp + " / " + Rules.ExpToNext(s.level)), "skill-exp");
             var t0 = Add(r0, new VisualElement(), "xp-track");
             Add(t0, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
-            Add(lvl, new Label("Experience comes from fights and finished jobs. Each level adds " + Rules.HpPerLevel + " health and " + Rules.StaminaPerLevel + " stamina."), "line-muted");
+            Add(lvl, new Label("Experience comes from fights and finished jobs. Each level adds " + Rules.HpPerLevel + " health and " + Rules.StaminaPerLevel + " stamina, and gives you a skill point."), "line-muted");
+            var pts = Add(lvl, new Label("SKILL POINTS:  " + s.skillPoints), "skill-points");
+            if (s.skillPoints > 0) pts.AddToClassList("skill-points-have");
+            Add(lvl, new Label("Raising a skill unlocks its moves. Spend a skill point to learn one."), "line-muted");
 
             var combat = Section(left, "COMBAT SKILLS");
             Add(combat, new Label("These grow as you fight with them and unlock moves, under Skills in a fight. Using now: " +
@@ -692,7 +696,18 @@ namespace Loran.UnityLayer
             Add(t, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(engine.SkillProgress(sk.id)) * 100f);
             Add(parent, new Label(sk.desc), "skill-desc");
             foreach (var m in engine.data.file.moves.Where(m => m.skill == sk.id))
-                Add(parent, new Label((lv >= m.level ? "√  " : "Lv " + m.level + "  ") + m.name + ": " + m.desc), lv >= m.level ? "skill-move" : "skill-move-locked");
+            {
+                bool known = engine.S.moves.Contains(m.id);
+                bool can = engine.CanLearn(m, out var why);
+                var row = Add(parent, new VisualElement(), "move-row");
+                Add(row, new Label((known ? "√  " : "Lv " + m.level + "  ") + m.name + ": " + m.desc), known ? "skill-move" : can ? "skill-move-ready" : "skill-move-locked");
+                if (!known)
+                {
+                    var id = m.id;
+                    if (can) Add(row, new Button(() => { if (engine.LearnMove(id)) GameAudio.Play("skill_up"); AfterAction(); }) { text = "Learn  ·  1 point", focusable = false }, "small-btn");
+                    else if (lv >= m.level) Add(row, new Label(why), "move-why");
+                }
+            }
         }
 
         void GearText(VisualElement row, GearItem g)

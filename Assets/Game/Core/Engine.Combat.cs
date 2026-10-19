@@ -47,8 +47,8 @@ namespace Loran.Core
         public bool NeedsTiming(ChoiceDef c)
         {
             string e = c.effects.Count > 0 ? c.effects[0] : "";
-            if (e.StartsWith("fight:move:")) return data.Move(e.Substring(11))?.timing == true;
-            return e == "fight:attack" || e == "fight:kindle" || e == "fight:defend";
+            // Only defending uses the bar now (a perfect brace parries). Attacks crit by chance, like most RPGs.
+            return e == "fight:defend";
         }
 
         /// <summary>The command a combat choice belongs to: attack, skill, item, defend or flee.</summary>
@@ -298,7 +298,8 @@ namespace Loran.Core
         /// <summary>Applies timing, fire and the enemy's guard to a hit, and records it. move null = ignores its guard.</summary>
         int HitEnemy(float dmg, EnemyMove move, out string how)
         {
-            how = pendingTiming == TimingPerfect ? "crit" : pendingTiming == TimingMiss ? "glance" : "hit";
+            int roll = Roll(1, 100);
+            how = roll <= Rules.CritChance(S, data) ? "crit" : roll > 100 - Rules.GlanceChance ? "glance" : "hit";
             if (how == "crit") dmg *= Rules.CritMultiplier + Rules.TraitSum(S, data, t => t.crit);
             else if (how == "glance") dmg *= Rules.GlanceMultiplier;
             dmg += Rules.TraitSum(S, data, t => t.fire);

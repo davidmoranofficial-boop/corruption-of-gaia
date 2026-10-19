@@ -33,7 +33,7 @@
           "when": [
             "done:quarry"
           ],
-          "text": "\"Forge is hot. Iron's three coppers a bar. Anything you make, you keep.\""
+          "text": "\"Forge is hot. Iron's sixty coppers a bar. Anything you make, you keep.\""
         }
       ],
       "onEnter": [
@@ -229,16 +229,16 @@
           "why": "working the forge"
         },
         {
-          "label": "An iron knife (3 coppers)",
+          "label": "An iron knife (60 coppers)",
           "when": [
             "done:quarry"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "forge:knife:D"
           ],
           "go": "travel",
@@ -251,16 +251,16 @@
           "why": "working the forge"
         },
         {
-          "label": "An iron cap (3 coppers)",
+          "label": "An iron cap (60 coppers)",
           "when": [
             "done:quarry"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "forge:iron_cap:D"
           ],
           "go": "travel",
@@ -273,16 +273,16 @@
           "why": "working the forge"
         },
         {
-          "label": "A hide buckler (3 coppers)",
+          "label": "A hide buckler (60 coppers)",
           "when": [
             "done:quarry"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "forge:buckler:D"
           ],
           "go": "travel",
@@ -295,16 +295,16 @@
           "why": "working the forge"
         },
         {
-          "label": "Reinforced work gloves (3 coppers)",
+          "label": "Reinforced work gloves (60 coppers)",
           "when": [
             "done:quarry"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "forge:gloves:D"
           ],
           "go": "travel",
@@ -317,17 +317,17 @@
           "why": "working the forge"
         },
         {
-          "label": "An iron knife, with your green gem (3 coppers)",
+          "label": "An iron knife, with your green gem (60 coppers)",
           "when": [
             "done:quarry",
             "item:gem"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "item:gem-1",
             "forge:knife:C:green_gem"
           ],
@@ -341,17 +341,17 @@
           "why": "working the forge"
         },
         {
-          "label": "A hide buckler, with your green gem (3 coppers)",
+          "label": "A hide buckler, with your green gem (60 coppers)",
           "when": [
             "done:quarry",
             "item:gem"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "item:gem-1",
             "forge:buckler:C:green_gem"
           ],
@@ -365,17 +365,17 @@
           "why": "working the forge"
         },
         {
-          "label": "Reinforced work gloves, with your green gem (3 coppers)",
+          "label": "Reinforced work gloves, with your green gem (60 coppers)",
           "when": [
             "done:quarry",
             "item:gem"
           ],
           "need": [
-            "coins>=3"
+            "coins>=60"
           ],
-          "needText": "Iron costs 3 coppers, and you haven't got them.",
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-60",
             "item:gem-1",
             "forge:gloves:C:green_gem"
           ],
@@ -551,12 +551,12 @@
           "time": 15,
           "effects": [
             "complete:pack",
-            "coins+10",
+            "coins+200",
             "rep:skelmed+10",
             "item:fish+2",
             "flag:rook_escort"
           ],
-          "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses ten coppers on you, and this time she won't hear a word about it. Rook clears his throat. \"I've business in the town inland. Pelts to sell, and a man there who owes the lodge money.\" He shrugs his bow higher on his shoulder. \"Roads are bad. I'll walk with you as far as the town, if you're going. After that you're on your own.\""
+          "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses two silver on you, and this time she won't hear a word about it. Rook clears his throat. \"I've business in the town inland. Pelts to sell, and a man there who owes the lodge money.\" He shrugs his bow higher on his shoulder. \"Roads are bad. I'll walk with you as far as the town, if you're going. After that you're on your own.\""
         },
         {
           "label": "\"The pack leader's dead. Rook isn't coming back.\"",
@@ -567,10 +567,10 @@
           "time": 20,
           "effects": [
             "complete:pack",
-            "coins+10",
+            "coins+200",
             "rep:skelmed+5"
           ],
-          "result": "Ida takes the pelt without looking at it. For a long time she doesn't say anything at all. \"He was nineteen,\" she says at last. She puts ten coppers in your hand and closes your fingers over them, and goes inside, and shuts the door."
+          "result": "Ida takes the pelt without looking at it. For a long time she doesn't say anything at all. \"He was nineteen,\" she says at last. She puts two silver in your hand and closes your fingers over them, and goes inside, and shuts the door."
         },
         {
           "label": "\"What now?\"",
@@ -597,14 +597,14 @@
       "title": "Payment",
       "safe": true,
       "text": [
-        "Ida counts five coppers into her palm, slowly, the way people count money they can't spare. She holds them out to you, with two parcels of smoked fish."
+        "Ida counts a silver's worth of coppers into her palm, slowly, the way people count money they can't spare. She holds them out to you, with two parcels of smoked fish."
       ],
       "choices": [
         {
           "label": "Take it and thank her",
           "effects": [
             "complete:lodge",
-            "coins+5",
+            "coins+100",
             "item:fish+2",
             "rep:skelmed+3"
           ],
@@ -623,16 +623,16 @@
           "result": "Ida looks at you a long moment, then puts the coins away without a word. Later you hear her telling Bess about it, twice."
         },
         {
-          "label": "Tell her it was worth more than five",
+          "label": "Tell her it was worth more than a silver",
           "effects": [
             "complete:lodge",
-            "coins+8",
+            "coins+160",
             "item:fish+2",
             "rep:skelmed-6",
             "corruption+0.25"
           ],
           "go": "travel",
-          "result": "Ida's mouth goes thin. She finds three more coppers from somewhere and puts them in your hand, hard. \"There. Don't spend it all at once.\""
+          "result": "Ida's mouth goes thin. She finds another sixty coppers from somewhere and puts them in your hand, hard. \"There. Don't spend it all at once.\""
         }
       ]
     },
@@ -1168,78 +1168,78 @@
         },
         {
           "when": [],
-          "text": "She keeps the Net & Anchor, the inn behind her. \"Beds are three coppers. Nobody's slept in one since the spring.\""
+          "text": "She keeps the Net & Anchor, the inn behind her. \"Beds are thirty coppers. Nobody's slept in one since the spring.\""
         }
       ],
       "choices": [
         {
-          "label": "Rent a bed for the night (3 coppers)",
+          "label": "Rent a bed for the night (30 coppers)",
           "need": [
-            "coins>=3"
+            "coins>=30"
           ],
-          "needText": "A bed's 3 coppers, and you haven't got them.",
+          "needText": "A bed's 30 coppers, and you haven't got them.",
           "effects": [
-            "coins-3",
+            "coins-30",
             "sleep:safe"
           ],
           "go": "travel"
         },
         {
-          "label": "Buy a loaf of bread (1 copper)",
+          "label": "Buy a loaf of bread (6 coppers)",
           "need": [
-            "coins>=1"
+            "coins>=6"
           ],
-          "needText": "You haven't a copper to your name.",
+          "needText": "You haven't six coppers to your name.",
           "effects": [
-            "coins-1",
+            "coins-6",
             "item:bread+1"
           ],
           "result": "Bess wraps a loaf in a cloth. \"Yesterday's. Still good.\""
         },
         {
-          "label": "Buy a bandage (2 coppers)",
+          "label": "Buy a bandage (15 coppers)",
           "need": [
-            "coins>=2"
+            "coins>=15"
           ],
           "needText": "You haven't the coin.",
           "effects": [
-            "coins-2",
+            "coins-15",
             "item:bandage+1"
           ],
           "result": "Bess fetches a roll of clean linen from a chest. \"For the cuts. There's always cuts.\""
         },
         {
-          "label": "Buy a flask of spirits (3 coppers)",
+          "label": "Buy a flask of spirits (30 coppers)",
           "need": [
-            "coins>=3"
+            "coins>=30"
           ],
           "needText": "You haven't the coin.",
           "effects": [
-            "coins-3",
+            "coins-30",
             "item:spirits+1"
           ],
           "result": "\"Don't drink it all at once. Or at all, really. It's for wounds.\""
         },
         {
-          "label": "Buy willow bark (2 coppers)",
+          "label": "Buy willow bark (10 coppers)",
           "need": [
-            "coins>=2"
+            "coins>=10"
           ],
           "needText": "You haven't the coin.",
           "effects": [
-            "coins-2",
+            "coins-10",
             "item:willow_bark+1"
           ],
           "result": "\"For fevers. Brew it, it's foul. Or there's a willow up by the hill stream, if you'd rather pick your own.\""
         },
         {
-          "label": "Buy a sewing kit (5 coppers)",
+          "label": "Buy a sewing kit (80 coppers)",
           "need": [
-            "coins>=5"
+            "coins>=80"
           ],
           "needText": "You haven't the coin.",
           "effects": [
-            "coins-5",
+            "coins-80",
             "item:sewing_kit+1"
           ],
           "result": "\"Needle and good thread. Stitched up my husband with that, twice.\"",

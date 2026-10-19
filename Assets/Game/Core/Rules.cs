@@ -24,6 +24,23 @@ namespace Loran.Core
         public const float StepSeconds = 12f;
 
         public const int WaterskinSize = 4;
+
+        // Money: everything is counted in coppers. 100 copper = 1 silver, 100 silver = 1 gold, 100 gold = 1 platinum.
+        // A week's wage is about 30 silver; the king's tax is about 1 gold a month, more than three weeks' pay.
+        public const int Silver = 100, Gold = 100 * Silver, Platinum = 100 * Gold;
+
+        /// <summary>Coppers written out as coins, biggest first: "1 gold 20 silver 5 copper". short = "1g 20s 5c".</summary>
+        public static string Money(long coppers, bool brief = false)
+        {
+            if (coppers <= 0) return brief ? "0c" : "no money";
+            var parts = new System.Collections.Generic.List<string>();
+            long p = coppers / Platinum, g = coppers / Gold % 100, s = coppers / Silver % 100, c = coppers % 100;
+            if (p > 0) parts.Add(p + (brief ? "p" : " platinum"));
+            if (g > 0) parts.Add(g + (brief ? "g" : " gold"));
+            if (s > 0) parts.Add(s + (brief ? "s" : " silver"));
+            if (c > 0) parts.Add(c + (brief ? "c" : " copper"));
+            return string.Join(" ", parts);
+        }
         public const int DrawWaterMana = 10;
         public const int CollapseMinutes = 6 * 60;
 
@@ -255,6 +272,18 @@ namespace Loran.Core
 
         public const int AttackStamina = 14, KindleStamina = 3, KindleMana = 6, FleeStamina = 10, DefendStaminaBack = 12;
         public const float CritMultiplier = 1.75f, GlanceMultiplier = 0.4f;
+        public const int GlanceChance = 6;   // % of blows that only glance
+
+        /// <summary>% chance a blow is a critical hit: 5% plus 1% per point of Agility, plus half a % per level of the weapon's skill.</summary>
+        public static int CritChance(GameState s, GameData d)
+        {
+            int skill = 0;
+            var w = s.InSlot("weapon");
+            string id = w != null ? d.Gear(w.id)?.skill ?? "" : "";
+            if (id == "") id = "unarmed";
+            foreach (var e in s.skills) if (e.id == id) skill = e.level;
+            return Math.Clamp(5 + s.stats[Stat.Agi] + skill / 2, 5, 40);
+        }
 
         /// <summary>Who acts first: your Agility (plus Swift gear) against the enemy's speed. Ties go to you.</summary>
         public static int Speed(GameState s, GameData d) => s.stats[Stat.Agi] + (int)TraitSum(s, d, t => t.speed);

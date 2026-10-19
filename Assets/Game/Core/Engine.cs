@@ -127,6 +127,8 @@ namespace Loran.Core
                 deathMode = deathMode == "perma" ? "perma" : "basic",
                 seed = Environment.TickCount & 0x7fffffff,
                 minutes = 22 * 60,
+                movesLearned = true,
+                coinsInCopper = true,
             };
             GoTo(Creation);
         }
@@ -165,6 +167,7 @@ namespace Loran.Core
             state.Upgrade();
             S = state;
             MigrateGear();
+            MigrateMoves();
             MigrateScene();
             // Saves from before Garran's quarry job: if you've already made your first gear, the job's done
             if (S.Has("smith_done") && !S.Has("quest_done:quarry")) S.flags.Add("quest_done:quarry");
@@ -207,7 +210,7 @@ namespace Loran.Core
             return t.Replace("{they}", m ? "he" : f ? "she" : "they")
                     .Replace("{them}", m ? "him" : f ? "her" : "them")
                     .Replace("{their}", m ? "his" : f ? "her" : "their")
-                    .Replace("{name}", S.name).Replace("{coins}", S.coins.ToString()).Replace("{death}", S.deathCause);
+                    .Replace("{name}", S.name).Replace("{coins}", Rules.Money(S.coins)).Replace("{death}", S.deathCause);
         }
 
         public List<ChoiceView> Choices()
@@ -622,6 +625,7 @@ namespace Loran.Core
                     restored.Upgrade();
                     S = restored;
                     MigrateGear();
+                    MigrateMoves();
                     freshView = true;
                     notes.Append("You wake with a gasp. It's the morning you last slept, and whatever happened after hasn't happened yet.");
                     redirect = S.scene;
@@ -631,7 +635,7 @@ namespace Loran.Core
                     redirect = string.IsNullOrEmpty(S.afterCollapse) ? S.scene : S.afterCollapse;
                     return;
                 case "restart":
-                    S = new GameState();
+                    S = new GameState { movesLearned = true, coinsInCopper = true };
                     redirect = Title;
                     return;
             }

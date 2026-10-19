@@ -39,7 +39,7 @@ namespace Loran.Core
             S.hud = true;
             S.minutes = 1440 + 6 * 60;
             S.corruption = Rules.StartCorruption;
-            S.coins = 10;
+            S.coins = 300;
             S.water = Rules.WaterskinSize;
             S.AddItem("bread", 2);
             S.AddItem("flint", 1);
@@ -106,7 +106,7 @@ namespace Loran.Core
                     MoveTo("village_gate");
                     Flag("smith_done");
                     Flag("quest_done:quarry");
-                    S.coins = 30;
+                    S.coins = 600;
                     Jump("smith");
                     break;
                 case "dog":
@@ -119,6 +119,9 @@ namespace Loran.Core
                 }
                 default: throw new Exception("No dev start called '" + id + "'");
             }
+            // dev starts know every move their skills have unlocked
+            S.movesLearned = false;
+            MigrateMoves();
             Snapshot();
         }
 
@@ -148,6 +151,8 @@ namespace Loran.Core
 
         /// <summary>Forces the weather ("" lets it run naturally again).</summary>
         public void DevWeather(string id) => S.devWeather = id;
+
+        public void DevSkillPoints() => S.skillPoints += 3;
 
         public void DevLevel() => GainExp(Rules.ExpToNext(S.level) - S.exp, "(dev)");
 

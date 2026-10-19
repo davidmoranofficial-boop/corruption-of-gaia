@@ -26,7 +26,8 @@ namespace Loran.Core
                 S.level++;
                 S.hp = Rules.MaxHp(S);
                 S.stamina = Rules.MaxStamina(S, data);
-                S.Toasts.Add("Level up! You're level " + S.level + ". More health and stamina, and you're patched up.");
+                S.skillPoints++;
+                S.Toasts.Add("Level up! You're level " + S.level + ". More health and stamina, you're patched up, and you have a skill point to spend.");
             }
         }
 
@@ -59,8 +60,48 @@ namespace Loran.Core
                 e.level++;
                 S.Toasts.Add(def.name + " rose to " + e.level + (string.IsNullOrEmpty(why) ? "" : " from " + why) + ".");
                 foreach (var m in data.file.moves.Where(m => m.skill == id && m.level == e.level))
-                    S.Toasts.Add("New move: " + m.name + ". " + m.desc);
+                    S.Toasts.Add("New move to learn: " + m.name + ". Spend a skill point on it in Skills.");
             }
+        }
+
+        // ------------------------------------------------------------------ moves and skill points
+
+        public const int MoveCost = 1;
+
+        /// <summary>Can you learn this move now? Your skill must be high enough and you need a skill point.</summary>
+        public bool CanLearn(MoveDef m, out string why)
+        {
+            why = null;
+            if (S.moves.Contains(m.id)) { why = "Learned"; return false; }
+            if (SkillLevel(m.skill) < m.level) { why = "Needs " + (data.Skill(m.skill)?.name ?? m.skill) + " " + m.level; return false; }
+            if (!string.IsNullOrEmpty(m.need) && !Check(m.need)) { why = "Needs " + m.need.Replace("spell:", "the spell ").Replace('_', ' '); return false; }
+            if (S.skillPoints < MoveCost) { why = "No skill points"; return false; }
+            return true;
+        }
+
+        public bool LearnMove(string id)
+        {
+            var m = data.Move(id);
+            if (m == null || !CanLearn(m, out _)) return false;
+            S.skillPoints -= MoveCost;
+            S.moves.Add(id);
+            S.Toasts.Add("Learned " + m.name + ".");
+            return true;
+        }
+
+        /// <summary>Saves from before skill points: you keep every move your skills had already unlocked.</summary>
+        void MigrateMoves()
+        {
+            if (!S.coinsInCopper)
+            {
+                // Saves from before silver and gold: prices went up about twentyfold, so your purse does too
+                S.coinsInCopper = true;
+                S.coins *= 20;
+            }
+            if (S.movesLearned) return;
+            S.movesLearned = true;
+            foreach (var m in data.file.moves)
+                if (SkillLevel(m.skill) >= m.level && !S.moves.Contains(m.id)) S.moves.Add(m.id);
         }
 
         /// <summary>The combat skill your weapon trains: dagger, axe, bow... or fists with nothing in your hand.</summary>
@@ -83,7 +124,7 @@ namespace Loran.Core
             string weapon = WeaponSkill();
             foreach (var m in data.file.moves)
             {
-                if (SkillLevel(m.skill) < m.level) continue;
+                if (!S.moves.Contains(m.id)) continue;
                 bool fits = m.skill == weapon || (m.skill == "shield" && HasShield()) || m.skill == "magic";
                 if (fits && (string.IsNullOrEmpty(m.need) || Check(m.need))) yield return m;
             }

@@ -185,9 +185,9 @@
             "item:bread+2",
             "item:flint+1",
             "water=4",
-            "coins+5"
+            "coins+40"
           ],
-          "result": "Yenson whistles through his teeth. \"Well. Didn't think you had it in you.\" He pushes a bundle across the floor: smoked boar from the last one he had, two heels of bread, a flint and a full waterskin, and five coppers on top. \"That's what I've got. Follow the coast road north to Skelmed. Garran the smith could use a pair of hands like yours.\""
+          "result": "Yenson whistles through his teeth. \"Well. Didn't think you had it in you.\" He pushes a bundle across the floor: smoked boar from the last one he had, two heels of bread, a flint and a full waterskin, and forty coppers on top. \"That's what I've got. Follow the coast road north to Skelmed. Garran the smith could use a pair of hands like yours.\""
         },
         {
           "label": "\"Goodbye.\"",

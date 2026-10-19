@@ -117,6 +117,10 @@ namespace Loran.Core
         public int level = 1;
         public int exp;                        // towards the next level
         public List<SkillEntry> skills = new List<SkillEntry>();
+        public List<string> moves = new List<string>();     // moves you've learned with skill points
+        public int skillPoints;                             // one per level up; spent on moves your skills have unlocked
+        public bool movesLearned;
+        public bool coinsInCopper;                          // false on saves from before silver and gold (prices were 20x lower)                           // false on saves from before moves were bought (see Engine.MigrateMoves)
 
         // Your party: the people walking with you, in the order they walk behind you
         public List<PartyMember> party = new List<PartyMember>();
@@ -194,6 +198,7 @@ namespace Loran.Core
             foreach (var g in gearItems) g.traits ??= new List<string>();
             battleLog ??= new List<string>();
             skills ??= new List<SkillEntry>();
+            moves ??= new List<string>();
             if (level < 1) level = 1;
             party ??= new List<PartyMember>();
             if (!string.IsNullOrEmpty(follower) && party.Count == 0)

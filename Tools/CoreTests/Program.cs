@@ -39,6 +39,16 @@ static class Program
         Test("weather: rain, cold, hypothermia, a chill", Weather);
         Test("companions can die, for good", CompanionDeath);
         Test("mana: spells use it, time and sleep bring it back", Mana);
+        Test("money: copper, silver, gold, platinum", () =>
+        {
+            Assert(Rules.Money(5) == "5 copper" && Rules.Money(100) == "1 silver" && Rules.Money(12345) == "1 gold 23 silver 45 copper", Rules.Money(12345));
+            Assert(Rules.Money(Rules.Platinum + 1, true) == "1p 1c" && Rules.Money(0) == "no money", "short form and empty purse");
+            var e = NewEngine();
+            e.DevStart("village");
+            var old = new GameState { coins = 7, hud = true, scene = e.S.scene, area = e.S.area, ax = e.S.ax, ay = e.S.ay };
+            e.LoadState(old);
+            Assert(e.S.coins == 140, "an old save's coins are scaled to the new prices");
+        });
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("random play never gets stuck, across 300 seeds", RandomPlay);
         Console.WriteLine(failures == 0 ? "\nAll tests passed." : "\n" + failures + " test(s) failed.");
         return failures == 0 ? 0 : 1;
@@ -145,7 +155,7 @@ static class Program
         Pick(e, "Goodbye");
         Keep(e); UseThing(e, "garran");
         Assert(e.S.scene == "smith", "Garran should talk about his forge");
-        Assert(!e.Choices().Any(c => c.def.label.Contains("3 coppers")), "buying iron comes after the first piece");
+        Assert(!e.Choices().Any(c => c.def.label.Contains("60 coppers")), "buying iron comes after the first piece");
         Assert(!e.Choices().Any(c => c.def.label == "An iron knife"), "no forging before there's ore");
         Pick(e, "Is there any work");
         Assert(e.Check("quest:quarry") && e.S.Count("pick") == 1, "Garran should send you to the quarry with his pick");
@@ -221,7 +231,7 @@ static class Program
         Assert(e.S.scene == "ida_pay", "Ida should pay you");
         int c0 = e.S.coins;
         Pick(e, "Take it and thank her");
-        Assert(e.Check("done:lodge") && e.S.coins == c0 + 5 && e.S.Count("hare") == 0 && e.S.Count("pail") == 0, "the lodge job is done and paid");
+        Assert(e.Check("done:lodge") && e.S.coins == c0 + 100 && e.S.Count("hare") == 0 && e.S.Count("pail") == 0, "the lodge job is done and paid");
 
         // Ida's last job: the pack leader, with Rook beside you
         Keep(e); UseThing(e, "ida");
@@ -260,11 +270,11 @@ static class Program
         Assert(knife != null && knife.id == "knife", "should be holding the new knife");
         Assert(e.S.gearItems.Any(g => g.id == "gutting_knife" && !g.equipped), "Yenson's knife should go back in the pack");
         Keep(e); UseThing(e, "garran");
-        var buy = e.Choices().First(c => c.def.label.Contains("3 coppers"));
+        var buy = e.Choices().First(c => c.def.label.Contains("60 coppers"));
         Assert(buy.enabled, "your coppers should buy a bar of iron");
         int coins = e.S.coins;
         e.S.coins = 1;
-        Assert(!e.Choices().First(c => c.def.label.Contains("3 coppers")).enabled, "iron costs coin you don't have");
+        Assert(!e.Choices().First(c => c.def.label.Contains("60 coppers")).enabled, "iron costs coin you don't have");
         e.S.coins = coins;
         Pick(e, "Another time");
 
@@ -311,7 +321,20 @@ static class Program
         Assert(e.WeaponSkill() == "dagger", "the gutting knife is a dagger");
         Assert(!e.UsableMoves().Any(m => m.skill == "dagger"), "no dagger moves at level 0");
         for (int i = 0; i < 40 && e.SkillLevel("dagger") < 2; i++) e.TrainSkill("dagger", 3, "test");
-        Assert(e.SkillLevel("dagger") == 2 && e.UsableMoves().Any(m => m.id == "quick_stab"), "dagger 2 unlocks Quick Stab");
+        Assert(e.SkillLevel("dagger") == 2 && !e.UsableMoves().Any(m => m.id == "quick_stab"), "dagger 2 makes Quick Stab learnable, not known");
+        Assert(e.S.skillPoints == 1, "the level up gave a skill point");
+        var stab = e.data.Move("quick_stab");
+        Assert(e.CanLearn(stab, out _) && e.LearnMove("quick_stab") && e.S.skillPoints == 0, "spend it on Quick Stab");
+        Assert(e.UsableMoves().Any(m => m.id == "quick_stab"), "now you can use it");
+        Assert(!e.CanLearn(stab, out var why) && why == "Learned", "and can't buy it twice");
+
+        // Old saves keep the moves their skills had unlocked
+        var old = NewEngine();
+        old.DevStart("village");
+        old.TrainSkill("dagger", 200, "test");
+        var snap = new GameState { movesLearned = false, skills = old.S.skills, hud = true, scene = old.S.scene, area = old.S.area, ax = old.S.ax, ay = old.S.ay };
+        old.LoadState(snap);
+        Assert(old.S.moves.Contains("quick_stab"), "an old save keeps Quick Stab");
         for (int i = 0; i < 2000; i++) e.TrainSkill("dagger", 5, "test");
         Assert(e.SkillLevel("dagger") == Rules.MaxSkill, "skills cap out");
 
@@ -329,6 +352,8 @@ static class Program
         m.DevStart("dog");
         m.TrainSkill("dagger", 100, "test");
         m.TrainSkill("bow", 100, "test");
+        m.S.moves.Add("quick_stab");
+        m.S.moves.Add("aimed_shot");
         var skills = m.Choices().Where(c => Engine.CommandOf(c.def) == "skill").Select(c => c.def.label).ToList();
         Assert(skills.Any(l => l.Contains(m.data.Move("quick_stab").name)) && !skills.Any(l => l.Contains(m.data.Move("aimed_shot").name)),
                "dagger moves with a knife, no bow moves: " + string.Join(", ", skills));
@@ -795,21 +820,23 @@ static class Program
     static void Timing()
     {
         Assert(AtDog(3).Intent != null && AtDog(3).Paragraphs().Count == 2, "the dog should show what it's about to do");
-        float perfect = 0, miss = 0;
-        for (int seed = 0; seed < 50; seed++)
+        // Attacks no longer use the bar: crits (and the odd glancing blow) come by chance
+        int crits = 0, glances = 0, hits = 0;
+        float critDmg = 0, hitDmg = 0;
+        for (int seed = 0; seed < 120; seed++)
         {
             var a = AtDog(seed);
             float before = a.S.enemyHp;
-            a.Act(a.Choices().First(c => c.def.label == "Attack").def, Engine.TimingPerfect);
-            perfect += before - Math.Max(0, a.S.enemyHp);
-            Assert(a.Events.Any(ev => ev.target == "enemy" && (ev.kind == "crit" || ev.kind == "hit")), "a hit should be recorded for the screen");
-
-            var b = AtDog(seed);
-            before = b.S.enemyHp;
-            b.Act(b.Choices().First(c => c.def.label == "Attack").def, Engine.TimingMiss);
-            miss += before - Math.Max(0, b.S.enemyHp);
+            a.Act(a.Choices().First(c => c.def.label == "Attack").def, Engine.TimingMiss);
+            var ev = a.Events.FirstOrDefault(x => x.target == "enemy");
+            Assert(ev != null, "a hit should be recorded for the screen");
+            if (ev.kind == "crit") { crits++; critDmg += ev.amount; }
+            else if (ev.kind == "glance") glances++;
+            else { hits++; hitDmg += ev.amount; }
         }
-        Assert(perfect > miss * 2.5f, "perfect hits should do far more than mistimed ones (" + perfect + " vs " + miss + ")");
+        Assert(crits > 3 && crits < 40, "some attacks crit by chance (" + crits + " of 120)");
+        Assert(glances < 20, "only a few glance (" + glances + ")");
+        Assert(critDmg / crits > hitDmg / hits * 1.4f, "a crit hits much harder");
 
         int parried = 0;
         for (int seed = 0; seed < 50; seed++)
@@ -934,7 +961,7 @@ static class Program
                 if (o.id == "brazier_lit") v.S.flags.Add("brazier_lit");
                 if (o.id == "alpha") v.S.flags.Add("quest:pack");
                 if (!v.All(o.when)) throw new Exception(o.id + " isn't there to test");
-                v.S.coins = 20;
+                v.S.coins = 2000;
                 v.S.flags.Add("dog_met");
                 v.S.stepsSinceFight = -1000;
                 if (o.id == "alpha") WalkUntil(v, (29, 5), () => v.S.scene == "den");   // the den's edge stops you first
