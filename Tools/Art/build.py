@@ -103,7 +103,7 @@ FEMALE[14][9] = 'h'                             # her hair falls past the should
 
 HAIR = set('hHjJ')
 SHIRT_ROWS = range(14, 25)
-ARM = lambda x, y: x >= 18 and 15 <= y <= 20     # upper arm, covered by the sleeve
+ARM = lambda x, y: (x >= 19 or x == 10) and 15 <= y <= 20     # upper arms (near and far), covered by the sleeves
 
 
 def is_knife(x, y, ch):
@@ -125,20 +125,20 @@ def bare(fig, female):
             if ch == '.':
                 continue
             if ch in HAIR:
-                if female and not (x >= 12 or y <= 6):
-                    g[y][x] = '.'           # loose strands, not head
+                if female and MALE[y][x] not in HAIR and MALE[y][x] not in 'sSqQ':
+                    g[y][x] = '.'           # loose strands, not head: the scalp is the same shape for both
                 else:
                     g[y][x] = 'S' if ch in 'hj' else 'q'
             elif y in SHIRT_ROWS and ch in 'dDb':
                 if ARM(x, y):
-                    g[y][x] = 'S' if x == 18 else 's'
+                    g[y][x] = 'q' if x == 10 else ('S' if x == 21 else 's')
                 else:
                     g[y][x] = 'y' if ch == 'd' else 'G'
             elif y == 25 and 11 <= x <= 18:
                 g[y][x] = 'G'
-            elif 26 <= y <= 28 and ch in 'nN':
+            elif 26 <= y <= 29 and ch in 'nN':
                 g[y][x] = 'y' if ch == 'n' else 'G'
-            elif 29 <= y <= 37 and ch in 'nN':
+            elif 30 <= y <= 37 and ch in 'nN':
                 g[y][x] = 's' if ch == 'n' else 'S'
             elif 38 <= y <= 42 and ch in 'bB':
                 g[y][x] = 's' if ch == 'b' else 'S'
@@ -155,8 +155,8 @@ hairs = {'male': where(MALE, lambda x, y, ch: ch in HAIR), 'female': where(FEMAL
 def jerkin():
     g = recolour(shirt, {'d': 'b', 'D': 'B', 'b': 'Q'})
     for y in (16, 18, 20, 22):
-        if g[y][17] != '.':
-            g[y][17] = 'J'                      # lacing
+        if g[y][15] != '.':
+            g[y][15] = 'J'                      # lacing
     return g
 
 
@@ -195,11 +195,11 @@ def hunting_bow():
     # a curved stave held upright, bowing out in front of you, the string a pale line nearer the body
     for y in range(17, 41):
         t = (y - 29) / 12.0
-        x = 22 + int(round(4 * (1 - t * t)))
+        x = 23 + int(round(4 * (1 - t * t)))
         g[y][x] = 'b' if y % 4 else 'B'
-        if g[y][21] == '.': g[y][21] = 'W'
+        if g[y][22] == '.': g[y][22] = 'W'      # clear of the arm
     for y in range(27, 31):
-        g[y][26] = 'Q'                         # the grip
+        g[y][27] = 'Q'                         # the grip
     return g
 
 
@@ -220,7 +220,7 @@ def buckler():
 
 
 def gloves():
-    g = where(bodies['male'], lambda x, y, ch: 22 <= y <= 26 and x >= 18 and ch in 'sSqQ')
+    g = where(bodies['male'], lambda x, y, ch: 21 <= y <= 26 and x >= 18 and ch in 'sSqQ')
     g = recolour(g, {'s': 'b', 'S': 'B', 'q': 'B', 'Q': 'H'})
     for (x, y) in ((19, 25), (20, 24)):
         if g[y][x] != '.':
