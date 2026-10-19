@@ -2125,3 +2125,12 @@
 .move-row > Label { flex-shrink: 1; min-width: 0; white-space: normal; }
 .skill-move-ready { color: var(--lantern); font-size: 14px; margin: 2px 0 2px 12px; }
 .move-why { font-size: 12px; color: var(--muted); margin-left: 8px; }
+
+/* Battle status tags: OPEN (it's off balance), ENRAGED, WINDED */
+.battle-chips { flex-direction: row; margin-top: 4px; }
+.battle-chip {
+    font-size: 15px; -unity-font-style: bold; padding: 2px 8px; margin: 4px 6px 0 0;
+    border-radius: 3px; color: #f4ecd8; align-self: flex-start;
+}
+.chip-good { background-color: rgba(70, 130, 80, 0.85); }
+.chip-bad { background-color: rgba(150, 52, 40, 0.85); }

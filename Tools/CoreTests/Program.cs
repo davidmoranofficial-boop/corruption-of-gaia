@@ -26,7 +26,7 @@ static class Program
         Test("dying in permadeath ends the game", PermaDeath);
         Test("running out of energy makes you collapse", Collapse);
         Test("running out of energy mid-fight kills you", CombatExhaustion);
-        if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("dog fight never breaks, across 500 seeds", DogFights);
+        if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("fights: reading tells wins, mashing loses", DogFights);
         Test("timing: perfect hits beat mistimed ones, parries block", Timing);
         Test("gear ranks, traits and slots", GearRanks);
         Test("equipment slots: clothes, rings, two hands", Slots);
@@ -782,29 +782,83 @@ static class Program
         Assert(e.S.scene == "death" && e.S.deathCause.Contains("energy"), "should die of exhaustion mid-fight");
     }
 
+    /// <summary>One round as someone who reads the tells: dodge the big ones, block the feints and quick ones,
+    /// hit it when it's open or howling, get your breath back while it holds off. Their presses are good, not perfect.</summary>
+    static void SmartRound(Engine e, int salt)
+    {
+        var opts = e.Choices().Where(c => c.enabled).ToDictionary(c => c.def.label, c => c.def);
+        Loran.Core.ChoiceDef Get(string l) => opts.TryGetValue(l, out var d) ? d : null;
+        string kind = e.Intent.KindOf();
+        bool winded = Rules.Winded(e.S, e.data);
+        var pick =
+            e.S.enemyOpen > 0 || kind == "howl" ? Get("Attack")
+          : kind == "heavy" ? (winded ? null : Get("Dodge"))
+          : kind == "feint" || kind == "guard" ? Get("Defend")
+          : winded || e.S.stamina < 40 ? Get("Defend")
+          : Get("Attack");
+        pick ??= Get("Defend");
+        int r = (int)((salt * 7919L + e.S.round * 104729L + (long)e.S.enemyHp * 31) % 100);
+        e.Act(pick, r < 30 ? Engine.TimingPerfect : r < 82 ? Engine.TimingGood : Engine.TimingMiss);
+    }
+
+    /// <summary>One round as a button-masher: attack whenever there's breath for it, otherwise block. Presses all over the place.</summary>
+    static void MashRound(Engine e, int salt)
+    {
+        var opts = e.Choices().Where(c => c.enabled).ToList();
+        var pick = opts.FirstOrDefault(c => c.def.label == "Attack") ?? opts.First(c => c.def.label == "Defend");
+        int t = (salt + e.S.round) % 6;
+        e.Act(pick.def, t == 0 ? Engine.TimingPerfect : t <= 2 ? Engine.TimingGood : Engine.TimingMiss);
+    }
+
+    static (int wins, int deaths, float lost) Simulate(Func<int, Engine> start, Action<Engine, int> play, string win, int n)
+    {
+        int wins = 0, deaths = 0;
+        float lost = 0, rounds = 0;
+        for (int seed = 0; seed < n; seed++)
+        {
+            var e = start(seed);
+            float hp0 = e.S.hp;
+            for (int turn = 0; turn < 80 && e.S.inCombat; turn++) play(e, seed);
+            Assert(!e.S.inCombat, "a fight should end within 80 rounds");
+            rounds += e.S.round;
+            lost += hp0 - Math.Max(0, e.S.hp);
+            if (e.S.scene == win) wins++;
+            else if (e.S.scene == "death") deaths++;
+        }
+        Console.WriteLine("      " + wins + "/" + n + " won, " + deaths + " died, " + (rounds / n).ToString("0.0") + " rounds, " + (lost / n).ToString("0") + " health lost on average");
+        return (wins, deaths, lost / n);
+    }
+
     static void DogFights()
     {
-        int wins = 0, deaths = 0, fled = 0;
-        float rounds = 0, lost = 0;
-        for (int seed = 0; seed < 500; seed++)
+        { var d0 = AtDog(0); Console.WriteLine("    at the wolf: hp " + d0.S.hp + "/" + Rules.MaxHp(d0.S) + ", stamina " + d0.S.stamina + "/" + Rules.MaxStamina(d0.S, d0.data) + ", str " + d0.S.stats[Stat.Str] + " agi " + d0.S.stats[Stat.Agi] + ", gear dmg " + Rules.GearDamage(d0.S) + " guard " + Rules.GearGuard(d0.S, d0.data) + ", crit " + Rules.CritChance(d0.S, d0.data) + "%, party " + d0.S.party.Count + ", speed " + Rules.Speed(d0.S, d0.data)); }
+        { var d0 = AtPackLeader(0); Console.WriteLine("    at the pack leader: level " + d0.S.level + " hp " + d0.S.hp + "/" + Rules.MaxHp(d0.S) + ", stamina " + d0.S.stamina + ", str " + d0.S.stats[Stat.Str] + ", gear dmg " + Rules.GearDamage(d0.S) + " guard " + Rules.GearGuard(d0.S, d0.data) + ", party " + d0.S.party.Count); }
+        if (Environment.GetEnvironmentVariable("BOSS") != "1")
         {
-            var e = AtDog(seed);
-            float hp0 = e.S.hp;
-            for (int turn = 0; turn < 60 && e.S.inCombat; turn++)
-            {
-                var opts = e.Choices().Where(c => c.enabled).ToList();
-                var pick = opts.FirstOrDefault(c => c.def.label == "Attack") ?? opts.First(c => c.def.label.StartsWith("Defend"));
-                e.Act(pick.def, (seed + turn) % 3);   // a mix of mistimed, good and perfect presses
-            }
-            rounds += e.S.round; lost += hp0 - e.S.hp;
-            if (e.S.scene == "dog_won") wins++;
-            else if (e.S.scene == "death") deaths++;
-            else if (e.S.scene == "dog_fled") fled++;
-            else throw new Exception("fight ended in " + e.S.scene);
+        Console.WriteLine("    the wolf, reading its tells:");
+        var smart = Simulate(AtDog, SmartRound, "dog_won", 400);
+        Console.WriteLine("    the wolf, mashing attack:");
+        var mash = Simulate(AtDog, MashRound, "dog_won", 400);
+        Assert(smart.wins >= 380, "reading the wolf should nearly always win");
+        Assert(mash.wins < smart.wins - 40 && mash.lost > smart.lost * 1.5f, "mashing attack should go much worse");
         }
-        Console.WriteLine("    average rounds " + (rounds / 500f).ToString("0.0") + ", average health lost " + (lost / 500f).ToString("0.0"));
-        Console.WriteLine("    attacking every turn: " + wins + " wins, " + deaths + " deaths out of 500");
-        Assert(wins > 450, "the first fight should be low danger");
+
+        Console.WriteLine("    the pack leader with Rook, reading its tells:");
+        var bs = Simulate(AtPackLeader, SmartRound, "den_won", 200);
+        Console.WriteLine("    the pack leader with Rook, mashing attack:");
+        var bm = Simulate(AtPackLeader, MashRound, "den_won", 200);
+        Assert(bs.wins >= 120, "the pack leader should be beatable by someone who reads it");
+        Assert(bm.wins < bs.wins / 2, "but it should punish mashing");
+    }
+
+    static Engine AtPackLeader(int seed)
+    {
+        var e = NewEngine();
+        e.DevStart("boss");
+        e.S.seed = seed * 7 + 1;
+        WalkUntil(e, (29, 5), () => e.S.scene == "den");
+        Pick(e, "Fight it");
+        return e;
     }
 
     static Engine AtDog(int seed)
@@ -838,17 +892,52 @@ static class Program
         Assert(glances < 20, "only a few glance (" + glances + ")");
         Assert(critDmg / crits > hitDmg / hits * 1.4f, "a crit hits much harder");
 
-        int parried = 0;
-        for (int seed = 0; seed < 50; seed++)
+        int parried = 0, dodged = 0, smashed = 0;
+        for (int seed = 0; seed < 60; seed++)
         {
             var e = AtDog(seed);
-            if (e.Intent.guard) continue;
+            e.S.stamina = Rules.MaxStamina(e.S, e.data);
+            string kind = e.Intent.KindOf();
+            if (kind == "guard") continue;
             float hp = e.S.hp;
-            e.Act(e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingPerfect);
-            Assert(e.S.hp >= hp, "a perfect parry should take no damage");
-            parried++;
+            if (kind == "strike")
+            {
+                e.Act(e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingPerfect);
+                Assert(e.S.hp >= hp, "a perfect block parries a quick blow");
+                parried++;
+            }
+            else if (seed % 2 == 0)
+            {
+                e.Act(e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingPerfect);
+                Assert(e.S.hp < hp, "a big blow smashes through a block without a shield");
+                smashed++;
+            }
+            else
+            {
+                e.Act(e.Choices().First(c => c.def.label == "Dodge").def, Engine.TimingGood);
+                Assert(e.S.hp >= hp && e.S.enemyOpen > 0, "dodging a big blow takes nothing and leaves it open");
+                float ehp = e.S.enemyHp;
+                e.S.enemyMove = "wary";
+                e.Act(e.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
+                Assert(e.Events.Any(x => x.target == "enemy" && x.kind == "crit") && e.S.enemyOpen == 0, "the next blow into an open enemy is a sure crit");
+                dodged++;
+            }
         }
-        Assert(parried > 10, "should have tested some parries");
+        Assert(parried > 10 && dodged > 3 && smashed > 3, "should have tested parries, dodges and blocks (" + parried + "/" + dodged + "/" + smashed + ")");
+
+        // A feint punishes a dodge; a howl left alone enrages
+        var f = AtPackLeader(1);
+        f.S.stamina = Rules.MaxStamina(f.S, f.data);
+        f.S.enemyMove = "feint";
+        float fh = f.S.hp;
+        f.Act(f.Choices().First(c => c.def.label == "Dodge").def, Engine.TimingPerfect);
+        Assert(f.S.enemyOpen == 0 && (f.S.hp < fh || f.Member("rook").hp < f.data.Follower("rook").hp), "dodging a feint gets you caught");
+        f.S.enemyMove = "howl";
+        f.Act(f.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
+        Assert(f.S.enemyRage == 1, "letting it howl enrages it");
+        f.S.enemyMove = "howl";
+        f.Act(f.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
+        Assert(f.S.enemyRage == 1, "hitting it cuts the howl short");
     }
 
     static void GearRanks()
@@ -1088,8 +1177,7 @@ static class Program
     {
         if (e.S.inCombat)
         {
-            var a = e.Choices().First(c => c.def.label == "Attack");
-            e.Act(a.enabled ? a.def : e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
+            SmartRound(e, e.S.round);
         }
         else if (e.S.scene == "travel")
         {
@@ -1358,6 +1446,8 @@ static class Program
 
     static void Test(string name, Action body)
     {
+        var only = Environment.GetEnvironmentVariable("ONLY");
+        if (!string.IsNullOrEmpty(only) && name.IndexOf(only, StringComparison.OrdinalIgnoreCase) < 0) return;
         try { body(); Console.WriteLine("PASS " + name); }
         catch (Exception ex) { failures++; Console.WriteLine("FAIL " + name + "\n    " + ex.Message); if (Environment.GetEnvironmentVariable("STACK") == "1") Console.WriteLine(ex.StackTrace); }
     }

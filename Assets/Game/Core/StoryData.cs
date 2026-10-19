@@ -152,6 +152,7 @@ namespace Loran.Core
         public float hp;
         public int atkMin, atkMax;
         public int speed = 3;                  // compared with your Agility: the faster side acts first
+        public float enrageBelow;              // below this share of its health it flies into a rage (0 = never)
         public string art = "";                // sprite in Resources/Sprites/Enemies (defaults to the id)
         public int exp;                        // experience for beating it
         public float size = 1;                 // how big it's drawn in battle (a boss is bigger)
@@ -168,7 +169,18 @@ namespace Loran.Core
         public float power = 1;                // multiplies the enemy's attack roll; 0 = no attack
         public bool guard;                     // it holds back: your hits do half damage this round
         public int weight = 1;                 // how often it picks this move
+        // What sort of move it is, and so the right answer to it:
+        //   strike: an ordinary blow. Block it, or dodge it cleanly.
+        //   heavy:  a big blow. It smashes through a block; dodge it and it's left wide open.
+        //   feint:  looks like a heavy, but it's a trick. Dodge and you're caught; block and it's nothing.
+        //   guard:  it holds back. Hit it and your blow lands half as hard and it snaps back; catch your breath instead.
+        //   howl:   it works itself up. Hurt it this round or it's enraged for the rest of the fight.
+        // Left empty, it's worked out from power and guard.
+        public string kind = "";
         public List<WoundChance> wounds = new List<WoundChance>();   // % chances a hit from this leaves a wound
+
+        public string KindOf() => !string.IsNullOrEmpty(kind) ? kind : guard || power <= 0 ? "guard" : power >= 1.5f ? "heavy" : "strike";
+        public bool Attacks() { var k = KindOf(); return k == "strike" || k == "heavy" || k == "feint"; }
     }
 
     /// <summary>

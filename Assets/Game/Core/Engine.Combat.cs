@@ -47,8 +47,9 @@ namespace Loran.Core
         public bool NeedsTiming(ChoiceDef c)
         {
             string e = c.effects.Count > 0 ? c.effects[0] : "";
-            // Only defending uses the bar now (a perfect brace parries). Attacks crit by chance, like most RPGs.
-            return e == "fight:defend";
+            // Only defending and dodging use the bar (a perfect brace parries, a clean dodge leaves it open).
+            // Attacks crit by chance, like most RPGs.
+            return e == "fight:defend" || e == "fight:dodge";
         }
 
         /// <summary>The command a combat choice belongs to: attack, skill, item, defend or flee.</summary>
@@ -59,6 +60,7 @@ namespace Loran.Core
             if (e == "fight:kindle" || e.StartsWith("fight:move:")) return "skill";
             if (e.StartsWith("fight:eat:") || e == "fight:drink") return "item";
             if (e == "fight:defend") return "defend";
+            if (e == "fight:dodge") return "dodge";
             if (e == "fight:flee") return "flee";
             return "";
         }
@@ -82,6 +84,9 @@ namespace Loran.Core
             S.defending = false;
             S.round = 1;
             S.enemyStun = 0;
+            S.enemyOpen = 0;
+            S.enemyRage = 0;
+            S.enemyFury = false;
             S.battleLog.Clear();
             S.enemyMove = PickMove(e).id;
             Events.Clear();
@@ -125,6 +130,7 @@ namespace Loran.Core
             if (S.water > 0)
                 sc.choices.Add(new ChoiceDef { label = "Drink from your waterskin (" + S.water + ")", time = 1, effects = { "fight:drink" } });
             sc.choices.Add(new ChoiceDef { label = "Defend", energy = 1, time = 1, effects = { "fight:defend" } });
+            sc.choices.Add(new ChoiceDef { label = "Dodge", stamina = Rules.DodgeStamina, energy = 1, time = 1, effects = { "fight:dodge" } });
             sc.choices.Add(new ChoiceDef { label = "Try to get away", stamina = Rules.FleeStamina, energy = 1, time = 1, effects = { "fight:flee" } });
             return sc;
         }
@@ -138,9 +144,18 @@ namespace Loran.Core
             var lines = new List<string>();
 
             S.defending = kind == "defend";
+            dodging = kind == "dodge";
+            struckGuard = false;
+            youHurtIt = false;
+            if (dodging && Rules.Winded(S, data))
+            {
+                pendingTiming = TimingMiss;
+                lines.Add("You're too winded to get out of the way in time.");
+            }
             var mv = kind.StartsWith("move:") ? data.Move(kind.Substring(5)) : null;
-            // Defending, quick moves and the enemy holding back always happen at the start of the round.
-            bool enemyFirst = !S.defending && !move.guard && !PlayerActsFirst && !(mv != null && mv.first);
+            // Only an attack can beat you to it. Defending, dodging and quick moves always come first,
+            // and an enemy that's off balance from your dodge is too slow to strike first.
+            bool enemyFirst = move.Attacks() && !S.defending && !dodging && S.enemyOpen == 0 && !PlayerActsFirst && !(mv != null && mv.first);
 
             if (enemyFirst)
             {
@@ -151,6 +166,7 @@ namespace Loran.Core
 
             if (!Fumbles(kind, lines)) PlayerActs(kind, e, move, lines);
             if (S.inCombat && S.enemyHp > 0 && FollowerUp) FollowerActs(e, move, lines);
+            Fury(e, lines);
 
             if (S.inCombat && S.enemyHp <= 0)
             {
@@ -167,11 +183,26 @@ namespace Loran.Core
 
             if (S.inCombat && S.hp > 0)
             {
+                Fury(e, lines);
+                if (S.enemyOpen > 0) S.enemyOpen--;
                 S.enemyMove = PickMove(e).id;
                 S.round++;
             }
+            dodging = false;
             Finish(lines, notes);
             redirect = fightRedirect;
+        }
+
+        bool dodging, struckGuard, youHurtIt;
+
+        /// <summary>A boss that's badly hurt flies into a rage, once.</summary>
+        void Fury(EnemyDef e, List<string> lines)
+        {
+            if (e.enrageBelow <= 0 || S.enemyFury || S.enemyHp <= 0 || S.enemyHp >= e.hp * e.enrageBelow) return;
+            S.enemyFury = true;
+            S.enemyRage++;
+            lines.Add(Cap(FoeName(e)) + " is bleeding badly, and it's furious now. Its blows will hit harder.");
+            Events.Add(new BattleEvent { target = "enemy", kind = "rage", text = "Enraged" });
         }
 
         void Finish(List<string> lines, StringBuilder notes)
@@ -195,7 +226,7 @@ namespace Loran.Core
                     lines.Add(how == "crit" ? "A perfect strike! You hit " + foe + " for " + dealt + "."
                             : how == "glance" ? "You mistime it, and the blow only glances " + foe + ". " + dealt + " damage."
                             : "You hit " + foe + " for " + dealt + ".");
-                    if (move.guard) lines.Add("It was ready for you, so the blow lands half as hard.");
+                    if (move.KindOf() == "guard" && how != "crit") lines.Add("It was ready for you, so the blow lands half as hard.");
                     Rules.Train(S, Stat.Str, 1f, "fighting");
                     Rules.Train(S, Stat.Agi, pendingTiming == TimingPerfect ? 1f : 0.5f, "fighting");
                     TrainSkill(WeaponSkill(), pendingTiming == TimingPerfect ? 3 : 2, "fighting");
@@ -213,12 +244,20 @@ namespace Loran.Core
                     break;
                 }
                 case "defend":
+                {
                     if (HasShield()) TrainSkill("shield", 1.5f, "blocking");
-                    S.stamina += Rules.DefendStaminaBack;
-                    lines.Add(pendingTiming == TimingPerfect ? "You read it perfectly and set yourself to turn the blow."
+                    // it's holding back too: a real chance to get your breath
+                    int back = Rules.DefendStaminaBack * (move.Attacks() ? 1 : 2);
+                    S.stamina += back;
+                    if (!move.Attacks()) lines.Add("It's holding back, so you hold back too and get your breath.");
+                    else lines.Add(pendingTiming == TimingPerfect ? "You read it perfectly and set yourself to turn the blow."
                             : pendingTiming == TimingGood ? "You brace yourself and get your breath back."
                             : "You brace yourself, a moment too late.");
-                    Events.Add(new BattleEvent { target = "player", kind = "heal", amount = Rules.DefendStaminaBack, text = "+" + Rules.DefendStaminaBack + " stamina" });
+                    Events.Add(new BattleEvent { target = "player", kind = "heal", amount = back, text = "+" + back + " stamina" });
+                    break;
+                }
+                case "dodge":
+                    Rules.Train(S, Stat.Agi, 0.5f, "dodging");
                     break;
                 case "drink":
                     if (S.water > 0)
@@ -299,14 +338,17 @@ namespace Loran.Core
         int HitEnemy(float dmg, EnemyMove move, out string how)
         {
             int roll = Roll(1, 100);
-            how = roll <= Rules.CritChance(S, data) ? "crit" : roll > 100 - Rules.GlanceChance ? "glance" : "hit";
-            if (how == "crit") dmg *= Rules.CritMultiplier + Rules.TraitSum(S, data, t => t.crit);
+            bool open = S.enemyOpen > 0;
+            how = open || (roll <= Rules.CritChance(S, data) && !Rules.Winded(S, data)) ? "crit" : roll > 100 - Rules.GlanceChance ? "glance" : "hit";
+            if (open) { S.enemyOpen = 0; move = null; }   // off balance: a sure crit, and its guard is no help
+            if (how == "crit") dmg *= Rules.CritMultiplier + Rules.TraitSum(S, data, t => t.crit) + (open ? Rules.OpenBonus : 0);
             else if (how == "glance") dmg *= Rules.GlanceMultiplier;
             dmg += Rules.TraitSum(S, data, t => t.fire);
             dmg *= Rules.FightPower(S.body, data);
-            if (move != null && move.guard) dmg *= 0.5f;
+            if (move != null && move.KindOf() == "guard") { dmg *= 0.5f; struckGuard = true; }
             int dealt = Math.Max(1, (int)Math.Round(dmg));
             S.enemyHp -= dealt;
+            youHurtIt = true;
             Events.Add(new BattleEvent { target = "enemy", kind = how, amount = dealt, text = dealt.ToString() });
             return dealt;
         }
@@ -321,14 +363,41 @@ namespace Loran.Core
                 Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Staggered" });
                 return;
             }
-            if (move.guard || move.power <= 0)
+            string kind = move.KindOf();
+            if (kind == "guard")
             {
+                if (struckGuard && S.hp > 0)
+                {
+                    // it was waiting for that
+                    float back = Roll(e.atkMin, e.atkMax) * Rules.GuardCounter * Rage();
+                    if (Rules.Winded(S, data)) back *= Rules.WindedTaken;
+                    back *= 1f - Rules.GearGuard(S, data);
+                    int t = Math.Max(1, (int)Math.Round(back));
+                    S.hp -= t;
+                    lines.Add(foe + " was waiting for that, and snaps back at you for " + t + ".");
+                    Events.Add(new BattleEvent { target = "player", kind = "hit", amount = t, text = t.ToString() });
+                    if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
+                    return;
+                }
                 lines.Add(foe + " " + move.name + ".");
                 Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Wary" });
                 return;
             }
+            if (kind == "howl" || move.power <= 0)
+            {
+                if (youHurtIt)   // it takes a blow from you to break its focus; your companions' don't
+                {
+                    lines.Add("You cut " + FoeName(e) + "'s howl short.");
+                    Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Cut short" });
+                    return;
+                }
+                S.enemyRage++;
+                lines.Add(foe + " " + move.name + ", and works itself into a rage. Its blows will hit harder.");
+                Events.Add(new BattleEvent { target = "enemy", kind = "rage", text = "Enraged" });
+                return;
+            }
 
-            float hit = Roll(e.atkMin, e.atkMax) * move.power;
+            float hit = Roll(e.atkMin, e.atkMax) * move.power * Rage();
             // Sometimes it goes for someone in your party instead
             var up = PartyUp.ToList();
             if (up.Count > 0 && Roll(1, 100) <= 20 + 10 * up.Count)
@@ -348,36 +417,85 @@ namespace Loran.Core
                 else MaybeWound(move, m.body, f.name, ft, false);
                 return;
             }
-            if (S.defending)
+
+            bool covered = false;   // blocked, so wounds are less likely
+            if (dodging)
             {
-                if (pendingTiming == TimingPerfect)
+                if (kind == "feint")
                 {
-                    int counter = Math.Max(1, (int)Math.Round((4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S)) * 0.5f));
-                    S.enemyHp -= counter;
-                    lines.Add(foe + " " + move.name + ", but you turn it aside and strike back for " + counter + "!");
-                    Events.Add(new BattleEvent { target = "player", kind = "parry", text = "Parry!" });
-                    Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = counter, text = counter.ToString() });
-                    Rules.Train(S, Stat.Agi, 1f, "parrying");
-                    if (HasShield()) TrainSkill("shield", 2, "parrying");
-                    if (S.enemyHp <= 0)
+                    hit *= 1.4f;
+                    lines.Add("You throw yourself aside, but it was a feint. It catches you as you land.");
+                    Events.Add(new BattleEvent { target = "player", kind = "glance", text = "Feint!" });
+                }
+                else if (pendingTiming >= TimingGood)
+                {
+                    bool opens = kind == "heavy" || pendingTiming == TimingPerfect;
+                    lines.Add(foe + " " + move.name + ", but you slip aside" + (opens ? " and it overreaches. It's wide open!" : "."));
+                    Events.Add(new BattleEvent { target = "player", kind = "dodge", text = "Dodged" });
+                    if (opens)
                     {
-                        lines.Add(foe + " goes down and stays down.");
-                        S.inCombat = false;
-                        fightRedirect = S.combatWin;
-                        GainExp(e.exp, "for beating " + FoeName(e));
+                        S.enemyOpen = 2;
+                        S.stamina += Rules.DodgeStamina;   // its own lunge carries it past you: the dodge cost you nothing
+                        Events.Add(new BattleEvent { target = "enemy", kind = "open", text = "Open!" });
                     }
+                    Rules.Train(S, Stat.Agi, 1f, "dodging");
                     return;
                 }
-                hit *= pendingTiming == TimingGood ? 0.4f : 0.7f;
+                else lines.Add("You move a moment too late.");
+            }
+            else if (S.defending)
+            {
+                covered = true;
+                if (pendingTiming == TimingPerfect && (kind != "heavy" || HasShield()))
+                {
+                    Parry(e, move, lines);
+                    return;
+                }
+                if (kind == "heavy")
+                {
+                    hit *= pendingTiming == TimingPerfect ? 0.45f : pendingTiming == TimingGood ? 0.65f : 0.9f;
+                    S.stamina -= 10;
+                    lines.Add("The blow smashes through your guard and knocks the wind out of you.");
+                    Events.Add(new BattleEvent { target = "player", kind = "glance", text = "-10 stamina" });
+                }
+                else hit *= pendingTiming == TimingGood ? 0.4f : 0.7f;
+            }
+            if (Rules.Winded(S, data))
+            {
+                hit *= Rules.WindedTaken;
+                lines.Add("You're out of breath and slow to cover.");
             }
             hit *= 1f - Rules.GearGuard(S, data);
             int taken = Math.Max(0, (int)Math.Round(hit));
             S.hp -= taken;
             lines.Add(foe + " " + move.name + " for " + taken + ".");
-            Events.Add(new BattleEvent { target = "player", kind = move.power > 1.2f ? "crit" : "hit", amount = taken, text = taken.ToString() });
+            Events.Add(new BattleEvent { target = "player", kind = kind == "heavy" && !covered ? "crit" : "hit", amount = taken, text = taken.ToString() });
             if (S.defending) Rules.Train(S, Stat.End, 0.5f, "taking hits");
-            if (S.hp > 0) MaybeWound(move, S.body, null, taken, S.defending);
+            if (S.hp > 0) MaybeWound(move, S.body, null, taken, covered);
             if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
+        }
+
+        /// <summary>How much harder its blows land for being worked up.</summary>
+        float Rage() => 1f + S.enemyRage * Rules.RagePerPoint;
+
+        /// <summary>A perfect block: turn the blow aside and strike back.</summary>
+        void Parry(EnemyDef e, EnemyMove move, List<string> lines)
+        {
+            string foe = Cap(FoeName(e));
+            int counter = Math.Max(1, (int)Math.Round(WeaponHit() * Rules.ParryCounter));
+            S.enemyHp -= counter;
+            lines.Add(foe + " " + move.name + ", but you turn it aside and strike back for " + counter + "!");
+            Events.Add(new BattleEvent { target = "player", kind = "parry", text = "Parry!" });
+            Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = counter, text = counter.ToString() });
+            Rules.Train(S, Stat.Agi, 1f, "parrying");
+            if (HasShield()) TrainSkill("shield", 2, "parrying");
+            if (S.enemyHp <= 0)
+            {
+                lines.Add(foe + " goes down and stays down.");
+                S.inCombat = false;
+                fightRedirect = S.combatWin;
+                GainExp(e.exp, "for beating " + FoeName(e));
+            }
         }
 
         static string FoeName(EnemyDef e) => "the " + e.name.ToLowerInvariant();

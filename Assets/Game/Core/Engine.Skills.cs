@@ -221,7 +221,7 @@ namespace Loran.Core
                 if (f == null || m.hp <= 0 || S.enemyHp <= 0) continue;
                 if (Rules.NoFight(m.body, data)) { lines.Add(f.name + " is in no state to fight."); continue; }
                 float dmg = Roll(f.atkMin, f.atkMax) * Rules.PartyPower(m, data);
-                if (move.guard) dmg *= 0.5f;
+                if (move.KindOf() == "guard") dmg *= 0.5f;
                 int dealt = Math.Max(1, (int)Math.Round(dmg));
                 S.enemyHp -= dealt;
                 lines.Add(f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");

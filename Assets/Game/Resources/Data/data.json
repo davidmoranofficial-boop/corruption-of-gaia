@@ -187,9 +187,9 @@
       "name": "Yellow-eyed wolf",
       "rank": "F",
       "desc": "A starved grey wolf, all ribs and matted fur. Its eyes have gone the colour of old pus, and it doesn't blink.",
-      "hp": 42,
-      "atkMin": 3,
-      "atkMax": 6,
+      "hp": 48,
+      "atkMin": 5,
+      "atkMax": 8,
       "speed": 4,
       "moves": [
         {
@@ -203,13 +203,14 @@
               "id": "bite",
               "chance": 10
             }
-          ]
+          ],
+          "kind": "strike"
         },
         {
           "id": "lunge",
           "name": "lunges at your throat",
           "tell": "It drops low and its back legs bunch. It's going to lunge.",
-          "power": 1.6,
+          "power": 2.0,
           "weight": 3,
           "wounds": [
             {
@@ -220,7 +221,8 @@
               "id": "gash",
               "chance": 5
             }
-          ]
+          ],
+          "kind": "heavy"
         },
         {
           "id": "wary",
@@ -228,7 +230,8 @@
           "tell": "It backs off a step, watching your hands. It's ready for you.",
           "power": 0,
           "guard": true,
-          "weight": 2
+          "weight": 2,
+          "kind": "guard"
         }
       ],
       "art": "wolf",
@@ -239,9 +242,9 @@
       "name": "Rock crab",
       "rank": "F",
       "desc": "A crab the size of a dinner plate, barnacled and old. One claw is far bigger than the other, and there's a yellow crust where its eyes should shine.",
-      "hp": 24,
-      "atkMin": 2,
-      "atkMax": 5,
+      "hp": 34,
+      "atkMin": 4,
+      "atkMax": 7,
       "speed": 2,
       "moves": [
         {
@@ -265,7 +268,7 @@
           "id": "crush",
           "name": "clamps its big claw on you",
           "tell": "It rears up and raises both claws high.",
-          "power": 1.5,
+          "power": 1.9,
           "weight": 3,
           "wounds": [
             {
@@ -276,7 +279,8 @@
               "id": "broken_arm",
               "chance": 6
             }
-          ]
+          ],
+          "kind": "heavy"
         },
         {
           "id": "shell",
@@ -294,9 +298,9 @@
       "name": "Wild boar",
       "rank": "F",
       "desc": "A bristle-backed boar as heavy as a man, with tusks like hooks. It's been rooting round the spring for weeks and has stopped being afraid of anyone.",
-      "hp": 38,
-      "atkMin": 3,
-      "atkMax": 6,
+      "hp": 55,
+      "atkMin": 6,
+      "atkMax": 9,
       "speed": 3,
       "art": "boar",
       "moves": [
@@ -321,7 +325,7 @@
           "id": "charge",
           "name": "charges you down",
           "tell": "It paws the ground and drops its head. It's going to charge.",
-          "power": 1.7,
+          "power": 2.2,
           "weight": 3,
           "wounds": [
             {
@@ -336,7 +340,8 @@
               "id": "concussion",
               "chance": 8
             }
-          ]
+          ],
+          "kind": "heavy"
         },
         {
           "id": "snort",
@@ -358,9 +363,9 @@
       "exp": 90,
       "art": "wolf_alpha",
       "desc": "The biggest wolf you've ever seen, grey going black along the spine, with an old scar across its muzzle. Its eyes burn yellow, and the other wolves won't come near it.",
-      "hp": 120,
-      "atkMin": 6,
-      "atkMax": 10,
+      "hp": 170,
+      "atkMin": 10,
+      "atkMax": 14,
       "speed": 5,
       "moves": [
         {
@@ -378,13 +383,14 @@
               "id": "gash",
               "chance": 10
             }
-          ]
+          ],
+          "kind": "strike"
         },
         {
           "id": "lunge",
           "name": "lunges at your throat",
           "tell": "It drops low and its back legs bunch. It's going to lunge.",
-          "power": 1.7,
+          "power": 2.0,
           "weight": 3,
           "wounds": [
             {
@@ -395,21 +401,36 @@
               "id": "gash",
               "chance": 15
             }
+          ],
+          "kind": "heavy"
+        },
+        {
+          "id": "feint",
+          "name": "snaps at you mid-lunge",
+          "tell": "It drops low, but its weight stays on its front paws.",
+          "power": 1.0,
+          "kind": "feint",
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "bite",
+              "chance": 20
+            }
           ]
         },
         {
           "id": "howl",
           "name": "throws back its head and howls",
-          "tell": "It stops and fills its chest. The air goes still.",
+          "tell": "It stops and fills its chest. The air goes still. It's about to howl.",
           "power": 0,
-          "guard": true,
-          "weight": 2
+          "weight": 2,
+          "kind": "howl"
         },
         {
           "id": "frenzy",
           "name": "tears into you in a frenzy",
           "tell": "Its hackles rise and froth flecks its jaws. It's about to go wild.",
-          "power": 2.1,
+          "power": 2.6,
           "weight": 1,
           "wounds": [
             {
@@ -424,9 +445,11 @@
               "id": "broken_arm",
               "chance": 6
             }
-          ]
+          ],
+          "kind": "heavy"
         }
-      ]
+      ],
+      "enrageBelow": 0.35
     }
   ],
   "backgrounds": [

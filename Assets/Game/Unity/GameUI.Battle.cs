@@ -8,7 +8,9 @@ namespace Loran.UnityLayer
 {
     /// <summary>
     /// The battle screen: enemy top right, you bottom left, the enemy's tell in the middle, and a command menu
-    /// (Attack, Skills, Items, Defend, Flee). Attacking and defending use a timing bar: press Space in the bright zone.
+    /// (Attack, Skills, Items, Defend, Dodge, Flee). Defending and dodging use a timing bar: press Space in the bright zone.
+    /// Reading the tell is the skill: block quick blows, dodge big ones (it's left open), don't dodge a feint,
+    /// hit it while it howls, and catch your breath while it holds back.
     /// </summary>
     public partial class GameUI
     {
@@ -16,7 +18,7 @@ namespace Loran.UnityLayer
 
         static readonly (string id, string name)[] BattleCommands =
         {
-            ("attack", "Attack"), ("skill", "Skills"), ("item", "Items"), ("defend", "Defend"), ("flee", "Flee"),
+            ("attack", "Attack"), ("skill", "Skills"), ("item", "Items"), ("defend", "Defend"), ("dodge", "Dodge"), ("flee", "Flee"),
         };
 
         string battleMenu = "";               // "" = the five commands, or "skill" / "item" for a sub-list
@@ -116,6 +118,7 @@ namespace Loran.UnityLayer
             Bar(playerCard, "ENERGY", s.energy, 100, "#9d8fd0", 3, false);
             var weapon = s.InSlot("weapon");
             Add(playerCard, new Label(weapon != null ? weapon.name + "  (" + weapon.rank + ")" : "Bare hands"), "fighter-sub");
+            if (s.inCombat && Rules.Winded(s, engine.data)) StatusChip(playerCard, "WINDED", "chip-bad", "Out of breath: you can't dodge or land crits, and blows hurt more. Defend to get it back.");
 
             // The enemy: top right, with what it's about to do, so you can choose to attack or defend
             enemyCard = Add(arena, new VisualElement(), "fighter-card");
@@ -125,16 +128,27 @@ namespace Loran.UnityLayer
             RankBadge(nameRow, e.rank);
             if (e.boss) Add(enemyCard, new Label("BOSS"), "boss-tag");
             Bar(enemyCard, "HEALTH", Mathf.Max(0, s.enemyHp), e.hp, "#c8573f", 0, true);
+            if (s.inCombat && (s.enemyOpen > 0 || s.enemyRage > 0))
+            {
+                var chips = Add(enemyCard, new VisualElement(), "battle-chips");
+                if (s.enemyOpen > 0) StatusChip(chips, "OPEN", "chip-good", "Off balance from your dodge: your next blow is a sure critical hit, and it can't strike first.");
+                if (s.enemyRage > 0) StatusChip(chips, s.enemyRage > 1 ? "ENRAGED x" + s.enemyRage : "ENRAGED", "chip-bad", "Each rage makes its blows 30% harder.");
+            }
             if (s.inCombat && engine.Intent != null)
             {
                 Add(enemyCard, new Label(engine.Intent.tell), "intent-text");
-                Add(enemyCard, new Label(engine.PlayerActsFirst || engine.Intent.guard ? "You're quicker: you act first." : "It's quicker: it acts first, unless you defend."), "intent-order");
+                bool itFirst = engine.Intent.Attacks() && !engine.PlayerActsFirst && s.enemyOpen == 0;
+                Add(enemyCard, new Label(itFirst ? "It's quicker: it acts first, unless you defend or dodge." : "You act first."), "intent-order");
             }
 
             // The last few things that happened
             var log = Add(battle, new VisualElement(), "battle-log");
             var lines = s.battleLog.Skip(Mathf.Max(0, s.battleLog.Count - 3)).ToList();
-            if (lines.Count == 0) Add(log, new Label(engine.Fill(e.desc)), "log-line-new");
+            if (lines.Count == 0)
+            {
+                Add(log, new Label(engine.Fill(e.desc)), "log-line");
+                Add(log, new Label("Watch what it's about to do. Block quick blows, dodge big ones, and don't fall for a feint."), "log-line-new");
+            }
             for (int i = 0; i < lines.Count; i++)
                 Add(log, new Label(lines[i]), i == lines.Count - 1 ? "log-line-new" : "log-line");
 
@@ -188,14 +202,16 @@ namespace Loran.UnityLayer
                     var first = group.FirstOrDefault();
                     string sub = id == "skill" ? (group.Count == 0 ? "No skills yet" : group.Count + " known")
                                : id == "item" ? (group.Count == 0 ? "Nothing to use" : group.Count + " to use")
-                               : first == null ? "" : !first.enabled ? first.reason : first.cost;
+                               : first == null ? "" : !first.enabled ? first.reason
+                               : id == "dodge" && Rules.Winded(engine.S, engine.data) ? "Too winded to dodge"
+                               : first.cost;
                     bool on = group.Any(c => c.enabled);
                     var b = CommandButton(row, i + 1, name, sub, on, () =>
                     {
                         if (id == "skill" || id == "item") { battleMenu = id; Render(); }
                         else Command(first);
                     });
-                    battleButtons.Add(group.Count == 1 || id == "attack" || id == "defend" || id == "flee" ? first : null);
+                    battleButtons.Add(group.Count == 1 || id == "attack" || id == "defend" || id == "dodge" || id == "flee" ? first : null);
                 }
             }
             else
@@ -227,10 +243,10 @@ namespace Loran.UnityLayer
         {
             var box = Add(parent, new VisualElement(), "timing");
             bool defend = timing.def.effects[0] == "fight:defend";
-            Add(box, new Label(defend ? "BRACE  ·  press SPACE in the bright zone to parry" : "STRIKE  ·  press SPACE in the bright zone"), "timing-head");
+            Add(box, new Label(defend ? "BRACE  ·  press SPACE in the bright zone to parry" : "DODGE  ·  press SPACE in the bright zone"), "timing-head");
             var track = Add(box, new VisualElement(), "timing-track");
             track.RegisterCallback<PointerDownEvent>(_ => StopTiming());
-            var (good, perfect) = Rules.TimingZone(engine.S, engine.data);
+            var (good, perfect) = Zone();
             var g = Add(track, new VisualElement(), "timing-good");
             g.style.left = Length.Percent((zoneCentre - good / 2) * 100);
             g.style.width = Length.Percent(good * 100);
@@ -261,6 +277,14 @@ namespace Loran.UnityLayer
             else fill.style.width = Length.Percent(now);
         }
 
+        /// <summary>A small coloured tag on a fighter's card: OPEN, ENRAGED, WINDED.</summary>
+        static void StatusChip(VisualElement parent, string text, string cls, string tip)
+        {
+            var l = Add(parent, new Label(text), "battle-chip");
+            l.AddToClassList(cls);
+            l.tooltip = tip;
+        }
+
         static readonly string[] RankColours = { "#8a918d", "#7fae6a", "#4f9b97", "#5b8fd0", "#a77fd8", "#e3a64e", "#f2d36b" };
 
         static string RankColour(string rank) => RankColours[Rules.RankIndex(rank)];
@@ -287,7 +311,7 @@ namespace Loran.UnityLayer
         void StartTiming(ChoiceView cv)
         {
             timing = cv;
-            var (good, _) = Rules.TimingZone(engine.S, engine.data);
+            var (good, _) = Zone();
             zoneCentre = Random.Range(0.35f + good / 2, 0.92f - good / 2);
             timingStart = Time.realtimeSinceStartup;
             Render();
@@ -297,6 +321,14 @@ namespace Loran.UnityLayer
                 if (TimingPos() >= 1f) StopTiming();
                 else MoveMarker();
             }).Every(10);
+        }
+
+        /// <summary>The bright zone. Dodging is harder to time than bracing, so its zone is narrower.</summary>
+        (float good, float perfect) Zone()
+        {
+            var (good, perfect) = Rules.TimingZone(engine.S, engine.data);
+            bool dodge = timing != null && timing.def.effects[0] == "fight:dodge";
+            return dodge ? (good * 0.75f, perfect * 0.8f) : (good, perfect);
         }
 
         float TimingPos() => (Time.realtimeSinceStartup - timingStart) / TimingSeconds;
@@ -312,7 +344,7 @@ namespace Loran.UnityLayer
             if (timing == null) return;
             timingTick?.Pause();
             float pos = TimingPos();
-            var (good, perfect) = Rules.TimingZone(engine.S, engine.data);
+            var (good, perfect) = Zone();
             float off = Mathf.Abs(pos - zoneCentre);
             int quality = pos >= 1f ? Engine.TimingMiss : off <= perfect / 2 ? Engine.TimingPerfect : off <= good / 2 ? Engine.TimingGood : Engine.TimingMiss;
             var cv = timing;
@@ -361,6 +393,9 @@ namespace Loran.UnityLayer
                 GameAudio.Play(e.target == "player" ? "player_hurt" : "hit", 1f, 0.05f, 0.12f);
             }
             else if (e.kind == "parry") GameAudio.Play("parry");
+            else if (e.kind == "dodge") GameAudio.Play("swing", 0.7f, 0.1f);
+            else if (e.kind == "open") GameAudio.Play("hit_glance", 0.6f);
+            else if (e.kind == "rage") GameAudio.Play(foeArt.StartsWith("wolf") ? "wolf_howl" : foeArt == "boar" ? "boar_squeal" : "wolf_growl", 0.9f);
             else if (e.kind == "guard") GameAudio.Play("block");
             else if (e.kind == "flee") GameAudio.Play("flee");
             else if (e.kind == "heal" && !lastAct.StartsWith("fight:eat") && lastAct != "fight:drink") GameAudio.Play("heal");
@@ -382,7 +417,8 @@ namespace Loran.UnityLayer
                     if (card == null) return;
                     var spot = e.target == "enemy" ? enemySpot : isF ? fSpot : playerSpot;
                     string cls = e.kind == "crit" ? "pop-crit" : e.kind == "glance" ? "pop-glance" : e.kind == "heal" ? "pop-heal"
-                               : e.kind == "parry" ? "pop-perfect" : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
+                               : e.kind == "parry" || e.kind == "dodge" || e.kind == "open" ? "pop-perfect" : e.kind == "rage" ? "pop-crit"
+                               : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
                     Popup(spot ?? card, e.text, cls, 0);
                     BattleSound(e);
                     BattleEffect(e, e.target == "enemy" ? enemyPic : isF ? fPic : playerPic, arena);

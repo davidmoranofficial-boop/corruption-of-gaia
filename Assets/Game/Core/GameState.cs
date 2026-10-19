@@ -143,6 +143,9 @@ namespace Loran.Core
         public bool defending;
         public string enemyMove = "";          // what the enemy is about to do (shown to the player as a tell)
         public int enemyStun;                  // actions the enemy loses (staggered)
+        public int enemyOpen;                  // rounds left that it's off balance: your next blow is a sure crit
+        public int enemyRage;                  // how worked up it is: each point is +30% to its blows
+        public bool enemyFury;                 // it has already flown into its low-health rage
         public int round;
         public List<string> battleLog = new List<string>();
 

@@ -271,6 +271,15 @@ namespace Loran.Core
         // ------------------------------------------------------------------ combat numbers
 
         public const int AttackStamina = 14, KindleStamina = 3, KindleMana = 6, FleeStamina = 10, DefendStaminaBack = 12;
+        public const int DodgeStamina = 8;
+        public const float OpenBonus = 0.75f;       // a blow into an enemy left open by your dodge: crit and then some
+        public const float ParryCounter = 1f;       // a perfect block strikes back with a full blow
+        public const float RagePerPoint = 0.3f;     // each point of enemy rage adds this to its blows
+        public const float WindedTaken = 1.35f;     // blows hurt this much more when you're out of breath
+        public const float GuardCounter = 0.6f;     // how hard a guarding enemy snaps back when you swing into it
+
+        /// <summary>Out of breath: below a fifth of your stamina. You can't dodge, can't land crits, and blows hurt more.</summary>
+        public static bool Winded(GameState s, GameData d) => s.stamina < MaxStamina(s, d) * 0.2f;
         public const float CritMultiplier = 1.75f, GlanceMultiplier = 0.4f;
         public const int GlanceChance = 6;   // % of blows that only glance
 
