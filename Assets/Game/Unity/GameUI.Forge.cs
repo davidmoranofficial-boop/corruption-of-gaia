@@ -22,7 +22,8 @@ namespace Loran.UnityLayer
         // Quench
         const float QuenchSeconds = 2.6f;
 
-        int forgeStage = -1;            // 0 heat, 1 hammer, 2 quench, 3 done
+        int forgeStage = -1;
+        float lastBellows;            // 0 heat, 1 hammer, 2 quench, 3 done
         bool stageRunning;
         readonly float[] forgeScores = new float[3];
         float stageStart, lastTick;
@@ -312,6 +313,8 @@ namespace Loran.UnityLayer
             DotPopup(score >= 1f ? "PERFECT" : score >= 0.6f ? "GOOD" : score > 0 ? "OKAY" : "MISS",
                      score >= 1f ? "pop-perfect" : score > 0 ? "pop-good" : "pop-miss");
             if (score > 0) Shake(anvilArea, score >= 1f ? 10f : 5f);
+            if (score > 0) GameAudio.PlayVariant("forge_hammer", 3, score >= 1f ? 1f : 0.8f);
+            else GameAudio.Play("forge_hammer_bad");
             if (strike >= Strikes) { EndStage(hammerTotal / Strikes); return; }
             ringSeconds *= 0.92f;
             nextDotAt = Time.realtimeSinceStartup + DotGap;
@@ -380,6 +383,7 @@ namespace Loran.UnityLayer
             if (dipped) return;
             dipped = true;
             holding = true;
+            GameAudio.Play("quench");
             if (quenchBlade != null) quenchBlade.style.top = 120f;
             if (stageHint != null) stageHint.text = StageHelp();
         }
@@ -423,6 +427,7 @@ namespace Loran.UnityLayer
                 case 0:
                 {
                     heat += (holding ? 40f : -24f) * dt;
+                    if (holding && now - lastBellows > 0.85f) { lastBellows = now; GameAudio.Play("forge_bellows", 0.8f); }
                     heat = Mathf.Clamp(heat, 0f, 100f);
                     float w = BandWidth(t);
                     SetBand(w);
@@ -473,6 +478,7 @@ namespace Loran.UnityLayer
             // All three done: hand the scores to the engine after a moment to see the last result.
             forgeStage = 3;
             busy = true;
+            GameAudio.Play("forge_done");
             root.schedule.Execute(() =>
             {
                 busy = false;

@@ -2032,3 +2032,88 @@
     border-width: 2px;
     border-radius: 5px;
 }
+
+/* ---------- effects (GameUI.Fx.cs) ---------- */
+
+.fx {
+    position: absolute;
+    overflow: hidden;
+}
+
+.fx-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.world-light, .world-vignette, .world-fade, .screen-flash, .battle-intro {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.world-glow {
+    position: absolute;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+
+.world-vignette {
+    -unity-background-scale-mode: stretch-to-fill;
+    opacity: 0;
+}
+
+.world-fade {
+    background-color: rgb(5, 8, 10);
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.55s;
+    transition-timing-function: ease-out;
+}
+.world-fade-out { opacity: 0; }
+
+.screen-flash {
+    background-color: rgba(255, 246, 225, 0.75);
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.3s;
+}
+.screen-flash-out { opacity: 0; }
+
+.battle-intro {
+    background-color: rgb(250, 244, 230);
+    opacity: 1;
+    scale: 1 1;
+    transition-property: opacity, scale;
+    transition-duration: 0.7s;
+    transition-timing-function: ease-in;
+}
+.battle-intro-out { opacity: 0; scale: 1.6 1.6; }
+
+/* ---------- sound settings ---------- */
+
+.volume-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.volume-name {
+    width: 100px;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.volume-slider {
+    flex-grow: 1;
+    margin: 0 12px;
+}
+
+.volume-value {
+    width: 52px;
+    font-size: 14px;
+    color: var(--muted);
+    -unity-text-align: middle-right;
+}

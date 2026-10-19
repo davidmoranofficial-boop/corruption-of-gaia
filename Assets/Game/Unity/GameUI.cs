@@ -124,6 +124,8 @@ namespace Loran.UnityLayer
             toasts = new VisualElement { pickingMode = PickingMode.Ignore };
             toasts.AddToClassList("toasts");
             root.Add(toasts);
+            ClickSounds();
+            StartFx();
         }
 
         /// <summary>
@@ -214,6 +216,7 @@ namespace Loran.UnityLayer
                 else if (openMenu != "") RenderMenu();
             }
 
+            Sounds();
             if (s.scene != Engine.Creation) root.schedule.Execute(() => root.Focus());
         }
 
@@ -374,7 +377,7 @@ namespace Loran.UnityLayer
                 b.style.top = WheelSize / 2f + Mathf.Sin(a) * WheelRadius - WheelItem / 2f;
                 Add(b, new Label(Menus[i].name) { pickingMode = PickingMode.Ignore }, "wheel-item-name");
                 Add(b, new Label(Menus[i].key.ToString()) { pickingMode = PickingMode.Ignore }, "wheel-item-key");
-                b.RegisterCallback<PointerEnterEvent>(_ => { wheelSel = idx; UpdateWheel(); });
+                b.RegisterCallback<PointerEnterEvent>(_ => { if (wheelSel != idx) GameAudio.Play("ui_tick", 0.7f); wheelSel = idx; UpdateWheel(); });
                 wheelItems.Add(b);
             }
             var centre = Add(wheel, new VisualElement { pickingMode = PickingMode.Ignore }, "wheel-centre");
@@ -394,6 +397,7 @@ namespace Loran.UnityLayer
 
         void OpenFromWheel(int i)
         {
+            GameAudio.Play("ui_confirm", 0.8f);
             wheelSel = i;
             openMenu = Menus[i].id;
             Render();
@@ -404,6 +408,7 @@ namespace Loran.UnityLayer
             int at = Array.FindIndex(Menus, m => m.id == openMenu);
             if (at >= 0) wheelSel = at;
             heldDirs.Clear();
+            GameAudio.Play("ui_open");
             openMenu = "wheel";
             Render();
         }
@@ -412,10 +417,10 @@ namespace Loran.UnityLayer
         void WheelKey(KeyDownEvent e)
         {
             var k = e.keyCode;
-            if (k == KeyCode.Escape || k == KeyCode.I) { openMenu = ""; Render(); return; }
+            if (k == KeyCode.Escape || k == KeyCode.I) { GameAudio.Play("ui_close"); openMenu = ""; Render(); return; }
             if (k == KeyCode.Return || k == KeyCode.KeypadEnter || k == KeyCode.Space) { OpenFromWheel(wheelSel); return; }
-            if (k == KeyCode.RightArrow || k == KeyCode.DownArrow) { wheelSel++; UpdateWheel(); return; }
-            if (k == KeyCode.LeftArrow || k == KeyCode.UpArrow) { wheelSel--; UpdateWheel(); return; }
+            if (k == KeyCode.RightArrow || k == KeyCode.DownArrow) { wheelSel++; UpdateWheel(); GameAudio.Play("ui_tick", 0.7f); return; }
+            if (k == KeyCode.LeftArrow || k == KeyCode.UpArrow) { wheelSel--; UpdateWheel(); GameAudio.Play("ui_tick", 0.7f); return; }
             int n = k >= KeyCode.Alpha1 && k <= KeyCode.Alpha9 ? k - KeyCode.Alpha1 : k >= KeyCode.Keypad1 && k <= KeyCode.Keypad9 ? k - KeyCode.Keypad1 : -1;
             if (n >= 0 && n < Menus.Length) { OpenFromWheel(n); return; }
             for (int i = 0; i < Menus.Length; i++)
@@ -424,6 +429,7 @@ namespace Loran.UnityLayer
 
         void ToggleMenu(string id)
         {
+            GameAudio.Play(openMenu == id ? "ui_close" : "ui_open");
             openMenu = openMenu == id ? "" : id;
             Render();
         }
@@ -789,6 +795,8 @@ namespace Loran.UnityLayer
 
             var inf = Section(right, "INFLUENCE");
             Add(inf, new Label("You haven't left a lasting mark on the world yet."), "line-muted");
+
+            SoundSettings(right);
         }
 
         void MenuSurvival(VisualElement left, VisualElement right)
@@ -873,7 +881,7 @@ namespace Loran.UnityLayer
                     var (ok, uses, why) = engine.TreatmentCost(step);
                     string cost = ok ? (uses.Count == 0 ? "" : "  (" + string.Join(", ", uses.Select(u => u == "water" ? "water" : (d.Item(u)?.name ?? u).ToLowerInvariant())) + ")") : "  (" + why + ")";
                     string aid = a.id, sid = step;
-                    var b = Add(row, new Button(() => { engine.Treat(who, aid, sid); AfterAction(); }) { text = t.name + cost, focusable = false }, "small-btn");
+                    var b = Add(row, new Button(() => { if (engine.Treat(who, aid, sid)) GameAudio.Play(sid == "bandage" || sid == "splint" || sid == "stitch" ? "bandage" : "pickup"); AfterAction(); }) { text = t.name + cost, focusable = false }, "small-btn");
                     b.SetEnabled(free && ok);
                 }
             }
@@ -1110,7 +1118,7 @@ namespace Loran.UnityLayer
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
             if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
             if (openMenu == "wheel") { WheelKey(e); e.StopPropagation(); return; }
-            if (e.keyCode == KeyCode.Escape && openMenu != "") { openMenu = ""; Render(); e.StopPropagation(); return; }
+            if (e.keyCode == KeyCode.Escape && openMenu != "") { GameAudio.Play("ui_close"); openMenu = ""; Render(); e.StopPropagation(); return; }
             if (MenusAllowed)
             {
                 if (e.keyCode == KeyCode.I) { OpenWheel(); e.StopPropagation(); return; }
@@ -1148,6 +1156,8 @@ namespace Loran.UnityLayer
             var list = engine.S.Toasts;
             foreach (var t in list)
             {
+                ToastSound(t);
+                if (t.StartsWith("Level up")) root.schedule.Execute(LevelUpEffect).StartingIn(80);
                 var l = Add(toasts, new Label(t), "toast");
                 l.schedule.Execute(() => l.RemoveFromHierarchy()).StartingIn(4500);
             }

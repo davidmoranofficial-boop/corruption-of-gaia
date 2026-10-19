@@ -65,7 +65,7 @@ namespace Loran.UnityLayer
 
             // The stage: a painted backdrop with you on the left and the enemy on the right, both on the ground.
             arena = Add(battle, new VisualElement(), "arena");
-            var backdrop = Sprite("Backdrops/" + BackdropFor(place)) ?? Sprite("Backdrops/coast");
+            var backdrop = Sprite("Backdrops/" + BackdropFor()) ?? Sprite("Backdrops/" + BackdropFor().Replace("_night", "")) ?? Sprite("Backdrops/coast");
             if (backdrop != null) arena.style.backgroundImage = new StyleBackground(backdrop);
             float stageH = battleHeight - 300f;                 // what's left after the header, log and commands
             int scale = Mathf.Clamp(Mathf.FloorToInt(stageH * 0.5f / DollH), 3, 9);
@@ -146,10 +146,31 @@ namespace Loran.UnityLayer
             before = null;
         }
 
-        /// <summary>Which painted backdrop suits a place. Only the coast exists so far.</summary>
-        static string BackdropFor(string place)
+        /// <summary>Which painted backdrop suits where you are: by the sea, in the woods, up in the hills, at the village; darker at night.</summary>
+        string BackdropFor()
         {
-            return "coast";
+            var s = engine.S;
+            var a = engine.Area;
+            string kind = "coast";
+            if (a != null)
+            {
+                if (a.id == "skelmed") kind = "village";
+                else if (a.id.Contains("hills")) kind = "hills";
+                else if (a.id == "coast_road")
+                {
+                    // on the coast road it depends where you are: the woods to the east, the road, or the shore
+                    int n = 0, sea = 0;
+                    for (int dy = -3; dy <= 3; dy++)
+                        for (int dx = -3; dx <= 3; dx++)
+                        {
+                            char c = engine.TileAt(s.ax + dx, s.ay + dy);
+                            if (c == 'T') n++;
+                            if (c == '~' || c == ',') sea++;
+                        }
+                    kind = n >= 12 ? "forest" : sea >= 6 ? "coast" : "road";
+                }
+            }
+            return engine.Check("night") && (kind == "coast" || kind == "forest" || kind == "hills") ? kind + "_night" : kind;
         }
 
         void RenderCommands(VisualElement parent)
@@ -305,6 +326,8 @@ namespace Loran.UnityLayer
         {
             var s = engine.S;
             before = new[] { s.enemyHp, s.hp, s.stamina, s.energy, s.mana };
+            lastAct = cv.def.effects.Count > 0 ? cv.def.effects[0] : "";
+            foeArt = engine.data.Enemy(s.enemy) is var ed && ed != null ? (string.IsNullOrEmpty(ed.art) ? ed.id : ed.art) : "";
             engine.Act(cv.def, quality);
             battleMenu = "";
             var events = engine.Events.ToList();
@@ -314,6 +337,33 @@ namespace Loran.UnityLayer
             SaveNow();
             Render();
             PlayEvents(events);
+        }
+
+        string lastAct = "", foeArt = "";
+
+        /// <summary>The sound for one thing that happens in a fight: your blow (or spell) landing, the enemy's bite, a parry...</summary>
+        void BattleSound(BattleEvent e)
+        {
+            bool hitKind = e.kind == "hit" || e.kind == "crit" || e.kind == "glance";
+            if (e.target == "enemy" && hitKind)
+            {
+                bool fire = lastAct == "fight:kindle" || lastAct == "fight:move:flare";
+                if (lastAct == "fight:move:flare") GameAudio.Play("spell_flare");
+                else if (fire) GameAudio.Play("spell_kindle");
+                else GameAudio.Play("swing", 0.8f);
+                GameAudio.Play(e.kind == "crit" ? "hit_crit" : e.kind == "glance" ? "hit_glance" : "hit", 1f, 0.05f, fire ? 0.15f : 0.08f);
+                if (e.kind != "glance") GameAudio.Play(foeArt == "boar" ? "boar_squeal" : "beast_hurt", 0.7f, 0.08f, 0.2f);
+            }
+            else if (hitKind)
+            {
+                // the enemy attacks you or one of your party
+                GameAudio.Play(foeArt == "boar" ? "boar_charge" : "wolf_snarl", 0.9f);
+                GameAudio.Play(e.target == "player" ? "player_hurt" : "hit", 1f, 0.05f, 0.12f);
+            }
+            else if (e.kind == "parry") GameAudio.Play("parry");
+            else if (e.kind == "guard") GameAudio.Play("block");
+            else if (e.kind == "flee") GameAudio.Play("flee");
+            else if (e.kind == "heal" && !lastAct.StartsWith("fight:eat") && lastAct != "fight:drink") GameAudio.Play("heal");
         }
 
         void PlayEvents(List<BattleEvent> events)
@@ -334,6 +384,8 @@ namespace Loran.UnityLayer
                     string cls = e.kind == "crit" ? "pop-crit" : e.kind == "glance" ? "pop-glance" : e.kind == "heal" ? "pop-heal"
                                : e.kind == "parry" ? "pop-perfect" : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
                     Popup(spot ?? card, e.text, cls, 0);
+                    BattleSound(e);
+                    BattleEffect(e, e.target == "enemy" ? enemyPic : isF ? fPic : playerPic, arena);
                     if (e.kind == "hit" || e.kind == "crit" || e.kind == "glance")
                     {
                         Flash(card);
@@ -350,6 +402,11 @@ namespace Loran.UnityLayer
                 busy = false;
                 if (outro)
                 {
+                    if (engine.S.enemyHp <= 0 && engine.S.hp > 0)
+                    {
+                        GameAudio.Play("enemy_die");
+                        GameAudio.Play("victory", 0.9f, 0f, 0.5f);
+                    }
                     root.schedule.Execute(() => { outro = false; Render(); }).StartingIn(700);
                 }
                 else Render();

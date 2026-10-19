@@ -424,6 +424,8 @@ def main():
     from backdrops import BACKDROPS
     for name, paint in BACKDROPS.items():
         made.append(save(paint(), 'Backdrops', name + '.png'))
+    import fx
+    made += fx.main()
     import world
     world.main()
     print('built %d sprites into %s' % (len(made), os.path.normpath(OUT)))

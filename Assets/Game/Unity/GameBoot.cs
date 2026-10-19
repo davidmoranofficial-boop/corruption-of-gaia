@@ -29,6 +29,7 @@ namespace Loran.UnityLayer
             var doc = go.AddComponent<UIDocument>();
             doc.panelSettings = panel;
             go.AddComponent<GameUI>();
+            GameAudio.Boot(go);
             go.SetActive(true);
             Object.DontDestroyOnLoad(go);
         }

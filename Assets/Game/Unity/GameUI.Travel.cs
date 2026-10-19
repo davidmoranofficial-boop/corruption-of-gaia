@@ -91,7 +91,7 @@ namespace Loran.UnityLayer
                 var ov = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-over");
                 ov.style.backgroundImage = new StyleBackground(over);
             }
-            if (engine.Check("night") && !a.indoor) Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-night");
+            DrawLight(a, k);
             DrawWeather(a, k);
 
             PlaceYou(new Vector2(s.ax, s.ay), moving ? 1 + stepCount % 2 : 0);
@@ -390,6 +390,8 @@ namespace Loran.UnityLayer
             pendingStep = c;
             moving = true;
             stepCount++;
+            StepSound((int)moveTo.x, (int)moveTo.y, c.label == "Run");
+            StepEffects(moveFrom, c.label == "Run");
         }
 
         /// <summary>Keys in the world. Returns true if it used the key.</summary>
