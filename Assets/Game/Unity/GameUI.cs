@@ -120,6 +120,12 @@ namespace Loran.UnityLayer
 
             (screenBox, screen) = FitBox("screen");
             root.Add(screenBox);
+            // The title and creation pages fill the window, so draw them again when it changes size.
+            screenBox.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                var sc = engine.S.scene;
+                if ((sc == Engine.Title || sc == Engine.Creation) && Mathf.Abs(screenBox.layout.height - frontHeight) > 4f) Render();
+            });
 
             toasts = new VisualElement { pickingMode = PickingMode.Ignore };
             toasts.AddToClassList("toasts");
@@ -708,55 +714,6 @@ namespace Loran.UnityLayer
 
         // ------------------------------------------------------------------ New Game screen
 
-        void RenderTitle()
-        {
-            screen.Clear();
-            var inner = Add(screen, new VisualElement(), "screen-inner");
-            Add(inner, new Label("CORRUPTION OF GAIA"), "game-title");
-            Add(inner, new Label("VERTICAL SLICE PROTOTYPE"), "game-sub");
-            Add(inner, new Label("UPDATE: 19 OCT, NEW MENUS AND ONE WOLF"), "game-sub");   // bumped with each update so you can see it arrived
-
-            Add(inner, new Label("HOW DEATH WORKS  ·  LOCKED FOR THIS PLAYTHROUGH"), "field-label");
-            var row = Add(inner, new VisualElement(), "option-row");
-            Option(row, "Basic", "If you die, you wake at your last sleep. Anything since then didn't happen.", deathMode == "basic", () => { deathMode = "basic"; Render(); });
-            Option(row, "Permadeath", "If you die, your story is over. For hardcore players.", deathMode == "perma", () => { deathMode = "perma"; Render(); });
-
-            var buttons = Add(inner, new VisualElement(), "option-row");
-            Add(buttons, new Button(() =>
-            {
-                ResetCreationForm();
-                engine.NewGame(deathMode);
-                AfterAction();
-            }) { text = "New Game" }, "primary");
-
-            string save = PlayerPrefs.GetString(SaveKey, "");
-            if (save != "")
-            {
-                Add(buttons, new Button(() =>
-                {
-                    try
-                    {
-                        engine.LoadState(JsonUtility.FromJson<GameState>(save));
-                        engine.S.result = "";
-                        Render();
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning("Couldn't load the save: " + ex.Message);
-                        PlayerPrefs.DeleteKey(SaveKey);
-                        Render();
-                    }
-                }) { text = "Continue" }, "secondary");
-            }
-
-            Add(buttons, new Button(() =>
-            {
-                engine.DevStart("village");
-                openMenu = "dev";
-                Render();
-            }) { text = "Dev mode" }, "secondary");
-        }
-
         void Option(VisualElement parent, string name, string desc, bool selected, Action onClick)
         {
             var b = new Button(onClick);
@@ -785,100 +742,7 @@ namespace Loran.UnityLayer
             cBackground = null;
             Array.Clear(alloc, 0, alloc.Length);
             createError = null;
-        }
-
-        void RenderCreation()
-        {
-            var d = engine.data.file;
-            screen.Clear();
-            var inner = Add(screen, new VisualElement(), "screen-inner");
-            Add(inner, new Label(engine.Current.title), "title");
-            foreach (var p in engine.Paragraphs()) Add(inner, new Label(p), "para");
-
-            inner.AddToClassList("screen-wide");
-            var cols = Add(inner, new VisualElement(), "cols");
-            var leftCol = Add(cols, new VisualElement(), "col");
-            var rightCol = Add(cols, new VisualElement(), "col");
-
-            Add(leftCol, new Label("NAME"), "field-label");
-            var field = new TextField { maxLength = 20, value = cName };
-            field.AddToClassList("name-field");
-            field.RegisterValueChangedCallback(e => cName = e.newValue);
-            leftCol.Add(field);
-
-            Add(leftCol, new Label("SEX"), "field-label");
-            var sexes = Add(leftCol, new VisualElement(), "option-row");
-            Chip(sexes, "Male", cGender == "male", () => { cGender = "male"; cFigure = "male"; Render(); });
-            Chip(sexes, "Female", cGender == "female", () => { cGender = "female"; cFigure = "female"; Render(); });
-            Chip(sexes, "Other", cGender == "other", () => { cGender = "other"; Render(); });
-
-            Add(leftCol, new Label("BODY"), "field-label");
-            var figures = Add(leftCol, new VisualElement(), "option-row");
-            Chip(figures, "Masculine", cFigure == "male", () => { cFigure = "male"; Render(); });
-            Chip(figures, "Feminine", cFigure == "female", () => { cFigure = "female"; Render(); });
-
-            Add(leftCol, new Label("SKIN"), "field-label");
-            var skins = Add(leftCol, new VisualElement(), "option-row");
-            foreach (var k in d.skins) { var v = k; Chip(skins, v, cSkin == v, () => { cSkin = v; Render(); }); }
-
-            Add(leftCol, new Label("BUILD"), "field-label");
-            var builds = Add(leftCol, new VisualElement(), "option-row");
-            foreach (var b in d.builds) { var v = b; Chip(builds, v, cBuild == v, () => { cBuild = v; Render(); }); }
-
-            Add(leftCol, new Label("HAIR"), "field-label");
-            var hair = Add(leftCol, new VisualElement(), "option-row");
-            foreach (var h in d.hair) { var v = h; Chip(hair, v, cHair == v, () => { cHair = v; Render(); }); }
-
-            // How you'll look: washed up in the clothes you had on
-            var look = Add(leftCol, new VisualElement(), "create-look");
-            var clothes = new List<(string, string)>();
-            foreach (var id in Engine.StartingClothes) { var gd = engine.data.Gear(id); if (gd != null) clothes.Add((id, gd.slot)); }
-            Doll(look, 5, cFigure, cSkin, cHair, clothes);
-
-            Add(rightCol, new Label("THE LIFE YOU'RE LEAVING BEHIND  ·  +1 TO ONE STAT"), "field-label");
-            var bgs = Add(rightCol, new VisualElement(), "option-list");
-            foreach (var bg in d.backgrounds)
-            {
-                var v = bg;
-                var line = new Button(() => { cBackground = v.id; Render(); });
-                line.AddToClassList("option");
-                line.AddToClassList("option-line");
-                if (cBackground == v.id) line.AddToClassList("selected");
-                Add(line, new Label(v.name), "option-line-name");
-                Add(line, new Label(v.desc), "option-line-desc");
-                Add(line, new Label("+1 " + Stat.Names[Stat.Parse(v.stat)]), "option-line-bonus");
-                bgs.Add(line);
-            }
-
-            int left = Engine.CreationPoints - alloc.Sum();
-            Add(rightCol, new Label("STATS  ·  " + left + " POINT" + (left == 1 ? "" : "S") + " TO SPEND"), "field-label");
-            var bgDef = engine.data.Background(cBackground);
-            for (int i = 0; i < Stat.Count; i++)
-            {
-                int idx = i;
-                var r = Add(rightCol, new VisualElement(), "alloc-row");
-                Add(r, new Label(Stat.Names[i]), "alloc-name");
-                var minus = Add(r, new Button(() => { if (alloc[idx] > 0) { alloc[idx]--; Render(); } }) { text = "−" }, "small-btn");
-                minus.SetEnabled(alloc[idx] > 0);
-                int bonus = bgDef != null && Stat.Parse(bgDef.stat) == i ? 1 : 0;
-                Add(r, new Label((3 + alloc[i] + bonus).ToString()), "alloc-value");
-                var plus = Add(r, new Button(() => { if (alloc.Sum() < Engine.CreationPoints) { alloc[idx]++; Render(); } }) { text = "+" }, "small-btn");
-                plus.SetEnabled(left > 0);
-                if (bonus > 0) Add(r, new Label("includes +1 from your background"), "alloc-bonus");
-            }
-
-            var go = Add(inner, new Button(() =>
-            {
-                createError = engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone(), cSkin, cFigure);
-                if (createError == null)
-                {
-                    var next = engine.Choices().FirstOrDefault(c => c.enabled);
-                    if (next != null) engine.Choose(next.def);
-                }
-                AfterAction();
-            }) { text = "Wake up" }, "primary");
-
-            if (!string.IsNullOrEmpty(createError)) Add(inner, new Label(createError), "error");
+            cStep = 0;
         }
 
         // ------------------------------------------------------------------ input
@@ -907,6 +771,7 @@ namespace Loran.UnityLayer
                 e.StopPropagation();
                 return;
             }
+            if (engine.S.scene == Engine.Title && TitleKey(e)) { e.StopPropagation(); return; }
             if (InBattle) { BattleKey(e); e.StopPropagation(); return; }
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
             if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
