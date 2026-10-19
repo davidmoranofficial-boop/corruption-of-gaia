@@ -55,11 +55,13 @@
       "id": "dog_won",
       "title": "Still",
       "onEnter": [
-        "flag:dog_beaten"
+        "flag:dog_beaten",
+        "wound:bite"
       ],
       "text": [
         "The wolf lies still in the road. As you watch, the yellow drains out of its eyes and leaves them an ordinary amber.",
-        "Whatever was in it is gone. It was just a hungry animal, once."
+        "Whatever was in it is gone. It was just a hungry animal, once.",
+        "Only now do you feel it: your forearm is torn and bleeding where it got its teeth into you. Animal bites go bad. You'll need to clean it and bind it, and soon."
       ],
       "choices": [
         {
@@ -72,13 +74,16 @@
       "id": "dog_fled",
       "title": "Away",
       "text": [
-        "You run, and you don't look back until your lungs give out. When you do, the road behind you is empty."
+        "It gets its teeth into your calf as you turn, and you tear free and run. You don't look back until your lungs give out. When you do, the road behind you is empty, and your leg is bleeding into your boot."
       ],
       "choices": [
         {
           "label": "Walk on",
           "go": "travel"
         }
+      ],
+      "onEnter": [
+        "wound:bite"
       ]
     },
     {
@@ -406,19 +411,6 @@
         },
         {
           "label": "Leave them",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "ev_wolf_won",
-      "title": "Still",
-      "text": [
-        "The wolf lies still in the grass. Up close it's mostly bone, with yellow crust at the corners of its eyes. It was starving."
-      ],
-      "choices": [
-        {
-          "label": "Walk on",
           "go": "travel"
         }
       ]

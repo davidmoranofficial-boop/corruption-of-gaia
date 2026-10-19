@@ -62,6 +62,11 @@ namespace Loran.Core
             TrainSkill("first_aid", 3, "treating wounds");
             string whose = who == "" ? "your" : WhoName(who) + "'s";
             S.result = t.name + ": " + whose + " " + def.name.ToLowerInvariant() + "." + (Rules.Treated(a, def) ? " That's all it needs now: time." : "");
+            if (who == "" && Rules.Treated(a, def) && S.Has("patch_lesson") && !S.Has("patch_done"))
+            {
+                S.flags.Add("patch_done");
+                S.result += " Bess nods. \"That'll do. Keep it clean and it'll knit. You'll want your own linen and spirits on the road.\"";
+            }
 
             // A companion who was down gets back on their feet once the grave wound is dealt with
             var m = who == "" ? null : Member(who);

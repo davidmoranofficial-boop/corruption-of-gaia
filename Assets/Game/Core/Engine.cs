@@ -432,6 +432,9 @@ namespace Loran.Core
             return true;
         }
 
+        /// <summary>A story choice asked for a menu to open (effect menu:survival). The screen opens it and clears this.</summary>
+        public string MenuRequest = "";
+
         public bool Check(string cond)
         {
             // a|b holds when either does
@@ -475,6 +478,9 @@ namespace Loran.Core
                 case "background": return S.background == arg;
                 case "gender": return S.gender == arg;
                 case "night": return S.Hour >= 20 || S.Hour < 5;
+                // wound = any wound or ailment at all; wound:bite = that one; untreated:bite = it still needs seeing to
+                case "wound": return arg == "" ? S.body.afflictions.Count > 0 : S.body.afflictions.Any(a => a.id == (data.Affliction(arg) ?? throw new Exception("Unknown affliction '" + arg + "'")).id);
+                case "untreated": { var a = S.body.afflictions.FirstOrDefault(x => x.id == arg); var d = data.Affliction(arg) ?? throw new Exception("Unknown affliction '" + arg + "'"); return a != null && !Rules.Treated(a, d); }
                 case "quest": return S.Has("quest:" + arg);
                 case "done": return S.Has("quest_done:" + arg);
                 case "ready": return S.Has("quest:" + arg) && QuestGoals(data.Quest(arg) ?? throw new Exception("Unknown quest '" + arg + "'")).All(g => g.met);
@@ -521,6 +527,8 @@ namespace Loran.Core
             {
                 case "flag": if (!S.Has(arg)) S.flags.Add(arg); return;
                 case "unflag": S.flags.Remove(arg); return;
+                case "wound": Rules.Afflict(S, data, S.body, arg, null); return;
+                case "menu": MenuRequest = arg; return;
                 case "spell":
                     if (!S.spells.Contains(arg))
                     {
@@ -829,6 +837,8 @@ namespace Loran.Core
                     case "quest": case "complete":
                         if (data.Quest(parts[0]) == null) problems.Add(where + ": no quest '" + parts[0] + "'");
                         return;
+                    case "wound": if (data.Affliction(arg) == null) problems.Add(where + ": no affliction '" + arg + "'"); return;
+                    case "menu": return;
                     case "flag": case "unflag": case "hud": case "save": case "clock": case "sleep":
                     case "fight": case "collapse": case "revive": case "restart": case "resume": return;
                     case "forge":

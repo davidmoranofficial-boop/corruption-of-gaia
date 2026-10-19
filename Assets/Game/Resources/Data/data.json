@@ -39,12 +39,14 @@
     {
       "id": "flint",
       "name": "Flint and steel",
-      "desc": "From Yenson. For lighting fires."
+      "desc": "From Yenson. For lighting fires.",
+      "kind": "tool"
     },
     {
       "id": "gem",
       "name": "Green gem",
-      "desc": "A small green stone from the old quarry, clear as bottle glass. Garran could set it in something."
+      "desc": "A small green stone from the old quarry, clear as bottle glass. Garran could set it in something.",
+      "kind": "material"
     },
     {
       "id": "crab_meat",
@@ -85,17 +87,20 @@
     {
       "id": "bucket",
       "name": "Yenson's bucket",
-      "desc": "A wooden bucket, bound with rope. Empty."
+      "desc": "A wooden bucket, bound with rope. Empty.",
+      "kind": "tool"
     },
     {
       "id": "water_bucket",
       "name": "Bucket of water",
-      "desc": "Spring water for Yenson's pot. Heavy."
+      "desc": "Spring water for Yenson's pot. Heavy.",
+      "kind": "tool"
     },
     {
       "id": "firewood",
       "name": "Deadwood",
-      "desc": "An armful of dry fallen branches."
+      "desc": "An armful of dry fallen branches.",
+      "kind": "material"
     },
     {
       "id": "boar_meat",
@@ -118,67 +123,80 @@
     {
       "id": "split_wood",
       "name": "Split wood",
-      "desc": "Logs split for the lodge's smokehouse."
+      "desc": "Logs split for the lodge's smokehouse.",
+      "kind": "material"
     },
     {
       "id": "pail",
       "name": "Empty pail",
-      "desc": "The lodge's pail. The water butt wants filling from the hill stream."
+      "desc": "The lodge's pail. The water butt wants filling from the hill stream.",
+      "kind": "tool"
     },
     {
       "id": "water_pail",
       "name": "Pail of stream water",
-      "desc": "Cold water from the hill stream, for the lodge's water butt."
+      "desc": "Cold water from the hill stream, for the lodge's water butt.",
+      "kind": "tool"
     },
     {
       "id": "ore",
       "name": "Iron ore",
-      "desc": "Rusty lumps of ore from the old quarry. Garran can smelt it."
+      "desc": "Rusty lumps of ore from the old quarry. Garran can smelt it.",
+      "kind": "material"
     },
     {
       "id": "pick",
       "name": "Garran's pick",
-      "desc": "An old pick with a new handle. Garran wants it back."
+      "desc": "An old pick with a new handle. Garran wants it back.",
+      "kind": "tool"
     },
     {
       "id": "guild_card",
       "name": "Guild card",
-      "desc": "A square of waxed leather with the guild seal, your name and the mark of your class."
+      "desc": "A square of waxed leather with the guild seal, your name and the mark of your class.",
+      "kind": "key"
     },
     {
       "id": "wolf_pelt",
       "name": "Pack leader's pelt",
-      "desc": "A huge grey pelt, black along the spine. Proof, if anyone doubts you."
+      "desc": "A huge grey pelt, black along the spine. Proof, if anyone doubts you.",
+      "kind": "material"
     },
     {
       "id": "bandage",
       "name": "Bandage",
-      "desc": "A roll of clean linen. Stops bleeding, binds sprains and ribs."
+      "desc": "A roll of clean linen. Stops bleeding, binds sprains and ribs.",
+      "kind": "medicine"
     },
     {
       "id": "spirits",
       "name": "Flask of spirits",
-      "desc": "Rough fishermen's spirit. Burns going into a wound, which is the point."
+      "desc": "Rough fishermen's spirit. Burns going into a wound, which is the point.",
+      "kind": "medicine"
     },
     {
       "id": "splint",
       "name": "Splint",
-      "desc": "Two straight lengths of wood and some ties, for a broken bone."
+      "desc": "Two straight lengths of wood and some ties, for a broken bone.",
+      "kind": "medicine"
     },
     {
       "id": "sewing_kit",
       "name": "Sewing kit",
-      "desc": "Needle and waxed thread. For deep cuts, if you can stomach it. It isn't used up."
+      "desc": "Needle and waxed thread. For deep cuts, if you can stomach it. It isn't used up.",
+      "kind": "tool"
     },
     {
       "id": "yarrow",
       "name": "Yarrow",
-      "desc": "A hill herb with feathery leaves. Packed into a wound, it stops it going bad."
+      "desc": "A hill herb with feathery leaves. Packed into a wound, it stops it going bad.",
+      "kind": "medicine"
     },
     {
       "id": "willow_bark",
       "name": "Willow bark",
-      "desc": "Chewed or brewed, it brings a fever down."
+      "desc": "Chewed or brewed, it brings a fever down.",
+      "kind": "medicine"
     }
   ],
   "enemies": [
@@ -982,19 +1000,6 @@
       ],
       "events": [
         {
-          "enemy": "dog",
-          "win": "ev_wolf_won",
-          "kind": "fight",
-          "weight": 3,
-          "terrain": ".go=s",
-          "area": [
-            0,
-            5,
-            31,
-            89
-          ]
-        },
-        {
           "enemy": "crab",
           "win": "ev_crab_won",
           "kind": "fight",
@@ -1352,6 +1357,17 @@
           "x1": 13,
           "y1": 0,
           "to": "hills_gate"
+        },
+        {
+          "x0": 14,
+          "y0": 22,
+          "x1": 21,
+          "y1": 23,
+          "scene": "bess_patch",
+          "when": [
+            "untreated:bite",
+            "!flag:patch_lesson"
+          ]
         }
       ],
       "uses": [
@@ -1405,7 +1421,7 @@
       "name": "The hills above Skelmed",
       "minutes": 2,
       "eventChance": 0,
-      "fightChance": 4,
+      "fightChance": 0,
       "fightGap": 14,
       "spots": [
         {
@@ -1594,21 +1610,7 @@
           "scene": "quarry_dig"
         }
       ],
-      "events": [
-        {
-          "enemy": "dog",
-          "win": "ev_wolf_won",
-          "kind": "fight",
-          "weight": 1,
-          "terrain": ".go",
-          "area": [
-            0,
-            0,
-            33,
-            34
-          ]
-        }
-      ],
+      "events": [],
       "rows": [
         "TTTTTTTTTTTTTTT.TTTTTTT.TTTT.TTTT.",
         "TTTTTTTThhuuuuuuuuuuuuuuuhhTTTTTTT",

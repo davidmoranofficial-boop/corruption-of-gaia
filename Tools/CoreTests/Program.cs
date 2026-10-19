@@ -36,6 +36,7 @@ static class Program
         Test("levels, skills, moves and followers", Progression);
         Test("a party eats, drinks, tires and can walk out on you", Party);
         Test("wounds: treating them, letting them go bad, broken bones", Wounds);
+        Test("the opening wolf bites you, and Bess shows you how to patch it up", FirstWound);
         Test("weather: rain, cold, hypothermia, a chill", Weather);
         Test("companions can die, for good", CompanionDeath);
         Test("mana: spells use it, time and sleep bring it back", Mana);
@@ -520,15 +521,16 @@ static class Program
         g.S.result = "";
         Assert(g.Treat("", "gash", "stitch") && g.S.Count("sewing_kit") == 1, "stitching with the kit keeps the kit");
 
-        // Fights leave wounds
+        // Fights leave wounds (counted mid-fight: the opening wolf always bites you by the end, see below)
         int wounded = 0;
         for (int seed = 1; seed <= 40; seed++)
         {
             var f = NewEngine();
             f.DevStart("dog");
             f.S.seed = seed;
-            for (int i = 0; i < 100 && f.S.inCombat; i++) StepToward(f, (0, 0));
-            if (f.S.body.afflictions.Any()) wounded++;
+            bool hurt = false;
+            for (int i = 0; i < 100 && f.S.inCombat; i++) { StepToward(f, (0, 0)); hurt |= f.S.inCombat && f.S.body.afflictions.Any(); }
+            if (hurt) wounded++;
         }
         Console.WriteLine("    wolf fights that left a wound: " + wounded + " of 40");
         Assert(wounded >= 4 && wounded <= 36, "wolf fights should sometimes leave a wound, not always");
@@ -829,6 +831,30 @@ static class Program
         return (wins, deaths, lost / n);
     }
 
+    static void FirstWound()
+    {
+        var e = AtDog(5);
+        e.DevWinFight();
+        Assert(e.S.scene == "dog_won" && e.Check("wound:bite"), "beating the opening wolf always leaves a bite");
+        Pick(e, "Walk on");
+        WalkUntil(e, Gate(e), () => e.Area.id == "skelmed");
+        e.S.stepsSinceFight = -1000;
+        e.S.energy = 80; e.S.hunger = 80; e.S.thirst = 80;
+        WalkUntil(e, (17, 20), () => e.S.scene == "bess_patch");
+        Pick(e, "see to the bite");
+        Assert(e.MenuRequest == "survival" && e.S.Count("spirits") >= 1 && e.S.Count("bandage") >= 1, "Bess hands you spirits and linen and opens Survival");
+        e.S.result = "";
+        Assert(e.Treat("", "bite", "clean") && e.Treat("", "bite", "bandage"), "you clean and bind it yourself");
+        Assert(e.S.Has("patch_done") && e.S.result.Contains("Bess"), "Bess approves");
+
+        var f = AtDog(6);
+        f.S.inCombat = false;   // AtDog picks "Fight it"; go back to the meeting itself
+        f.GoTo("dog");
+        f.S.AddItem("bread", 1);
+        Pick(f, "Throw it some bread");
+        Assert(!f.Check("wound"), "feeding the wolf gets you past it unhurt");
+    }
+
     static void DogFights()
     {
         { var d0 = AtDog(0); Console.WriteLine("    at the wolf: hp " + d0.S.hp + "/" + Rules.MaxHp(d0.S) + ", stamina " + d0.S.stamina + "/" + Rules.MaxStamina(d0.S, d0.data) + ", str " + d0.S.stats[Stat.Str] + " agi " + d0.S.stats[Stat.Agi] + ", gear dmg " + Rules.GearDamage(d0.S) + " guard " + Rules.GearGuard(d0.S, d0.data) + ", crit " + Rules.CritChance(d0.S, d0.data) + "%, party " + d0.S.party.Count + ", speed " + Rules.Speed(d0.S, d0.data)); }
@@ -1065,7 +1091,7 @@ static class Program
                 Assert(v.S.scene == "travel" && v.Area.id == area.id, "after " + o.id + " you should be back where you were, was " + v.S.scene);
             }
 
-        // Fights come at random as you walk, never too close together; nothing else interrupts the walk
+        // Fights come at random as you walk (only crabs now, down on the sand), never too close together; nothing else interrupts the walk
         var fights = new Dictionary<string, int>();
         var seen = new HashSet<string>();
         int closest = 999;
@@ -1092,7 +1118,7 @@ static class Program
             }
         }
         Console.WriteLine("    fights: " + string.Join(", ", fights.Select(f => f.Key + " " + f.Value)) + "; closest two fights " + closest + " steps apart");
-        Assert(fights.Values.Sum() >= 20, "random fights should happen on the walk");
+        Assert(!fights.ContainsKey("dog"), "no random wolves: only the one in the road (David, 19 Oct)");
         Assert(closest > a.fightGap, "fights should never come close together");
         Assert(seen.Count == 0, "no text events should pop up on the road: " + string.Join(", ", seen));
     }

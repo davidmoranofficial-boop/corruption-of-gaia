@@ -143,7 +143,15 @@ namespace Loran.Core
         public string overlay = "";            // rain, storm, fog, heat: drawn over the world
     }
 
-    [Serializable] public class ItemDef { public string id, name, desc; public float hunger, thirst, energy; public bool food; }
+    [Serializable]
+    public class ItemDef
+    {
+        public string id, name, desc;
+        public float hunger, thirst, energy;
+        public bool food;
+        public string kind = "";               // which pocket of the bag: food, medicine, material, tool or key (left empty: food if it's food)
+        public string Kind() => !string.IsNullOrEmpty(kind) ? kind : food ? "food" : "material";
+    }
     [Serializable]
     public class EnemyDef
     {

@@ -2134,3 +2134,154 @@
 }
 .chip-good { background-color: rgba(70, 130, 80, 0.85); }
 .chip-bad { background-color: rgba(150, 52, 40, 0.85); }
+
+/* A step-by-step tip the first time you do something */
+.tutorial-hint {
+    white-space: normal; font-size: 17px; color: #f4ecd8; padding: 10px 14px; margin: 4px 0 10px 0;
+    background-color: rgba(176, 128, 52, 0.35); border-left-width: 4px; border-left-color: #e3a64e; border-radius: 3px;
+}
+
+/* ---------- menus, laid out like most RPGs: tabs on top, keys along the bottom ---------- */
+
+.panel { width: 1460px; max-width: 95%; height: 90%; }
+.panel-head { padding: 0 10px 0 6px; margin-bottom: 16px; }
+.menu-tabs { flex-direction: row; flex-grow: 1; }
+.menu-tab {
+    margin: 0 2px 0 0; padding: 10px 14px 8px 14px;
+    background-color: rgba(0, 0, 0, 0); border-width: 0; border-bottom-width: 3px; border-bottom-color: rgba(0, 0, 0, 0);
+    border-radius: 0; align-items: center;
+}
+.menu-tab:hover { background-color: var(--hull-hi); }
+.menu-tab-on { border-bottom-color: var(--lantern); background-color: var(--hull-hi); }
+.menu-tab-name { font-size: 15px; letter-spacing: 2px; color: var(--muted); -unity-font-style: bold; }
+.menu-tab-on .menu-tab-name { color: var(--lantern); }
+.menu-tab-key { font-size: 11px; color: var(--muted); margin-top: 2px; opacity: 0.7; }
+.menu-body { padding: 0 26px; flex-grow: 1; }
+.menu-foot {
+    flex-direction: row; justify-content: space-between; align-items: center;
+    margin-top: 14px; padding: 8px 18px; border-top-width: 1px; border-top-color: var(--line); background-color: var(--hull);
+}
+.menu-keys { font-size: 13px; color: var(--muted); }
+.menu-foot-right { font-size: 14px; color: var(--text); }
+
+/* three panels side by side */
+.inv { flex-direction: row; align-items: flex-start; }
+.inv-col {
+    background-color: var(--hull); border-width: 1px; border-color: var(--line); border-radius: 8px;
+    padding: 14px 16px; margin-right: 14px;
+}
+.inv-equip { width: 400px; flex-shrink: 0; }
+.inv-bag { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.inv-detail { width: 360px; flex-shrink: 0; }
+
+/* the figure with its slots */
+.paper { flex-direction: row; justify-content: space-between; align-items: center; margin-top: 4px; }
+.paper-slots { width: 84px; align-items: center; }
+.paper-figure { flex-grow: 1; align-items: center; justify-content: center; min-height: 360px; }
+.paper-hands { flex-direction: row; justify-content: center; margin-top: 6px; }
+.paper-hands .equip-slot { margin: 0 18px; }
+.equip-slot { align-items: center; margin-bottom: 8px; }
+.equip-cell {
+    width: 64px; height: 64px; margin: 0; padding: 0; align-items: center; justify-content: center;
+    background-color: var(--sea); border-width: 2px; border-color: var(--line); border-radius: 6px;
+}
+.equip-cell:hover { border-color: var(--muted); }
+.equip-cell-empty { border-color: rgba(42, 61, 69, 0.7); background-color: rgba(13, 23, 27, 0.5); }
+.equip-ghost { opacity: 0.3; }
+.equip-name { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 1px; }
+.inv-totals { flex-direction: row; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top-width: 1px; border-top-color: var(--line); }
+.inv-total { align-items: center; }
+.inv-total-name { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.inv-total-value { font-size: 20px; color: var(--text); -unity-font-style: bold; }
+
+/* the bag */
+.pockets { flex-direction: row; flex-wrap: wrap; margin-bottom: 10px; }
+.pocket {
+    font-size: 13px; color: var(--muted); margin: 0 6px 6px 0; padding: 4px 10px;
+    background-color: var(--sea); border-width: 1px; border-color: var(--line); border-radius: 12px;
+}
+.pocket:hover { color: var(--text); }
+.pocket-on { color: var(--sea); background-color: var(--lantern); border-color: var(--lantern); }
+.pocket-empty { opacity: 0.45; }
+.bag-grid { flex-direction: row; flex-wrap: wrap; width: 492px; }
+.bag-cell, .bag-cell-empty {
+    width: 74px; height: 74px; margin: 0 8px 8px 0; padding: 0; align-items: center; justify-content: center;
+    background-color: var(--sea); border-width: 2px; border-color: var(--line); border-radius: 6px;
+}
+.bag-cell-empty { border-color: rgba(42, 61, 69, 0.55); background-color: rgba(13, 23, 27, 0.45); }
+.bag-cell:hover { border-color: var(--muted); }
+.bag-cell-on { border-color: var(--lantern); background-color: var(--hull-hi); }
+.bag-cell .item-icon, .equip-cell .item-icon, .det-icon .item-icon { margin-right: 0; }
+.cell-rank { position: absolute; left: 4px; top: 1px; font-size: 12px; -unity-font-style: bold; }
+.bag-under { flex-direction: row; margin-top: 6px; padding-top: 10px; border-top-width: 1px; border-top-color: var(--line); }
+.bag-stat { margin-right: 36px; }
+.bag-stat-name { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.bag-stat-value { font-size: 17px; color: var(--text); }
+.bag-stat .item-row { justify-content: flex-start; }
+
+/* the details panel */
+.det-top { flex-direction: row; align-items: center; margin-bottom: 10px; }
+.det-icon {
+    width: 96px; height: 96px; align-items: center; justify-content: center; margin-right: 14px; flex-shrink: 0;
+    background-color: var(--sea); border-width: 2px; border-color: var(--line); border-radius: 8px;
+}
+.det-names { flex-shrink: 1; }
+.det-name { font-size: 21px; color: var(--text); -unity-font-style: bold; white-space: normal; }
+.det-kind { font-size: 13px; color: var(--muted); white-space: normal; margin-top: 2px; }
+.det-worn { font-size: 11px; color: var(--moss); letter-spacing: 2px; margin-top: 4px; }
+.det-stats { margin: 4px 0 8px 0; padding: 8px 10px; background-color: var(--sea); border-radius: 6px; }
+.det-stat { flex-direction: row; align-items: center; padding: 3px 0; }
+.det-stat-name { font-size: 15px; color: var(--muted); flex-grow: 1; }
+.det-stat-value { font-size: 16px; color: var(--text); -unity-font-style: bold; margin-right: 10px; }
+.det-better { font-size: 15px; color: var(--moss); -unity-font-style: bold; }
+.det-worse { font-size: 15px; color: var(--blood); -unity-font-style: bold; }
+.det-same { font-size: 15px; color: var(--muted); }
+.det-compare { font-size: 13px; color: var(--muted); white-space: normal; margin-bottom: 8px; }
+.det-desc { font-size: 15px; color: var(--text); white-space: normal; margin: 6px 0 10px 0; }
+.det-actions { flex-direction: row; margin-top: 6px; }
+.det-btn {
+    font-size: 16px; color: var(--sea); background-color: var(--lantern); -unity-font-style: bold;
+    border-width: 0; border-radius: 4px; padding: 8px 18px; margin: 0 8px 0 0;
+}
+.det-btn:hover { background-color: #f0b965; }
+.det-btn:disabled { opacity: 0.35; }
+
+/* the character sheet */
+.char-who { width: 360px; flex-shrink: 0; align-items: center; }
+.char-figure { min-height: 400px; align-items: center; justify-content: center; }
+.char-name { font-size: 26px; color: var(--text); -unity-font-style: bold; margin-top: 6px; }
+.char-sub { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.char-level { font-size: 16px; color: var(--lantern); letter-spacing: 3px; margin-top: 10px; margin-bottom: 4px; }
+.char-who .xp-track { width: 260px; flex-grow: 0; margin: 0 0 4px 0; }
+.char-col { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.sheet-row { flex-direction: row; justify-content: space-between; padding: 5px 0; border-bottom-width: 1px; border-bottom-color: rgba(42, 61, 69, 0.6); }
+.sheet-name { font-size: 16px; color: var(--muted); }
+.sheet-value { font-size: 16px; color: var(--text); -unity-font-style: bold; }
+
+/* skills and the journal: a list on the left, the chosen one on the right */
+.skill-list { width: 400px; flex-shrink: 0; }
+.skill-detail { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.skill-tab {
+    margin: 0 0 6px 0; padding: 8px 12px; background-color: var(--sea);
+    border-width: 1px; border-color: var(--line); border-left-width: 3px; border-radius: 4px;
+}
+.skill-tab:hover { border-color: var(--muted); }
+.skill-tab-on { border-color: var(--lantern); background-color: var(--hull-hi); }
+.skill-tab-top { flex-direction: row; justify-content: space-between; margin-bottom: 4px; }
+.skill-tab-name { font-size: 16px; color: var(--text); }
+.skill-tab-level { font-size: 14px; color: var(--muted); }
+.skill-tab .xp-track { margin: 0; }
+.quest-ready { font-size: 14px; color: var(--lantern); -unity-font-style: bold; }
+.move-track { margin-top: 12px; padding-left: 18px; border-left-width: 2px; border-left-color: var(--line); }
+.move-node { flex-direction: row; align-items: center; margin-bottom: 14px; }
+.move-dot {
+    width: 58px; height: 58px; border-radius: 29px; margin-left: -48px; margin-right: 14px; flex-shrink: 0;
+    -unity-text-align: middle-center; font-size: 14px; -unity-font-style: bold;
+    background-color: var(--sea); border-width: 2px; border-color: var(--line); color: var(--muted);
+}
+.move-known .move-dot { border-color: var(--moss); color: var(--moss); }
+.move-ready .move-dot { border-color: var(--lantern); color: var(--lantern); background-color: var(--hull-hi); }
+.move-locked { opacity: 0.6; }
+.move-text { flex-grow: 1; flex-shrink: 1; min-width: 0; margin-right: 10px; }
+.move-name { font-size: 17px; color: var(--text); -unity-font-style: bold; }
+.move-cost { font-size: 13px; color: var(--brine); }

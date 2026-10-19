@@ -1267,6 +1267,29 @@
           "go": "travel"
         }
       ]
+    },
+    {
+      "id": "bess_patch",
+      "speaker": "Bess",
+      "title": "You're bleeding",
+      "safe": true,
+      "text": [
+        "A broad woman in an apron is sweeping the step of the inn. She takes one look at the blood on you and drops the broom.",
+        "\"Wolf? Thought so. Sit down before you fall down.\" She's back in a moment with a flask and a roll of linen. \"Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
+        "\"Go on, you do it. You'll be doing it yourself on the road, with no one to help.\""
+      ],
+      "choices": [
+        {
+          "label": "Take the spirits and linen, and see to the bite",
+          "effects": [
+            "item:spirits+1",
+            "item:bandage+1",
+            "flag:patch_lesson",
+            "menu:survival"
+          ],
+          "go": "travel"
+        }
+      ]
     }
   ]
 }

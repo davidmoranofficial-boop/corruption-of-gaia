@@ -183,6 +183,13 @@ namespace Loran.UnityLayer
         {
             var s = engine.S;
             ShowToasts();
+            if (!string.IsNullOrEmpty(engine.MenuRequest))
+            {
+                // the story asked for a menu (Bess showing you how to treat a bite)
+                openMenu = engine.MenuRequest;
+                engine.MenuRequest = "";
+                GameAudio.Play("ui_open");
+            }
 
             bool special = s.scene == Engine.Title || s.scene == Engine.Creation;
             bool battle = !special && InBattle && engine.data.Enemy(s.enemy) != null;
@@ -349,8 +356,8 @@ namespace Loran.UnityLayer
         /// <summary>The menus, in order round the wheel (clockwise from the top). Each also has its own key.</summary>
         static readonly (string id, string name, KeyCode key, string desc)[] Menus =
         {
-            ("inventory", "Inventory", KeyCode.B, "Your pack, food, water and coin"),
-            ("equipment", "Equipment", KeyCode.E, "What you're wearing and wielding"),
+            ("inventory", "Inventory", KeyCode.B, "Your gear, your pack, food, water and coin"),
+            ("character", "Character", KeyCode.E, "Your level, stats and what you can do in a fight"),
             ("skills", "Skills", KeyCode.K, "Stats, fighting skills and life skills"),
             ("party", "Party", KeyCode.P, "Who travels with you, and how they're holding up"),
             ("journal", "Journal", KeyCode.J, "Quests and what you've learned"),
@@ -432,198 +439,6 @@ namespace Loran.UnityLayer
             GameAudio.Play(openMenu == id ? "ui_close" : "ui_open");
             openMenu = openMenu == id ? "" : id;
             Render();
-        }
-
-        void RenderMenu()
-        {
-            var s = engine.S;
-            panel.Clear();
-
-            var head = Add(panel, new VisualElement(), "panel-head");
-            if (openMenu == "dev") Add(head, new Label("DEV MODE  ·  F1"), "panel-title");
-            else
-            {
-                var at = Array.Find(Menus, m => m.id == openMenu);
-                Add(head, new Label((at.name ?? "").ToUpperInvariant()), "panel-title");
-            }
-            var headRight = Add(head, new VisualElement(), "panel-head-right");
-            if (openMenu != "dev") Add(headRight, new Button(OpenWheel) { text = "◎   I  Menus", focusable = false }, "close-btn");
-            Add(headRight, new Button(() => ToggleMenu(openMenu)) { text = "×   Esc", focusable = false }, "close-btn");
-
-            var cols = Add(panel, new VisualElement(), "cols");
-            var left = Add(cols, new VisualElement(), "col");
-            var right = Add(cols, new VisualElement(), "col");
-
-            switch (openMenu)
-            {
-                case "inventory": MenuInventory(left, right); break;
-                case "equipment": MenuEquipment(left, right); break;
-                case "skills": MenuSkills(left, right); break;
-                case "party": MenuParty(left, right); break;
-                case "journal": MenuJournal(left, right); break;
-                case "crafting": MenuCrafting(left, right); break;
-                case "world": MenuWorld(left, right); break;
-                case "survival": MenuSurvival(left, right); break;
-                case "dev": MenuDev(left, right); break;
-            }
-        }
-
-        void MenuInventory(VisualElement left, VisualElement right)
-        {
-            var s = engine.S;
-            var d = engine.data;
-            bool free = engine.FreeToAct;
-
-            var pack = Section(left, "PACK");
-            if (s.items.Count == 0) Add(pack, new Label("Your pack is empty."), "line-muted");
-            if (s.items.All(i => i.id != invSel)) invSel = s.items.Count > 0 ? s.items[0].id : "";
-            var grid = Add(pack, new VisualElement(), "slot-grid");
-            foreach (var it in s.items.ToList())
-            {
-                var id = it.id;
-                var slot = Add(grid, new Button(() => { invSel = id; Render(); }) { focusable = false }, "slot");
-                if (id == invSel) slot.AddToClassList("slot-selected");
-                Icon(slot, id, 3);
-                if (it.count > 1) Add(slot, new Label(it.count.ToString()), "slot-count");
-            }
-            var sel = s.items.FirstOrDefault(i => i.id == invSel);
-            if (sel != null)
-            {
-                var def = d.Item(sel.id);
-                var detail = Add(left, new VisualElement(), "detail");
-                Icon(detail, sel.id, 4);
-                var text = Add(detail, new VisualElement(), "item-text");
-                Add(text, new Label(def.name + (sel.count > 1 ? "  ×" + sel.count : "")), "detail-name");
-                if (!string.IsNullOrEmpty(def.desc)) Add(text, new Label(def.desc), "line-muted");
-                if (def.food)
-                {
-                    Add(text, new Label("Food  ·  hunger +" + def.hunger + (def.energy > 0 ? "  ·  energy +" + def.energy : "")), "gear-stats");
-                    var b = Add(text, new Button(() => { engine.Eat(sel.id); AfterAction(); }) { text = "Eat", focusable = false }, "small-btn");
-                    b.AddToClassList("detail-btn");
-                    b.SetEnabled(free);
-                }
-            }
-
-            var purse = Section(right, "PURSE");
-            Add(purse, new Label(Rules.Money(s.coins)), "big-line");
-            Add(purse, new Label("100 copper make a silver, 100 silver a gold, 100 gold a platinum. A week's honest work pays about 30 silver."), "line-muted");
-
-            var water = Section(right, "WATERSKIN");
-            var wr = Add(water, new VisualElement(), "item-row");
-            Add(wr, new Label(s.water + " of " + Rules.WaterskinSize + " drinks left"), "line");
-            var drink = Add(wr, new Button(() => { engine.Drink(); AfterAction(); }) { text = "Drink" }, "small-btn");
-            drink.SetEnabled(free && s.water > 0);
-            if (s.spells.Contains("draw_water"))
-            {
-                var b = Add(water, new Button(() => { engine.DrawWater(); AfterAction(); }) { text = "Cast Draw Water to refill it" }, "small-btn");
-                b.AddToClassList("wide-btn");
-                b.SetEnabled(free && s.mana >= Rules.DrawWaterMana);
-            }
-            else Add(water, new Label("Refill it at a stream or a well."), "line-muted");
-        }
-
-        void MenuEquipment(VisualElement left, VisualElement right)
-        {
-            var s = engine.S;
-            var d = engine.data;
-            bool free = engine.FreeToAct;
-
-            var worn = Section(left, "WORN");
-            var wornRow = Add(worn, new VisualElement(), "worn");
-            var dollBox = Add(wornRow, new VisualElement(), "doll-frame");
-            PlayerDoll(dollBox, 5);
-            var slots = Add(wornRow, new VisualElement(), "worn-slots");
-            foreach (var slot in Engine.GearSlots)
-            {
-                var inSlot = s.gearItems.Where(x => x.equipped && x.slot == slot).ToList();
-                for (int n = 0; n < Engine.SlotCapacity(slot); n++)
-                {
-                    var g = n < inSlot.Count ? inSlot[n] : null;
-                    var r = Add(slots, new VisualElement(), "gear-row");
-                    if (g != null) Icon(r, g.id, 2);
-                    else Add(r, new VisualElement(), "item-icon-empty");
-                    Add(r, new Label(Engine.SlotName(slot)), "gear-slot");
-                    if (g == null)
-                    {
-                        var held = slot == "offhand" ? s.Equipped.FirstOrDefault(x => x.twoHanded) : null;
-                        Add(r, new Label(held != null ? "Both hands on your " + held.name.ToLowerInvariant() : "Empty"), "gear-empty");
-                        continue;
-                    }
-                    GearText(r, g);
-                    var b = Add(r, new Button(() => { engine.Unequip(g.uid); AfterAction(); }) { text = "Take off" }, "small-btn");
-                    b.SetEnabled(free);
-                }
-            }
-
-            var spare = s.gearItems.Where(g => !g.equipped).ToList();
-            if (spare.Count > 0)
-            {
-                var pack = Section(left, "IN YOUR PACK");
-                foreach (var g in spare)
-                {
-                    var r = Add(pack, new VisualElement(), "gear-row");
-                    Icon(r, g.id, 2);
-                    Add(r, new Label(Engine.SlotName(g.slot) + (g.twoHanded ? " (both hands)" : "")), "gear-slot");
-                    GearText(r, g);
-                    var b = Add(r, new Button(() => { engine.Equip(g.uid); AfterAction(); }) { text = "Wear" }, "small-btn");
-                    b.SetEnabled(free);
-                }
-            }
-            Add(left, new Label("Gear ranks run from F (common) to S (legendary). Above F, each piece has its own traits."), "line-muted");
-
-            var who = Section(right, "YOU");
-            Add(who, new Label(s.name), "who");
-            var bg = d.Background(s.background);
-            string sex = s.gender == "" ? "" : char.ToUpperInvariant(s.gender[0]) + s.gender.Substring(1) + "  ·  ";
-            Add(who, new Label(sex + s.build + ", " + s.hair.ToLowerInvariant() + " hair  ·  " + (bg != null ? bg.name : "")), "who-sub");
-
-            var stats = Section(right, "STATS");
-            for (int i = 0; i < Stat.Count; i++)
-            {
-                var r = Add(stats, new VisualElement(), "stat-row");
-                Add(r, new Label(Stat.Names[i]), "stat-name");
-                Add(r, new Label(s.stats[i].ToString()), "stat-value");
-                var t = Add(r, new VisualElement(), "xp-track");
-                var f = Add(t, new VisualElement(), "xp-fill");
-                f.style.width = Length.Percent(Mathf.Clamp01(s.xp[i] / (s.stats[i] * 3f)) * 100f);
-            }
-            Add(stats, new Label("Stats grow with practice. The bar shows progress to the next point."), "line-muted");
-
-            var spells = Section(right, "SPELLS");
-            if (s.spells.Count == 0) Add(spells, new Label("You don't know any magic yet."), "line-muted");
-            foreach (var id in s.spells)
-            {
-                var def = d.Spell(id);
-                Add(spells, new Label(def.name + "  ·  " + def.desc), "line");
-            }
-        }
-
-        /// <summary>Your level, and every skill: how far along it is and what it unlocks.</summary>
-        void MenuSkills(VisualElement left, VisualElement right)
-        {
-            var s = engine.S;
-            var d = engine.data;
-
-            var lvl = Section(left, "LEVEL");
-            var r0 = Add(lvl, new VisualElement(), "stat-row");
-            Add(r0, new Label("Level " + s.level), "stat-name");
-            Add(r0, new Label(s.exp + " / " + Rules.ExpToNext(s.level)), "skill-exp");
-            var t0 = Add(r0, new VisualElement(), "xp-track");
-            Add(t0, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
-            Add(lvl, new Label("Experience comes from fights and finished jobs. Each level adds " + Rules.HpPerLevel + " health and " + Rules.StaminaPerLevel + " stamina, and gives you a skill point."), "line-muted");
-            var pts = Add(lvl, new Label("SKILL POINTS:  " + s.skillPoints), "skill-points");
-            if (s.skillPoints > 0) pts.AddToClassList("skill-points-have");
-            Add(lvl, new Label("Raising a skill unlocks its moves. Spend a skill point to learn one."), "line-muted");
-
-            var combat = Section(left, "COMBAT SKILLS");
-            Add(combat, new Label("These grow as you fight with them and unlock moves, under Skills in a fight. Using now: " +
-                                  (d.Skill(engine.WeaponSkill())?.name ?? "Fists") + (engine.HasShield() ? " and Shields" : "") + "."), "line-muted");
-            foreach (var sk in d.file.skills.Where(k => k.kind == "combat")) SkillRow(combat, sk);
-
-            var life = Section(right, "LIFE SKILLS");
-            Add(life, new Label("These grow as you do the work. Every level makes that work lighter: less stamina, up to 40% less."), "line-muted");
-            foreach (var sk in d.file.skills.Where(k => k.kind == "life")) SkillRow(life, sk);
-
         }
 
         void MenuParty(VisualElement left, VisualElement right)
@@ -725,43 +540,6 @@ namespace Loran.UnityLayer
             if (!string.IsNullOrEmpty(g.desc)) Add(text, new Label(g.desc), "line-muted");
         }
 
-        void MenuJournal(VisualElement left, VisualElement right)
-        {
-            var s = engine.S;
-            var quests = Section(left, "QUESTS");
-            var active = engine.ActiveQuests.ToList();
-            if (active.Count == 0) Add(quests, new Label("Nobody's asked anything of you right now."), "line-muted");
-            foreach (var q in active)
-            {
-                var card = Add(quests, new VisualElement(), "quest");
-                var top = Add(card, new VisualElement(), "quest-top");
-                Add(top, new Label(q.name), "quest-name");
-                Add(top, new Label(q.giver), "quest-giver");
-                Add(card, new Label(q.desc), "line-muted");
-                var goals = engine.QuestGoals(q);
-                foreach (var (text, met, progress) in goals)
-                    Add(card, new Label((met ? "√  " : "•  ") + text + (progress != "" ? "   " + progress : "")), met ? "quest-goal-done" : "quest-goal");
-                if (goals.All(g => g.met)) Add(card, new Label("→  Go back to " + q.giver + "."), "quest-return");
-            }
-            var done = engine.FinishedQuests.ToList();
-            if (done.Count > 0)
-            {
-                var finished = Section(left, "DONE");
-                foreach (var q in done) Add(finished, new Label("√  " + q.name), "quest-goal-done");
-            }
-
-            var journal = engine.Journal();
-            if (journal.Count > 0)
-            {
-                var tasks = Section(right, "NEXT");
-                foreach (var e in journal) Add(tasks, new Label(e), "journal-entry");
-            }
-
-            var notes = Section(right, "THIS PLAYTHROUGH");
-            Add(notes, new Label("Death mode: " + (s.deathMode == "perma" ? "Permadeath. If you die, it's over." : "Basic. If you die, you wake at your last sleep.")), "line");
-            Add(notes, new Label("Sleeping saves your progress."), "line-muted");
-        }
-
         void MenuCrafting(VisualElement left, VisualElement right)
         {
             var s = engine.S;
@@ -853,6 +631,8 @@ namespace Loran.UnityLayer
 
             // Wounds and ailments: yours, then your party's
             var hurt = Section(left, "WOUNDS AND AILMENTS");
+            if (s.Has("patch_lesson") && !s.Has("patch_done") && engine.Check("untreated:bite"))
+                Add(hurt, new Label("Bess is watching. Clean the bite first (that uses the spirits), then bandage it. This is where you treat every wound: open Survival with S, or from the menu wheel (I)."), "tutorial-hint");
             bool any = false;
             any |= WoundList(hurt, "", "You", s.body, free);
             foreach (var m in s.party)
@@ -919,8 +699,6 @@ namespace Loran.UnityLayer
             return "Despised";
         }
 
-        string invSel = "";
-
         static VisualElement Section(VisualElement parent, string head)
         {
             var sec = Add(parent, new VisualElement(), "section");
@@ -936,7 +714,7 @@ namespace Loran.UnityLayer
             var inner = Add(screen, new VisualElement(), "screen-inner");
             Add(inner, new Label("CORRUPTION OF GAIA"), "game-title");
             Add(inner, new Label("VERTICAL SLICE PROTOTYPE"), "game-sub");
-            Add(inner, new Label("UPDATE: 19 OCT, TOUGHER FIGHTS"), "game-sub");   // bumped with each update so you can see it arrived
+            Add(inner, new Label("UPDATE: 19 OCT, NEW MENUS AND ONE WOLF"), "game-sub");   // bumped with each update so you can see it arrived
 
             Add(inner, new Label("HOW DEATH WORKS  ·  LOCKED FOR THIS PLAYTHROUGH"), "field-label");
             var row = Add(inner, new VisualElement(), "option-row");
@@ -1134,6 +912,7 @@ namespace Loran.UnityLayer
             if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
             if (openMenu == "wheel") { WheelKey(e); e.StopPropagation(); return; }
             if (e.keyCode == KeyCode.Escape && openMenu != "") { GameAudio.Play("ui_close"); openMenu = ""; Render(); e.StopPropagation(); return; }
+            if (openMenu != "" && MenuKey(e)) { e.StopPropagation(); return; }
             if (MenusAllowed)
             {
                 if (e.keyCode == KeyCode.I) { OpenWheel(); e.StopPropagation(); return; }

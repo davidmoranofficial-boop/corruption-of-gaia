@@ -307,6 +307,9 @@ namespace Loran.Core
             Rules.Clamp(S, data);
         }
 
+        /// <summary>Your usual blow with what's in your hand, before luck: shown on the character sheet.</summary>
+        public float AttackPower() => 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + SkillLevel(WeaponSkill()) * 0.8f;
+
         /// <summary>A hit with what's in your hand: Strength, the weapon, and how well you know it.</summary>
         float WeaponHit() => 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + SkillLevel(WeaponSkill()) * 0.8f + Roll(-1, 2);
 
