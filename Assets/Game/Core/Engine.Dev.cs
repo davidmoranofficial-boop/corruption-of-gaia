@@ -34,7 +34,7 @@ namespace Loran.Core
         void DevCharacter()
         {
             NewGame("basic");
-            CreateCharacter("Tester", "other", "Average", "Black", "deckhand", new[] { 1, 1, 1, 1, 1 });
+            CreateCharacter("Tester", "other", "Average", "Black", "farmer", new[] { 1, 1, 1, 1, 1 });
             S.flags.Add(DevFlag);
             S.hud = true;
             S.minutes = 1440 + 6 * 60;

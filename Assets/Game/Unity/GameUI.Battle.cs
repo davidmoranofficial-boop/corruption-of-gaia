@@ -118,7 +118,7 @@ namespace Loran.UnityLayer
             Bar(playerCard, "ENERGY", s.energy, 100, "#9d8fd0", 3, false);
             var weapon = s.InSlot("weapon");
             Add(playerCard, new Label(weapon != null ? weapon.name + "  (" + weapon.rank + ")" : "Bare hands"), "fighter-sub");
-            if (s.inCombat && engine.Berserk) StatusChip(playerCard, "BERSERK", "chip-bad", "Below a fifth of your health: your blows land twice as hard.");
+            if (s.inCombat && engine.Berserk) StatusChip(playerCard, "BERSERK", "chip-bad", "Below 30% health: your blows land 30% harder.");
             if (s.inCombat && Rules.Winded(s, engine.data)) StatusChip(playerCard, "WINDED", "chip-bad", "Out of breath: you can't dodge or land crits, and blows hurt more. Defend to get it back.");
 
             // The enemy: top right, with what it's about to do, so you can choose to attack or defend
@@ -329,7 +329,7 @@ namespace Loran.UnityLayer
         {
             var (good, perfect) = Rules.TimingZone(engine.S, engine.data);
             bool dodge = timing != null && timing.def.effects[0] == "fight:dodge";
-            float k = Rules.HasPerk(engine.S, engine.data, "light_feet") ? 1.15f : 0.75f;   // Light feet: dodging comes easily
+            float k = Rules.HasPerk(engine.S, engine.data, "nimble") ? 1.15f : 0.75f;   // Nimble: dodging comes easily
             return dodge ? (good * k, perfect * (k + 0.05f)) : (good, perfect);
         }
 

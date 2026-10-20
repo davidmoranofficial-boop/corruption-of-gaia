@@ -19,6 +19,7 @@ static class Program
     static int Main()
     {
         Root = FindRoot();
+        if (Environment.GetEnvironmentVariable("PERKS") == "1") { Test("perk balance", PerkBalance); return failures; }
         Test("content has no broken links", ContentIsValid);
         Test("full playthrough: hut, coast road, Skelmed's jobs, the pack leader, the guild", FullPlaythrough);
         Test("save and load round trip", SaveLoad);
@@ -70,11 +71,11 @@ static class Program
         var e = NewEngine();
         e.NewGame("basic");
         Assert(e.S.scene == "creation", "a new game should start at character creation");
-        Assert(e.CreateCharacter("", "female", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 }) != null, "empty name should be refused");
-        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "deckhand", new[] { 2, 2, 1, 1, 1 }) != null, "too many points should be refused");
-        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 }) == null, "valid character refused");
-        Assert(e.S.stats.All(v => v == 4) && e.S.background == "deckhand", "backgrounds give a perk, not a stat point");
-        Assert(e.CreateCharacter("Ash", "", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 }) != null, "sex must be chosen");
+        Assert(e.CreateCharacter("", "female", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }) != null, "empty name should be refused");
+        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "farmer", new[] { 2, 2, 1, 1, 1 }) != null, "too many points should be refused");
+        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }) == null, "valid character refused");
+        Assert(e.S.stats.All(v => v == 4) && e.S.background == "farmer", "backgrounds give a perk, not a stat point");
+        Assert(e.CreateCharacter("Ash", "", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }) != null, "sex must be chosen");
         Assert(e.S.stats.Length == 5 && e.S.stats[Stat.Cha] == 4, "charisma should exist and take points");
         Assert(e.Fill("{they} nods at {them}") == "she nods at her", "pronouns should follow the chosen sex");
         Pick(e, "Go");
@@ -753,7 +754,7 @@ static class Program
     {
         var e = NewEngine();
         e.NewGame("perma");
-        e.CreateCharacter("Rook", "male", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 });
+        e.CreateCharacter("Rook", "male", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 });
         Walk(e, "Go", "Sit up");
         e.S.hp = 0;
         e.GoTo(e.S.scene);
@@ -801,6 +802,7 @@ static class Program
           : Get("Attack");
         pick ??= Get("Defend");
         int r = (int)((salt * 7919L + e.S.round * 104729L + (long)e.S.enemyHp * 31) % 100);
+        if (pick.label == "Dodge" && Rules.HasPerk(e.S, e.data, "nimble")) r = r * 3 / 4;   // Nimble's wider dodge zone: fewer misses
         e.Act(pick, r < 30 ? Engine.TimingPerfect : r < 82 ? Engine.TimingGood : Engine.TimingMiss);
     }
 
@@ -836,21 +838,26 @@ static class Program
     {
         Assert(NewEngine().data.file.backgrounds.All(b => b.perk != "" && b.perkName != "" && b.perkDesc != "" && b.stat == ""), "every background has a perk, and no stat bonus");
 
-        // Berserk: under a fifth of your health, double damage
-        var a = AtDog(3); a.S.background = "sellsword";
-        var b = AtDog(3); b.S.background = "sellsword";
-        b.S.hp = Rules.MaxHp(b.S) * 0.1f;
+        // Berserk: badly hurt, harder blows
+        var a = AtDog(3); a.S.background = "soldier";
+        var b = AtDog(3); b.S.background = "soldier";
+        b.S.hp = Rules.MaxHp(b.S) * 0.2f;
         a.S.enemyMove = b.S.enemyMove = "wary";
         float ea = a.S.enemyHp, eb = b.S.enemyHp;
         a.Act(a.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
         b.Act(b.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
-        Assert(b.Berserk && !a.Berserk && (eb - b.S.enemyHp) >= (ea - a.S.enemyHp) * 1.8f, "berserk hits twice as hard when you're nearly dead");
+        Assert(b.Berserk && !a.Berserk && (eb - b.S.enemyHp) >= (ea - a.S.enemyHp) * 1.2f, "berserk hits harder when you're badly hurt");
 
-        // Light feet: dodging is free
-        var l = AtDog(3); l.S.background = "street_rat";
-        Assert(l.Choices().First(c => c.def.label == "Dodge").def.stamina == 0, "a dock rat dodges for free");
+        // Nimble: dodging is free
+        var l = AtDog(3); l.S.background = "thief";
+        Assert(l.Choices().First(c => c.def.label == "Dodge").def.stamina == Rules.NimbleDodge, "a thief dodges for half the stamina");
 
-        // Healer's hands: treating takes half the time
+        // Deadeye: more crits
+        var k1 = AtDog(3); k1.S.background = "hunter";
+        var k2 = AtDog(3);
+        Assert(Rules.CritChance(k1.S, k1.data) == Rules.CritChance(k2.S, k2.data) + Rules.DeadeyeCrit, "a hunter crits more often");
+
+        // Healer: treating takes half the time
         var h = NewEngine(); h.DevStart("village"); h.S.background = "herbalist";
         Rules.Afflict(h.S, h.data, h.S.body, "bite", null);
         h.S.AddItem("bandage", 1);
@@ -858,16 +865,19 @@ static class Program
         h.S.result = "";
         Assert(h.Treat("", "bite", "bandage") && h.S.minutes - m0 == 5, "bandaging takes 5 minutes, not 10");
 
-        // Iron stomach: hunger goes down slower
-        var f1 = NewEngine(); f1.DevStart("village"); f1.S.background = "farmhand";
-        var f2 = NewEngine(); f2.DevStart("village");
+        // Hardy: hunger goes down slower
+        var f1 = NewEngine(); f1.DevStart("village"); f1.S.background = "farmer";
+        var f2 = NewEngine(); f2.DevStart("village"); f2.S.background = "scholar";
         f1.S.hunger = f2.S.hunger = 90;
         Rules.Advance(f1.S, f1.data, 240, false); Rules.Advance(f2.S, f2.data, 240, false);
-        Assert(f1.S.hunger > f2.S.hunger + 1, "a farmhand gets hungry slower");
+        Assert(f1.S.hunger > f2.S.hunger + 0.5f, "a farmer gets hungry slower");
 
-        // Hedge magic: spells cost a third less
-        var w = NewEngine(); w.DevStart("village"); w.S.background = "hedge_witch";
-        Assert(w.ManaCost(Rules.DrawWaterMana) == 7 && w.ManaCost(6) == 4, "hedge magic takes a third off");
+        // Studious: learns faster
+        var w1 = NewEngine(); w1.DevStart("village"); w1.S.background = "scholar";
+        var w2 = NewEngine(); w2.DevStart("village"); w2.S.background = "farmer";
+        float x1 = w1.S.xp[Stat.Str], x2 = w2.S.xp[Stat.Str];
+        Rules.Train(w1.S, Stat.Str, 1f, ""); Rules.Train(w2.S, Stat.Str, 1f, "");
+        Assert(Math.Abs((w1.S.xp[Stat.Str] - x1) - (w2.S.xp[Stat.Str] - x2) * Rules.StudiousRate) < 0.01f, "a scholar learns faster");
     }
 
     static void FirstWound()
@@ -914,6 +924,21 @@ static class Program
         var bm = Simulate(AtPackLeader, MashRound, "den_won", 200);
         Assert(bs.wins >= 120, "the pack leader should be beatable by someone who reads it");
         Assert(bm.wins < bs.wins / 2, "but it should punish mashing");
+    }
+
+    /// <summary>PERKS=1: each background's fights, side by side. The fight perks should each help about the same.</summary>
+    static void PerkBalance()
+    {
+        int n = int.TryParse(Environment.GetEnvironmentVariable("PERKN"), out var pn) ? pn : 200;
+        foreach (var bg in (Environment.GetEnvironmentVariable("BGS") ?? "farmer,soldier,thief,hunter").Split(','))
+        {
+            Engine With(Engine e) { e.S.background = bg; return e; }
+            Console.WriteLine("  " + bg + ":");
+            Simulate(s => With(AtDog(s)), SmartRound, "dog_won", n);
+            Simulate(s => With(AtDog(s)), MashRound, "dog_won", n);
+            Simulate(s => With(AtPackLeader(s)), SmartRound, "den_won", n);
+            Simulate(s => With(AtPackLeader(s)), MashRound, "den_won", n);
+        }
     }
 
     static Engine AtPackLeader(int seed)
@@ -1343,7 +1368,7 @@ static class Program
                 reached.Add(e.S.scene);
                 if (e.S.scene == "title") { e.NewGame("basic"); continue; }
                 if (e.S.scene == "creation" && !e.S.Has("created"))
-                    e.CreateCharacter("Test", "other", "Lean", "Red", "deckhand", new[] { 5, 0, 0, 0, 0 });
+                    e.CreateCharacter("Test", "other", "Lean", "Red", "farmer", new[] { 5, 0, 0, 0, 0 });
                 if (e.Area?.id == "skelmed") village = true;
                 if (e.S.scene == "forge") { e.FinishForge((float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble()); continue; }
 
@@ -1397,7 +1422,7 @@ static class Program
     {
         e.NewGame("basic");
         e.S.seed = seed;
-        e.CreateCharacter("Ash", "female", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 });
+        e.CreateCharacter("Ash", "female", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 });
         Walk(e, "Go", "Sit up");
     }
 

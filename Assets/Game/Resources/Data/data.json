@@ -472,52 +472,52 @@
   ],
   "backgrounds": [
     {
-      "id": "deckhand",
-      "name": "Deckhand",
-      "desc": "You worked the boat that went down: ropes, tar and long cold watches. The sea took everyone else.",
-      "perk": "sea_legs",
-      "perkName": "Sea legs",
-      "perkDesc": "Years on deck. Cold and rain get to you half as fast."
-    },
-    {
-      "id": "sellsword",
-      "name": "Sellsword",
-      "desc": "You were aboard to guard the cargo, for pay. You've been hurt before, and you don't stay down.",
+      "id": "soldier",
+      "name": "Soldier",
+      "desc": "You served in the King's levy until the pay stopped coming. You've been hurt before, and you don't stay down.",
       "perk": "berserk",
       "perkName": "Berserk",
-      "perkDesc": "When you're below a fifth of your health, your blows land twice as hard."
+      "perkDesc": "Below 30% health, your blows land 30% harder."
     },
     {
-      "id": "street_rat",
-      "name": "Dock rat",
-      "desc": "You grew up on the docks of a city far down the coast and stowed away to get out.",
-      "perk": "light_feet",
-      "perkName": "Light feet",
-      "perkDesc": "Dodging costs you no stamina, and it's easier to time."
+      "id": "thief",
+      "name": "Thief",
+      "desc": "You lived by quick hands in the back streets of Zaron, until the watch learned your face.",
+      "perk": "nimble",
+      "perkName": "Nimble",
+      "perkDesc": "Dodging costs half the stamina, and it's easier to time."
+    },
+    {
+      "id": "hunter",
+      "name": "Hunter",
+      "desc": "You tracked deer through the northern woods. You know where a blow does the most harm.",
+      "perk": "deadeye",
+      "perkName": "Deadeye",
+      "perkDesc": "12% more chance of a critical hit."
+    },
+    {
+      "id": "farmer",
+      "name": "Farmer",
+      "desc": "Years in the fields, in all weathers. When the harvest failed you went looking for work.",
+      "perk": "hardy",
+      "perkName": "Hardy",
+      "perkDesc": "Hunger and thirst drain 20% slower, and rain and cold get to you 40% slower."
     },
     {
       "id": "herbalist",
-      "name": "Herbalist's apprentice",
-      "desc": "You were sent to buy herbs for the old woman who taught you. You know a poultice from a poison.",
+      "name": "Herbalist",
+      "desc": "An old wise-woman taught you which plants heal and which ones kill.",
       "perk": "healer",
-      "perkName": "Healer's hands",
-      "perkDesc": "Your wounds heal twice as fast, and treating any wound takes half the time."
+      "perkName": "Healer",
+      "perkDesc": "Your wounds heal 50% faster, and treating any wound takes half the time."
     },
     {
-      "id": "farmhand",
-      "name": "Farmhand",
-      "desc": "You sold what little you had to start again somewhere new. Years in the fields made you hard to wear down.",
-      "perk": "iron_stomach",
-      "perkName": "Iron stomach",
-      "perkDesc": "Hunger and thirst creep up on you a quarter slower."
-    },
-    {
-      "id": "hedge_witch",
-      "name": "Wise-woman's apprentice",
-      "desc": "A village wise-woman taught you small tricks. When people started to whisper, you were put on a boat.",
-      "perk": "hedge_magic",
-      "perkName": "Hedge magic",
-      "perkDesc": "Once you learn magic: spells cost a third less mana, and mana comes back half again as fast."
+      "id": "scholar",
+      "name": "Scholar",
+      "desc": "You copied books in a lord's library and picked up a little of everything.",
+      "perk": "studious",
+      "perkName": "Studious",
+      "perkDesc": "Your stats and skills grow 20% faster."
     }
   ],
   "gear": [

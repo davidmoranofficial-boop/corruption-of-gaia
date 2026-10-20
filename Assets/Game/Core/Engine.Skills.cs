@@ -53,7 +53,7 @@ namespace Loran.Core
             var def = data.Skill(id) ?? throw new Exception("Unknown skill '" + id + "'");
             var e = Entry(id, true);
             if (e.level >= Rules.MaxSkill) return;
-            e.xp += amount;
+            e.xp += amount * Rules.LearnRate(S);
             while (e.level < Rules.MaxSkill && e.xp >= Rules.SkillToNext(e.level))
             {
                 e.xp -= Rules.SkillToNext(e.level);

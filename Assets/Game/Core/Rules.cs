@@ -73,11 +73,22 @@ namespace Loran.Core
             return Math.Clamp(1f - s.Rep("skelmed") / 200f, 0.5f, 1.5f);
         }
 
-        /// <summary>Does the life you left behind give you this perk? (sea_legs, berserk, light_feet, healer, iron_stomach, hedge_magic)</summary>
+        /// <summary>Does the life you left behind give you this perk? (berserk, nimble, deadeye, hardy, healer, studious)</summary>
         public static bool HasPerk(GameState s, GameData d, string perk) => d.Background(s.background)?.perk == perk;
 
-        /// <summary>What a spell really costs you: Hedge magic takes a third off.</summary>
-        public static int ManaCost(GameState s, GameData d, int mana) => mana <= 0 ? 0 : HasPerk(s, d, "hedge_magic") ? (int)Math.Ceiling(mana * 2 / 3f) : mana;
+        // Background perks. Tuned so each is worth about the same: the fight perks by simulated fights (tests: PERKS=1).
+        public const float BerserkBelow = 0.3f, BerserkDamage = 1.3f;   // Berserk: under 30% health, blows land 30% harder
+        public const int DeadeyeCrit = 12;                              // Deadeye: +12% crit chance (and the cap rises with it)
+        public const int NimbleDodge = 4;                               // Nimble: dodging costs half the stamina, and the dodge zone is wider
+        public const float HardyNeeds = 0.8f, HardyWeather = 0.6f;     // Hardy: hunger and thirst drain 20% slower, rain and cold 40% slower
+        public const float HealerRate = 1.5f;                          // Healer: wounds heal half again as fast, treating takes half the time
+        public const float StudiousRate = 1.2f;                        // Studious: stats and skills grow 20% faster
+
+        /// <summary>What a spell really costs you.</summary>
+        public static int ManaCost(GameState s, GameData d, int mana) => Math.Max(0, mana);
+
+        /// <summary>Studious is the scholar's perk; training has no GameData to hand, so it goes by the background's id.</summary>
+        public static float LearnRate(GameState s) => s.background == "scholar" ? StudiousRate : 1f;
 
         /// <summary>Time passes. Time never stops, whatever the player is doing.</summary>
         public static void Advance(GameState s, GameData d, int minutes, bool exerting)
@@ -87,11 +98,11 @@ namespace Loran.Core
             s.minutes += minutes;
             if (!s.hud) return;  // the needs and the meter only run once the player is in Loran
 
-            float stomach = HasPerk(s, d, "iron_stomach") ? 0.75f : 1f;
+            float stomach = HasPerk(s, d, "hardy") ? HardyNeeds : 1f;
             s.hunger -= HungerPerHour * h * stomach;
             s.thirst -= ThirstPerHour * h * stomach;
             s.energy -= EnergyPerHour * h;
-            s.mana += ManaRegenPerHour * h * (HasPerk(s, d, "hedge_magic") ? 1.5f : 1f);
+            s.mana += ManaRegenPerHour * h;
             if (!exerting) s.stamina += StaminaRegenPerHour * h * (s.body.cold >= ColdAt ? 0.5f : 1f);
             s.corruption += CorruptionPerDay / 24f * h * CorruptionMultiplier(s) * WardFactor(s, d);
 
@@ -298,7 +309,8 @@ namespace Loran.Core
             string id = w != null ? d.Gear(w.id)?.skill ?? "" : "";
             if (id == "") id = "unarmed";
             foreach (var e in s.skills) if (e.id == id) skill = e.level;
-            return Math.Clamp(5 + s.stats[Stat.Agi] + skill / 2, 5, 40);
+            int eye = HasPerk(s, d, "deadeye") ? DeadeyeCrit : 0;
+            return Math.Clamp(5 + s.stats[Stat.Agi] + skill / 2 + eye, 5, 40 + eye);
         }
 
         /// <summary>Who acts first: your Agility (plus Swift gear) against the enemy's speed. Ties go to you.</summary>
@@ -330,7 +342,7 @@ namespace Loran.Core
         /// <summary>Stats grow through repetition. Each point needs (current level x 3) training. Charisma grows by talking people round.</summary>
         public static void Train(GameState s, int stat, float amount, string why)
         {
-            s.xp[stat] += amount;
+            s.xp[stat] += amount * LearnRate(s);
             float need = s.stats[stat] * 3f;
             while (s.xp[stat] >= need)
             {

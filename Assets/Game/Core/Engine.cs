@@ -175,8 +175,10 @@ namespace Loran.Core
             // Saves from before Garran's quarry job: if you've already made your first gear, the job's done
             if (S.Has("smith_done") && !S.Has("quest_done:quarry")) S.flags.Add("quest_done:quarry");
             if (S.Has("created")) GiveClothes();
-            // Saves from before backgrounds gave perks (20 Oct): the nearest new life, keeping the old +1 they already have
-            var oldLives = new Dictionary<string, string> { { "desk", "hedge_witch" }, { "warehouse", "sellsword" }, { "runner", "street_rat" }, { "nights", "farmhand" }, { "retail", "deckhand" } };
+            // Saves from older backgrounds: the nearest new life (the 19 Oct jobs, then the first perk lives of 20 Oct)
+            var oldLives = new Dictionary<string, string> {
+                { "desk", "scholar" }, { "warehouse", "soldier" }, { "runner", "thief" }, { "nights", "farmer" }, { "retail", "farmer" },
+                { "deckhand", "farmer" }, { "sellsword", "soldier" }, { "street_rat", "thief" }, { "farmhand", "farmer" }, { "hedge_witch", "scholar" } };
             if (oldLives.TryGetValue(S.background ?? "", out var life)) S.background = life;
         }
 
