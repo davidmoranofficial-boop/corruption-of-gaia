@@ -184,6 +184,17 @@ namespace Loran.UnityLayer
 
         void CutTick()
         {
+            // a mistake in one frame shouldn't leave you stuck on a frozen picture: say what broke and move on to the hut
+            try { CutFrame(); }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+                CutFinish();
+            }
+        }
+
+        void CutFrame()
+        {
             if (cutPage == null || cutPage.panel == null || cutEnding) return;
             float t = Time.realtimeSinceStartup - cutStart;
             if (t >= CutEnd) { CutFinish(); return; }
@@ -264,7 +275,7 @@ namespace Loran.UnityLayer
                 float wx = -16 + Mathf.Max(0, b - walkFrom) * speed;
                 bool arrived = wx >= 124;
                 if (arrived) wx = 124;
-                int frame = arrived ? 0 : WalkCycle[(int)((b - walkFrom) * 7f) % 4];
+                int frame = arrived ? 0 : WalkCycle[(int)(Mathf.Max(0, b - walkFrom) * 7f) % 4];   // never negative (before he sets off)
                 CutWalker(cutYenson, wx, 112, arrived ? (b > walkFrom + 7f ? "down" : "right") : "right", frame, b > walkFrom);
             }
             else if (shack)

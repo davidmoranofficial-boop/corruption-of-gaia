@@ -2402,8 +2402,8 @@
 
 .picker { flex-direction: row; align-items: center; }
 .picker-pair { flex-direction: row; }
-.picker-col { flex-grow: 1; flex-basis: 0; margin-right: 14px; }
-.picker-col:last-child { margin-right: 0; }
+.picker-col { flex-grow: 1; flex-basis: 0; margin: 0 7px; }
+.picker-pair { margin: 0 -7px; }
 .picker-col .picker-arrow { width: 44px; }
 .create-stage { position: relative; }
 .create-walk {
