@@ -612,10 +612,10 @@ def coast(night=False):
     shadow(p, 30, 112, 34, 5)
     shadow(p, 340, 116, 24, 4)
     rock(p, 6, 104, 44, 42, rnd, rk, moss=moss)
-    rock(p, 34, 108, 28, 20, rnd, rk)
+    rock(p, 26, 108, 24, 18, rnd, rk)
     rock(p, 18, 113, 22, 9, rnd, rk)
     rock(p, 352, 102, 40, 50, rnd, rk, moss=moss)
-    rock(p, 330, 110, 24, 16, rnd, rk)
+    rock(p, 336, 110, 22, 15, rnd, rk)
     rock(p, 346, 116, 14, 7, rnd, rk)
     # a far sea stack
     rock(p, 296, 74, 18, 6, rnd, [mix(c, '#86a1a5', 0.5) for c in rk], seed_facets=2)
@@ -847,7 +847,7 @@ def forest(night=False):
     shafts = np.zeros((H, W))
     for x0 in (70, 130, 175, 248):                         # where the sun shafts reach the floor
         shafts += np.exp(-((p.X - x0 - p.Y * 0.55 - 6) / 16.0) ** 2)
-    dv = (dap - 0.6) * 8 + shafts * 0.7 - 0.45
+    dv = (dap - 0.62) * 8 + shafts * 0.7 - 0.5
     p.ramp(fm & (p.Y >= 101) & (dv > 0), np.clip(dv, 0, 1.4) + 0.0, [fl[4], '#7d8c4e', '#8f9b56'], soft=0.45)
     scatter(p, rnd, 30, 40, 320, 102, H - 2, TUFTS, fl[1:4] + ['#7d8c4e'])
     for _ in range(26):                                   # fallen leaves
@@ -872,7 +872,7 @@ def forest(night=False):
         p.ramp(mm, 1.0 + (p.T > 0.6), ['#4d6136', '#62763f', '#7a8a4b'], soft=0.2)
     blob(p, 6, 2, 22, LEAF[:6], sq=0.7, rough=(rnd, 0.2))
     blob(p, 354, 4, 24, LEAF[:6], sq=0.7, rough=(rnd, 0.2))
-    for (x, flip) in ((22, 1), (40, 1), (338, -1), (318, -1)):
+    for (x, flip) in ((20, 1), (30, 1), (340, -1), (330, -1)):
         fern(p, x, 110 + rnd.randint(0, 6), rnd, flip)
     tall_grass(p, 0, 22, H, rnd, fl[1:] , height=12, density=0.5)
     tall_grass(p, 336, W, H, rnd, fl[1:], height=12, density=0.5)
@@ -955,8 +955,8 @@ def hills(night=False):
     # heather: patches built from small clumps, darker and browner than the grass
     hz_heather = [mix(c, '#a6b2a8', 0.3) for c in HEATHER]
     patches = fbm(W, H * 2, 26, 81, 3)[::2]
-    hmask = mm & (patches > 0.6) & (p.Y > mid[None, :] + 2)
-    p.ramp(hmask, 1.0 + (patches - 0.6) * 8, hz_heather[1:4], soft=0.4)
+    hmask = mm & (patches > 0.65) & (p.Y > mid[None, :] + 2)
+    p.ramp(hmask, 1.0 + (patches - 0.65) * 8, hz_heather[1:4], soft=0.4)
     for _ in range(500):
         x, y = rnd.uniform(0, W), rnd.uniform(70, 100)
         if y < mid[int(x)] + 2 or patches[int(y), int(x)] < 0.53: continue
@@ -1182,31 +1182,30 @@ def village(night=False):
             if (x + row * 3) % 6 == 1 and (y - (yb - hh)) % 3 == 0: k = 3
             p.px(x, y, WALL_STONE[k])
     p.darken((p.X >= 62) & (p.X < 162) & (p.Y == edge[None, :] + 0), 0.8)
-    fence(p, 204, 300, 99, 9)
+    fence(p, 214, 312, 99, 9)
     # cottages at the edges and one set back in the middle
     cottage(p, 152, 86, 44, 13, 12, 12, rnd, wall='wash', roof='slate', windows=(9, 30), door=19, chimney=34)
-    cottage(p, -14, 99, 58, 26, 22, 18, rnd, wall='stone', roof='thatch', windows=(8, 38), door=22, chimney=6)
-    cottage(p, 304, 101, 58, 28, 22, 16, rnd, wall='wash', roof='thatch', windows=(10,), door=26, chimney=38)
+    cottage(p, -22, 99, 58, 26, 22, 18, rnd, wall='stone', roof='thatch', windows=(8, 38), door=22, chimney=6)
+    cottage(p, 312, 101, 58, 28, 22, 16, rnd, wall='wash', roof='thatch', windows=(10,), door=26, chimney=38)
     # fishing gear by the right cottage: a net drying on poles, a lobster pot and a barrel
-    for x in (292, 312):
-        for y in range(84, 104): p.px(x, y, WOOD[3] if y < 103 else WOOD[1])
-    for x in range(293, 312):
-        sag = int(3 * math.sin((x - 292) / 20 * math.pi))
-        for y in range(86 + sag, 99 + sag // 2):
+    for x in (190, 210):
+        for y in range(82, 102): p.px(x, y, WOOD[3] if y < 101 else WOOD[1])
+    for x in range(191, 210):
+        sag = int(3 * math.sin((x - 190) / 20 * math.pi))
+        for y in range(84 + sag, 97 + sag // 2):
             if (x + y) % 3 == 0 or (x - y) % 3 == 0: p.px(x, y, '#7d7462' if (x + y) % 2 else '#65604f')
-        p.px(x, 85 + sag, WOOD[3])
+        p.px(x, 83 + sag, WOOD[3])
     def barrel(cx, b):
         shadow(p, cx + 5, b + 1, 7, 1.8)
         m = (np.abs(p.X + 0.5 - cx) < 5 - (np.abs(p.Y + 0.5 - (b - 6)) > 4)) & (p.Y >= b - 11) & (p.Y < b)
         p.ramp(m, 3.2 - np.abs(p.X + 1.5 - cx) * 0.55 - (p.X > cx) * 0.6, WOOD, soft=0.2)
         for yy in (b - 9, b - 3): p.fill(m & (p.Y == yy), '#3a3a36')
         p.fill(m & (p.Y == b - 11), WOOD[4])
-    barrel(286, 110)
-    barrel(52, 109)
     # lobster pot: a little domed wicker cage
-    pm = (np.hypot((p.X + 0.5 - 276) / 6, (p.Y + 0.5 - 108) / 5) < 1) & (p.Y < 108)
-    p.ramp(pm, 2 + ((p.X + p.Y) % 2) * 1.0 - (p.X > 277) * 1.0, THATCH, soft=0.2)
-    for x in range(270, 283): p.px(x, 108, THATCH[0])
+    pm = (np.hypot((p.X + 0.5 - 176) / 6, (p.Y + 0.5 - 104) / 5) < 1) & (p.Y < 104)
+    shadow(p, 180, 104.5, 7, 1.5)
+    p.ramp(pm, 2 + ((p.X + p.Y) % 2) * 1.0 - (p.X > 177) * 1.0, THATCH, soft=0.2)
+    for x in range(170, 183): p.px(x, 104, THATCH[0])
     # cobbles in front of the doors, a few stones and tufts on the yard
     for (cx, cy, rx, ry) in ((30, 104, 22, 4), (336, 106, 24, 4)):
         for y in range(int(cy - ry), int(cy + ry)):
@@ -1215,6 +1214,8 @@ def village(night=False):
                 if ((xx - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1 and y % 2 == 0:
                     p.px(xx, y, yd[4]); p.px(xx + 1, y, yd[3]); p.px(xx, y + 1, yd[1]); p.px(xx + 1, y + 1, yd[1])
     scatter(p, rnd, 24, 0, W, 104, H - 2, PEBBLES, [yd[0], yd[2], yd[4]])
+    barrel(344, 113)
+    barrel(28, 110)
     scatter(p, rnd, 18, 0, W, 102, H - 2, TUFTS, mg[0:3])
     tall_grass(p, 0, 20, H, rnd, mg, height=9, density=0.5)
     tall_grass(p, 340, W, H, rnd, mg, height=9, density=0.5)

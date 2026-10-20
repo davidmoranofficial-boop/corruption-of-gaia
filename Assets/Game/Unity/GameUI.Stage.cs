@@ -101,6 +101,14 @@ namespace Loran.UnityLayer
             if (s.enemyHp <= 0) { foeMode = "dead"; foeModeAt = StageNow - 5; }
             else if (foeMode == "dead" || foeMode == "attack" || foeMode == "hurt") foeMode = "idle";
 
+            // at night the fighters take the moonlight too, so they sit in the painting instead of glowing on it
+            if (bd.EndsWith("_night"))
+            {
+                ColorUtility.TryParseHtmlString("#8e9cc4", out var moon);
+                stage.Query(className: "doll-layer").ForEach(l => l.style.unityBackgroundImageTintColor = moon);
+                enemySheet.style.unityBackgroundImageTintColor = moon;
+            }
+
             arena.RegisterCallback<GeometryChangedEvent>(_ => LayoutStage(arena));
             LayoutStage(arena);
             stageTick?.Pause();
