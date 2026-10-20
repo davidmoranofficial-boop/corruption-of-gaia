@@ -22,7 +22,6 @@ namespace Loran.Core
             ("hut", "Wake in Yenson's hut"),
             ("hills", "The hills above Skelmed"),
             ("fire", "The net shed fire"),
-            ("guild", "Join the guild"),
             ("boss", "Boss: the pack leader, with Rook"),
             ("forge_first", "Forge: your first gear"),
             ("forge_iron", "Forge: buy iron"),
@@ -81,12 +80,6 @@ namespace Loran.Core
                     S.spells.Add("kindle");
                     MoveTo("village_gate");
                     S.ax = 12; S.ay = 13; S.facing = "left";
-                    Jump(TravelId);
-                    break;
-                case "guild":
-                    foreach (var f in new[] { "quest_done:lodge", "quest_done:quarry", "quest_done:orlen", "smith_done", "fire_out" }) Flag(f);
-                    MoveTo("village_gate");
-                    S.ax = 31; S.ay = 14; S.facing = "left";
                     Jump(TravelId);
                     break;
                 case "boss":

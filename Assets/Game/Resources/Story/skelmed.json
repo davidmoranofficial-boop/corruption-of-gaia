@@ -468,16 +468,10 @@
         {
           "when": [
             "done:pack",
-            "!flag:guild_member",
-            "!flag:dead_rook"
+            "!flag:dead_rook",
+            "!flag:ida_town"
           ],
-          "text": "\"Go and see the others, if you haven't. Garran at the forge. Old Orlen up the hill. Then Mira at the guild post. She'll want your name in her book.\""
-        },
-        {
-          "when": [
-            "flag:guild_member"
-          ],
-          "text": "\"Guild card and all. Look at you.\""
+          "text": "\"Go and see the others, if you haven't. Garran at the forge. Old Orlen up the hill. They could all use a hand.\""
         },
         {
           "when": [
@@ -575,7 +569,6 @@
         {
           "label": "\"What now?\"",
           "when": [
-            "flag:guild_member",
             "done:pack",
             "!flag:ida_town"
           ],
@@ -583,7 +576,7 @@
           "effects": [
             "flag:ida_town"
           ],
-          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks at your guild card. \"Somebody ought to go and see. Somebody with a card like that.\""
+          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks you up and down. \"Somebody ought to go and see. Somebody who can handle themselves.\""
         },
         {
           "label": "\"Goodbye.\"",
@@ -724,82 +717,6 @@
         },
         {
           "label": "Leave it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "mira",
-      "speaker": "Mira",
-      "title": "Mira",
-      "safe": true,
-      "text": [],
-      "onEnter": [
-        "flag:mira_met"
-      ],
-      "extra": [
-        {
-          "when": [
-            "!flag:guild_member"
-          ],
-          "text": "\"Guild post. Smallest one in Loran, probably. One room, one desk, one clerk, and you're looking at her. Mira.\""
-        },
-        {
-          "when": [
-            "!flag:guild_member",
-            "done:lodge",
-            "done:quarry",
-            "done:orlen"
-          ],
-          "text": "\"Hunters, forge, magic, all three? I've heard. Everyone's heard. Come and put your name in the book.\""
-        },
-        {
-          "when": [
-            "flag:guild_member"
-          ],
-          "text": "\"Lost your card already? No? Good. I hate paperwork.\""
-        }
-      ],
-      "choices": [
-        {
-          "label": "\"What does the guild do?\"",
-          "when": [
-            "!flag:mira_guild"
-          ],
-          "time": 5,
-          "effects": [
-            "flag:mira_guild"
-          ],
-          "result": "\"Keeps a book of who can do what, and sends them where they're needed. Used to be a lot of sending, when this was a port. Now it's mostly me and the book.\" She taps a ledger with three names in it. \"We don't care what you call yourself. Blades, bows, spells, hammers, whatever. Show you can be trusted with a job and you're in.\""
-        },
-        {
-          "label": "\"How do I join?\"",
-          "when": [
-            "!flag:guild_member",
-            "!done:lodge|!done:quarry|!done:orlen"
-          ],
-          "time": 5,
-          "result": "\"Do some good round here first. Ida, Garran and old Orlen up the hill all need a hand. Help all three and I'll put your name in the book.\""
-        },
-        {
-          "label": "Put your name in the guild book",
-          "when": [
-            "!flag:guild_member",
-            "done:lodge",
-            "done:quarry",
-            "done:orlen"
-          ],
-          "time": 15,
-          "effects": [
-            "flag:guild_member",
-            "item:guild_card+1",
-            "exp:20",
-            "rep:skelmed+3"
-          ],
-          "result": "Mira writes your name under the other three in a careful hand, then presses a card into your palm: a stiff square of waxed leather with the guild seal and your name. \"Welcome to the guild, {name}. Don't lose it. I hate paperwork.\""
-        },
-        {
-          "label": "\"Goodbye.\"",
           "go": "travel"
         }
       ]

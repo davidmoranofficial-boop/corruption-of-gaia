@@ -126,6 +126,7 @@ namespace Loran.UnityLayer
                 {
                     char c = a.rows[y][x];
                     if (c == 'L' || c == 'f') spots.Add((new Vector2(x + 0.5f, y + 0.5f), 6f, 1f));
+                    else if (c == 'l' && !a.indoor) spots.Add((new Vector2(x + 0.5f, y - 0.3f), 4.5f, 0.9f));   // lamp posts
                     else if (c == 'D' && !a.indoor) spots.Add((new Vector2(x + 0.5f, y), 4f, 0.7f));
                 }
             foreach (var (at, size, strength) in spots)

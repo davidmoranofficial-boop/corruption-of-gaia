@@ -21,7 +21,7 @@ static class Program
         Root = FindRoot();
         if (Environment.GetEnvironmentVariable("PERKS") == "1") { Test("perk balance", PerkBalance); return failures; }
         Test("content has no broken links", ContentIsValid);
-        Test("full playthrough: hut, coast road, Skelmed's jobs, the pack leader, the guild", FullPlaythrough);
+        Test("full playthrough: hut, coast road, Skelmed's jobs, the pack leader, the road inland", FullPlaythrough);
         Test("save and load round trip", SaveLoad);
         Test("dying in basic mode wakes you at your last sleep", BasicDeath);
         Test("dying in permadeath ends the game", PermaDeath);
@@ -147,7 +147,7 @@ static class Program
         Assert(e.Travelling && AtSpot(e, "village_gate"), "the gate should take you into Skelmed");
         Assert(e.Journal().Any(j => j.Contains("Garran") && j.Contains("Orlen")), "the journal should point to the people with work");
 
-        // Skelmed's three jobs: Ida's lodge, Garran's quarry, Orlen's lessons. Then the pack leader and the guild.
+        // Skelmed's three jobs: Ida's lodge, Garran's quarry, Orlen's lessons. Then the pack leader.
         foreach (var food in e.S.items.Where(i => e.data.Item(i.id).food).Select(i => i.id).ToList()) e.Eat(food);
         e.S.result = "";
         e.S.stepsSinceFight = -100000;
@@ -164,11 +164,7 @@ static class Program
         Pick(e, "Is there any work");
         Assert(e.Check("quest:quarry") && e.S.Count("pick") == 1, "Garran should send you to the quarry with his pick");
         Pick(e, "Another time");
-        Keep(e); UseThing(e, "mira");
-        Assert(e.S.scene == "mira" && !e.Choices().Any(c => c.def.label.Contains("guild book")), "no guild book before the three jobs");
-        Pick(e, "How do I join");
-        Assert(e.S.result.Contains("all three"), "Mira should say to help all three");
-        Leave(e);
+        Assert(!e.Objects().Any(o => o.id == "mira"), "the guild post is gone from Skelmed");
 
         Keep(e); ToArea(e, "hills_gate");
         Assert(e.Area.id == "skelmed_hills" && AtSpot(e, "hills_gate"), "the lane north should lead up into the hills");
@@ -276,11 +272,6 @@ static class Program
         e.S.coins = coins;
         Pick(e, "Another time");
 
-        Assert(e.Journal().Any(j => j.Contains("guild's book")), "the journal should point to Mira's book");
-        Keep(e); UseThing(e, "mira");
-        Pick(e, "Put your name in the guild book");
-        Assert(e.Check("flag:guild_member") && e.S.Count("guild_card") == 1, "Mira should put you in the book and give you a card");
-        Leave(e);
         Keep(e); UseThing(e, "ida");
         Pick(e, "What now");
         Assert(e.S.result.Contains("town inland"), "Ida should point you inland");
@@ -293,7 +284,7 @@ static class Program
         // Out through the gate and back down the road
         WalkUntil(e, (17, 26), () => e.Area.id == "coast_road");
         Assert(AtSpot(e, "skelmed"), "leaving should put you outside the gate");
-        Assert(!e.SceneIds.Any(id => id == "village" || id == "bedroom" || id == "inn" || id == "guild"), "the old text pages should be gone");
+        Assert(!e.SceneIds.Any(id => id == "village" || id == "bedroom" || id == "inn" || id == "guild" || id == "mira"), "the old text pages should be gone");
         Console.WriteLine("    finished on day " + e.S.Day + " at " + Rules.Clock(e.S) + ", corruption " + e.S.corruption.ToString("0.00") +
                           "%, stats " + string.Join("/", e.S.stats) + ", journal: " + string.Join(" | ", e.Journal()));
     }
@@ -382,7 +373,7 @@ static class Program
         Pick(b, "Fight it");
         float ehp = b.S.enemyHp;
         b.Act(b.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
-        Assert(b.S.enemyHp < ehp || !b.S.inCombat, "Rook should hit the pack leader even when you defend");
+        Assert(b.S.enemyHp < ehp || b.S.pinUsed || !b.S.inCombat, "Rook should hit (or pin) the pack leader even when you defend");
     }
 
     static void Party()
@@ -1259,7 +1250,7 @@ static class Program
         var expect = new Dictionary<string, string>
         {
             { "village", "travel" }, { "road", "travel" }, { "hut", "wake" }, { "forge_first", "smith" }, { "forge_iron", "smith" },
-            { "hills", "travel" }, { "fire", "travel" }, { "guild", "travel" }, { "boss", "travel" },
+            { "hills", "travel" }, { "fire", "travel" }, { "boss", "travel" },
             { "dog", "travel" }, { "crab", "travel" },
         };
         foreach (var (id, _) in Engine.DevStarts)
@@ -1272,7 +1263,6 @@ static class Program
             if (id == "forge_first") { Pick(e, "An iron knife"); Assert(e.S.scene == "forge", "should be at the anvil"); }
             if (id == "forge_iron") { Pick(e, "An iron cap"); Assert(e.S.scene == "forge", "should be at the anvil"); e.FinishForge(1, 1, 1); Assert(e.Travelling, "back in the village"); }
             if (id == "fire") Assert(e.Objects().Count(o => o.id.StartsWith("fire")) == 3, "the net shed should be burning");
-            if (id == "guild") { e.Choose(e.UseChoice()); Assert(e.S.scene == "mira" && e.Choices().Any(c => c.enabled && c.def.label.Contains("guild book")), "Mira's book should be open to you"); }
             if (id == "boss") { Assert(e.Member("rook") != null, "Rook should be with you"); WalkUntil(e, (29, 5), () => e.S.scene == "den"); Pick(e, "Fight it"); Assert(e.S.inCombat && e.S.enemy == "pack_leader", "should face the pack leader"); }
             if (id == "dog") { e.DevWinFight(); Pick(e, "Walk on"); Assert(e.S.scene == "travel", "winning should go back to the road"); }
         }

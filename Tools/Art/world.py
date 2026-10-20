@@ -34,6 +34,9 @@ TILES = [
     ('D', 'Door', False, True), ('c', 'Cobbles', False, True), ('P', 'Pier', False, True), ('O', 'Well', True, False),
     ('A', 'Anvil', True, False), ('L', 'Forge', True, False), ('n', 'Barrel', True, False),
     ('q', 'Ore seam', True, False),
+    ('v', 'Vegetable patch', True, False), ('j', 'Woodpile', True, False), ('l', 'Lamp post', True, False),
+    ('Y', 'Boat', True, False), ('N', 'Net rack', True, False), ('K', 'Crates', True, False),
+    ('E', 'Lobster pots', True, False), ('S', 'Market stall', True, False), ('e', 'Bench', True, False),
     # indoors
     ('p', 'Floor', False, True), ('W', 'Wall', True, False), ('x', 'Wall', True, False), ('M', 'Doorway', False, True),
     ('f', 'Hearth', True, False), ('B', 'Bed', True, False), ('t', 'Table', True, False),
@@ -342,6 +345,22 @@ def skelmed():
         setc(x, y, 'n')
     for (x, y) in ((4, 4), (3, 21), (13, 23), (22, 8), (32, 16), (21, 19), (6, 23), (14, 8), (31, 24)):
         if g[y][x] in '.,': g[y][x] = 'T'
+    # ---- life in the village (20 Oct): boats, nets and pots by the harbour, an empty stall and lamps on the square,
+    # gardens and woodpiles, and the empty houses gone to seed (half the village has left)
+    for x in (1, 2): setc(x, 10, 'Y'); setc(x, 16, 'Y')          # two boats tied up by the pier
+    for (x, y) in ((6, 10), (7, 11)): setc(x, y, 'E')             # lobster pots on the shingle
+    for (x, y) in ((6, 17), (6, 19)): setc(x, y, 'N')             # nets drying on racks
+    setc(12, 16, 'K')                                             # crates by the net shed
+    setc(21, 11, 'S'); setc(22, 11, 'S')                          # the market stall, nothing on it
+    setc(23, 11, 'K')                                             # and the crates it came in
+    setc(13, 16, 'l'); setc(23, 16, 'l'); setc(13, 10, 'l')       # lamp posts round the square
+    setc(20, 16, 'e')                                             # a bench
+    setc(21, 4, 'j'); setc(31, 22, 'j')                           # woodpiles by the lodge and the smithy
+    rect(28, 4, 30, 5, 'v')                                       # a vegetable patch behind the east house
+    for x in range(28, 31): setc(x, 6, 'F')
+    # the empty houses: long grass grown up round them
+    for (x, y) in ((26, 8), (27, 8), (31, 8), (32, 9), (32, 11), (32, 12), (26, 12), (13, 19), (14, 19), (13, 20), (7, 20), (13, 21)):
+        if g[y][x] == '.': g[y][x] = 'g'
     for _ in range(30):
         x, y = rnd.randrange(W), rnd.randrange(2, 26)
         if g[y][x] == '.' and not (11 <= x <= 14 and y < 3): g[y][x] = 'o'
@@ -349,6 +368,17 @@ def skelmed():
     rows = [''.join(r) for r in g]
     return {
         'id': 'skelmed',
+        # who lives where: Bess's inn, Ida's hunters' lodge, a family at the east end, Garran's smithy;
+        # the house by the square and the one by the harbour stand empty
+        'styles': {
+            '7,3': {'wall': 'stone', 'roof': 'slate', 'sign': 'inn', 'flowers': True, 'smoke': True},
+            '14,3': {'wall': 'plank', 'roof': 'thatch', 'sign': 'lodge', 'smoke': True, 'moss': True},
+            '23,3': {'wall': 'plank', 'roof': 'tile', 'flowers': True, 'smoke': True},
+            '24,18': {'wall': 'stone', 'roof': 'tile', 'sign': 'smith', 'smoke': True},
+            '27,9': {'wall': 'plank', 'roof': 'thatch', 'boarded': True},
+            '8,18': {'wall': 'plank', 'roof': 'tile', 'boarded': True},
+            '8,15': {'wall': 'plank', 'roof': 'slate'},
+        },
         'name': 'Skelmed',
         'minutes': 1, 'eventChance': 0, 'fightChance': 0, 'fightGap': 10,
         'camp': False,
@@ -363,8 +393,8 @@ def skelmed():
             {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 19, 'y': 8, 'facing': 'down', 'scene': 'ida'},
             {'id': 'block', 'kind': 'item', 'sprite': 'obj_block', 'x': 21, 'y': 6, 'scene': 'chop'},
             {'id': 'butt', 'kind': 'item', 'sprite': 'obj_butt', 'x': 15, 'y': 7, 'scene': 'butt'},
-            # the guild post is the house east of the square
-            {'id': 'mira', 'kind': 'npc', 'sprite': 'npc_mira', 'x': 30, 'y': 14, 'facing': 'left', 'scene': 'mira'},
+            {'id': 'empty_house', 'kind': 'sign', 'x': 29, 'y': 14,
+             'text': 'Boarded up. Someone has chalked on the door: GONE INLAND.'},
             # the net shed fire, once it's started
             {'id': 'fire1', 'kind': 'item', 'sprite': 'obj_fire', 'x': 9, 'y': 14, 'scene': 'fire1',
              'when': ['flag:fire_started', '!flag:fire1_out']},
@@ -864,8 +894,12 @@ WALLS = {
 }
 
 
-def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None):
+def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None, over=None, boarded=False, sign=None,
+                flowers=False, smoke=False, moss=False):
+    """A house seen from above and in front. boarded: an empty house, windows nailed shut and the roof gone mossy.
+    sign: a board hung by the door ('inn', 'smith', 'lodge'). flowers: window boxes. smoke: a curl from the chimney (over)."""
     px = img.load()
+    opx = over.load() if over is not None else None
     X0, Y0, X1, Y1 = x0 * T, y0 * T, (x0 + w) * T - 1, (y0 + h) * T - 1
     rl, rm, rd, rx = ROOFS[roof]
     wl, wm, wd = WALLS[wall]
@@ -916,6 +950,20 @@ def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None):
             if X in (X0 - 1, X1 + 1) or Y == Y0 or Y == RY: k = 'o'
             put(X, Y, k)
     for X in range(X0 + 1, X1): put(X, Y0 + 1, rl)
+    # weathering: the odd lighter or darker shingle, and moss on an old or empty roof
+    wr = random.Random(x0 * 131 + y0 * 17)
+    for _ in range(w * h * 3):
+        X, Y = wr.randint(X0 + 1, X1 - 3), wr.randint(Y0 + 3, RY - 2)
+        if (Y - Y0) % 3 != 2: put(X, Y, rl if wr.random() < 0.5 else rd); put(X + 1, Y, rl if wr.random() < 0.5 else rd)
+    if moss or boarded:
+        for _ in range(w * 2 + 2):
+            cx, cy = wr.randint(X0 + 2, X1 - 4), wr.randint(Y0 + 3, RY - 3)
+            for (dx, dy) in ((0, 0), (1, 0), (0, 1), (-1, 0), (1, 1), (2, 0)):
+                if wr.random() < 0.8: put(cx + dx, cy + dy, 'i' if (dx + dy) % 2 else 'F')
+    # eaves: a lit edge along the bottom of the roof, and gable ends
+    for X in range(X0, X1 + 1): put(X, RY - 1, rd)
+    for Y in range(Y0 + 1, RY):
+        put(X0, Y, rl); put(X1, Y, rx)
 
     # windows with shutters and sills
     windows = []
@@ -936,6 +984,16 @@ def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None):
         for Y in range(wy, wy + 7):
             put(wx - 2, Y, 'B'); put(wx - 1, Y, 'b'); put(wx + 8, Y, 'b'); put(wx + 9, Y, 'B')
         for X in range(wx - 1, wx + 9): put(X, wy + 7, 'd')
+        if boarded:
+            # nailed shut: two planks across, shutters gone
+            for (Y, k) in ((wy + 2, 'D'), (wy + 3, 'b'), (wy + 4, 'd'), (wy + 5, 'b')):
+                for X in range(wx - 1, wx + 9): put(X, Y, k)
+            put(wx, wy + 2, 'g'); put(wx + 7, wy + 4, 'g')
+        elif flowers:
+            for X in range(wx - 1, wx + 9):
+                put(X, wy + 8, 'b'); put(X, wy + 9, 'B')
+                if (X - wx) % 2 == 0: put(X, wy + 7, 'r' if (X // 2) % 3 else 'a')
+                else: put(X, wy + 7, 'i')
 
     # the door, with a step in front
     if door_x is not None:
@@ -950,6 +1008,31 @@ def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None):
         put(DX + 7, top + 7, 'a')
         for X in range(DX - 1, DX + 11):
             put(X, Y1, 'y'); put(X, Y1 + 1, 'G')
+        if boarded:
+            for i in range(10):
+                put(DX + i, top + 2 + i, 'd'); put(DX + i, top + 3 + i, 'b')
+                put(DX + 9 - i, top + 2 + i, 'd'); put(DX + 9 - i, top + 3 + i, 'b')
+        if sign:
+            # a board hung from a bracket beside the door
+            SX, SY = DX + 13, top - 2
+            for X in range(SX - 1, SX + 9): put(X, SY, 'o')
+            put(SX + 1, SY + 1, 'g'); put(SX + 6, SY + 1, 'g')
+            for Y in range(SY + 2, SY + 9):
+                for X in range(SX - 1, SX + 9):
+                    edge = X in (SX - 1, SX + 8) or Y in (SY + 2, SY + 8)
+                    put(X, Y, 'o' if edge else 'd' if Y == SY + 3 else 'D')
+            if sign == 'inn':      # a mug of ale
+                for Y in range(SY + 4, SY + 8):
+                    for X in range(SX + 2, SX + 5): put(X, Y, 'a' if Y > SY + 4 else 'W')
+                put(SX + 5, SY + 5, 'b'); put(SX + 5, SY + 6, 'b')
+            elif sign == 'smith':  # an anvil
+                for X in range(SX + 1, SX + 7): put(X, SY + 4, 'G')
+                for X in range(SX + 3, SX + 5): put(X, SY + 5, 'g'); put(X, SY + 6, 'g')
+                for X in range(SX + 2, SX + 6): put(X, SY + 7, 'g')
+            elif sign == 'lodge':  # crossed arrows
+                for i in range(6):
+                    put(SX + 1 + i, SY + 3 + i, 'b'); put(SX + 6 - i, SY + 3 + i, 'b')
+                put(SX + 1, SY + 3, 'W'); put(SX + 6, SY + 3, 'W')
 
     # chimney
     cx = X1 - 12
@@ -959,6 +1042,16 @@ def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None):
             if X in (cx, cx + 5) or Y == Y0 - 5: k = 'o'
             if Y == Y0 - 4 and X not in (cx, cx + 5): k = 'g'
             put(X, Y, k)
+    if smoke and opx is not None:
+        # a thin curl of smoke going up from the chimney, drawn over everything
+        sr = random.Random(x0 * 7 + y0)
+        for i, (dx, dy, rad) in enumerate(((2, -9, 2.2), (4, -14, 2.8), (2, -20, 3.2), (5, -26, 3.4), (8, -31, 3))):
+            for Y in range(int(Y0 + dy - rad) - 1, int(Y0 + dy + rad) + 2):
+                for X in range(int(cx + dx - rad) - 1, int(cx + dx + rad) + 2):
+                    if (X - cx - dx) ** 2 + (Y - Y0 - dy) ** 2 <= rad * rad and 0 <= X < over.width and 0 <= Y < over.height:
+                        if (X + Y + i) % 2 == 0 or i < 2:
+                            c = C('W' if (X - cx - dx) + (Y - Y0 - dy) < 0 else 'Y')
+                            opx[X, Y] = c[:3] + (150 - i * 22,)
 
 
 # ============================================================================================== walking sprites
@@ -1812,11 +1905,13 @@ def main():
     for make in AREAS:
         area = make()
         extra_doors = [tuple(d) for d in area.pop('doors', [])]
+        styles = area.pop('styles', {})
         data['areas'].append(area)
         if area.get('indoor'):
             img, over, _ = tile_painter(area['rows'])
         else:
             img, over = terrain.paint(area['rows'])
+            img, over = img.copy(), over.copy()
         rows = area['rows']
         # buildings: find each block of H tiles and paint a house over it
         seen = set()
@@ -1831,8 +1926,9 @@ def main():
                     for xx in range(x, x1 + 1): seen.add((xx, yy))
                 door = next((xx for xx in range(x, x1 + 1) if rows[y1][xx] == 'D' or (xx, y1) in extra_doors), None)
                 pick = (x * 7 + y * 3) % 6
-                paint_house(img, x, y, x1 - x + 1, y1 - y + 1, wall='stone' if pick in (1, 4) else 'plank',
-                            roof=('thatch', 'slate', 'tile')[pick % 3], door_x=door)
+                style = dict({'wall': 'stone' if pick in (1, 4) else 'plank', 'roof': ('thatch', 'slate', 'tile')[pick % 3]},
+                             **styles.get('%d,%d' % (x, y), {}))
+                paint_house(img, x, y, x1 - x + 1, y1 - y + 1, door_x=door, over=over, **style)
         img.save(os.path.join(out, area['id'] + '.png'))
         over.save(os.path.join(out, area['id'] + '_over.png'))
     open(data_path, 'w').write(json.dumps(data, indent=2, ensure_ascii=False) + '\n')

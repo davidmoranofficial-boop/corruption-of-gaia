@@ -50,7 +50,10 @@ def ground_class(rows, x, y):
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             if 0 <= x + dx < W and 0 <= y + dy < H and rows[y + dy][x + dx] in chars: return True
         return False
-    if t in '~P': return SEA
+    if t in '~PY': return SEA
+    if t in 'lSe': return COBBLE if near('c') or t == 'S' else GRASS
+    if t in 'KE': return SAND if near(',~P') else COBBLE if near('c') else GRASS
+    if t == 'N': return SAND if near(',~') else GRASS
     if t == ',': return SAND
     if t in 'wb': return STREAM
     if t in '=D': return DIRT
@@ -358,6 +361,9 @@ def paint(rows, seed=1):
                         cv.put(x, y, k)
                 if at(tx, ty - 1) != 'P':
                     for x in range(X0, X0 + T): cv.put(x, Y0, 'd')
+                    if tx % 2 == 0:   # a bollard to tie up to
+                        for (x, y) in _rect(X0 + 6, Y0 + 1, X0 + 9, Y0 + 4): cv.put(x, y, 'g' if x == X0 + 9 or y == Y0 + 4 else 'G')
+                        cv.put(X0 + 7, Y0 + 1, 'y')
                 if at(tx, ty + 1) != 'P':
                     for x in range(X0, X0 + T):
                         cv.put(x, Y0 + T - 1, 'B'); cv.shade(x, Y0 + T); cv.shade(x, Y0 + T + 1)
@@ -372,6 +378,18 @@ def paint(rows, seed=1):
                     cv.put(x, y, k)
                 for (x, y) in blob(X0 + 7.5, Y0 + 7.5, 4.2, 3.6): cv.put(x, y, 'X' if y > Y0 + 6 else 'l')
                 cv.put(X0 + 6, Y0 + 6, 'c'); cv.put(X0 + 7, Y0 + 6, 'c')
+                # posts, a little pitched roof and a bucket on its rope (the roof is drawn over you)
+                for px in (X0 + 1, X0 + 13):
+                    for y in range(Y0 - 6, Y0 + 9): cv.put(px, y, 'B', y < Y0 + 2); cv.put(px + 1, y, 'b', y < Y0 + 2)
+                for y in range(Y0 - 13, Y0 - 5):
+                    w = (y - (Y0 - 13))
+                    for x in range(X0 + 7 - w - 1, X0 + 9 + w):
+                        k = 'R' if (x + y) % 3 else 'r'
+                        if x in (X0 + 7 - w - 1, X0 + 8 + w) or y == Y0 - 6: k = 'o'
+                        cv.put(x, y, k, True)
+                for x in range(X0 + 2, X0 + 14): cv.put(x, Y0 - 4, 'D', True)
+                for y in range(Y0 - 3, Y0 + 2): cv.put(X0 + 8, y, 'z', True)
+                for (x, y) in _rect(X0 + 6, Y0 + 2, X0 + 10, Y0 + 5): cv.put(x, y, 'b' if y > Y0 + 2 else 'D', True)
             elif t == 'L':
                 for (x, y) in blob(X0 + 9, Y0 + 13, 8, 3): cv.shade(x, y)
                 box = {(x, y) for x in range(X0 + 1, X0 + 15) for y in range(Y0 + 2, Y0 + 15)}
@@ -399,6 +417,8 @@ def paint(rows, seed=1):
                     if (x, y + 1) not in body or (x + 1, y) not in body or (x - 1, y) not in body: k = 'B'
                     cv.put(X0 + x, Y0 + y, k)
                 for x in range(4, 12): cv.put(X0 + x, Y0 + 3, 'b')
+            else:
+                props(cv, rows, t, tx, ty, X0, Y0, r)
 
     # ------------------------------------------------------------------ trees: trunks and shadows below, tops over the player
     for (tx, ty) in sorted(trees, key=lambda p: p[1]):
@@ -428,3 +448,142 @@ def paint(rows, seed=1):
             cv.put(x, y, k, over=True)
             if not dense and y > cy + rad * 0.4: cv.put(x, y, k)
     return cv.images()
+
+
+# ------------------------------------------------------------------ village props (Skelmed, 20 Oct)
+
+def _box(cv, pts, light, mid, dark, outline='o', over=False):
+    pts = set(pts)
+    for (x, y) in pts:
+        k = mid
+        if (x - 1, y) not in pts or (x, y - 1) not in pts: k = light
+        if (x + 1, y) not in pts or (x, y + 1) not in pts: k = dark
+        cv.put(x, y, k, over)
+    for (x, y) in pts:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (x + dx, y + dy) not in pts: cv.put(x + dx, y + dy, outline, over)
+
+
+def _rect(x0, y0, x1, y1):
+    return [(x, y) for x in range(x0, x1 + 1) for y in range(y0, y1 + 1)]
+
+
+def props(cv, rows, t, tx, ty, X0, Y0, r):
+    H, W = len(rows), len(rows[0])
+    at = lambda x, y: rows[y][x] if 0 <= x < W and 0 <= y < H else None
+    if t == 'v':
+        # a vegetable patch: dark tilled rows with cabbages and leeks
+        for y in range(Y0 + 1, Y0 + 15):
+            for x in range(X0 + 1, X0 + 15):
+                cv.put(x, y, 'b' if (y - Y0) % 5 in (0, 4) else 'B' if (y - Y0) % 5 == 3 else 'q')
+        for row in (Y0 + 3, Y0 + 8, Y0 + 13):
+            for cx in range(X0 + 3, X0 + 14, 5):
+                if r.random() < 0.15: continue
+                kind = r.random()
+                if kind < 0.6:
+                    for (x, y) in [(cx, row - 1), (cx - 1, row), (cx + 1, row), (cx, row), (cx, row + 1)]:
+                        cv.put(x, y, 'f' if y < row else 'i')
+                    cv.put(cx, row, 'F')
+                else:
+                    for dy in range(3): cv.put(cx, row - dy, 'f' if dy == 2 else 'i')
+                    cv.put(cx - 1, row - 2, 'i'); cv.put(cx + 1, row - 1, 'f')
+    elif t == 'j':
+        # a woodpile: split logs stacked, ends showing
+        for (x, y) in _rect(X0 + 1, Y0 + 13, X0 + 15, Y0 + 15): cv.shade(x, y)
+        for row, n0 in ((0, 0), (1, 1), (2, 2)):
+            for i in range(4 - row):
+                cx, cy = X0 + 3 + i * 4 + row * 2, Y0 + 12 - row * 4
+                for (x, y) in blob(cx, cy, 2.2, 2.2):
+                    cv.put(x, y, 'J' if (x - cx) ** 2 + (y - cy) ** 2 < 1.5 else 'd')
+                cv.put(cx, cy, 'D')
+                for (x, y) in blob(cx, cy, 2.6, 2.6):
+                    if (x - cx) ** 2 + (y - cy) ** 2 > 4.3: cv.put(x, y, 'b')
+    elif t == 'l':
+        # a lamp post, its lantern up above the tile (drawn over you)
+        cx = X0 + 7
+        for (x, y) in blob(cx + 2, Y0 + 14, 4, 1.5): cv.shade(x, y)
+        for y in range(Y0 - 8, Y0 + 14):
+            over = y < Y0 + 4
+            cv.put(cx, y, 'o', over); cv.put(cx + 1, y, 'g', over); cv.put(cx + 2, y, 'o', over)
+        for (x, y) in _rect(cx - 1, Y0 + 12, cx + 3, Y0 + 14): cv.put(x, y, 'g')
+        for (x, y) in _rect(cx - 2, Y0 - 15, cx + 4, Y0 - 8):
+            edge = x in (cx - 2, cx + 4) or y in (Y0 - 15, Y0 - 8)
+            cv.put(x, y, 'o' if edge else ('W' if (x, y) == (cx, Y0 - 13) else 'a' if y < Y0 - 10 else 'A'), True)
+        for x in range(cx - 3, cx + 6): cv.put(x, Y0 - 16, 'o', True)
+    elif t == 'Y':
+        # a small fishing boat, two tiles long (drawn once, from its left tile): pointed bow, square stern, two seats
+        if at(tx - 1, ty) == 'Y': return
+        x0, x1, ym = X0 + 1, X0 + 30, Y0 + 8
+        hull = set()
+        for x in range(x0, x1 + 1):
+            u = (x - x0) / (x1 - x0)
+            half = 5.5 if u > 0.3 else 1.5 + 4 * (u / 0.3) ** 0.6
+            for y in range(int(round(ym - half)), int(round(ym + half)) + 1): hull.add((x, y))
+        for (x, y) in hull:      # ripples round it
+            for dx, dy in ((0, 2), (1, 2), (-1, 1), (2, 1)):
+                if (x + dx, y + dy) not in hull and cv.get(x + dx, y + dy) in ('w', 'X', 'l', 'C'): cv.put(x + dx, y + dy, 'C' if (x + y) % 3 else 'c')
+        inner = {(x, y) for (x, y) in hull if all((x + dx, y + dy) in hull for dx in (-2, 0, 2) for dy in (-2, 0, 2))}
+        for (x, y) in hull:
+            if (x, y) in inner: k = 'b' if (y - ym) % 3 else 'B'
+            else: k = 'd' if y <= ym else 'D'
+            cv.put(x, y, k)
+        for (x, y) in hull:
+            if any((x + dx, y + dy) not in hull for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))): cv.put(x, y, 'o')
+        for sx in (x0 + 12, x0 + 21):
+            for y in range(ym - 4, ym + 5):
+                if (sx, y) in hull and (sx, y - 1) in hull and (sx, y + 1) in hull: cv.put(sx, y, 'd'); cv.put(sx + 1, y, 'D')
+        for (x, y) in blob(x0 + 26, ym, 1.8, 1.8): cv.put(x, y, 'z')        # a coil of rope in the stern
+        cv.put(x0 + 26, ym, 'D')
+    elif t == 'N':
+        # a drying rack with a net hung over it
+        for px in (X0 + 1, X0 + 14):
+            for y in range(Y0 + 1, Y0 + 15): cv.put(px, y, 'b' if y > Y0 + 1 else 'd'); cv.put(px + 1, y, 'B')
+        for x in range(X0 + 1, X0 + 16): cv.put(x, Y0 + 2, 'b')
+        for y in range(Y0 + 3, Y0 + 13):
+            sag = int(2 * math.sin(math.pi * (y - Y0) / 13))
+            for x in range(X0 + 3, X0 + 14):
+                if (x + y) % 3 == 0 or (x - y) % 3 == 0: cv.put(x, y + sag // 2, 'C' if y < Y0 + 8 else 'n')
+        for x in range(X0 + 2, X0 + 15): cv.shade(x, Y0 + 15)
+    elif t == 'K':
+        # stacked crates
+        for (x, y) in _rect(X0 + 2, Y0 + 13, X0 + 15, Y0 + 15): cv.shade(x, y)
+        _box(cv, _rect(X0 + 1, Y0 + 7, X0 + 8, Y0 + 14), 'd', 'D', 'b')
+        _box(cv, _rect(X0 + 9, Y0 + 8, X0 + 14, Y0 + 14), 'd', 'D', 'b')
+        _box(cv, _rect(X0 + 3, Y0 + 1, X0 + 10, Y0 + 6), 'd', 'D', 'b')
+        for (a, b, c, d) in ((1, 7, 8, 14), (3, 1, 10, 6)):
+            for i in range(c - a + 1):
+                cv.put(X0 + a + i, Y0 + b + int(i * (d - b) / max(1, c - a)), 'b')
+    elif t == 'E':
+        # lobster pots: little domed wicker cages
+        for (cx, cy) in ((X0 + 5, Y0 + 10), (X0 + 11, Y0 + 11), (X0 + 8, Y0 + 5)):
+            for (x, y) in blob(cx + 1, cy + 3, 4.5, 1.5): cv.shade(x, y)
+            pts = set((x, y) for (x, y) in blob(cx, cy, 4, 3.5) if y <= cy + 2)
+            for (x, y) in pts: cv.put(x, y, 'b' if (x - cx) % 2 else 'J' if y < cy else 'd')
+            for (x, y) in pts:
+                if (x, y - 1) not in pts or (x - 1, y) not in pts or (x + 1, y) not in pts: cv.put(x, y, 'B')
+            for x in range(cx - 3, cx + 4): cv.put(x, cy + 2, 'B')
+            cv.put(cx, cy - 1, 'o'); cv.put(cx + 1, cy - 1, 'o')
+    elif t == 'S':
+        # a market stall, empty: a striped awning (over you) on posts, a bare counter
+        left = at(tx + 1, ty) == 'S'
+        for (x, y) in _rect(X0, Y0 + 12, X0 + 15, Y0 + 15): cv.shade(x, y)
+        for y in range(Y0 + 6, Y0 + 13):
+            for x in range(X0, X0 + T):
+                cv.put(x, y, 'o' if y in (Y0 + 6, Y0 + 12) else 'D' if y == Y0 + 7 else 'b')
+        px = X0 + 1 if left else X0 + 13
+        for y in range(Y0 - 8, Y0 + 13): cv.put(px, y, 'B', y < Y0 + 6); cv.put(px + 1, y, 'b', y < Y0 + 6)
+        for y in range(Y0 - 12, Y0 - 4):
+            for x in range(X0 - (1 if left else 0), X0 + T + (0 if left else 1)):
+                k = 'r' if ((x - X0) // 4) % 2 == 0 else 'W'
+                if y == Y0 - 5: k = 'R' if k == 'r' else 'Y'
+                if y == Y0 - 12: k = 'o'
+                cv.put(x, y, k, True)
+        if left:
+            for (x, y) in blob(X0 + 7, Y0 + 9, 2, 1.2): cv.put(x, y, 'z')     # one sorry basket left
+    elif t == 'e':
+        # a bench
+        for x in range(X0 + 1, X0 + 15):
+            cv.put(x, Y0 + 7, 'o'); cv.put(x, Y0 + 8, 'd'); cv.put(x, Y0 + 9, 'D'); cv.put(x, Y0 + 10, 'o')
+            cv.shade(x, Y0 + 13)
+        for lx in (X0 + 2, X0 + 12):
+            for y in range(Y0 + 11, Y0 + 13): cv.put(lx, y, 'B'); cv.put(lx + 1, y, 'o')

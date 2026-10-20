@@ -359,11 +359,6 @@ ICON_ONLY = {
         ".......obo......", ".......obo......", ".......obo......", ".......obo......",
         ".......oBo......", "........o.......",
     ],
-    'guild_card': [
-        "................", "................", "................", "..oooooooooooo..",
-        "..odddddddddDo..", "..odaadddbbbDo..", "..odaAdddddddo..", "..odddddbbbbDo..",
-        "..odbbbbddddDo..", "..odddddddddDo..", "..oDDDDDDDDDDo..", "..oooooooooooo..",
-    ],
     'health_potion': [
         "................", "......ooo.......", ".....obbbo......", "......obo.......",
         ".....oyWyo......", "....oyWWyyo.....", "...orWrrrrRo....", "...orWrrrrRo....",

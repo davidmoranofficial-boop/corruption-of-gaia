@@ -17,7 +17,7 @@ All the balancing numbers (how fast hunger drains, how fast corruption grows, an
 
 ## Dev mode
 
-Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen. Quick starts drop a ready-made test character into any part of the game (the forge, either fight, the road, the guild, the pack leader boss and more). You can also jump to any scene, refill everything, give coins, items and spells, change stats, set the time, win a fight, level up, raise every skill, or make any gear at any rank. A game that has used dev mode is never autosaved, so your real save is safe. The quick starts live in `Core/Engine.Dev.cs`.
+Press **F1** (or the key left of 1) in game, or **Dev mode** on the title screen. Quick starts drop a ready-made test character into any part of the game (the forge, either fight, the road, the pack leader boss and more). You can also jump to any scene, refill everything, give coins, items and spells, change stats, set the time, win a fight, level up, raise every skill, or make any gear at any rank. A game that has used dev mode is never autosaved, so your real save is safe. The quick starts live in `Core/Engine.Dev.cs`.
 
 ## Writing a scene
 
@@ -101,7 +101,7 @@ Skelmed has three tutorial jobs, in any order:
 - **Garran** (forge, `quarry`): dig three lumps of ore at the quarry with his pick, bring them back, forge your first piece. A green gem in the spoil heap can be shown to him (he lets you set it) or pocketed.
 - **Orlen** (cottage in the hills, `orlen`): learn Draw Water and Kindle, light his brazier, then the net shed in the village catches fire. Put out its three fires with Draw Water or wet nets, or stay put and let it burn.
 
-After the lodge job Ida asks one more thing (`pack`): Rook comes with you, with a hunting bow for you, to kill the pack leader in its den in the north-east of the hills. That's the first boss. Rook turns up hungry and Ida gives you a fish for him, which teaches feeding your party. He's a temporary companion: after the wolf he has business in the town inland and walks with you that far (`flag:rook_escort`), then goes his own way. With all three jobs done, Mira at the guild post puts your name in the guild book and gives you a guild card. Bess at the inn rents beds and sells bread.
+After the lodge job Ida asks one more thing (`pack`): Rook comes with you, with a hunting bow for you, to kill the pack leader in its den in the north-east of the hills. That's the first boss. Rook turns up hungry and Ida gives you a fish for him, which teaches feeding your party. He's a temporary companion: after the wolf he has business in the town inland and walks with you that far (`flag:rook_escort`), then goes his own way. After that Ida points you down the road to the town inland. Skelmed has no guild: that comes in the next city. Bess at the inn rents beds and sells bread.
 
 ## Levels and skills
 

@@ -151,12 +151,6 @@
       "kind": "tool"
     },
     {
-      "id": "guild_card",
-      "name": "Guild card",
-      "desc": "A square of waxed leather with the guild seal and your name.",
-      "kind": "key"
-    },
-    {
       "id": "wolf_pelt",
       "name": "Pack leader's pelt",
       "desc": "A huge grey pelt, black along the spine. Proof, if anyone doubts you.",
@@ -748,18 +742,8 @@
       ]
     },
     {
-      "text": "You've helped Ida, Garran and Orlen. Mira at the guild post will put your name in the guild's book.",
-      "when": [
-        "done:lodge",
-        "done:quarry",
-        "done:orlen",
-        "!flag:guild_member"
-      ]
-    },
-    {
       "text": "Ida says Skelmed's troubles come down the road from the town inland. (The road inland opens in the next part of the game.)",
       "when": [
-        "flag:guild_member",
         "done:pack"
       ]
     },
@@ -1284,13 +1268,11 @@
           "scene": "butt"
         },
         {
-          "id": "mira",
-          "kind": "npc",
-          "sprite": "npc_mira",
-          "x": 30,
+          "id": "empty_house",
+          "kind": "sign",
+          "x": 29,
           "y": 14,
-          "facing": "left",
-          "scene": "mira"
+          "text": "Boarded up. Someone has chalked on the door: GONE INLAND."
         },
         {
           "id": "fire1",
@@ -1415,25 +1397,25 @@
         "TTTTTTTTTTTT==TTTTTTTTTTTTTTTTTTTTTT",
         "~~~~~,,.....==..............oo...TTT",
         "~~~~~~,HHHHH==HHHHHHH..HHHHH......TT",
-        "~~~~~~,HHHHH==HHHHHHH..HHHHH.....TTT",
-        "~~~~~~,HHHHH==HHHHHHH..HHHHH.....TTT",
-        "~~~~~~,HHHHH==HHHHHHH.oHHHHH......TT",
+        "~~~~~~,HHHHH==HHHHHHHj.HHHHHvvv..TTT",
+        "~~~~~~,HHHHH==HHHHHHH..HHHHHvvv..TTT",
+        "~~~~~~,HHHHH==HHHHHHH.oHHHHHFFF...TT",
         "~~~~~~,,.co.==...c.......c.......TTT",
-        "~~~~~~,,.c..==T..c....T..c.......TTT",
-        "~~~~~~,,.ccc==...c.....ccc.HHHHH..TT",
-        "~~~~~~,,....occccccccccc...HHHHH.TTT",
-        "~~~~~~,,...nnccccccccccc...HHHHH.TTT",
-        "PPPPPPPPcccccccccccccccc...HHHHH..TT",
+        "~~~~~~,,.c..==T..c....T..cgg...g.TTT",
+        "~~~~~~,,.ccc==...c.....ccc.HHHHHg.TT",
+        "~YY~~~E,....olcccccccccc...HHHHH.TTT",
+        "~~~~~~,E...nnccccccccSSK...HHHHHgTTT",
+        "PPPPPPPPcccccccccccccccc..gHHHHHg.TT",
         "PPPPPPPPccccccccccOccccc...HHHHH.TTT",
         "~~~~~,,....n.ccccccccccccccccc...TTT",
         "~~~~~,,.HHH..ccccccccccc.......o..TT",
-        "~~~~~,,.HHH..ccccccccccc........TTTT",
-        "~~~~~,,..........cc..............TTT",
+        "~YY~~,,.HHH.Klcccccceccl........TTTT",
+        "~~~~~,N..........cc..............TTT",
         "~~~~,,..HHHHH....cc.....HHHHHH....TT",
-        "~~~~,,..HHHHH....cc..T..HHHHHH...TTT",
-        "~~~~,,..HHHHH....cc.o..oHHHHHHo..TTT",
-        "~~~~,,..HHHHH.o..cc.....HHHHHHn...TT",
-        "~~~~,,....ccccccccccccccLcccAcn..TTT",
+        "~~~~,,N.HHHHHgg..cc..T..HHHHHH...TTT",
+        "~~~~,,.gHHHHHg...cc.o..oHHHHHHo..TTT",
+        "~~~~,,..HHHHHgo..cc.....HHHHHHn...TT",
+        "~~~~,,....ccccccccccccccLcccAcnj.TTT",
         "~~~~,,T......T...ccccccccccccc...TTT",
         "~~~~,,.....o.....cc............T..TT",
         "~~~~,,.......o...cc..............TTT",
@@ -1799,6 +1781,51 @@
     {
       "key": "q",
       "name": "Ore seam",
+      "solid": true
+    },
+    {
+      "key": "v",
+      "name": "Vegetable patch",
+      "solid": true
+    },
+    {
+      "key": "j",
+      "name": "Woodpile",
+      "solid": true
+    },
+    {
+      "key": "l",
+      "name": "Lamp post",
+      "solid": true
+    },
+    {
+      "key": "Y",
+      "name": "Boat",
+      "solid": true
+    },
+    {
+      "key": "N",
+      "name": "Net rack",
+      "solid": true
+    },
+    {
+      "key": "K",
+      "name": "Crates",
+      "solid": true
+    },
+    {
+      "key": "E",
+      "name": "Lobster pots",
+      "solid": true
+    },
+    {
+      "key": "S",
+      "name": "Market stall",
+      "solid": true
+    },
+    {
+      "key": "e",
+      "name": "Bench",
       "solid": true
     },
     {
