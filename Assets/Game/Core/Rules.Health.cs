@@ -107,13 +107,14 @@ namespace Loran.Core
         static void Expose(GameState s, GameData d, Body b, float warmth, float h, float bonus, int at)
         {
             var w = WeatherAt(s, d, at);
+            float hardy = b == s.body && HasPerk(s, d, "sea_legs") ? 0.5f : 1f;   // Sea legs: used to weather
             if (Sheltered(s, d)) b.wet -= 40 * h;
-            else if (w != null && w.wet > 0) b.wet += w.wet * h;
+            else if (w != null && w.wet > 0) b.wet += w.wet * h * hardy;
             else b.wet -= (w?.dry ?? 10) * h;
             b.wet = Math.Clamp(b.wet, 0, 100);
 
             float felt = Felt(s, d, b, warmth, bonus, at);
-            if (felt < Comfortable) b.cold += (Comfortable - felt) * 1.5f * h;
+            if (felt < Comfortable) b.cold += (Comfortable - felt) * 1.5f * h * hardy;
             else b.cold -= Math.Max(10, (felt - Comfortable) * 4f) * h;
             if (felt > TooHot) b.heat += (felt - TooHot) * 4f * h;
             else b.heat -= 15 * h;
@@ -204,7 +205,7 @@ namespace Loran.Core
                 bool treated = Treated(a, def);
                 if (treated && def.heal > 0)
                 {
-                    a.healed += h * rate;
+                    a.healed += h * rate * (b == s.body && HasPerk(s, d, "healer") ? 2f : 1f);
                     if (a.healed >= def.heal) { b.afflictions.Remove(a); s.Toasts.Add(whose + name + " has healed."); continue; }
                 }
                 else if (!treated && def.selfHeal > 0 && a.hours >= def.selfHeal)

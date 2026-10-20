@@ -153,7 +153,7 @@
     {
       "id": "guild_card",
       "name": "Guild card",
-      "desc": "A square of waxed leather with the guild seal, your name and the mark of your class.",
+      "desc": "A square of waxed leather with the guild seal and your name.",
       "kind": "key"
     },
     {
@@ -472,34 +472,52 @@
   ],
   "backgrounds": [
     {
-      "id": "desk",
-      "name": "Desk job",
-      "desc": "Eight hours a day of screens and spreadsheets.",
-      "stat": "int"
+      "id": "deckhand",
+      "name": "Deckhand",
+      "desc": "You worked the boat that went down: ropes, tar and long cold watches. The sea took everyone else.",
+      "perk": "sea_legs",
+      "perkName": "Sea legs",
+      "perkDesc": "Years on deck. Cold and rain get to you half as fast."
     },
     {
-      "id": "warehouse",
-      "name": "Warehouse shifts",
-      "desc": "Lifting, stacking, lifting again.",
-      "stat": "str"
+      "id": "sellsword",
+      "name": "Sellsword",
+      "desc": "You were aboard to guard the cargo, for pay. You've been hurt before, and you don't stay down.",
+      "perk": "berserk",
+      "perkName": "Berserk",
+      "perkDesc": "When you're below a fifth of your health, your blows land twice as hard."
     },
     {
-      "id": "runner",
-      "name": "Weekend runner",
-      "desc": "The one thing you did for yourself.",
-      "stat": "agi"
+      "id": "street_rat",
+      "name": "Dock rat",
+      "desc": "You grew up on the docks of a city far down the coast and stowed away to get out.",
+      "perk": "light_feet",
+      "perkName": "Light feet",
+      "perkDesc": "Dodging costs you no stamina, and it's easier to time."
     },
     {
-      "id": "nights",
-      "name": "Night shifts",
-      "desc": "Long hours on your feet while everyone else slept.",
-      "stat": "end"
+      "id": "herbalist",
+      "name": "Herbalist's apprentice",
+      "desc": "You were sent to buy herbs for the old woman who taught you. You know a poultice from a poison.",
+      "perk": "healer",
+      "perkName": "Healer's hands",
+      "perkDesc": "Your wounds heal twice as fast, and treating any wound takes half the time."
     },
     {
-      "id": "retail",
-      "name": "Shop floor",
-      "desc": "Smiling at people who never smiled back.",
-      "stat": "cha"
+      "id": "farmhand",
+      "name": "Farmhand",
+      "desc": "You sold what little you had to start again somewhere new. Years in the fields made you hard to wear down.",
+      "perk": "iron_stomach",
+      "perkName": "Iron stomach",
+      "perkDesc": "Hunger and thirst creep up on you a quarter slower."
+    },
+    {
+      "id": "hedge_witch",
+      "name": "Wise-woman's apprentice",
+      "desc": "A village wise-woman taught you small tricks. When people started to whisper, you were put on a boat.",
+      "perk": "hedge_magic",
+      "perkName": "Hedge magic",
+      "perkDesc": "Once you learn magic: spells cost a third less mana, and mana comes back half again as fast."
     }
   ],
   "gear": [
@@ -640,7 +658,7 @@
     {
       "id": "warded",
       "name": "Warded",
-      "desc": "Holds back a little of the corruption's growth on you.",
+      "desc": "Old folk say it keeps bad luck off you. Maybe it does.",
       "ward": 0.1
     },
     {

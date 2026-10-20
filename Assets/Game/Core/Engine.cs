@@ -154,13 +154,16 @@ namespace Loran.Core
             S.figure = figure == "male" || figure == "female" ? figure : gender == "female" ? "female" : "male";
             S.background = bg.id;
             for (int i = 0; i < Stat.Count; i++) S.stats[i] = 3 + alloc[i];
-            S.stats[Stat.Parse(bg.stat)] += 1;
+            if (!string.IsNullOrEmpty(bg.stat)) S.stats[Stat.Parse(bg.stat)] += 1;
             if (!S.Has("created")) S.flags.Add("created");
             GiveClothes();
             return null;
         }
 
         public const int CreationPoints = 5;
+
+        /// <summary>What a spell costs you, after your perks.</summary>
+        public int ManaCost(int mana) => Rules.ManaCost(S, data, mana);
 
         public void LoadState(GameState state)
         {
@@ -172,6 +175,9 @@ namespace Loran.Core
             // Saves from before Garran's quarry job: if you've already made your first gear, the job's done
             if (S.Has("smith_done") && !S.Has("quest_done:quarry")) S.flags.Add("quest_done:quarry");
             if (S.Has("created")) GiveClothes();
+            // Saves from before backgrounds gave perks (20 Oct): the nearest new life, keeping the old +1 they already have
+            var oldLives = new Dictionary<string, string> { { "desk", "hedge_witch" }, { "warehouse", "sellsword" }, { "runner", "street_rat" }, { "nights", "farmhand" }, { "retail", "deckhand" } };
+            if (oldLives.TryGetValue(S.background ?? "", out var life)) S.background = life;
         }
 
         /// <summary>Saves made on the old coast road, or in a scene that no longer exists, are moved onto the map.</summary>
@@ -229,7 +235,7 @@ namespace Loran.Core
             reason = null;
             if (!All(c.need)) { reason = string.IsNullOrEmpty(c.needText) ? "Not yet." : c.needText; return false; }
             if (StaminaCost(c) > 0 && S.stamina < StaminaCost(c)) { reason = "Too winded. Catch your breath first."; return false; }
-            if (c.mana > 0 && S.mana < c.mana) { reason = "Not enough mana."; return false; }
+            if (c.mana > 0 && S.mana < ManaCost(c.mana)) { reason = "Not enough mana."; return false; }
             return true;
         }
 
@@ -239,7 +245,7 @@ namespace Loran.Core
             if (c.time > 0) parts.Add(Duration(c.time));
             int st = StaminaCost(c);
             if (st > 0) parts.Add("-" + st + " stamina");
-            if (c.mana > 0) parts.Add("-" + c.mana + " mana");
+            if (c.mana > 0) parts.Add("-" + ManaCost(c.mana) + " mana");
             if (c.energy > 0) parts.Add("-" + c.energy + " energy");
             return string.Join(" · ", parts);
         }
@@ -287,7 +293,7 @@ namespace Loran.Core
             int staminaCost = StaminaCost(c);
             S.stamina -= staminaCost;
             S.energy -= c.energy;
-            S.mana -= c.mana;
+            S.mana -= ManaCost(c.mana);
             Rules.Advance(S, data, c.time, staminaCost > 0);
 
             foreach (var t in c.train)
@@ -400,9 +406,9 @@ namespace Loran.Core
 
         public bool DrawWater()
         {
-            if (!FreeToAct || !S.spells.Contains("draw_water") || S.mana < Rules.DrawWaterMana) return false;
+            if (!FreeToAct || !S.spells.Contains("draw_water") || S.mana < ManaCost(Rules.DrawWaterMana)) return false;
             Rules.Advance(S, data, 5, false);
-            S.mana -= Rules.DrawWaterMana;
+            S.mana -= ManaCost(Rules.DrawWaterMana);
             S.water = Rules.WaterskinSize;
             Rules.Train(S, Stat.Int, 0.5f, "casting Draw Water");
             TrainSkill("magic", 1, "casting Draw Water");
@@ -662,10 +668,8 @@ namespace Loran.Core
                 case "mana": S.mana = Num(S.mana, op, num); return;
                 case "corruption":
                 {
-                    float before = S.corruption;
+                    // runs quietly in the background: no message (David, 20 Oct)
                     S.corruption = Num(S.corruption, op, num);
-                    if (op != "=" && S.hud)
-                        S.Toasts.Add(S.corruption > before ? "The corruption grew a little." : "The corruption eased a little.");
                     return;
                 }
             }

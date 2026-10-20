@@ -37,6 +37,7 @@ static class Program
         Test("a party eats, drinks, tires and can walk out on you", Party);
         Test("wounds: treating them, letting them go bad, broken bones", Wounds);
         Test("the opening wolf bites you, and Bess shows you how to patch it up", FirstWound);
+        Test("backgrounds give perks: berserk, light feet, healer, iron stomach, hedge magic", Perks);
         Test("weather: rain, cold, hypothermia, a chill", Weather);
         Test("companions can die, for good", CompanionDeath);
         Test("mana: spells use it, time and sleep bring it back", Mana);
@@ -69,11 +70,11 @@ static class Program
         var e = NewEngine();
         e.NewGame("basic");
         Assert(e.S.scene == "creation", "a new game should start at character creation");
-        Assert(e.CreateCharacter("", "female", "Lean", "Red", "runner", new[] { 1, 1, 1, 1, 1 }) != null, "empty name should be refused");
-        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "runner", new[] { 2, 2, 1, 1, 1 }) != null, "too many points should be refused");
-        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "runner", new[] { 1, 1, 1, 1, 1 }) == null, "valid character refused");
-        Assert(e.S.stats[Stat.Agi] == 5, "runner should get +1 agility");
-        Assert(e.CreateCharacter("Ash", "", "Lean", "Red", "runner", new[] { 1, 1, 1, 1, 1 }) != null, "sex must be chosen");
+        Assert(e.CreateCharacter("", "female", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 }) != null, "empty name should be refused");
+        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "deckhand", new[] { 2, 2, 1, 1, 1 }) != null, "too many points should be refused");
+        Assert(e.CreateCharacter("Ash", "female", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 }) == null, "valid character refused");
+        Assert(e.S.stats.All(v => v == 4) && e.S.background == "deckhand", "backgrounds give a perk, not a stat point");
+        Assert(e.CreateCharacter("Ash", "", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 }) != null, "sex must be chosen");
         Assert(e.S.stats.Length == 5 && e.S.stats[Stat.Cha] == 4, "charisma should exist and take points");
         Assert(e.Fill("{they} nods at {them}") == "she nods at her", "pronouns should follow the chosen sex");
         Pick(e, "Go");
@@ -752,7 +753,7 @@ static class Program
     {
         var e = NewEngine();
         e.NewGame("perma");
-        e.CreateCharacter("Rook", "male", "Lean", "Red", "desk", new[] { 1, 1, 1, 1, 1 });
+        e.CreateCharacter("Rook", "male", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 });
         Walk(e, "Go", "Sit up");
         e.S.hp = 0;
         e.GoTo(e.S.scene);
@@ -829,6 +830,44 @@ static class Program
         }
         Console.WriteLine("      " + wins + "/" + n + " won, " + deaths + " died, " + (rounds / n).ToString("0.0") + " rounds, " + (lost / n).ToString("0") + " health lost on average");
         return (wins, deaths, lost / n);
+    }
+
+    static void Perks()
+    {
+        Assert(NewEngine().data.file.backgrounds.All(b => b.perk != "" && b.perkName != "" && b.perkDesc != "" && b.stat == ""), "every background has a perk, and no stat bonus");
+
+        // Berserk: under a fifth of your health, double damage
+        var a = AtDog(3); a.S.background = "sellsword";
+        var b = AtDog(3); b.S.background = "sellsword";
+        b.S.hp = Rules.MaxHp(b.S) * 0.1f;
+        a.S.enemyMove = b.S.enemyMove = "wary";
+        float ea = a.S.enemyHp, eb = b.S.enemyHp;
+        a.Act(a.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
+        b.Act(b.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
+        Assert(b.Berserk && !a.Berserk && (eb - b.S.enemyHp) >= (ea - a.S.enemyHp) * 1.8f, "berserk hits twice as hard when you're nearly dead");
+
+        // Light feet: dodging is free
+        var l = AtDog(3); l.S.background = "street_rat";
+        Assert(l.Choices().First(c => c.def.label == "Dodge").def.stamina == 0, "a dock rat dodges for free");
+
+        // Healer's hands: treating takes half the time
+        var h = NewEngine(); h.DevStart("village"); h.S.background = "herbalist";
+        Rules.Afflict(h.S, h.data, h.S.body, "bite", null);
+        h.S.AddItem("bandage", 1);
+        int m0 = h.S.minutes;
+        h.S.result = "";
+        Assert(h.Treat("", "bite", "bandage") && h.S.minutes - m0 == 5, "bandaging takes 5 minutes, not 10");
+
+        // Iron stomach: hunger goes down slower
+        var f1 = NewEngine(); f1.DevStart("village"); f1.S.background = "farmhand";
+        var f2 = NewEngine(); f2.DevStart("village");
+        f1.S.hunger = f2.S.hunger = 90;
+        Rules.Advance(f1.S, f1.data, 240, false); Rules.Advance(f2.S, f2.data, 240, false);
+        Assert(f1.S.hunger > f2.S.hunger + 1, "a farmhand gets hungry slower");
+
+        // Hedge magic: spells cost a third less
+        var w = NewEngine(); w.DevStart("village"); w.S.background = "hedge_witch";
+        Assert(w.ManaCost(Rules.DrawWaterMana) == 7 && w.ManaCost(6) == 4, "hedge magic takes a third off");
     }
 
     static void FirstWound()
@@ -1304,7 +1343,7 @@ static class Program
                 reached.Add(e.S.scene);
                 if (e.S.scene == "title") { e.NewGame("basic"); continue; }
                 if (e.S.scene == "creation" && !e.S.Has("created"))
-                    e.CreateCharacter("Test", "other", "Lean", "Red", "nights", new[] { 5, 0, 0, 0, 0 });
+                    e.CreateCharacter("Test", "other", "Lean", "Red", "deckhand", new[] { 5, 0, 0, 0, 0 });
                 if (e.Area?.id == "skelmed") village = true;
                 if (e.S.scene == "forge") { e.FinishForge((float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble()); continue; }
 
@@ -1358,7 +1397,7 @@ static class Program
     {
         e.NewGame("basic");
         e.S.seed = seed;
-        e.CreateCharacter("Ash", "female", "Lean", "Red", "runner", new[] { 1, 1, 1, 1, 1 });
+        e.CreateCharacter("Ash", "female", "Lean", "Red", "deckhand", new[] { 1, 1, 1, 1, 1 });
         Walk(e, "Go", "Sit up");
     }
 

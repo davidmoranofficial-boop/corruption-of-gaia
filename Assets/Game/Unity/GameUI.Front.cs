@@ -132,7 +132,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 19 OCT, NEW TITLE AND CHARACTER CREATION"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 20 OCT, BACKGROUND PERKS"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
@@ -212,11 +212,11 @@ namespace Loran.UnityLayer
             var bgDef = engine.data.Background(cBackground);
             Add(sum, new Label("BACKGROUND"), "section-head");
             Add(sum, new Label(bgDef != null ? bgDef.name : "Not chosen"), bgDef != null ? "create-sum-line" : "create-sum-missing");
+            if (bgDef != null) Add(sum, new Label(bgDef.perkName + ": " + bgDef.perkDesc), "perk-desc");
             Add(sum, new Label("STATS"), "section-head");
             for (int i = 0; i < Stat.Count; i++)
             {
-                int bonus = bgDef != null && Stat.Parse(bgDef.stat) == i ? 1 : 0;
-                Sheet(sum, Stat.Names[i], (3 + alloc[i] + bonus).ToString());
+                Sheet(sum, Stat.Names[i], (3 + alloc[i]).ToString());
             }
             int spare = Engine.CreationPoints - alloc.Sum();
             if (spare > 0) Add(sum, new Label(spare + " point" + (spare == 1 ? "" : "s") + " still to spend"), "create-sum-missing");
@@ -304,7 +304,7 @@ namespace Loran.UnityLayer
         void CreateBackground(VisualElement p)
         {
             Add(p, new Label("THE LIFE YOU'RE LEAVING BEHIND"), "field-label");
-            Add(p, new Label("Who you were before the God of Realms called you. Each gives +1 to one stat."), "line-muted");
+            Add(p, new Label("Who you were before the boat went down. Each life gives you one perk: your own way of getting by."), "line-muted");
             foreach (var bg in engine.data.file.backgrounds)
             {
                 var v = bg;
@@ -313,8 +313,9 @@ namespace Loran.UnityLayer
                 if (cBackground == v.id) line.AddToClassList("selected");
                 var top = Add(line, new VisualElement(), "skill-tab-top");
                 Add(top, new Label(v.name), "option-line-name");
-                Add(top, new Label("+1 " + Stat.Names[Stat.Parse(v.stat)]), "option-line-bonus");
+                Add(top, new Label(v.perkName.ToUpperInvariant()), "option-line-bonus");
                 Add(line, new Label(v.desc), "option-line-desc");
+                Add(line, new Label(v.perkDesc), "perk-desc");
             }
         }
 
@@ -323,7 +324,6 @@ namespace Loran.UnityLayer
             int left = Engine.CreationPoints - alloc.Sum();
             Add(p, new Label("STATS  ·  " + left + " POINT" + (left == 1 ? "" : "S") + " TO SPEND"), "field-label");
             Add(p, new Label("Everyone starts at 3. These are only where you begin: every stat grows as you use it."), "line-muted");
-            var bgDef = engine.data.Background(cBackground);
             for (int i = 0; i < Stat.Count; i++)
             {
                 int idx = i;
@@ -332,11 +332,10 @@ namespace Loran.UnityLayer
                 Add(r, new Label(Stat.Names[i]), "alloc-name");
                 var minus = Add(r, new Button(() => { if (alloc[idx] > 0) { alloc[idx]--; GameAudio.Play("ui_tick"); Render(); } }) { text = "−", focusable = false }, "small-btn");
                 minus.SetEnabled(alloc[idx] > 0);
-                int bonus = bgDef != null && Stat.Parse(bgDef.stat) == i ? 1 : 0;
-                Add(r, new Label((3 + alloc[i] + bonus).ToString()), "alloc-value");
+                Add(r, new Label((3 + alloc[i]).ToString()), "alloc-value");
                 var plus = Add(r, new Button(() => { if (alloc.Sum() < Engine.CreationPoints) { alloc[idx]++; GameAudio.Play("ui_tick"); Render(); } }) { text = "+", focusable = false }, "small-btn");
                 plus.SetEnabled(left > 0);
-                Add(box, new Label(StatHelp[i] + (bonus > 0 ? "  (+1 from your background)" : "")), "alloc-help");
+                Add(box, new Label(StatHelp[i]), "alloc-help");
             }
         }
 

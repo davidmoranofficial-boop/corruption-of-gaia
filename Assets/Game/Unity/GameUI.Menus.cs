@@ -186,7 +186,7 @@ namespace Loran.UnityLayer
             if (s.spells.Contains("draw_water"))
             {
                 var dw = Add(skinRow, new Button(() => { engine.DrawWater(); AfterAction(); }) { text = "Draw Water", focusable = false }, "small-btn");
-                dw.SetEnabled(engine.FreeToAct && s.mana >= Rules.DrawWaterMana && s.water < Rules.WaterskinSize);
+                dw.SetEnabled(engine.FreeToAct && s.mana >= engine.ManaCost(Rules.DrawWaterMana) && s.water < Rules.WaterskinSize);
             }
 
             // Right: the thing you picked
@@ -399,6 +399,12 @@ namespace Loran.UnityLayer
             Add(t0, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(s.exp / (float)Rules.ExpToNext(s.level)) * 100f);
             Add(who, new Label(s.exp + " / " + Rules.ExpToNext(s.level) + " experience"), "char-sub");
             if (s.skillPoints > 0) Add(who, new Label(s.skillPoints + " skill point" + (s.skillPoints == 1 ? "" : "s") + " to spend under Skills"), "skill-points-have");
+            if (bg != null && !string.IsNullOrEmpty(bg.perkName))
+            {
+                var perk = Add(who, new VisualElement(), "perk-card");
+                Add(perk, new Label("PERK  ·  " + bg.perkName.ToUpperInvariant()), "perk-name");
+                Add(perk, new Label(bg.perkDesc), "perk-desc");
+            }
 
             var mid = Add(row, new VisualElement(), "inv-col");
             mid.AddToClassList("char-col");
@@ -433,7 +439,6 @@ namespace Loran.UnityLayer
             Add(fight, new Label("You act first against anything slower than your speed. Dodging and blocking always come first."), "line-muted");
             var road = Section(right, "ON THE ROAD");
             Sheet(road, "Warmth from clothes", "+" + Mathf.RoundToInt(Rules.Warmth(s, d)) + "°");
-            Sheet(road, "Corruption", s.corruption.ToString("0.0") + "%");
             Sheet(road, "Death mode", s.deathMode == "perma" ? "Permadeath" : "Basic");
         }
 

@@ -186,8 +186,8 @@
       "id": "ev_taint",
       "title": "Dead gulls",
       "text": [
-        "There are dead gulls in the gorse beside the road. Six or seven of them, lying in a ring. Their eyes have gone the same flat yellow as the mark's warning light, and the gorse around them has turned black.",
-        "The mark on your wrist itches."
+        "There are dead gulls in the gorse beside the road. Six or seven of them, lying in a ring. Their eyes have gone the same flat, sick yellow as the wolf's, and the gorse around them has turned black.",
+        "The hair stands up on your arms. Something here is wrong, deeper than dead birds."
       ],
       "choices": [
         {
@@ -201,7 +201,7 @@
             "corruption-0.2"
           ],
           "go": "travel",
-          "result": "The gorse catches easily. You stand back and watch until there's nothing left but ash. The itch on your wrist fades."
+          "result": "The gorse catches easily. You stand back and watch until there's nothing left but ash. The wrongness goes with the smoke."
         },
         {
           "label": "Burn them with Kindle",
@@ -218,7 +218,7 @@
           ],
           "why": "burning out the taint",
           "go": "travel",
-          "result": "Fire leaps from your hand into the black gorse. When it's done, the itch on your wrist has gone."
+          "result": "Fire leaps from your hand into the black gorse. When it's done, the air feels clean again."
         },
         {
           "label": "Leave them",
@@ -226,7 +226,7 @@
             "corruption+0.1"
           ],
           "go": "travel",
-          "result": "You walk on. The itch follows you a long way."
+          "result": "You walk on. The feeling follows you a long way."
         }
       ]
     },
@@ -324,7 +324,7 @@
       "text": [
         "From the top of the headland you can see Loran laid out to the east: green fields, a dark line of forest to the south, and the glint of a river cutting across the north of the country.",
         "Far off, at the very edge of sight, the sky over the land looks wrong. A faint yellow tint, like a bruise that's started to turn.",
-        "The mark on your wrist feels warm."
+        "You can't say why, but you don't like looking at it."
       ],
       "choices": [
         {

@@ -73,6 +73,12 @@ namespace Loran.Core
             return Math.Clamp(1f - s.Rep("skelmed") / 200f, 0.5f, 1.5f);
         }
 
+        /// <summary>Does the life you left behind give you this perk? (sea_legs, berserk, light_feet, healer, iron_stomach, hedge_magic)</summary>
+        public static bool HasPerk(GameState s, GameData d, string perk) => d.Background(s.background)?.perk == perk;
+
+        /// <summary>What a spell really costs you: Hedge magic takes a third off.</summary>
+        public static int ManaCost(GameState s, GameData d, int mana) => mana <= 0 ? 0 : HasPerk(s, d, "hedge_magic") ? (int)Math.Ceiling(mana * 2 / 3f) : mana;
+
         /// <summary>Time passes. Time never stops, whatever the player is doing.</summary>
         public static void Advance(GameState s, GameData d, int minutes, bool exerting)
         {
@@ -81,10 +87,11 @@ namespace Loran.Core
             s.minutes += minutes;
             if (!s.hud) return;  // the needs and the meter only run once the player is in Loran
 
-            s.hunger -= HungerPerHour * h;
-            s.thirst -= ThirstPerHour * h;
+            float stomach = HasPerk(s, d, "iron_stomach") ? 0.75f : 1f;
+            s.hunger -= HungerPerHour * h * stomach;
+            s.thirst -= ThirstPerHour * h * stomach;
             s.energy -= EnergyPerHour * h;
-            s.mana += ManaRegenPerHour * h;
+            s.mana += ManaRegenPerHour * h * (HasPerk(s, d, "hedge_magic") ? 1.5f : 1f);
             if (!exerting) s.stamina += StaminaRegenPerHour * h * (s.body.cold >= ColdAt ? 0.5f : 1f);
             s.corruption += CorruptionPerDay / 24f * h * CorruptionMultiplier(s) * WardFactor(s, d);
 

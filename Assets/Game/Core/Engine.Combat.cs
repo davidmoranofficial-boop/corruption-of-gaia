@@ -130,7 +130,7 @@ namespace Loran.Core
             if (S.water > 0)
                 sc.choices.Add(new ChoiceDef { label = "Drink from your waterskin (" + S.water + ")", time = 1, effects = { "fight:drink" } });
             sc.choices.Add(new ChoiceDef { label = "Defend", energy = 1, time = 1, effects = { "fight:defend" } });
-            sc.choices.Add(new ChoiceDef { label = "Dodge", stamina = Rules.DodgeStamina, energy = 1, time = 1, effects = { "fight:dodge" } });
+            sc.choices.Add(new ChoiceDef { label = "Dodge", stamina = Rules.HasPerk(S, data, "light_feet") ? 0 : Rules.DodgeStamina, energy = 1, time = 1, effects = { "fight:dodge" } });
             sc.choices.Add(new ChoiceDef { label = "Try to get away", stamina = Rules.FleeStamina, energy = 1, time = 1, effects = { "fight:flee" } });
             return sc;
         }
@@ -348,6 +348,7 @@ namespace Loran.Core
             else if (how == "glance") dmg *= Rules.GlanceMultiplier;
             dmg += Rules.TraitSum(S, data, t => t.fire);
             dmg *= Rules.FightPower(S.body, data);
+            if (Berserk) dmg *= 2f;
             if (move != null && move.KindOf() == "guard") { dmg *= 0.5f; struckGuard = true; }
             int dealt = Math.Max(1, (int)Math.Round(dmg));
             S.enemyHp -= dealt;
@@ -477,6 +478,9 @@ namespace Loran.Core
             if (S.hp > 0) MaybeWound(move, S.body, null, taken, covered);
             if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
         }
+
+        /// <summary>Berserk (the sellsword's perk): under a fifth of your health, your blows land twice as hard.</summary>
+        public bool Berserk => Rules.HasPerk(S, data, "berserk") && S.hp > 0 && S.hp < Rules.MaxHp(S) * 0.2f;
 
         /// <summary>How much harder its blows land for being worked up.</summary>
         float Rage() => 1f + S.enemyRage * Rules.RagePerPoint;

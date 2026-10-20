@@ -232,7 +232,14 @@ namespace Loran.Core
         public string figure = "male", skin = "light", hair = "dark brown";
         public List<string> worn = new List<string>();   // gear ids they wear
     }
-    [Serializable] public class BackgroundDef { public string id, name, desc, stat; }
+    /// <summary>The life you had before the boat went down. Each gives one perk, its own way of playing.</summary>
+    [Serializable]
+    public class BackgroundDef
+    {
+        public string id, name, desc;
+        public string perk = "", perkName = "", perkDesc = "";
+        public string stat = "";               // old backgrounds gave +1 to a stat; perks replaced that (David, 20 Oct)
+    }
     [Serializable]
     public class GearDef
     {

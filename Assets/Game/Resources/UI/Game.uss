@@ -2390,3 +2390,8 @@
 .alloc-box .alloc-row { margin-bottom: 2px; }
 .alloc-box .alloc-name { flex-grow: 1; width: auto; }
 .alloc-help { font-size: 14px; color: var(--muted); white-space: normal; }
+
+/* background perks */
+.perk-desc { font-size: 14px; color: var(--moss); white-space: normal; margin-top: 4px; }
+.perk-card { align-self: stretch; margin-top: 12px; padding: 10px 12px; background-color: var(--sea); border-left-width: 3px; border-left-color: var(--moss); border-radius: 4px; }
+.perk-name { font-size: 13px; letter-spacing: 2px; color: var(--moss); -unity-font-style: bold; }

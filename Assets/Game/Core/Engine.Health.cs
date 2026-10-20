@@ -57,7 +57,7 @@ namespace Loran.Core
                 if (u == "water") S.water--;
                 else S.AddItem(u, -1);
             }
-            Rules.Advance(S, data, t.minutes, false);
+            Rules.Advance(S, data, Rules.HasPerk(S, data, "healer") ? t.minutes / 2 : t.minutes, false);
             a.done.Add(step);
             TrainSkill("first_aid", 3, "treating wounds");
             string whose = who == "" ? "your" : WhoName(who) + "'s";

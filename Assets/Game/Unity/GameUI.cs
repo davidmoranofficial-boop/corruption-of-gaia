@@ -368,7 +368,7 @@ namespace Loran.UnityLayer
             ("party", "Party", KeyCode.P, "Who travels with you, and how they're holding up"),
             ("journal", "Journal", KeyCode.J, "Quests and what you've learned"),
             ("crafting", "Crafting", KeyCode.C, "Make things from what you carry"),
-            ("world", "World", KeyCode.W, "Loran, the Corruption and your name"),
+            ("world", "World", KeyCode.W, "Time, your good name and the sound settings"),
             ("survival", "Survival", KeyCode.S, "Needs, weather, wounds and treatment"),
         };
 
@@ -559,24 +559,14 @@ namespace Loran.UnityLayer
             }
             var where = Section(right, "WHERE TO CRAFT");
             Add(where, new Label(s.Has("smith_done") ? "Garran's forge, Skelmed" : "Nowhere yet."), "line");
-            Add(where, new Label("Crafting takes time, and time feeds the corruption."), "line-muted");
+            Add(where, new Label("Crafting takes time, and time never stops."), "line-muted");
         }
 
         void MenuWorld(VisualElement left, VisualElement right)
         {
             var s = engine.S;
 
-            var cor = Section(left, "THE CORRUPTION");
-            var row = Add(cor, new VisualElement(), "corruption");
-            var track = Add(row, new VisualElement(), "corruption-track");
-            var fill = Add(track, new VisualElement(), "corruption-fill");
-            fill.style.width = Length.Percent(s.corruption);
-            Add(row, new Label(s.corruption.ToString("0.0") + "%"), "corruption-value");
-            float mult = Rules.CorruptionMultiplier(s);
-            Add(cor, new Label("Grows by about " + (Rules.CorruptionPerDay * mult).ToString("0.0") + "% a day right now." +
-                (mult < 0.99f ? " Your good name is slowing it." : mult > 1.01f ? " Your bad name is speeding it up." : "")), "line");
-            Add(cor, new Label("The mark on your wrist from the God of Realms. Time feeds it, and so do your choices. At 100%, the world falls apart."), "line-muted");
-
+            // The corruption still grows underneath, but it's not shown: the player only sees what it does to the world (David, 20 Oct)
             var when = Section(left, "TIME");
             Add(when, new Label("Day " + s.Day + "  ·  " + Rules.Clock(s) + "  ·  " + Rules.TimeOfDay(s)), "line");
             Add(when, new Label("Time never stops, whatever you're doing."), "line-muted");
@@ -589,7 +579,7 @@ namespace Loran.UnityLayer
                 Add(rep, new Label("Skelmed (local): " + RepWord(v) + "  " + (v > 0 ? "+" : "") + v), "line");
                 Add(rep, new Label("Loran (regional): Unknown"), "line");
                 Add(rep, new Label("Gaia (global): Unknown"), "line");
-                Add(rep, new Label("Good standing slows the corruption. Bad standing speeds it up."), "line-muted");
+                Add(rep, new Label("What people think of you changes how they treat you."), "line-muted");
             }
 
             var inf = Section(right, "INFLUENCE");
