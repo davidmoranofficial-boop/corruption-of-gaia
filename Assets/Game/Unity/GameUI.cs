@@ -197,7 +197,8 @@ namespace Loran.UnityLayer
                 GameAudio.Play("ui_open");
             }
 
-            bool special = s.scene == Engine.Title || s.scene == Engine.Creation;
+            bool cutscene = InCutscene;
+            bool special = s.scene == Engine.Title || s.scene == Engine.Creation || cutscene;
             bool battle = !special && InBattle && engine.data.Enemy(s.enemy) != null;
             if (!battle) { outro = false; timing = null; battleMenu = ""; }
             bool forge = !special && !battle && s.scene == Engine.ForgeId;
@@ -213,6 +214,7 @@ namespace Loran.UnityLayer
 
             if (s.scene == Engine.Title) RenderTitle();
             else if (s.scene == Engine.Creation) RenderCreation();
+            else if (cutscene) RenderCutscene();
             else
             {
                 if (battle) RenderBattle();
@@ -1088,6 +1090,7 @@ namespace Loran.UnityLayer
         void OnKey(KeyDownEvent e)
         {
             if (engine.S.scene == Engine.Creation || engine.S.scene == Engine.Title) return;
+            if (InCutscene) { CutsceneKey(e); e.StopPropagation(); return; }
             if (e.keyCode == KeyCode.F1 || e.keyCode == KeyCode.BackQuote)
             {
                 openMenu = openMenu == "dev" ? "" : "dev";

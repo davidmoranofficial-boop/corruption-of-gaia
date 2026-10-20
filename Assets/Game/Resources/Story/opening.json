@@ -22,6 +22,28 @@
             "flag:created"
           ],
           "needText": "Finish creating your character first.",
+          "go": "shipwreck"
+        }
+      ]
+    },
+    {
+      "id": "shipwreck",
+      "place": "At sea",
+      "title": "The storm",
+      "safe": true,
+      "cutscene": "shipwreck",
+      "text": [
+        "Three days out from the southern ports, the sky turned the colour of a bruise.",
+        "By nightfall the storm had the little trade boat by the throat, and the crew had stopped pretending.",
+        "Someone was shouting about the mast. You never heard the rest.",
+        "Cold. Then dark. Then nothing at all.",
+        "Grey light. Sand in your mouth. The sea still tugging at your boots, as if it wants you back.",
+        "Footsteps on the sand. A rough old voice: \"Easy now. You're not dead yet, and I'll not have you die on my beach.\"",
+        "He hauls you up the shore by the shoulders, step by slow step, to a hut that smells of smoke and fish."
+      ],
+      "choices": [
+        {
+          "label": "Wake",
           "go": "wake"
         }
       ]

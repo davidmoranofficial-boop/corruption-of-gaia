@@ -2575,3 +2575,18 @@
 .fighter-ally-name { font-size: 15px; color: var(--text); width: 130px; }
 .fighter-ally-track { flex-grow: 1; }
 
+
+/* ---------- the opening cutscene ---------- */
+.cut-page { flex-grow: 1; background-color: #000000; position: relative; overflow: hidden; }
+.cut-view { position: absolute; overflow: hidden; background-color: #000000; }
+.cut-layer { position: absolute; -unity-background-scale-mode: stretch-to-fill; }
+.cut-rain { position: absolute; left: 0; top: 0; }
+.cut-flash { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: #e8f0ff; opacity: 0; }
+.cut-fade { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: #000000; opacity: 0; }
+.cut-caption {
+    position: absolute; left: 12%; right: 12%; bottom: 6%; padding: 14px 24px;
+    color: #e8dcc2; -unity-text-align: middle-center; white-space: normal; -unity-font-style: italic;
+    background-color: rgba(0, 0, 0, 0.6); border-radius: 6px; text-shadow: 0 2px 0 #000000;
+}
+.cut-caption-centre { bottom: 46%; background-color: rgba(0, 0, 0, 0); }
+.cut-hint { position: absolute; right: 24px; top: 18px; font-size: 14px; letter-spacing: 3px; color: rgba(232, 220, 194, 0.45); }

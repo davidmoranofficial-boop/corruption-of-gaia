@@ -20,6 +20,7 @@ namespace Loran.Core
         public string title;
         public string speaker;                 // who's talking, shown on the talk box out in the world
         public bool safe;                      // collapsing or sleeping here is safe
+        public string cutscene;                // played as a cutscene (GameUI.Cutscene.cs); text = its captions
         public List<string> text = new List<string>();      // paragraphs; {name} etc. are filled in
         public List<CondText> extra = new List<CondText>(); // paragraphs shown only when their conditions hold
         public List<string> onEnter = new List<string>();   // effects run when the player arrives

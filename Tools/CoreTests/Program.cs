@@ -122,6 +122,8 @@ static class Program
         Assert(e.S.stats.Length == 5 && e.S.stats[Stat.Cha] == 4, "charisma should exist and take points");
         Assert(e.Fill("{they} nods at {them}") == "she nods at her", "pronouns should follow the chosen sex");
         Pick(e, "Go");
+        Assert(e.S.scene == "shipwreck" && e.Current.cutscene == "shipwreck" && e.Current.text.Count == 7, "the shipwreck cutscene should play after creation");
+        Pick(e, "Wake");
         Assert(e.S.scene == "wake" && e.S.hud && e.Area?.id == "yenson_hut" && AtSpot(e, "hut_bed"), "should wake in Yenson's hut, by the bed");
         Assert(Math.Abs(e.S.corruption - 5) < 0.01, "corruption should start at 5%");
         Assert(e.S.lastSleep != "", "waking in the hut should count as a save");

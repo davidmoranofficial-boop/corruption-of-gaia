@@ -391,6 +391,49 @@ def death():
     return lp(verb(out, 0.35, 1.2, 0.87, 1.0), 4000)
 
 
+# ---------------------------------------------------------------------------------------------- the shipwreck (opening)
+
+def thunder():
+    """A close crack, then the roll: low-passed noise in uneven bursts dying away over several seconds."""
+    dur = 5.5
+    out = np.zeros(ns(dur))
+    t = tt(0.12)
+    place(out, hp(white(0.12, 300), 1500) * np.exp(-t / 0.03) * 1.2, 0.0)              # the crack
+    rumble = lp(colored(dur, 301, -6.0), 220)
+    bursts = smooth_noise(dur, 5.0, 302, 0.25, 1.0) ** 2
+    tm = tt(dur)
+    env = np.clip(tm / 0.05, 0, 1) * np.exp(-tm / 1.6) * bursts
+    place(out, rumble * env * 4.0, 0.03)
+    place(out, thump(70, 35, 1.2, 0.4, 303, noise=0.9, noise_fc=180), 0.02, 0.8)
+    return verb(out, 0.3, 1.4, 0.88, 1.2)
+
+
+def wave_crash():
+    """A big wave breaking over a deck: a rising roar, the slam, then water pouring off."""
+    dur = 3.6
+    out = np.zeros(ns(dur))
+    place(out, whoosh(1.2, 150, 900, q=0.6, peak_at=0.55, seed=310, color=-4.0) * 2.0, 0.0)
+    place(out, lp(colored(1.1, 314, -5.0), 400) * np.clip(tt(1.1) / 0.01, 0, 1) * np.linspace(0.6, 1.0, ns(1.1)) * 1.5, 0.0)   # the roar is there from the start
+    place(out, thump(80, 40, 0.9, 0.25, 311, noise=1.0, noise_fc=700), 1.05, 1.2)
+    tm = tt(2.5)
+    pour = bp(colored(2.5, 312, -2.0), 1800, 0.5) * np.exp(-tm / 0.9) * np.clip(tm / 0.04, 0, 1)
+    place(out, pour * 2.2, 1.05)
+    place(out, grains(2.2, 900, 313, fc=4000, q=0.7, glen=0.003, env=lambda x: np.exp(-x / 0.8)), 1.1, 0.6)
+    return out
+
+
+def timber_creak():
+    """Hull timbers groaning under strain: a slow, rough, gliding resonance."""
+    dur = 2.2
+    tm = tt(dur)
+    f = 95 + 40 * np.sin(2 * np.pi * 0.35 * tm) + 15 * smooth_noise(dur, 6.0, 320, -1, 1)
+    saw = np.sin(2 * np.pi * np.cumsum(f) / SR)
+    saw = np.sign(saw) * np.abs(saw) ** 0.4
+    rough = 0.6 + 0.4 * smooth_noise(dur, 40.0, 321, 0, 1)
+    x = resonate(saw * rough, [(310, 8, 1.0), (720, 10, 0.5), (1450, 12, 0.25)])
+    return x * swell(dur, 0.45, 1.5)
+
+
 # ---------------------------------------------------------------------------------------------- footsteps
 
 def step(surface, v):
@@ -787,6 +830,7 @@ SFX = {
     'heal': (heal, FX),
     'forge_bellows': (forge_bellows, FX), 'forge_hammer_bad': (forge_hammer_bad, FX), 'quench': (quench, FX),
     'forge_done': (forge_done, FX),
+    'thunder': (thunder, FX), 'wave_crash': (wave_crash, FX), 'timber_creak': (timber_creak, -6.0),
 }
 for _v in (1, 2, 3):
     SFX[f'forge_hammer_{_v}'] = ((lambda v=_v: forge_hammer(v)), FX)

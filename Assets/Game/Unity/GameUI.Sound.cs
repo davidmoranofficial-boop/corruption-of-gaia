@@ -72,6 +72,11 @@ namespace Loran.UnityLayer
             bool night = !special && engine.Check("night");
             string weather = special ? "" : Rules.WeatherNow(s, engine.data)?.id ?? "";
 
+            if (InCutscene)
+            {
+                GameAudio.SetMusic("");     // the cutscene sets its own ambience as it plays (GameUI.Cutscene.cs)
+                return;
+            }
             if (special)
             {
                 music = "mus_title";

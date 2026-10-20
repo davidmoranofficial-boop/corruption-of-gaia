@@ -457,6 +457,8 @@ def main():
         made.append(save(paint(), 'Backdrops', name + '.png'))
     import fx
     made += fx.main()
+    import cutscene   # the opening cutscene's paintings
+    made += cutscene.main()
     import bodychart
     made += bodychart.main()
     import world
