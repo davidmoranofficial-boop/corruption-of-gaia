@@ -90,8 +90,11 @@ namespace Loran.UnityLayer
             FillScreen(page);
 
             var logo = Add(page, new VisualElement(), "title-logo");
-            Add(logo, new Label("CORRUPTION"), "title-name");
-            Add(logo, new Label("OF  GAIA"), "title-name-sub");
+            // one line, both words the same weight, so it reads as the whole name and not just "Corruption"
+            var nameRow = Add(logo, new VisualElement(), "title-name-row");
+            Add(nameRow, new Label("CORRUPTION"), "title-name");
+            Add(nameRow, new Label("of"), "title-name-of");
+            Add(nameRow, new Label("GAIA"), "title-name");
             Add(logo, new VisualElement(), "title-rule");
             Add(logo, new Label("Make your own story in a kingdom going bad."), "title-tag");
 
@@ -132,7 +135,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 20 OCT, NEW WALKING SPRITES"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 20 OCT, PURPLE TITLE"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
