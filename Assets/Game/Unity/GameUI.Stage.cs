@@ -73,7 +73,7 @@ namespace Loran.UnityLayer
                 if (fol == null) { partyActors.Insert(0, null); continue; }
                 var a = NewActor(stage, PlayerX - 30 - pi * 22, FeetY - 6 - pi * 5, DollW, DollH, 44);
                 a.phase = 0.37f * (pi + 1);
-                var doll = Doll(a.el, 1, fol.figure, fol.skin, fol.hair, fol.worn.Select(g => (g, engine.data.Gear(g)?.slot ?? "body")));
+                var doll = Doll(a.el, 1, fol.figure, fol.skin, fol.hair, fol.worn.Select(g => (g, engine.data.Gear(g)?.slot ?? "body")), fol.hairStyle, fol.beard);
                 doll.style.width = Length.Percent(100); doll.style.height = Length.Percent(100);
                 if (m.hp <= 0) { a.down = true; a.anim = "down"; }
                 partyActors.Insert(0, a);

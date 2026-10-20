@@ -132,7 +132,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 20 OCT, NEW FIGHT SCREEN"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 20 OCT, NEW WALKING SPRITES"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
@@ -166,6 +166,8 @@ namespace Loran.UnityLayer
             cSkin ??= d.skins.Count > 1 ? d.skins[1] : d.skins.FirstOrDefault();
             cBuild ??= d.builds.Count > 2 ? d.builds[2] : d.builds.FirstOrDefault();
             cHair ??= d.hair.FirstOrDefault();
+            cHairStyle ??= "";
+            cBeard ??= "None";
             screen.Clear();
             FrontBackdrop("coast");
             var page = Add(screen, new VisualElement(), "create-page");
@@ -200,15 +202,18 @@ namespace Loran.UnityLayer
             var stage = Add(body, new VisualElement(), "create-stage");
             var clothes = new List<(string, string)>();
             foreach (var id in Engine.StartingClothes) { var gd = engine.data.Gear(id); if (gd != null) clothes.Add((id, gd.slot)); }
-            Doll(stage, 8, cFigure, cSkin, cHair, clothes);
+            Doll(stage, 8, cFigure, cSkin, cHair, clothes, CreationHairStyle(), cBeard);
             Add(stage, new VisualElement(), "create-shadow");
+            WalkPreview(stage, clothes);
 
             // Who you're making, so far
             var sum = Add(body, new VisualElement(), "create-panel");
             sum.AddToClassList("create-summary");
             Add(sum, new Label(string.IsNullOrWhiteSpace(cName) ? "Nameless" : cName.Trim()), "create-sum-name");
             string sex = cGender == "" ? "Sex not chosen" : char.ToUpperInvariant(cGender[0]) + cGender.Substring(1);
-            Add(sum, new Label(sex + "  ·  " + cBuild + "  ·  " + cSkin + " skin  ·  " + cHair + " hair"), "create-sum-sub");
+            string beardNote = BeardKey(cBeard) == null ? "" : "  ·  " + cBeard.ToLowerInvariant();
+            Add(sum, new Label(sex + "  ·  " + cBuild + "  ·  " + cSkin + " skin  ·  " + cHair.ToLowerInvariant() + " hair, "
+                                + CreationHairStyle().ToLowerInvariant() + beardNote), "create-sum-sub");
             var bgDef = engine.data.Background(cBackground);
             Add(sum, new Label("BACKGROUND"), "section-head");
             Add(sum, new Label(bgDef != null ? bgDef.name : "Not chosen"), bgDef != null ? "create-sum-line" : "create-sum-missing");
@@ -251,7 +256,8 @@ namespace Loran.UnityLayer
 
         void FinishCreation()
         {
-            createError = engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone(), cSkin, cFigure);
+            createError = engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone(), cSkin, cFigure,
+                                                 CreationHairStyle(), cBeard);
             if (createError == null)
             {
                 cStep = 0;
@@ -282,9 +288,51 @@ namespace Loran.UnityLayer
             Chip(figures, "Masculine", cFigure == "male", () => { cFigure = "male"; Render(); });
             Chip(figures, "Feminine", cFigure == "female", () => { cFigure = "female"; Render(); });
 
-            Picker(p, "SKIN", d.skins, cSkin, v => cSkin = v);
-            Picker(p, "BUILD", d.builds, cBuild, v => cBuild = v);
-            Picker(p, "HAIR", d.hair, cHair, v => cHair = v);
+            var pair = Add(p, new VisualElement(), "picker-pair");
+            Picker(Add(pair, new VisualElement(), "picker-col"), "SKIN", d.skins, cSkin, v => cSkin = v);
+            Picker(Add(pair, new VisualElement(), "picker-col"), "BUILD", d.builds, cBuild, v => cBuild = v);
+            pair = Add(p, new VisualElement(), "picker-pair");
+            if (d.hairStyles.Count > 0)
+                Picker(Add(pair, new VisualElement(), "picker-col"), "HAIR STYLE", d.hairStyles, CreationHairStyle(), v => cHairStyle = v);
+            Picker(Add(pair, new VisualElement(), "picker-col"), "HAIR COLOUR", d.hair, cHair, v => cHair = v);
+            if (d.beards.Count > 0)
+            {
+                pair = Add(p, new VisualElement(), "picker-pair");
+                Picker(Add(pair, new VisualElement(), "picker-col"), "BEARD", d.beards, cBeard, v => cBeard = v);
+                Add(pair, new VisualElement(), "picker-col");
+            }
+        }
+
+        /// <summary>The hair style being made: until one's picked, short, or long on the feminine figure.</summary>
+        string CreationHairStyle()
+        {
+            if (!string.IsNullOrEmpty(cHairStyle)) return cHairStyle;
+            var styles = engine.data.file.hairStyles;
+            string want = cFigure == "female" ? "Long" : "Short";
+            return styles.Contains(want) ? want : styles.FirstOrDefault() ?? "";
+        }
+
+        /// <summary>How you'll look walking about: the world-map sprite, walking on the spot and turning.</summary>
+        void WalkPreview(VisualElement stage, List<(string, string)> clothes)
+        {
+            const int k = 5;
+            var frame = Add(stage, new VisualElement { pickingMode = PickingMode.Ignore }, "create-walk");
+            Add(frame, new Label("ON THE ROAD"), "create-walk-label");
+            var holder = Add(frame, new VisualElement { pickingMode = PickingMode.Ignore }, "create-walk-sprite");
+            holder.style.width = 16 * k;
+            holder.style.height = 24 * k;
+            var (box, sheet) = Walker(holder, k, WalkLayers(cFigure, cSkin, cHair, CreationHairStyle(), cBeard, clothes));
+            box.style.left = 0;
+            box.style.top = 0;
+            string[] facings = { "down", "left", "up", "right" };
+            int[] steps = { 1, 0, 2, 0 };
+            int tick = 0;
+            SetFrame(sheet, "down", 0, k);
+            sheet.schedule.Execute(() =>
+            {
+                tick++;
+                SetFrame(sheet, facings[(tick / 12) % 4], steps[tick % 4], k);
+            }).Every(170);
         }
 
         /// <summary>A ◂ value ▸ picker, the usual way creation screens step through looks.</summary>

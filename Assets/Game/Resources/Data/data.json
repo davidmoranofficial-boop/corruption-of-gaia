@@ -766,10 +766,32 @@
     "Black",
     "Dark brown",
     "Light brown",
+    "Auburn",
     "Red",
     "Blond",
+    "Ash blond",
     "Grey",
-    "Shaved"
+    "White"
+  ],
+  "hairStyles": [
+    "Short",
+    "Cropped",
+    "Messy",
+    "Swept",
+    "Long",
+    "Ponytail",
+    "Braid",
+    "Bun",
+    "Topknot",
+    "Curls",
+    "Bald"
+  ],
+  "beards": [
+    "None",
+    "Stubble",
+    "Moustache",
+    "Beard",
+    "Long beard"
   ],
   "skins": [
     "Fair",
@@ -2242,7 +2264,8 @@
           "desc": "After a fight he binds the worst bleeding wound in the party, yours included, without using your linen.",
           "level": 3
         }
-      ]
+      ],
+      "hairStyle": "Messy"
     }
   ],
   "afflictions": [

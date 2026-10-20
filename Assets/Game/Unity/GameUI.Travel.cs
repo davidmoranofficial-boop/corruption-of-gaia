@@ -322,41 +322,43 @@ namespace Loran.UnityLayer
             Render();
         }
 
-        string PlayerSheet()
-        {
-            var s = engine.S;
-            string fig = (string.IsNullOrEmpty(s.figure) ? s.gender : s.figure) == "female" ? "female" : "male";
-            string skin = Key(s.skin) == "" ? "light" : Key(s.skin);
-            string hair = Key(s.hair) == "" || Key(s.hair) == "shaved" ? "dark_brown" : Key(s.hair);
-            return "Walk/walk_" + fig + "_" + skin + "_" + hair;
-        }
-
         static int FacingRow(string f) => f == "up" ? 1 : f == "left" ? 2 : f == "right" ? 3 : 0;
 
-        (VisualElement box, VisualElement sheet) Walker(string sheetPath)
+        (VisualElement box, VisualElement sheet) Walker(string sheetPath) => Walker(worldLayer, worldScale, new List<string> { sheetPath });
+
+        /// <summary>A walking figure: a box one frame big, holding the whole sheet (or a stack of layer sheets),
+        /// moved about inside it by SetFrame.</summary>
+        (VisualElement box, VisualElement sheet) Walker(VisualElement parent, int k, List<string> sheets)
         {
-            int k = worldScale;
-            var box = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
+            var box = Add(parent, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
             box.style.width = 16 * k;
             box.style.height = 24 * k;
             var sheet = Add(box, new VisualElement { pickingMode = PickingMode.Ignore }, "walker-sheet");
             sheet.style.width = 48 * k;
             sheet.style.height = 96 * k;
-            var tex = Sprite(sheetPath) ?? Sprite("Walk/walk_male_light_dark_brown");
-            if (tex != null) sheet.style.backgroundImage = new StyleBackground(tex);
+            bool any = false;
+            foreach (var p in sheets)
+            {
+                var tex = Sprite(p);
+                if (tex == null) continue;
+                Layer(sheet, tex);
+                any = true;
+            }
+            if (!any) Layer(sheet, Sprite("Walk/body_male_light"));
             return (box, sheet);
         }
 
-        void SetFrame(VisualElement sheet, string facing, int frame)
+        void SetFrame(VisualElement sheet, string facing, int frame) => SetFrame(sheet, facing, frame, worldScale);
+
+        static void SetFrame(VisualElement sheet, string facing, int frame, int k)
         {
-            int k = worldScale;
             sheet.style.left = -frame * 16 * k;
             sheet.style.top = -FacingRow(facing) * 24 * k;
         }
 
         void DrawYou()
         {
-            (playerBox, playerSheet) = Walker(PlayerSheet());
+            (playerBox, playerSheet) = Walker(worldLayer, worldScale, PlayerWalkLayers());
         }
 
         /// <summary>You, and whoever's walking with you (drawn behind you when they're above you on the screen).</summary>

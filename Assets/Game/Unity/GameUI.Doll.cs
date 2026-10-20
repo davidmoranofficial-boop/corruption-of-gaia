@@ -29,10 +29,31 @@ namespace Loran.UnityLayer
         static string Key(string s) => string.IsNullOrEmpty(s) ? "" : s.Trim().ToLowerInvariant().Replace(' ', '_');
 
         /// <summary>The order worn gear is drawn in, front of the body. The off hand is drawn behind it.</summary>
-        static readonly string[] DollFront = { "legs", "feet", "body", "hands", "neck", "#hair", "head", "weapon" };
+        static readonly string[] DollFront = { "legs", "feet", "body", "hands", "neck", "#beard", "#hair", "head", "weapon" };
+
+        /// <summary>The art name of a hair style; none chosen means short hair, or long on the feminine figure.</summary>
+        static string HairStyleKey(string style, string figure)
+        {
+            string k = Key(style);
+            return k != "" ? k : figure == "female" ? "long" : "short";
+        }
+
+        static string HairColourKey(string hair)
+        {
+            string k = Key(hair);
+            return k == "" || k == "shaved" ? "dark_brown" : k;
+        }
+
+        /// <summary>The beard's art name, or null for none.</summary>
+        static string BeardKey(string beard)
+        {
+            string k = Key(beard);
+            return k == "" || k == "none" ? null : k;
+        }
 
         /// <summary>Draws a character at a whole-number scale. worn: (gear id, slot) of everything they have on.</summary>
-        VisualElement Doll(VisualElement parent, int scale, string figure, string skin, string hair, IEnumerable<(string id, string slot)> worn)
+        VisualElement Doll(VisualElement parent, int scale, string figure, string skin, string hair, IEnumerable<(string id, string slot)> worn,
+                           string hairStyle = null, string beard = null)
         {
             var box = new VisualElement { pickingMode = PickingMode.Ignore };
             box.AddToClassList("doll");
@@ -49,9 +70,17 @@ namespace Loran.UnityLayer
             Layer(box, Sprite("Body/body_" + figure + "_" + skinKey) ?? Sprite("Body/body_" + figure + "_light"));
             foreach (var slot in DollFront)
             {
+                if (slot == "#beard")
+                {
+                    var b = BeardKey(beard);
+                    if (b != null) Layer(box, Sprite("Hair/beard_" + b + "_" + HairColourKey(hair)));
+                    continue;
+                }
                 if (slot == "#hair")
                 {
-                    if (Key(hair) != "" && Key(hair) != "shaved") Layer(box, Sprite("Hair/hair_" + figure + "_" + Key(hair)));
+                    string st = HairStyleKey(hairStyle, figure);
+                    bool capped = list.Exists(w => w.slot == "head");
+                    if (st != "bald") Layer(box, Sprite("Hair/hair_" + st + "_" + HairColourKey(hair) + (capped ? "_cap" : "")));
                     continue;
                 }
                 foreach (var w in list) if (w.slot == slot) Layer(box, Sprite("Gear/" + w.id));
@@ -65,7 +94,51 @@ namespace Loran.UnityLayer
             var s = engine.S;
             var worn = new List<(string, string)>();
             foreach (var g in s.Equipped) worn.Add((g.id, g.slot));
-            return Doll(parent, scale, string.IsNullOrEmpty(s.figure) ? s.gender : s.figure, s.skin, s.hair, worn);
+            return Doll(parent, scale, PlayerFigure(), s.skin, s.hair, worn, s.hairStyle, s.beard);
+        }
+
+        string PlayerFigure() => (string.IsNullOrEmpty(engine.S.figure) ? engine.S.gender : engine.S.figure) == "female" ? "female" : "male";
+
+        /// <summary>The order the walking sprite's layers stack in, after the body. Weapons and shields also have a
+        /// "_back" layer drawn behind the body (an axe across your back, a knife on the far hip).</summary>
+        static readonly string[] WalkFront = { "legs", "feet", "body", "hands", "neck", "#beard", "#hair", "head", "weapon", "offhand" };
+
+        /// <summary>The walking sprite as a stack of same-sized sheets (Sprites/Walk, Sprites/WalkGear; made by Tools/Art/walk.py):
+        /// the body, then whatever's worn, so what you have on is what you see walking about.</summary>
+        static List<string> WalkLayers(string figure, string skin, string hair, string hairStyle, string beard, IEnumerable<(string id, string slot)> worn)
+        {
+            figure = figure == "female" ? "female" : "male";
+            string skinKey = Key(skin) == "" ? "light" : Key(skin);
+            var list = new List<(string id, string slot)>(worn);
+            var paths = new List<string>();
+            foreach (var w in list)
+                if (w.slot == "weapon" || w.slot == "offhand") paths.Add("WalkGear/" + w.id + "_" + figure + "_back");
+            paths.Add("Walk/body_" + figure + "_" + skinKey);
+            foreach (var slot in WalkFront)
+            {
+                if (slot == "#beard")
+                {
+                    var b = BeardKey(beard);
+                    if (b != null) paths.Add("Walk/beard_" + b + "_" + HairColourKey(hair));
+                    continue;
+                }
+                if (slot == "#hair")
+                {
+                    string st = HairStyleKey(hairStyle, figure);
+                    if (st != "bald") paths.Add("Walk/hair_" + st + "_" + HairColourKey(hair) + (list.Exists(w => w.slot == "head") ? "_cap" : ""));
+                    continue;
+                }
+                foreach (var w in list) if (w.slot == slot) paths.Add("WalkGear/" + w.id + "_" + figure);
+            }
+            return paths;
+        }
+
+        List<string> PlayerWalkLayers()
+        {
+            var s = engine.S;
+            var worn = new List<(string, string)>();
+            foreach (var g in s.Equipped) worn.Add((g.id, g.slot));
+            return WalkLayers(PlayerFigure(), s.skin, s.hair, s.hairStyle, s.beard, worn);
         }
 
         static void Layer(VisualElement box, Texture2D tex)

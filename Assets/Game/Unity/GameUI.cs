@@ -35,7 +35,7 @@ namespace Loran.UnityLayer
         // Character creation form
         string cName = "";
         string cGender = "";
-        string cBuild, cHair, cBackground, cSkin, cFigure = "male";
+        string cBuild, cHair, cHairStyle, cBeard, cBackground, cSkin, cFigure = "male";
         readonly int[] alloc = new int[Stat.Count];
         string createError;
 
@@ -506,7 +506,7 @@ namespace Loran.UnityLayer
 
             var head = Add(det, new VisualElement(), "party-head");
             var fig = Add(head, new VisualElement(), "party-figure");
-            var doll = Doll(fig, 4, fd.figure, fd.skin, fd.hair, fd.worn.Select(g => (g, d.Gear(g)?.slot ?? "body")));
+            var doll = Doll(fig, 4, fd.figure, fd.skin, fd.hair, fd.worn.Select(g => (g, d.Gear(g)?.slot ?? "body")), fd.hairStyle, fd.beard);
             if (sel.hp <= 0) doll.AddToClassList("portrait-down");
             var names = Add(head, new VisualElement(), "party-names");
             Add(names, new Label(fd.name), "char-name");

@@ -2394,6 +2394,17 @@
 .create-options .name-field { width: 100%; }
 
 .picker { flex-direction: row; align-items: center; }
+.picker-pair { flex-direction: row; }
+.picker-col { flex-grow: 1; flex-basis: 0; margin-right: 14px; }
+.picker-col:last-child { margin-right: 0; }
+.picker-col .picker-arrow { width: 44px; }
+.create-stage { position: relative; }
+.create-walk {
+    position: absolute; right: 8px; bottom: 40px; align-items: center; padding: 8px 12px 12px 12px;
+    background-color: rgba(13, 23, 27, 0.8); border-width: 1px; border-color: var(--line); border-radius: 8px;
+}
+.create-walk-label { font-size: 12px; letter-spacing: 3px; color: var(--brine); margin-bottom: 6px; }
+.create-walk-sprite { position: relative; overflow: hidden; }
 .picker-arrow {
     width: 52px; height: 52px; margin: 0; font-size: 22px; color: var(--text);
     background-color: var(--hull); border-width: 1px; border-color: var(--line); border-radius: 4px;

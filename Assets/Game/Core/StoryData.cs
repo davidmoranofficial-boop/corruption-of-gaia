@@ -69,7 +69,9 @@ namespace Loran.Core
         public List<JournalDef> journal = new List<JournalDef>();
         public List<QuestDef> quests = new List<QuestDef>();
         public List<string> builds = new List<string>();
-        public List<string> hair = new List<string>();
+        public List<string> hair = new List<string>();          // hair colours
+        public List<string> hairStyles = new List<string>();
+        public List<string> beards = new List<string>();
         public List<string> skins = new List<string>();
         public List<AfflictionDef> afflictions = new List<AfflictionDef>();
         public List<TreatmentDef> treatments = new List<TreatmentDef>();
@@ -233,6 +235,7 @@ namespace Loran.Core
         public int warmth = 6;                 // how well dressed they are for the cold, in °C
         // How they look in battle, drawn with the same paper doll as you
         public string figure = "male", skin = "light", hair = "dark brown";
+        public string hairStyle = "", beard = "";
         public List<string> worn = new List<string>();   // gear ids they wear
         // What makes them themselves: one trait that's always on, and abilities that open up as they level (David, 20 Oct)
         public int level = 1;                  // the level they join at

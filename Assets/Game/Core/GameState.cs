@@ -107,7 +107,9 @@ namespace Loran.Core
         public string name = "";
         public string gender = "";             // "male", "female" or "other"; used for how people refer to you
         public string build = "";
-        public string hair = "";
+        public string hair = "";               // hair colour
+        public string hairStyle = "";          // from data.json "hairStyles"; empty: short, or long on the feminine figure
+        public string beard = "";              // from data.json "beards"; empty or "None": clean-shaven
         public string skin = "";               // skin tone, from data.json "skins"
         public string figure = "";             // which body the sprites use: "male" or "female"
         public string background = "";
@@ -215,6 +217,8 @@ namespace Loran.Core
             }
             gender ??= "";
             skin ??= ""; figure ??= "";
+            hair ??= ""; hairStyle ??= ""; beard ??= "";
+            if (hair == "Shaved") { hair = "Dark brown"; if (hairStyle == "") hairStyle = "Cropped"; }   // shaved used to be a colour
             gearItems ??= new List<GearItem>();
             foreach (var g in gearItems) g.traits ??= new List<string>();
             battleLog ??= new List<string>();

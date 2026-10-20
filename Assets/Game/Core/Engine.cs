@@ -63,7 +63,7 @@ namespace Loran.Core
             foreach (var x in d.weathers) x.overlay ??= "";
             foreach (var en in d.enemies) foreach (var mv in en.moves) mv.wounds ??= new List<WoundChance>();
             foreach (var ar in d.areas ?? new List<AreaDef>()) if (string.IsNullOrEmpty(ar.climate)) ar.climate = "coast";
-            foreach (var f in d.followers) { f.worn ??= new List<string>(); f.figure ??= "male"; f.skin ??= "light"; f.hair ??= ""; f.untilWhen ??= new List<string>(); f.until ??= ""; f.quest ??= ""; }
+            foreach (var f in d.followers) { f.worn ??= new List<string>(); f.figure ??= "male"; f.skin ??= "light"; f.hair ??= ""; f.hairStyle ??= ""; f.beard ??= ""; f.untilWhen ??= new List<string>(); f.until ??= ""; f.quest ??= ""; }
             d.backgrounds ??= new List<BackgroundDef>();
             d.gear ??= new List<GearDef>();
             d.traits ??= new List<TraitDef>();
@@ -72,6 +72,8 @@ namespace Loran.Core
             d.journal ??= new List<JournalDef>();
             d.builds ??= new List<string>();
             d.hair ??= new List<string>();
+            d.hairStyles ??= new List<string>();
+            d.beards ??= new List<string>();
             foreach (var e in d.enemies)
             {
                 e.moves ??= new List<EnemyMove>();
@@ -135,7 +137,7 @@ namespace Loran.Core
 
         /// <summary>Applies the character creation form. alloc is the bonus points spread over the stats.</summary>
         public string CreateCharacter(string name, string gender, string build, string hair, string backgroundId, int[] alloc,
-                                      string skin = null, string figure = null)
+                                      string skin = null, string figure = null, string hairStyle = null, string beard = null)
         {
             name = (name ?? "").Trim();
             if (name.Length == 0) return "Give your character a name.";
@@ -150,6 +152,8 @@ namespace Loran.Core
             S.gender = gender;
             S.build = build;
             S.hair = hair;
+            S.hairStyle = hairStyle ?? "";
+            S.beard = beard ?? "";
             S.skin = string.IsNullOrEmpty(skin) ? (data.file.skins.Count > 1 ? data.file.skins[1] : "") : skin;
             S.figure = figure == "male" || figure == "female" ? figure : gender == "female" ? "female" : "male";
             S.background = bg.id;

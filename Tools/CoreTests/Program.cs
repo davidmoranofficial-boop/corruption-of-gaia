@@ -23,6 +23,7 @@ static class Program
         Test("content has no broken links", ContentIsValid);
         Test("full playthrough: hut, coast road, Skelmed's jobs, the pack leader, the road inland", FullPlaythrough);
         Test("save and load round trip", SaveLoad);
+        Test("hair styles and beards: chosen, saved, drawn", Looks);
         Test("dying in basic mode wakes you at your last sleep", BasicDeath);
         Test("dying in permadeath ends the game", PermaDeath);
         Test("running out of energy makes you collapse", Collapse);
@@ -65,6 +66,47 @@ static class Program
         var problems = NewEngine().Validate();
         foreach (var p in problems) Console.WriteLine("    " + p);
         Assert(problems.Count == 0, problems.Count + " problem(s) in the story files");
+    }
+
+    static void Looks()
+    {
+        var e = NewEngine();
+        e.NewGame("basic");
+        Assert(e.data.file.hairStyles.Count >= 10 && e.data.file.beards.Contains("None"), "there should be hair styles and beards to choose");
+        Assert(e.CreateCharacter("Ash", "male", "Lean", "Auburn", "farmer", new[] { 1, 1, 1, 1, 1 }, "Fair", "male", "Topknot", "Stubble") == null, "valid character refused");
+        Assert(e.S.hairStyle == "Topknot" && e.S.beard == "Stubble" && e.S.hair == "Auburn", "the chosen look should be kept");
+        var json = JsonConvert.SerializeObject(e.S);
+        var back = JsonConvert.DeserializeObject<GameState>(json);
+        Assert(back.hairStyle == "Topknot" && back.beard == "Stubble", "the look should survive a save");
+        var old = new GameState { hair = "Shaved" };
+        old.Upgrade();
+        Assert(old.hair == "Dark brown" && old.hairStyle == "Cropped", "old saves with shaved hair should get cropped hair");
+
+        // every choice has its art, for the doll and the walking sprite
+        string spr = Path.Combine(Root, "Assets", "Game", "Resources", "Sprites");
+        string K(string v) => v.Trim().ToLowerInvariant().Replace(' ', '_');
+        foreach (var st in e.data.file.hairStyles)
+            foreach (var hc in e.data.file.hair)
+            {
+                if (K(st) == "bald") continue;
+                foreach (var cap in new[] { "", "_cap" })
+                {
+                    Assert(File.Exists(Path.Combine(spr, "Walk", "hair_" + K(st) + "_" + K(hc) + cap + ".png")), "no walking art for " + st + " " + hc + cap);
+                    Assert(File.Exists(Path.Combine(spr, "Hair", "hair_" + K(st) + "_" + K(hc) + cap + ".png")), "no doll art for " + st + " " + hc + cap);
+                }
+            }
+        foreach (var b in e.data.file.beards)
+            foreach (var hc in e.data.file.hair)
+                if (K(b) != "none")
+                    Assert(File.Exists(Path.Combine(spr, "Walk", "beard_" + K(b) + "_" + K(hc) + ".png")) && File.Exists(Path.Combine(spr, "Hair", "beard_" + K(b) + "_" + K(hc) + ".png")),
+                           "no art for a " + b + " in " + hc);
+        foreach (var sk in e.data.file.skins)
+            foreach (var fig in new[] { "male", "female" })
+                Assert(File.Exists(Path.Combine(spr, "Walk", "body_" + fig + "_" + K(sk) + ".png")), "no walking body for " + fig + " " + sk);
+        foreach (var g in e.data.file.gear)
+            if (g.slot != "ring")
+                Assert(File.Exists(Path.Combine(spr, "WalkGear", g.id + "_male.png")) && File.Exists(Path.Combine(spr, "WalkGear", g.id + "_female.png")),
+                       g.id + " doesn't show on the walking sprite");
     }
 
     static void FullPlaythrough()

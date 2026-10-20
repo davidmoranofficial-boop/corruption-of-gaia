@@ -430,10 +430,21 @@ def main():
     for fig in ('male', 'female'):
         for skin, ramp in SKINS.items():
             made.append(save(render(bodies[fig], dict(zip('sSqQ', ramp))), 'Body', 'body_%s_%s.png' % (fig, skin)))
-        for hair, ramp in HAIRS.items():
-            mask = render(bodies[fig])
-            made.append(save(render(hairs[fig], dict(zip('hH', ramp)), 'outside', mask), 'Hair', 'hair_%s_%s.png' % (fig, hair.replace(' ', '_'))))
+    # hair styles and beards (dollhair.py), in every hair colour; '_cap' is the hair cut short under a helmet
+    import dollhair, walk
     mask = render(bodies['male'])
+    for style, text in dollhair.DOLL_HAIR.items():
+        if not text: continue
+        g = dollhair.grid(text)
+        capped = [[ch if y >= 5 else '.' for ch in row] for y, row in enumerate(g)]
+        for hc, ramp in walk.HAIR3.items():
+            sw = dict(zip('jhH', ramp))
+            made.append(save(render(g, sw, 'outside', mask), 'Hair', 'hair_%s_%s.png' % (style, hc.replace(' ', '_'))))
+            made.append(save(render(capped, sw, 'outside', mask), 'Hair', 'hair_%s_%s_cap.png' % (style, hc.replace(' ', '_'))))
+    for style, text in dollhair.DOLL_BEARDS.items():
+        for hc, ramp in walk.HAIR3.items():
+            made.append(save(render(dollhair.grid(text), dict(zip('jhH', ramp)), 'outside', mask), 'Hair', 'beard_%s_%s.png' % (style, hc.replace(' ', '_'))))
+    made += walk.main()   # the walking sprites: body, hair and gear layers, and the townsfolk
     for gid, (g, back) in GEAR.items():
         made.append(save(render(g, None, 'outside', mask), 'Gear', gid + '.png'))
         made.append(save(render(icon(g)), 'Icons', gid + '.png'))
