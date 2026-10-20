@@ -347,7 +347,7 @@ namespace Loran.UnityLayer
                     if (f == null) continue;
                     string mid = m.id;
                     var g = Add(iacts, new Button(() => { if (engine.UsePotion(mid, id)) GameAudio.Play("pickup"); AfterAction(); }) { text = "Give to " + f.name, focusable = false }, "det-btn");
-                    g.SetEnabled(free && m.hp < f.hp);
+                    g.SetEnabled(free && m.hp > 0 && m.hp < Rules.MemberMaxHp(m, f));
                 }
             }
             else if (uses.Count > 0)

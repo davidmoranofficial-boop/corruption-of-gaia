@@ -549,7 +549,7 @@ namespace Loran.UnityLayer
             Need(needs, "THIRST", sel.thirst, 100, "#4f9b97");
             Need(needs, "ENERGY", sel.energy, 100, "#9d8fd0");
             int power = Mathf.RoundToInt(Rules.PartyPower(sel, d) * 100);
-            Add(c2, new Label(sel.hp <= 0 ? "Down: they can't fight until a potion or a bandage gets them up." : Rules.NoFight(sel.body, d) ? "In no state to fight." : "Fights at " + power + "% of their best."), power < 100 || sel.hp <= 0 ? "line-warn" : "line");
+            Add(c2, new Label(sel.hp <= 0 ? "Down and dying: bind the grave wound (Survival) within six hours or they die for good. A potion won't bring them round." : Rules.NoFight(sel.body, d) ? "In no state to fight." : "Fights at " + power + "% of their best."), power < 100 || sel.hp <= 0 ? "line-warn" : "line");
             Sheet(c2, "Blows", (fd.atkMin + lv - 1) + " to " + (fd.atkMax + lv - 1) + " damage");
             if (sel.body.afflictions.Count > 0)
             {
@@ -573,7 +573,7 @@ namespace Loran.UnityLayer
             if (s.Count("health_potion") > 0)
             {
                 var pb = Add(btns, new Button(() => { if (engine.UsePotion(sid, "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Health potion (" + s.Count("health_potion") + ")", focusable = false }, "small-btn");
-                pb.SetEnabled(free && sel.hp < Rules.MemberMaxHp(sel, fd));
+                pb.SetEnabled(free && sel.hp > 0 && sel.hp < Rules.MemberMaxHp(sel, fd));
             }
             foreach (var food in foods)
             {
@@ -728,7 +728,7 @@ namespace Loran.UnityLayer
                     if (f == null) continue;
                     string mid = m.id;
                     var g = Add(pr, new Button(() => { if (engine.UsePotion(mid, "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Give " + f.name + " a potion", focusable = false }, "small-btn");
-                    g.SetEnabled(free && m.hp < Rules.MemberMaxHp(m, f));
+                    g.SetEnabled(free && m.hp > 0 && m.hp < Rules.MemberMaxHp(m, f));
                 }
             }
             else Add(right, new Label("No health potions. Bess sells them in Skelmed."), "line-muted");

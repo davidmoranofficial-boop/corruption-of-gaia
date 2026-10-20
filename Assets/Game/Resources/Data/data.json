@@ -195,7 +195,7 @@
     {
       "id": "health_potion",
       "name": "Health potion",
-      "desc": "A little stoppered bottle of something red and bitter. Gives back 40 health at once, even in a fight, and gets someone who's down back on their feet.",
+      "desc": "A little stoppered bottle of something red and bitter. Gives back 40 health at once, even in a fight. It heals; it can't bring round someone who's down.",
       "kind": "medicine",
       "heal": 40
     },

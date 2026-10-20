@@ -893,7 +893,9 @@ static class Program
         Assert(m.level == 2 && Math.Abs(m.hp - Rules.MemberMaxHp(m, e.data.Follower("rook"))) < 0.01f, "Rook joins at level 2 with full health");
         m.hp = 0;
         Rules.Afflict(e.S, e.data, m.body, "grave", "Rook");
-        Assert(e.UsePotion("rook", "health_potion") && m.hp == 40 && !Rules.Bleeding(m.body.afflictions[0], e.data.Affliction("grave")), "a potion gets Rook up and stops the grave wound bleeding");
+        Assert(!e.UsePotion("rook", "health_potion") && m.hp == 0 && e.S.Count("health_potion") == 1, "a potion can't raise someone who's down");
+        m.hp = 10;
+        Assert(e.UsePotion("rook", "health_potion") && m.hp == 50, "but it heals someone who's standing");
 
         // Party members level up from the same experience as you
         int lv = m.level;

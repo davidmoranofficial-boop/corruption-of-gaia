@@ -382,7 +382,7 @@ namespace Loran.Core
             return true;
         }
 
-        /// <summary>Drinks a potion yourself (who "") or gives it to someone in your party. Someone who's down gets back up, and their worst wound stops bleeding.</summary>
+        /// <summary>Drinks a potion yourself (who "") or gives it to someone in your party. It only heals: it can't raise someone who's down (David, 20 Oct).</summary>
         public bool UsePotion(string who, string itemId)
         {
             var it = data.Item(itemId);
@@ -401,17 +401,15 @@ namespace Loran.Core
             var m = Member(who);
             var f = data.Follower(who);
             if (m == null || f == null) return false;
+            if (m.hp <= 0) { S.result = f.name + " is down. A potion won't bring them round: bind the wound, and fast."; GoTo(S.scene); return false; }
             if (m.hp >= Rules.MemberMaxHp(m, f)) { S.result = f.name + " isn't hurt."; GoTo(S.scene); return false; }
             S.AddItem(itemId, -1);
             Rules.Advance(S, data, 1, false);
-            bool wasDown = m.hp <= 0;
-            m.hp = Math.Max(0, m.hp) + it.heal;
-            var grave = m.body.afflictions.FirstOrDefault(a => a.id == "grave");
-            if (grave != null && !grave.done.Contains("bandage")) grave.done.Add("bandage");   // the potion closes the worst of it
+            m.hp += it.heal;
             m.morale += 3;
             Rules.ClampMember(m, f);
             m.conditions = Rules.Conditions(m, data);
-            S.result = "You give " + f.name + " the " + it.name.ToLowerInvariant() + "." + (wasDown ? " " + f.name + " is back on their feet." : "");
+            S.result = "You give " + f.name + " the " + it.name.ToLowerInvariant() + ".";
             GoTo(S.scene);
             return true;
         }
