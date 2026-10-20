@@ -1180,7 +1180,7 @@
       "title": "You're bleeding",
       "safe": true,
       "text": [
-        "A broad woman in an apron is sweeping the step of the inn. She takes one look at the blood on you and drops the broom.",
+        "A broad woman in an apron is haggling with a carter over a basket of fish, just inside the gate. She takes one look at the blood on you and forgets the fish.",
         "\"Wolf? Thought so. Sit down before you fall down.\" She's back in a moment with a flask, a roll of linen and two little red bottles. \"Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
         "\"The red ones are health potions. Drink one when you're badly hurt, or give one to a friend. They heal, they don't raise the dead, so don't wait too long. I sell them, when you've the coin.\"",
         "\"Go on, you do it. You'll be doing it yourself on the road, with no one to help.\""
@@ -1195,6 +1195,33 @@
             "flag:patch_lesson",
             "menu:survival"
           ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "bess_gate",
+      "speaker": "Bess",
+      "title": "Bess",
+      "safe": true,
+      "text": [],
+      "extra": [
+        {
+          "when": [
+            "!flag:patch_lesson"
+          ],
+          "text": "\"Wolf? Thought so. Sit down before you fall down.\""
+        },
+        {
+          "when": [
+            "flag:patch_lesson"
+          ],
+          "text": "\"Go on, I'm watching. Clean it first, then bind it. Your pack, the Survival page (S). I'm not going back up that hill till it's done.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"I'm on it.\"",
           "go": "travel"
         }
       ]

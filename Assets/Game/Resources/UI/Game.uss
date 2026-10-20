@@ -2419,17 +2419,77 @@
 .perk-name { font-size: 13px; letter-spacing: 2px; color: var(--moss); -unity-font-style: bold; }
 
 /* ---------- survival: wounds first ---------- */
-.surv-wounds { flex-grow: 1; flex-basis: 0; min-width: 0; }
-.surv-side { width: 470px; flex-shrink: 0; margin-right: 0; }
-.surv-gap { margin-top: 18px; }
-.surv-none { padding: 18px; background-color: var(--sea); border-radius: 8px; }
+.surv-gap { margin-top: 16px; }
+.surv-none { padding: 16px; background-color: var(--sea); border-radius: 8px; }
 .surv-none-head { font-size: 22px; color: var(--moss); -unity-font-style: bold; margin-bottom: 6px; }
-.surv-who { flex-direction: row; align-items: center; margin: 8px 0 8px 0; padding-bottom: 6px; border-bottom-width: 1px; border-bottom-color: var(--line); }
-.surv-who-name { font-size: 15px; letter-spacing: 3px; color: var(--text); -unity-font-style: bold; width: 150px; }
-.surv-who-bar { flex-grow: 1; margin-right: 16px; }
-.surv-who-bar .need { margin-bottom: 0; }
-.surv-who-power { font-size: 14px; color: var(--moss); }
-.surv-who-power-bad { font-size: 14px; color: var(--lantern); }
+.surv-needs { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.surv-needs .need { width: 48%; }
+.surv-heal { margin: 8px 0 2px 0; }
+
+/* Survival, rebuilt (20 Oct): people on top, body chart | wound list | the picked wound, supplies along the bottom */
+.surv-people { flex-direction: row; align-items: center; margin-bottom: 12px; }
+.surv-person {
+    width: 250px; padding: 8px 12px; margin: 0 10px 0 0; flex-direction: column; align-items: stretch;
+    background-color: var(--hull); border-width: 2px; border-color: var(--line); border-radius: 8px;
+}
+.surv-person:hover { border-color: var(--muted); }
+.surv-person-on { border-color: var(--lantern); background-color: var(--hull-hi); }
+.surv-person-top { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.surv-person-name { font-size: 19px; color: var(--text); -unity-font-style: bold; }
+.surv-person-bad { font-size: 14px; color: var(--blood); -unity-font-style: bold; }
+.surv-person-meh { font-size: 14px; color: var(--lantern); }
+.surv-person-ok { font-size: 14px; color: var(--moss); }
+.surv-person .need { margin-bottom: 0; }
+.surv-keyhint { font-size: 13px; color: var(--muted); margin: 4px 0 0 6px; }
+.surv-main { flex-direction: row; align-items: stretch; height: 520px; }
+.surv-chart-col { width: 250px; flex-shrink: 0; align-items: center; }
+.surv-chart { margin: 2px 0 10px 0; }
+.surv-mark {
+    position: absolute; width: 28px; height: 28px; border-radius: 14px; padding: 0; margin: 0;
+    font-size: 15px; -unity-font-style: bold; color: var(--sea); -unity-text-align: middle-center;
+    border-width: 2px; border-color: var(--sea);
+}
+.surv-mark-on { border-width: 3px; border-color: #f4ecd8; }
+.surv-allover { font-size: 15px; color: var(--lantern); white-space: normal; -unity-text-align: middle-center; margin-bottom: 4px; }
+.surv-power { font-size: 17px; color: var(--moss); -unity-font-style: bold; }
+.surv-power-bad { font-size: 17px; color: var(--lantern); -unity-font-style: bold; }
+.surv-bleed { font-size: 15px; color: var(--blood); margin-top: 2px; }
+.surv-scar { font-size: 14px; color: var(--text); white-space: normal; margin-bottom: 4px; align-self: stretch; }
+.surv-list { width: 300px; flex-shrink: 0; }
+.surv-row {
+    flex-direction: row; align-items: center; padding: 8px 10px; margin: 0 0 8px 0;
+    background-color: var(--sea); border-width: 2px; border-color: var(--line); border-radius: 6px;
+}
+.surv-row:hover { border-color: var(--muted); }
+.surv-row-on { border-color: var(--lantern); background-color: var(--hull-hi); }
+.surv-row-num {
+    width: 30px; height: 30px; border-radius: 15px; margin-right: 12px; flex-shrink: 0;
+    -unity-text-align: middle-center; font-size: 16px; -unity-font-style: bold; color: var(--sea);
+}
+.surv-row-text { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.surv-row-name { font-size: 19px; color: var(--text); -unity-font-style: bold; -unity-text-align: middle-left; }
+.surv-row-sub { font-size: 14px; color: var(--muted); -unity-text-align: middle-left; }
+.surv-detail { flex-grow: 1; flex-basis: 0; min-width: 0; margin-right: 0; }
+.surv-where { font-size: 15px; color: var(--brine); margin: 4px 0 8px 0; }
+.surv-desc { font-size: 17px; color: var(--text); white-space: normal; margin-bottom: 8px; }
+.surv-effects { flex-direction: row; flex-wrap: wrap; margin-bottom: 4px; }
+.surv-effect { font-size: 14px; color: var(--text); background-color: var(--hull-hi); padding: 3px 10px; border-radius: 10px; margin: 0 6px 6px 0; }
+.treat-step-next { border-width: 2px; border-color: var(--lantern); }
+.surv-bar {
+    flex-direction: row; align-items: center; margin-top: 12px; padding: 8px 12px;
+    background-color: var(--hull); border-width: 1px; border-color: var(--line); border-radius: 8px;
+}
+.surv-meds { flex-direction: row; }
+.surv-med, .surv-med-none {
+    width: 50px; height: 46px; align-items: center; justify-content: center; margin: 0 6px 0 0;
+    background-color: var(--sea); border-width: 1px; border-color: var(--line); border-radius: 6px;
+}
+.surv-med-none { opacity: 0.35; }
+.surv-med-count { position: absolute; right: 3px; bottom: 0; font-size: 14px; color: var(--text); -unity-font-style: bold; }
+.surv-acts { flex-direction: row; margin-left: 10px; }
+.surv-acts .small-btn { margin: 0 8px 0 0; }
+.surv-weather { font-size: 15px; color: var(--muted); margin-left: auto; }
+
 .wound-card {
     padding: 12px 14px; margin-bottom: 12px; background-color: var(--sea);
     border-width: 1px; border-left-width: 5px; border-color: var(--line); border-radius: 6px;
@@ -2443,7 +2503,6 @@
 .wound-chip-warn { background-color: var(--lantern); }
 .wound-chip-good { background-color: var(--moss); }
 .wound-effects { font-size: 15px; color: var(--text); margin: 4px 0 6px 0; }
-.surv-heal { margin: 6px 0 2px 0; }
 .treat-step, .treat-step-done {
     flex-direction: row; align-items: center; margin-top: 8px; padding: 8px 10px;
     background-color: var(--hull); border-radius: 6px;
@@ -2459,16 +2518,6 @@
 .treat-name { font-size: 18px; color: var(--text); }
 .treat-cost { font-size: 14px; color: var(--muted); white-space: normal; }
 .treat-cost-missing { font-size: 14px; color: var(--blood); white-space: normal; }
-.surv-meds { flex-direction: row; flex-wrap: wrap; margin-bottom: 6px; }
-.surv-med, .surv-med-none {
-    width: 104px; align-items: center; margin: 0 8px 8px 0; padding: 8px 4px 6px 4px;
-    background-color: var(--sea); border-width: 1px; border-color: var(--line); border-radius: 6px;
-}
-.surv-med-none { opacity: 0.4; }
-.surv-med-count { position: absolute; right: 8px; top: 4px; font-size: 16px; color: var(--text); -unity-font-style: bold; }
-.surv-med-name { font-size: 12px; color: var(--muted); margin-top: 4px; -unity-text-align: middle-center; white-space: normal; }
-.surv-needs { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
-.surv-needs .need { width: 48%; }
 
 /* ---------- party ---------- */
 .party-tab {

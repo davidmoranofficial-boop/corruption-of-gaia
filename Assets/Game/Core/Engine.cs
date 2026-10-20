@@ -180,6 +180,10 @@ namespace Loran.Core
                 { "desk", "scholar" }, { "warehouse", "soldier" }, { "runner", "thief" }, { "nights", "farmer" }, { "retail", "farmer" },
                 { "deckhand", "farmer" }, { "sellsword", "soldier" }, { "street_rat", "thief" }, { "farmhand", "farmer" }, { "hedge_witch", "scholar" } };
             if (oldLives.TryGetValue(S.background ?? "", out var life)) S.background = life;
+            // Wounds from before they had a place on the body: put them where that kind of wound goes
+            foreach (var b in new[] { S.body }.Concat(S.party.Select(m => m.body)))
+                foreach (var a in b.afflictions)
+                    if (a.part == "" && data.Affliction(a.id)?.parts.Count > 0) a.part = data.Affliction(a.id).parts[0];
         }
 
         /// <summary>Saves made on the old coast road, or in a scene that no longer exists, are moved onto the map.</summary>
@@ -580,7 +584,7 @@ namespace Loran.Core
             {
                 case "flag": if (!S.Has(arg)) S.flags.Add(arg); return;
                 case "unflag": S.flags.Remove(arg); return;
-                case "wound": Rules.Afflict(S, data, S.body, arg, null); return;
+                case "wound": Rules.Afflict(S, data, S.body, arg, null, null, WoundedBy()); return;
                 case "menu": MenuRequest = arg; return;
                 case "spell":
                     if (!S.spells.Contains(arg))
@@ -939,6 +943,7 @@ namespace Loran.Core
                 foreach (var t in a.treat) if (data.Treatment(t) == null) problems.Add("affliction " + a.id + ": no treatment '" + t + "'");
                 if (a.worsen != "" && data.Affliction(a.worsen) == null) problems.Add("affliction " + a.id + ": no affliction '" + a.worsen + "'");
                 if (a.worsenUnless != "" && !a.treat.Contains(a.worsenUnless)) problems.Add("affliction " + a.id + ": worsenUnless isn't one of its treatments");
+                foreach (var part in a.parts) if (Array.IndexOf(Rules.BodyParts, part) < 0) problems.Add("affliction " + a.id + ": no body part '" + part + "'");
             }
             foreach (var t in data.file.treatments)
             {

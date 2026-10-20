@@ -456,6 +456,8 @@ def main():
         made.append(save(paint(), 'Backdrops', name + '.png'))
     import fx
     made += fx.main()
+    import bodychart
+    made += bodychart.main()
     import world
     world.main()
     print('built %d sprites into %s' % (len(made), os.path.normpath(OUT)))

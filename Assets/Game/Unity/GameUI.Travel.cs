@@ -85,6 +85,7 @@ namespace Loran.UnityLayer
                 DrawObject(o);
             }
             if (!youDrawn) DrawYouAndFollower();
+            DrawWalk();
 
             var over = Sprite("World/" + a.id + "_over");
             if (over != null)
@@ -445,6 +446,103 @@ namespace Loran.UnityLayer
             e.style.top = o.y * T - extra;
         }
 
+        // ------------------------------------------------------------------ people walking about on their own
+
+        // Someone the story moves (Bess heading home once she's patched you up): the game has already put them at the
+        // other end, so the screen hides them there and plays them walking the way, tile by tile, then shows them again.
+        const float NpcStepSeconds = 0.28f;
+        List<Vector2Int> walkPath;
+        string walkTo, walkSheet, walkArea;
+        float walkStart;
+        (VisualElement box, VisualElement sheet) walkSprite;
+
+        void DrawWalk()
+        {
+            if (walkPath != null && engine.Area.id != walkArea) walkPath = null;
+            if (walkPath == null && openMenu == "" && engine.Walks.Count > 0) StartWalk();
+            if (walkPath == null) return;
+            if (objectSprites.TryGetValue(walkTo, out var there)) there.box.style.display = DisplayStyle.None;
+            walkSprite = Walker(walkSheet);
+            PlaceWalk();
+        }
+
+        void StartWalk()
+        {
+            var (from, to) = engine.Walks[0];
+            engine.Walks.RemoveAt(0);
+            var a = engine.Area;
+            var f = a.objects.FirstOrDefault(o => o.id == from);
+            var t = a.objects.FirstOrDefault(o => o.id == to);
+            if (f == null || t == null || string.IsNullOrEmpty(t.sprite)) return;
+            var path = NpcPath(new Vector2Int(f.x, f.y), new Vector2Int(t.x, t.y), true) ?? NpcPath(new Vector2Int(f.x, f.y), new Vector2Int(t.x, t.y), false);
+            if (path == null || path.Count < 2) return;
+            walkPath = path;
+            walkTo = to;
+            walkSheet = "Walk/" + t.sprite;
+            walkArea = a.id;
+            walkStart = Time.realtimeSinceStartup;
+        }
+
+        /// <summary>The shortest way between two tiles over open ground, round people and things (and round you, if it can).</summary>
+        List<Vector2Int> NpcPath(Vector2Int from, Vector2Int to, bool avoidYou)
+        {
+            var a = engine.Area;
+            int w = Engine.Width(a), h = Engine.Height(a);
+            var prev = new Dictionary<Vector2Int, Vector2Int>();
+            var queue = new Queue<Vector2Int>();
+            queue.Enqueue(from);
+            prev[from] = from;
+            var steps = new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
+            while (queue.Count > 0)
+            {
+                var c = queue.Dequeue();
+                if (c == to) break;
+                foreach (var d in steps)
+                {
+                    var n = c + d;
+                    if (n.x < 0 || n.y < 0 || n.x >= w || n.y >= h || prev.ContainsKey(n)) continue;
+                    if (n != to)
+                    {
+                        var tile = engine.data.Tile(a.rows[n.y][n.x]);
+                        if (tile == null || tile.solid || engine.ObjectAt(n.x, n.y) != null) continue;
+                        if (avoidYou && n.x == engine.S.ax && n.y == engine.S.ay) continue;
+                    }
+                    prev[n] = c;
+                    queue.Enqueue(n);
+                }
+            }
+            if (!prev.ContainsKey(to)) return null;
+            var path = new List<Vector2Int>();
+            for (var c = to; c != from; c = prev[c]) path.Add(c);
+            path.Add(from);
+            path.Reverse();
+            return path;
+        }
+
+        void PlaceWalk()
+        {
+            if (walkSprite.box == null || walkSprite.box.panel == null) return;
+            float t = (Time.realtimeSinceStartup - walkStart) / NpcStepSeconds;
+            int i = Mathf.FloorToInt(t);
+            if (i >= walkPath.Count - 1)
+            {
+                walkSprite.box.RemoveFromHierarchy();
+                walkSprite = default;
+                walkPath = null;
+                if (objectSprites.TryGetValue(walkTo, out var there)) there.box.style.display = DisplayStyle.Flex;
+                return;
+            }
+            float frac = t - i;
+            Vector2 a = walkPath[i], b = walkPath[i + 1];
+            var at = Vector2.Lerp(a, b, frac);
+            var dir = walkPath[i + 1] - walkPath[i];
+            string facing = dir.x > 0 ? "right" : dir.x < 0 ? "left" : dir.y > 0 ? "down" : "up";
+            int k = worldScale, T = Tile * k;
+            walkSprite.box.style.left = Mathf.Round(at.x * T);
+            walkSprite.box.style.top = Mathf.Round(at.y * T - 8 * k);
+            SetFrame(walkSprite.sheet, facing, frac < 0.5f ? 1 + i % 2 : 0);
+        }
+
         /// <summary>Puts you on a (possibly in-between) tile and moves the camera to keep you in the middle.</summary>
         void PlaceYou(Vector2 tile, int frame)
         {
@@ -479,6 +577,7 @@ namespace Loran.UnityLayer
         {
             if (worldView == null || worldView.panel == null) return;
             MoveWeather();
+            if (walkPath != null) PlaceWalk();
             var s = engine.S;
             // Out of a fight your breath comes back by itself; redraw the bars a few times a second while it does
             float now = Time.realtimeSinceStartup;

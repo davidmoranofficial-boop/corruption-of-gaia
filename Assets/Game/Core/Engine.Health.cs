@@ -41,6 +41,23 @@ namespace Loran.Core
             return (false, null, "needs " + string.Join(" and ", first));
         }
 
+        /// <summary>
+        /// Someone in the world walking from one place to another (Bess going home): the object they were, then the
+        /// object they become. The game has already moved them; the screen plays the walk and then clears this.
+        /// </summary>
+        public readonly List<(string from, string to)> Walks = new List<(string from, string to)>();
+
+        /// <summary>The first step of a wound's treatment you can do right now, or null (all done, only rest left, or you lack what it needs).</summary>
+        public string NextStep(string who, string afflictionId)
+        {
+            var a = BodyOf(who)?.afflictions.FirstOrDefault(x => x.id == afflictionId);
+            var def = data.Affliction(afflictionId);
+            if (a == null || def == null) return null;
+            foreach (var step in def.treat)
+                if (step != "rest" && !a.done.Contains(step) && TreatmentCost(step).ok) return step;
+            return null;
+        }
+
         /// <summary>Treats one wound with one step. who "" is you, or a party member's id.</summary>
         public bool Treat(string who, string afflictionId, string step)
         {
@@ -65,7 +82,8 @@ namespace Loran.Core
             if (who == "" && Rules.Treated(a, def) && S.Has("patch_lesson") && !S.Has("patch_done"))
             {
                 S.flags.Add("patch_done");
-                S.result += " Bess nods. \"That'll do. Keep it clean and it'll knit. You'll want your own linen and spirits on the road.\"";
+                S.result += " Bess nods. \"That'll do. Keep it clean and it'll knit. You'll want your own linen and spirits on the road. Come up to the inn if you need a bed.\" She picks up her fish and heads back up through the village.";
+                Walks.Add(("bess_gate", "bess"));
             }
 
             // A companion who was down gets back on their feet once the grave wound is dealt with
@@ -81,6 +99,9 @@ namespace Loran.Core
             return true;
         }
 
+        /// <summary>What you're fighting (or just fought), as a wound's cause: "the yellow-eyed wolf". "" when nothing.</summary>
+        string WoundedBy() { var e = string.IsNullOrEmpty(S.enemy) ? null : data.Enemy(S.enemy); return e == null ? "" : "the " + e.name.ToLowerInvariant(); }
+
         /// <summary>A hit might leave a wound: each of the move's wounds has its % chance, more for a crushing blow, less when braced.</summary>
         void MaybeWound(EnemyMove move, Body b, string who, int damage, bool braced)
         {
@@ -88,7 +109,7 @@ namespace Loran.Core
             foreach (var w in move.wounds)
             {
                 float chance = w.chance * (move.power >= 1.5f ? 1.5f : 1f) * (braced ? 0.5f : 1f);
-                if (Roll(1, 100) <= chance) { Rules.Afflict(S, data, b, w.id, who); return; }
+                if (Roll(1, 100) <= chance) { Rules.Afflict(S, data, b, w.id, who, null, WoundedBy()); return; }
             }
         }
 
@@ -112,7 +133,7 @@ namespace Loran.Core
                 if (f == null || m.hp > 0) continue;
                 m.hp = 0;
                 m.morale -= 5;
-                Rules.Afflict(S, data, m.body, "grave", f.name);
+                Rules.Afflict(S, data, m.body, "grave", f.name, null, WoundedBy());
             }
         }
     }

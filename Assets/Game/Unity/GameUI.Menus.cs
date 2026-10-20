@@ -70,7 +70,7 @@ namespace Loran.UnityLayer
                 case "character": MenuCharacter(body); break;
                 case "skills": MenuSkills(body); break;
                 case "journal": MenuJournal(body); break;
-                case "survival": MenuSurvival(body); break;
+                case "survival": MenuSurvival(body); keys = "↑ ↓  wound      ← →  person      Enter  next step      " + keys; break;
                 case "party": MenuParty(body); break;
                 default:
                 {
@@ -99,6 +99,7 @@ namespace Loran.UnityLayer
         bool MenuKey(KeyDownEvent e)
         {
             if (e.keyCode == KeyCode.Tab) { NextMenu(e.shiftKey ? -1 : 1); return true; }
+            if (openMenu == "survival" && SurvivalKey(e.keyCode)) return true;
             if (openMenu == "inventory" && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter))
             {
                 InventoryUse();

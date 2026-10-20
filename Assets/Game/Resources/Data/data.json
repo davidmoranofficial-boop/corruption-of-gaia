@@ -1330,7 +1330,23 @@
           "x": 9,
           "y": 8,
           "facing": "down",
-          "scene": "bess"
+          "scene": "bess",
+          "when": [
+            "flag:patch_done|!untreated:bite"
+          ]
+        },
+        {
+          "id": "bess_gate",
+          "kind": "npc",
+          "sprite": "npc_bess",
+          "x": 19,
+          "y": 24,
+          "facing": "left",
+          "scene": "bess_gate",
+          "when": [
+            "!flag:patch_done",
+            "untreated:bite"
+          ]
         },
         {
           "id": "dockhand",
@@ -2243,7 +2259,14 @@
       "heal": 36,
       "worsen": "infection",
       "worsenAfter": 12,
-      "worsenUnless": "clean"
+      "worsenUnless": "clean",
+      "parts": [
+        "left_arm",
+        "right_arm",
+        "left_leg",
+        "right_leg"
+      ],
+      "scar": "Bite scar"
     },
     {
       "id": "cut",
@@ -2255,7 +2278,15 @@
         "bandage"
       ],
       "heal": 24,
-      "selfHeal": 30
+      "selfHeal": 30,
+      "parts": [
+        "head",
+        "chest",
+        "left_arm",
+        "right_arm",
+        "left_leg",
+        "right_leg"
+      ]
     },
     {
       "id": "gash",
@@ -2272,7 +2303,16 @@
       "heal": 72,
       "worsen": "infection",
       "worsenAfter": 10,
-      "worsenUnless": "clean"
+      "worsenUnless": "clean",
+      "parts": [
+        "chest",
+        "belly",
+        "left_arm",
+        "right_arm",
+        "left_leg",
+        "right_leg"
+      ],
+      "scar": "Long scar"
     },
     {
       "id": "broken_arm",
@@ -2282,7 +2322,12 @@
       "treat": [
         "splint"
       ],
-      "heal": 120
+      "heal": 120,
+      "parts": [
+        "left_arm",
+        "right_arm"
+      ],
+      "scar": "Old break"
     },
     {
       "id": "broken_leg",
@@ -2295,7 +2340,12 @@
       "treat": [
         "splint"
       ],
-      "heal": 168
+      "heal": 168,
+      "parts": [
+        "left_leg",
+        "right_leg"
+      ],
+      "scar": "Old break"
     },
     {
       "id": "cracked_ribs",
@@ -2306,7 +2356,10 @@
       "treat": [
         "bandage"
       ],
-      "heal": 96
+      "heal": 96,
+      "parts": [
+        "chest"
+      ]
     },
     {
       "id": "sprain",
@@ -2318,7 +2371,11 @@
         "bandage"
       ],
       "heal": 24,
-      "selfHeal": 72
+      "selfHeal": 72,
+      "parts": [
+        "left_leg",
+        "right_leg"
+      ]
     },
     {
       "id": "concussion",
@@ -2330,7 +2387,10 @@
       "treat": [
         "rest"
       ],
-      "heal": 12
+      "heal": 12,
+      "parts": [
+        "head"
+      ]
     },
     {
       "id": "infection",
@@ -2396,7 +2456,12 @@
         "stitch"
       ],
       "heal": 48,
-      "deadline": 6
+      "deadline": 6,
+      "parts": [
+        "chest",
+        "belly"
+      ],
+      "scar": "Terrible scar"
     }
   ],
   "treatments": [

@@ -670,163 +670,351 @@ namespace Loran.UnityLayer
         static readonly string[] Medicines = { "health_potion", "bandage", "spirits", "yarrow", "willow_bark", "splint", "sewing_kit" };
 
         /// <summary>
-        /// Survival: treating wounds comes first (David, 20 Oct). On the left, everyone who's hurt and each wound's
-        /// treatment as numbered steps. On the right, the medicine you carry, then your needs and the weather in brief.
+        /// Survival, rebuilt (David, 20 Oct: "very hard to read, it feels like it's all squashed"). The old page stacked
+        /// every wound with every step, so it grew too tall and the screen shrank it. Now it's one person and one wound at
+        /// a time, the way RimWorld's health tab and Project Zomboid's health panel do it:
+        ///   people along the top (you, then your party);
+        ///   a body chart on the left, each part tinted by its worst wound, with numbered markers;
+        ///   the wounds as a list in the middle, most urgent first;
+        ///   the picked wound on the right, with its treatment as numbered steps;
+        ///   your medicine, potions and the weather along the bottom.
+        /// Up/Down picks a wound, Left/Right picks a person, Enter does the next step.
         /// </summary>
+        string survWho = "";      // whose wounds are showing: "" is you, or a party member's id
+        string survSel = "";      // the wound picked
+
+        static readonly Dictionary<string, Vector2> PartSpot = new Dictionary<string, Vector2>
+        {
+            { "head", new Vector2(24, 9) }, { "chest", new Vector2(24, 23) }, { "belly", new Vector2(24, 34) },
+            { "left_arm", new Vector2(12, 31) }, { "right_arm", new Vector2(36, 31) },
+            { "left_leg", new Vector2(19, 50) }, { "right_leg", new Vector2(28, 50) },
+        };
+        static readonly string[] UrgencyColour = { "#c8573f", "#c8573f", "#d08a4a", "#e3a64e", "#7fae6a" };
+        const int ChartScale = 4;
+
+        /// <summary>Someone's wounds, most urgent first.</summary>
+        List<(Affliction a, AfflictionDef def)> SurvWounds(Body b)
+        {
+            var d = engine.data;
+            if (b == null) return new List<(Affliction, AfflictionDef)>();
+            return b.afflictions.Select(a => (a, def: d.Affliction(a.id))).Where(x => x.def != null)
+                    .OrderBy(x => Rules.Urgency(x.a, x.def)).ThenBy(x => Array.IndexOf(Rules.BodyParts, x.a.part)).ToList();
+        }
+
+        /// <summary>The people on the Survival page: you, then your party.</summary>
+        List<string> SurvPeople() => new[] { "" }.Concat(engine.S.party.Where(m => engine.data.Follower(m.id) != null).Select(m => m.id)).ToList();
+
+        void SurvFix()
+        {
+            if (!SurvPeople().Contains(survWho)) survWho = "";
+            var list = SurvWounds(engine.BodyOf(survWho));
+            if (list.All(x => x.a.id != survSel)) survSel = list.Count > 0 ? list[0].a.id : "";
+        }
+
+        /// <summary>Survival keys: Up/Down a wound, Left/Right a person, Enter the next step.</summary>
+        bool SurvivalKey(KeyCode k)
+        {
+            SurvFix();
+            if (k == KeyCode.UpArrow || k == KeyCode.DownArrow)
+            {
+                var list = SurvWounds(engine.BodyOf(survWho));
+                if (list.Count == 0) return true;
+                int i = Mathf.Max(0, list.FindIndex(x => x.a.id == survSel));
+                i = (i + (k == KeyCode.UpArrow ? -1 : 1) + list.Count) % list.Count;
+                survSel = list[i].a.id;
+                GameAudio.Play("ui_tick");
+                Render();
+                return true;
+            }
+            if (k == KeyCode.LeftArrow || k == KeyCode.RightArrow)
+            {
+                var people = SurvPeople();
+                int i = Mathf.Max(0, people.IndexOf(survWho));
+                survWho = people[(i + (k == KeyCode.LeftArrow ? -1 : 1) + people.Count) % people.Count];
+                survSel = "";
+                GameAudio.Play("ui_tick");
+                Render();
+                return true;
+            }
+            if (k == KeyCode.Return || k == KeyCode.KeypadEnter)
+            {
+                string step = survSel == "" ? null : engine.NextStep(survWho, survSel);
+                if (step != null) SurvTreat(survWho, survSel, step);
+                else GameAudio.Play("ui_tick", 0.5f);
+                return true;
+            }
+            return false;
+        }
+
+        void SurvTreat(string who, string aid, string step)
+        {
+            if (engine.Treat(who, aid, step)) GameAudio.Play(step == "bandage" || step == "splint" || step == "stitch" ? "bandage" : "pickup");
+            AfterAction();
+        }
+
         void MenuSurvival(VisualElement body)
         {
             var s = engine.S;
             var d = engine.data;
             bool free = engine.FreeToAct;
-            var row = Add(body, new VisualElement(), "inv");
+            SurvFix();
+            var page = Add(body, new VisualElement(), "surv");
 
-            var left = Add(row, new VisualElement(), "inv-col");
-            left.AddToClassList("surv-wounds");
-            Add(left, new Label("WOUNDS AND AILMENTS"), "section-head");
+            // Who: you, then your party
+            var people = Add(page, new VisualElement(), "surv-people");
+            foreach (var who in SurvPeople())
+            {
+                var m = who == "" ? null : engine.Member(who);
+                var f = m == null ? null : d.Follower(who);
+                var b = who == "" ? s.body : m.body;
+                float hp = who == "" ? s.hp : m.hp, max = who == "" ? Rules.MaxHp(s) : Rules.MemberMaxHp(m, f);
+                string id = who;
+                var tab = Add(people, new Button(() => { if (survWho != id) { survWho = id; survSel = ""; GameAudio.Play("ui_tick"); Render(); } }) { focusable = false }, "surv-person");
+                if (who == survWho) tab.AddToClassList("surv-person-on");
+                var top = Add(tab, new VisualElement(), "surv-person-top");
+                Add(top, new Label(who == "" ? "You" : f.name), "surv-person-name");
+                var wounds = SurvWounds(b);
+                int worst = wounds.Count == 0 ? 9 : Rules.Urgency(wounds[0].a, wounds[0].def);
+                string status = hp <= 0 ? "DOWN" : wounds.Count == 0 ? "No wounds" : worst <= 1 ? "Bleeding" : wounds.Count + (wounds.Count == 1 ? " wound" : " wounds");
+                Add(top, new Label(status), hp <= 0 || worst <= 1 ? "surv-person-bad" : wounds.Count == 0 ? "surv-person-ok" : "surv-person-meh");
+                Need(tab, "HEALTH", Mathf.Max(0, hp), max, "#c8573f");
+            }
+            Add(people, new Label("←  →  person"), "surv-keyhint");
+
             if (s.Has("patch_lesson") && !s.Has("patch_done") && engine.Check("untreated:bite"))
-                Add(left, new Label("Bess is watching. Do the steps in order: clean the bite first (that uses the spirits), then bandage it. This is where you treat every wound: S, or the menu wheel (I)."), "tutorial-hint");
-            bool any = WoundList(left, "", s.name, s.hp, Rules.MaxHp(s), s.body, free, true);
-            foreach (var m in s.party)
-            {
-                var f = d.Follower(m.id);
-                if (f != null) any |= WoundList(left, m.id, f.name, m.hp, Rules.MemberMaxHp(m, f), m.body, free, false);
-            }
-            if (!any)
-            {
-                var ok = Add(left, new VisualElement(), "surv-none");
-                Add(ok, new Label("No wounds."), "surv-none-head");
-                Add(ok, new Label("Fights leave bites, cuts and broken bones, and the weather leaves chills. When something happens it shows here, with each step to treat it. Carry bandages and spirits, and a sewing kit if you can."), "line-muted");
-            }
-            if (s.fallen.Count > 0) Add(left, new Label("Lost: " + string.Join(", ", s.fallen.Select(id => d.Follower(id)?.name ?? id)) + "."), "line-muted");
+                Add(page, new Label("Bess is watching. Pick the bite, then do the steps in order: clean it (that uses the spirits), then bandage it. Enter does the next step."), "tutorial-hint");
 
-            var right = Add(row, new VisualElement(), "inv-col");
-            right.AddToClassList("surv-side");
-            // What you've got to treat them with
-            Add(right, new Label("MEDICINE IN YOUR PACK"), "section-head");
-            var grid = Add(right, new VisualElement(), "surv-meds");
+            var main = Add(page, new VisualElement(), "surv-main");
+            var mem = survWho == "" ? null : engine.Member(survWho);
+            var fd = mem == null ? null : d.Follower(survWho);
+            var bodyNow = engine.BodyOf(survWho);
+            var list = SurvWounds(bodyNow);
+            var picked = list.FirstOrDefault(x => x.a.id == survSel);
+
+            // The body chart
+            var left = Add(main, new VisualElement(), "inv-col");
+            left.AddToClassList("surv-chart-col");
+            Add(left, new Label("BODY"), "section-head");
+            var chart = Add(left, new VisualElement(), "surv-chart");
+            chart.style.width = 48 * ChartScale;
+            chart.style.height = 64 * ChartScale;
+            foreach (var part in Rules.BodyParts)
+            {
+                var here = list.Where(x => x.a.part == part).ToList();
+                var tex = Sprite("Ui/chart_" + part);
+                if (tex == null) continue;
+                var layer = Add(chart, new VisualElement { pickingMode = PickingMode.Ignore }, "doll-layer");
+                layer.style.backgroundImage = new StyleBackground(tex);
+                string col = here.Count == 0 ? "#9fa9a6" : UrgencyColour[here.Min(x => Rules.Urgency(x.a, x.def))];
+                ColorUtility.TryParseHtmlString(col, out var tint);
+                layer.style.unityBackgroundImageTintColor = tint;
+            }
+            // numbered markers, matching the list
+            var perPart = new Dictionary<string, int>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                var (a, def) = list[i];
+                if (!PartSpot.TryGetValue(a.part ?? "", out var spot)) continue;
+                perPart.TryGetValue(a.part, out int n);
+                perPart[a.part] = n + 1;
+                string aid = a.id;
+                var mark = Add(chart, new Button(() => { survSel = aid; GameAudio.Play("ui_tick"); Render(); }) { text = (i + 1).ToString(), focusable = false }, "surv-mark");
+                if (aid == survSel) mark.AddToClassList("surv-mark-on");
+                ColorUtility.TryParseHtmlString(UrgencyColour[Rules.Urgency(a, def)], out var mc);
+                mark.style.backgroundColor = mc;
+                mark.style.left = spot.x * ChartScale - 14 + n * 22;
+                mark.style.top = spot.y * ChartScale - 14;
+            }
+            var allOver = list.Where(x => string.IsNullOrEmpty(x.a.part)).ToList();
+            if (allOver.Count > 0) Add(left, new Label("All over: " + string.Join(", ", allOver.Select(x => x.def.name))), "surv-allover");
+            float pw = mem == null ? Rules.FightPower(s.body, d) : Rules.PartyPower(mem, d);
+            int power = Mathf.RoundToInt(pw * 100);
+            bool noFight = bodyNow != null && Rules.NoFight(bodyNow, d);
+            Add(left, new Label(mem != null && mem.hp <= 0 ? "Down and dying" : noFight ? "Can't fight" : "Fights at " + power + "%"), power < 100 || noFight ? "surv-power-bad" : "surv-power");
+            float bleed = list.Where(x => Rules.Bleeding(x.a, x.def)).Sum(x => x.def.bleed);
+            if (bleed > 0) Add(left, new Label("Losing " + bleed.ToString("0.#") + " health an hour"), "surv-bleed");
+            var scars = bodyNow?.scars ?? new List<Scar>();
+            if (scars.Count > 0)
+            {
+                Add(left, new Label("SCARS"), "section-head").AddToClassList("surv-gap");
+                foreach (var sc in scars.Skip(Mathf.Max(0, scars.Count - 3)))
+                    Add(left, new Label(sc.name + "  ·  " + Rules.PartName(sc.part)), "surv-scar").tooltip = Cap(sc.name) + " on the " + Rules.PartName(sc.part) + (sc.from != "" ? ", from " + sc.from : "") + ", day " + sc.day + ".";
+                if (scars.Count > 3) Add(left, new Label("and " + (scars.Count - 3) + " older"), "line-muted");
+            }
+
+            // The wounds
+            var mid = Add(main, new VisualElement(), "inv-col");
+            mid.AddToClassList("surv-list");
+            Add(mid, new Label(list.Count == 0 ? "WOUNDS" : "WOUNDS  ·  " + list.Count), "section-head");
+            if (list.Count == 0)
+            {
+                var ok = Add(mid, new VisualElement(), "surv-none");
+                Add(ok, new Label("No wounds."), "surv-none-head");
+                Add(ok, new Label("Fights leave bites, cuts and broken bones, and the weather leaves chills. When something happens it shows here, with each step to treat it."), "line-muted");
+            }
+            for (int i = 0; i < list.Count; i++)
+            {
+                var (a, def) = list[i];
+                string aid = a.id;
+                int u = Rules.Urgency(a, def);
+                var row = Add(mid, new Button(() => { survSel = aid; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "surv-row");
+                if (aid == survSel) row.AddToClassList("surv-row-on");
+                var num = Add(row, new Label((i + 1).ToString()), "surv-row-num");
+                ColorUtility.TryParseHtmlString(UrgencyColour[u], out var nc);
+                num.style.backgroundColor = nc;
+                var txt = Add(row, new VisualElement(), "surv-row-text");
+                Add(txt, new Label(def.name), "surv-row-name");
+                Add(txt, new Label(Cap(Rules.PartName(a.part)) + "  ·  " + WoundState(a, def)), "surv-row-sub");
+            }
+            if (list.Count > 1) Add(mid, new Label("↑  ↓  pick a wound"), "surv-keyhint");
+            if (s.fallen.Count > 0) Add(mid, new Label("Lost: " + string.Join(", ", s.fallen.Select(id => d.Follower(id)?.name ?? id)) + "."), "line-muted");
+
+            // The one picked
+            var right = Add(main, new VisualElement(), "inv-col");
+            right.AddToClassList("surv-detail");
+            if (picked.a == null) SurvHealthy(right, mem, fd);
+            else SurvWound(right, picked.a, picked.def, free);
+
+            // Along the bottom: medicine, potions, water, weather
+            var bar = Add(page, new VisualElement(), "surv-bar");
+            var meds = Add(bar, new VisualElement(), "surv-meds");
             foreach (var id in Medicines)
             {
                 var it = d.Item(id);
                 if (it == null) continue;
                 int n = s.Count(id);
-                var cell = Add(grid, new VisualElement(), n > 0 ? "surv-med" : "surv-med-none");
-                Icon(cell, id, 3);
+                var cell = Add(meds, new VisualElement(), n > 0 ? "surv-med" : "surv-med-none");
+                Icon(cell, id, 2);
                 Add(cell, new Label(n.ToString()), "surv-med-count");
-                Add(cell, new Label(it.name), "surv-med-name");
-                cell.tooltip = it.desc;
+                cell.tooltip = it.name + ": " + it.desc;
             }
-            Add(right, new Label("Water " + s.water + " / " + Rules.WaterskinSize + " (two drinks can clean a wound at a pinch)"), "line-muted");
+            var acts = Add(bar, new VisualElement(), "surv-acts");
             int potions = s.Count("health_potion");
-            if (potions > 0)
-            {
-                var pr = Add(right, new VisualElement(), "party-btns");
-                var mine = Add(pr, new Button(() => { if (engine.UsePotion("", "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Drink a potion  (+40 health)", focusable = false }, "small-btn");
-                mine.SetEnabled(free && s.hp < Rules.MaxHp(s));
-                foreach (var m in s.party)
-                {
-                    var f = d.Follower(m.id);
-                    if (f == null) continue;
-                    string mid = m.id;
-                    var g = Add(pr, new Button(() => { if (engine.UsePotion(mid, "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Give " + f.name + " a potion", focusable = false }, "small-btn");
-                    g.SetEnabled(free && m.hp > 0 && m.hp < Rules.MemberMaxHp(m, f));
-                }
-            }
-            else Add(right, new Label("No health potions. Bess sells them in Skelmed."), "line-muted");
-
-            // Your needs, in brief
-            Add(right, new Label("HOW YOU'RE DOING"), "section-head").AddToClassList("surv-gap");
-            var needs = Add(right, new VisualElement(), "surv-needs");
-            Need(needs, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
-            Need(needs, "STAMINA", s.stamina, Rules.MaxStamina(s, d), "#7fae6a");
-            Need(needs, "HUNGER", s.hunger, 100, "#d08a4a");
-            Need(needs, "THIRST", s.thirst, 100, "#4f9b97");
-            Need(needs, "ENERGY", s.energy, 100, "#9d8fd0");
-            var drink = Add(right, new Button(() => { engine.Drink(); AfterAction(); }) { text = "Drink from your waterskin  (" + s.water + " left)", focusable = false }, "small-btn");
+            string pwho = survWho;
+            bool down = mem != null && mem.hp <= 0;
+            float curHp = mem == null ? s.hp : mem.hp, maxHp = mem == null ? Rules.MaxHp(s) : Rules.MemberMaxHp(mem, fd);
+            var pot = Add(acts, new Button(() => { if (engine.UsePotion(pwho, "health_potion")) GameAudio.Play("pickup"); AfterAction(); })
+                { text = (mem == null ? "Drink a potion" : "Give " + fd.name + " a potion") + "  (" + potions + ")", focusable = false }, "small-btn");
+            pot.SetEnabled(free && potions > 0 && !down && curHp < maxHp);
+            if (down) pot.tooltip = "A potion won't bring someone round. Bind the grave wound.";
+            var drink = Add(acts, new Button(() => { engine.Drink(); AfterAction(); }) { text = "Drink water  (" + s.water + ")", focusable = false }, "small-btn");
             drink.SetEnabled(free && s.water > 0);
-            Add(right, new Label("Health comes back with sleep or a potion. Stamina comes back by itself when you stop running. Only sleep, food and drink restore energy; sleeping saves your game."), "line-muted");
-
-            // The weather, and what it's doing to you
             var w = Rules.WeatherNow(s, d);
-            bool inside = Rules.Sheltered(s, d);
-            Add(right, new Label("WEATHER"), "section-head").AddToClassList("surv-gap");
-            if (w != null) Add(right, new Label(w.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, d)) + "°C" + (inside ? "  (under a roof)" : "") + "  ·  feels like " + Mathf.RoundToInt(Rules.Felt(s, d, s.body, Rules.Warmth(s, d))) + "°"), "line");
-            var sky = Add(right, new VisualElement(), "surv-needs");
-            Need(sky, "COLD", s.body.cold, 100, "#7fa6c8");
-            Need(sky, "WET", s.body.wet, 100, "#4f7f9b");
-            if (s.body.heat > 0) Need(sky, "HEAT", s.body.heat, 100, "#d08a4a");
-            Add(right, new Label("Cold and wet tire you and slow your breath; all the way, hypothermia. A fire or a roof warms and dries you."), "line-muted");
+            if (w != null)
+                Add(bar, new Label(w.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, d)) + "°C" + (Rules.Sheltered(s, d) ? " (under a roof)" : "") + "  ·  feels " + Mathf.RoundToInt(Rules.Felt(s, d, s.body, Rules.Warmth(s, d))) + "°"), "surv-weather");
         }
 
-        /// <summary>One person's wounds: a header with their health, then each wound with its treatment as numbered steps.</summary>
-        bool WoundList(VisualElement parent, string who, string name, float hp, float maxHp, Body body, bool free, bool you)
+        /// <summary>A wound's state in a few words: "Bleeding", "Healing: 12 h", "Needs treating".</summary>
+        string WoundState(Affliction a, AfflictionDef def)
+        {
+            if (Rules.Bleeding(a, def)) return def.deadline > 0 ? "Bleeding out: " + Mathf.Max(0, Mathf.CeilToInt(def.deadline - a.hours)) + " h left" : "Bleeding";
+            if (def.cure == "warm") return "Get warm";
+            if (def.cure == "cool") return "Cool down";
+            if (Rules.Treated(a, def) && def.heal > 0) return "Healing: " + HoursLeft(a, def) + " h";
+            return "Needs treating";
+        }
+
+        int HoursLeft(Affliction a, AfflictionDef def) => Mathf.CeilToInt((def.heal - a.healed) / (1 + Rules.FirstAidPerLevel * engine.SkillLevel("first_aid")));
+
+        void SurvWound(VisualElement p, Affliction a, AfflictionDef def, bool free)
         {
             var d = engine.data;
-            if (body.afflictions.Count == 0) return false;
-            var head = Add(parent, new VisualElement(), "surv-who");
-            Add(head, new Label((you ? "YOU" : name.ToUpperInvariant()) + (hp <= 0 ? "  ·  DOWN" : "")), "surv-who-name");
-            var hb = Add(head, new VisualElement(), "surv-who-bar");
-            Need(hb, "HEALTH", Mathf.Max(0, hp), maxHp, "#c8573f");
-            int power = Mathf.RoundToInt(Rules.FightPower(body, d) * 100);
-            Add(head, new Label(Rules.NoFight(body, d) ? "Can't fight" : "Fights at " + power + "%"), power < 100 ? "surv-who-power-bad" : "surv-who-power");
+            bool treated = Rules.Treated(a, def);
+            bool bleeding = Rules.Bleeding(a, def);
+            var top = Add(p, new VisualElement(), "party-top");
+            Add(top, new Label(def.name), "wound-name");
+            string chip = WoundState(a, def).ToUpperInvariant();
+            Add(top, new Label(chip.StartsWith("HEALING") ? "HEALING" : chip), bleeding ? "wound-chip-bad" : treated ? "wound-chip-good" : "wound-chip-warn");
+            Add(p, new Label(Cap(Rules.PartName(a.part)) + (a.from != "" ? "  ·  from " + a.from : "") + "  ·  " + Ago(a.hours)), "surv-where");
+            Add(p, new Label(def.desc), "surv-desc");
 
-            foreach (var a in body.afflictions.ToList())
+            var effects = new List<string>();
+            if (bleeding && def.bleed > 0) effects.Add("Loses " + def.bleed.ToString("0.#") + " health an hour");
+            if (def.drain > 0 && !treated) effects.Add("Tires you out");
+            if (def.noRun) effects.Add("No running");
+            if (def.noFight) effects.Add("Can't fight");
+            else if (def.fight > 0 && def.fight < 1) effects.Add("Fights at " + Mathf.RoundToInt(def.fight * 100) + "%");
+            if (def.stamina < 1) effects.Add("Less stamina");
+            if (def.fumble > 0) effects.Add("Blows can go astray");
+            if (effects.Count > 0)
             {
-                var def = d.Affliction(a.id);
-                if (def == null) continue;
-                bool treated = Rules.Treated(a, def);
-                bool bleeding = Rules.Bleeding(a, def);
-                var card = Add(parent, new VisualElement(), "wound-card");
-                card.AddToClassList(bleeding ? "wound-card-bleeding" : treated ? "wound-card-healing" : "wound-card-open");
-                var top = Add(card, new VisualElement(), "party-top");
-                Add(top, new Label(def.name), "wound-name");
-                string state = bleeding ? (def.deadline > 0 ? "BLEEDING OUT: " + Mathf.Max(0, Mathf.CeilToInt(def.deadline - a.hours)) + " H LEFT" : "BLEEDING")
-                             : treated && def.heal > 0 ? "HEALING"
-                             : def.cure == "warm" ? "GET WARM" : def.cure == "cool" ? "COOL DOWN" : "NEEDS TREATING";
-                Add(top, new Label(state), bleeding ? "wound-chip-bad" : treated ? "wound-chip-good" : "wound-chip-warn");
-                Add(card, new Label(def.desc), "line-muted");
-
-                // What it's doing to them right now
-                var effects = new List<string>();
-                if (bleeding && def.bleed > 0) effects.Add("loses " + def.bleed.ToString("0.#") + " health an hour");
-                if (def.drain > 0 && !treated) effects.Add("tires you out");
-                if (def.noFight) effects.Add("can't fight");
-                else if (def.fight > 0 && def.fight < 1) effects.Add("fights at " + Mathf.RoundToInt(def.fight * 100) + "%");
-                if (effects.Count > 0) Add(card, new Label(string.Join("  ·  ", effects)), "wound-effects");
-                if (def.worsen != "" && !treated && (def.worsenUnless == "" || !a.done.Contains(def.worsenUnless)))
-                    Add(card, new Label("Turns into " + (d.Affliction(def.worsen)?.name ?? def.worsen).ToLowerInvariant() + " in " + Mathf.Max(0, Mathf.CeilToInt(def.worsenAfter - a.hours)) + " h unless you " + (d.Treatment(def.worsenUnless)?.name ?? "treat it").ToLowerInvariant() + "."), "line-warn");
-
-                if (treated && def.heal > 0)
-                {
-                    var hr = Add(card, new VisualElement(), "surv-heal");
-                    float frac = Mathf.Clamp01(a.healed / def.heal);
-                    Need(hr, "HEALED", frac * 100, 100, "#7fae6a");
-                    Add(card, new Label("All it needs now is time: about " + Mathf.CeilToInt((def.heal - a.healed) / (1 + Rules.FirstAidPerLevel * engine.SkillLevel("first_aid"))) + " more hours."), "line-muted");
-                }
-
-                // The treatment, step by step, in order
-                int n = 0;
-                foreach (var step in def.treat)
-                {
-                    var t = d.Treatment(step);
-                    if (t == null) continue;
-                    n++;
-                    bool done = a.done.Contains(step);
-                    var sr = Add(card, new VisualElement(), done ? "treat-step-done" : "treat-step");
-                    Add(sr, new Label(done ? "✓" : n.ToString()), "treat-num");
-                    var txt = Add(sr, new VisualElement(), "treat-text");
-                    Add(txt, new Label(t.name), "treat-name");
-                    if (done) { Add(txt, new Label("Done"), "treat-cost"); continue; }
-                    var (ok, uses, why) = engine.TreatmentCost(step);
-                    string cost = !ok ? Cap(why) : uses.Count == 0 ? (t.minutes > 0 ? t.minutes + " minutes" : t.desc)
-                                : "Uses " + string.Join(" and ", uses.Select(u => u == "water" ? "water" : (d.Item(u)?.name ?? u).ToLowerInvariant())) + (t.minutes > 0 ? "  ·  " + t.minutes + " min" : "");
-                    Add(txt, new Label(cost), ok ? "treat-cost" : "treat-cost-missing");
-                    if (step == "rest") continue;
-                    string aid = a.id, sid = step;
-                    var b = Add(sr, new Button(() => { if (engine.Treat(who, aid, sid)) GameAudio.Play(sid == "bandage" || sid == "splint" || sid == "stitch" ? "bandage" : "pickup"); AfterAction(); }) { text = "Do it", focusable = false }, "det-btn");
-                    b.SetEnabled(free && ok);
-                }
+                var fx = Add(p, new VisualElement(), "surv-effects");
+                foreach (var e in effects) Add(fx, new Label(e), "surv-effect");
             }
-            return true;
+            if (def.worsen != "" && !treated && (def.worsenUnless == "" || !a.done.Contains(def.worsenUnless)))
+                Add(p, new Label("Turns into " + (d.Affliction(def.worsen)?.name ?? def.worsen).ToLowerInvariant() + " in " + Mathf.Max(0, Mathf.CeilToInt(def.worsenAfter - a.hours)) + " h unless you " + (d.Treatment(def.worsenUnless)?.name ?? "treat it").ToLowerInvariant() + "."), "line-warn");
+            if (def.cure == "warm") Add(p, new Label("A fire, a bed or a roof warms and dries you, and then it passes."), "line-warn");
+            if (def.cure == "cool") Add(p, new Label("Get out of the sun and drink, and it passes."), "line-warn");
+
+            if (treated && def.heal > 0)
+            {
+                Need(Add(p, new VisualElement(), "surv-heal"), "HEALED", Mathf.Clamp01(a.healed / def.heal) * 100, 100, "#7fae6a");
+                Add(p, new Label("All it needs now is time: about " + HoursLeft(a, def) + " more hours." + (def.scar != "" ? " It'll leave a scar." : "")), "line-muted");
+                return;
+            }
+            if (def.treat.Count == 0) return;
+
+            Add(p, new Label("TREATMENT"), "section-head").AddToClassList("surv-gap");
+            string next = engine.NextStep(survWho, a.id);
+            int n = 0;
+            foreach (var step in def.treat)
+            {
+                var t = d.Treatment(step);
+                if (t == null) continue;
+                n++;
+                bool done = a.done.Contains(step);
+                var sr = Add(p, new VisualElement(), done ? "treat-step-done" : "treat-step");
+                if (step == next) sr.AddToClassList("treat-step-next");
+                Add(sr, new Label(done ? "✓" : n.ToString()), "treat-num");
+                var txt = Add(sr, new VisualElement(), "treat-text");
+                Add(txt, new Label(t.name), "treat-name");
+                if (done) { Add(txt, new Label("Done"), "treat-cost"); continue; }
+                var (ok, uses, why) = engine.TreatmentCost(step);
+                string cost = step == "rest" ? "Happens when you sleep" : !ok ? Cap(why)
+                            : uses.Count == 0 ? (t.minutes > 0 ? t.minutes + " minutes" : t.desc)
+                            : "Uses " + string.Join(" and ", uses.Select(u => u == "water" ? "water" : (d.Item(u)?.name ?? u).ToLowerInvariant() + " (" + engine.S.Count(u) + ")")) + (t.minutes > 0 ? "  ·  " + t.minutes + " min" : "");
+                Add(txt, new Label(cost), ok || step == "rest" ? "treat-cost" : "treat-cost-missing");
+                if (step == "rest") continue;
+                string who = survWho, aid = a.id, sid = step;
+                var b = Add(sr, new Button(() => SurvTreat(who, aid, sid)) { text = step == next ? "Do it  ·  Enter" : "Do it", focusable = false }, "det-btn");
+                b.SetEnabled(free && ok);
+            }
+        }
+
+        static string Ago(float hours) => hours < 1 ? "just now" : hours < 48 ? Mathf.FloorToInt(hours) + " h ago" : Mathf.FloorToInt(hours / 24) + " days ago";
+
+        /// <summary>Nothing to treat: how they're holding up instead.</summary>
+        void SurvHealthy(VisualElement p, PartyMember mem, FollowerDef fd)
+        {
+            var s = engine.S;
+            var d = engine.data;
+            Add(p, new Label(mem == null ? "HOW YOU'RE DOING" : "HOW " + fd.name.ToUpperInvariant() + " IS DOING"), "section-head");
+            var needs = Add(p, new VisualElement(), "surv-needs");
+            if (mem == null)
+            {
+                Need(needs, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
+                Need(needs, "STAMINA", s.stamina, Rules.MaxStamina(s, d), "#7fae6a");
+                Need(needs, "HUNGER", s.hunger, 100, "#d08a4a");
+                Need(needs, "THIRST", s.thirst, 100, "#4f9b97");
+                Need(needs, "ENERGY", s.energy, 100, "#9d8fd0");
+            }
+            else
+            {
+                Need(needs, "HEALTH", Mathf.Max(0, mem.hp), Rules.MemberMaxHp(mem, fd), "#c8573f");
+                Need(needs, "SPIRITS", mem.morale, 100, "#d4b45a");
+                Need(needs, "HUNGER", mem.hunger, 100, "#d08a4a");
+                Need(needs, "THIRST", mem.thirst, 100, "#4f9b97");
+                Need(needs, "ENERGY", mem.energy, 100, "#9d8fd0");
+            }
+            Add(p, new Label("Health comes back with sleep or a potion. Stamina comes back by itself when you stop running. Only sleep, food and drink restore energy; sleeping saves your game."), "line-muted");
+            var body = mem == null ? s.body : mem.body;
+            Add(p, new Label("WEATHER"), "section-head").AddToClassList("surv-gap");
+            var sky = Add(p, new VisualElement(), "surv-needs");
+            Need(sky, "COLD", body.cold, 100, "#7fa6c8");
+            Need(sky, "WET", body.wet, 100, "#4f7f9b");
+            if (body.heat > 0) Need(sky, "HEAT", body.heat, 100, "#d08a4a");
+            Add(p, new Label("Cold and wet tire you and slow your breath; all the way, hypothermia. A fire or a roof warms and dries you."), "line-muted");
+            Add(p, new Label("Carry bandages and spirits, and a sewing kit if you can. Bad wounds leave scars; they're on the body chart for good."), "line-muted");
         }
 
         static string Cap(string t) => string.IsNullOrEmpty(t) ? t : char.ToUpperInvariant(t[0]) + t.Substring(1);

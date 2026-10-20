@@ -404,7 +404,12 @@ def skelmed():
              'when': ['flag:fire_started', '!flag:fire3_out']},
             {'id': 'orlen_fire', 'kind': 'npc', 'sprite': 'npc_orlen', 'x': 13, 'y': 15, 'facing': 'left', 'scene': 'orlen_at_fire',
              'when': ['flag:fire_started', '!flag:fire_out']},
-            {'id': 'bess', 'kind': 'npc', 'sprite': 'npc_bess', 'x': 9, 'y': 8, 'facing': 'down', 'scene': 'bess'},
+            # Bess keeps the inn; but when you first walk in bitten she's down at the gate (she was buying fish) and
+            # sees to you there, then walks home once the bite's seen to (David, 20 Oct)
+            {'id': 'bess', 'kind': 'npc', 'sprite': 'npc_bess', 'x': 9, 'y': 8, 'facing': 'down', 'scene': 'bess',
+             'when': ['flag:patch_done|!untreated:bite']},
+            {'id': 'bess_gate', 'kind': 'npc', 'sprite': 'npc_bess', 'x': 19, 'y': 24, 'facing': 'left', 'scene': 'bess_gate',
+             'when': ['!flag:patch_done', 'untreated:bite']},
             {'id': 'dockhand', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': 2, 'y': 13, 'facing': 'left', 'scene': 'dockhand'},
             {'id': 'board', 'kind': 'sign', 'sprite': 'obj_sign', 'x': 15, 'y': 9,
              'text': 'The noticeboard. One notice, months old: BY ORDER OF THE CROWN, THE HARBOUR LEVY IS RAISED TO ONE HALF.'},

@@ -102,6 +102,8 @@ namespace Loran.Core
         public string worsenUnless = "";       // ...unless this step was done
         public float deadline;                 // untreated after this many hours, it kills (0 = never)
         public string cure = "";               // warm / cool: it goes once your body is warm (or cool) again
+        public List<string> parts = new List<string>();   // where it can land (head, chest, belly, left_arm, right_arm, left_leg, right_leg); none = all over
+        public string scar = "";               // once it heals it leaves this ("Bite scar"); "" = nothing to show
     }
 
     /// <summary>One step in treating a wound. items are alternatives ("split_wood+bandage" needs both); a tool is needed but not used up.</summary>

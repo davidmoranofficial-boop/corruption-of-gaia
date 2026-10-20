@@ -29,6 +29,16 @@ namespace Loran.Core
         public float hours;
         public List<string> done = new List<string>();
         public float healed;
+        public string part = "";               // where on the body: head, chest, belly, left_arm ... ("" = all over)
+        public string from = "";               // what did it ("the yellow-eyed wolf"), for the scar it leaves
+    }
+
+    /// <summary>A mark a bad wound left once it healed: what it is, where, what did it and when.</summary>
+    [Serializable]
+    public class Scar
+    {
+        public string name = "", part = "", from = "";
+        public int day;
     }
 
     /// <summary>What the weather and the wars have done to a body: wounds, and how cold, hot and wet it is (0 to 100).</summary>
@@ -37,7 +47,13 @@ namespace Loran.Core
     {
         public List<Affliction> afflictions = new List<Affliction>();
         public float cold, heat, wet;
-        public void Fix() { afflictions ??= new List<Affliction>(); foreach (var a in afflictions) a.done ??= new List<string>(); }
+        public List<Scar> scars = new List<Scar>();
+        public void Fix()
+        {
+            afflictions ??= new List<Affliction>();
+            scars ??= new List<Scar>();
+            foreach (var a in afflictions) { a.done ??= new List<string>(); a.part ??= ""; a.from ??= ""; }
+        }
     }
 
     /// <summary>Someone in your party: their health, needs and mood, and where they stand in the world.</summary>

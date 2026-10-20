@@ -127,6 +127,25 @@ namespace Loran.Core
         public static bool Has(Body b, string id) => b.afflictions.Any(a => a.id == id);
 
         /// <summary>Every treatment step done (rest included, which a night's sleep does)?</summary>
+        /// <summary>The places a wound can be, as the body chart on the Survival screen draws them.</summary>
+        public static readonly string[] BodyParts = { "head", "chest", "belly", "left_arm", "right_arm", "left_leg", "right_leg" };
+
+        /// <summary>"left arm", or "all over" for something like a chill.</summary>
+        public static string PartName(string part) => string.IsNullOrEmpty(part) ? "all over" : part.Replace('_', ' ');
+
+        /// <summary>
+        /// How urgent a wound is, most urgent first: 0 bleeding out, 1 bleeding, 2 about to turn bad,
+        /// 3 needs something done, 4 just needs time.
+        /// </summary>
+        public static int Urgency(Affliction a, AfflictionDef def)
+        {
+            if (Bleeding(a, def)) return def.deadline > 0 ? 0 : 1;
+            if (Treated(a, def) && def.cure == "") return 4;
+            if (def.worsen != "" && (def.worsenUnless == "" || !a.done.Contains(def.worsenUnless))) return 2;
+            if (def.cure != "" || def.noFight || def.deadline > 0) return 2;
+            return 3;
+        }
+
         public static bool Treated(Affliction a, AfflictionDef def) => def.treat.All(t => a.done.Contains(t));
 
         /// <summary>Bleeding stops once it's bandaged or stitched, or fully treated.</summary>
@@ -163,12 +182,17 @@ namespace Loran.Core
             return c;
         }
 
-        /// <summary>Gives someone a wound or ailment, unless they already have it. who is null for you.</summary>
-        public static bool Afflict(GameState s, GameData d, Body b, string id, string who)
+        /// <summary>
+        /// Gives someone a wound or ailment, unless they already have it. who is null for you. It lands on one of the
+        /// places that wound can (part, or a pick from the affliction's parts); from is what did it, for the scar.
+        /// </summary>
+        public static bool Afflict(GameState s, GameData d, Body b, string id, string who, string part = null, string from = null)
         {
             var def = d.Affliction(id) ?? throw new Exception("Unknown affliction '" + id + "'");
             if (Has(b, id)) return false;
-            b.afflictions.Add(new Affliction { id = id });
+            if (string.IsNullOrEmpty(part) || (def.parts.Count > 0 && !def.parts.Contains(part)))
+                part = def.parts.Count == 0 ? "" : def.parts[(int)(s.minutes * 7 + b.afflictions.Count * 3 + b.scars.Count) % def.parts.Count];
+            b.afflictions.Add(new Affliction { id = id, part = part, from = from ?? "" });
             s.Toasts.Add(who == null ? "You've got: " + def.name + "." : who + " has: " + def.name + ".");
             return true;
         }
@@ -206,7 +230,13 @@ namespace Loran.Core
                 if (treated && def.heal > 0)
                 {
                     a.healed += h * rate * (b == s.body && HasPerk(s, d, "healer") ? HealerRate : 1f);
-                    if (a.healed >= def.heal) { b.afflictions.Remove(a); s.Toasts.Add(whose + name + " has healed."); continue; }
+                    if (a.healed >= def.heal)
+                    {
+                        b.afflictions.Remove(a);
+                        if (def.scar != "") b.scars.Add(new Scar { name = def.scar, part = a.part, from = a.from, day = s.Day });
+                        s.Toasts.Add(whose + name + " has healed" + (def.scar != "" ? ", and left a scar." : "."));
+                        continue;
+                    }
                 }
                 else if (!treated && def.selfHeal > 0 && a.hours >= def.selfHeal)
                 {
@@ -216,7 +246,7 @@ namespace Loran.Core
                 {
                     b.afflictions.Remove(a);
                     s.Toasts.Add(whose + name + " has turned bad.");
-                    Afflict(s, d, b, def.worsen, who);
+                    Afflict(s, d, b, def.worsen, who, a.part, a.from);
                     continue;
                 }
                 if (def.deadline > 0 && Bleeding(a, def) && a.hours >= def.deadline) { killedBy = def.name; return (hp, energy, thirst); }

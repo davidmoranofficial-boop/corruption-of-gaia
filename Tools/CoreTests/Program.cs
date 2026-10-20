@@ -919,6 +919,9 @@ static class Program
         Assert(e.S.scene == "dog_won" && e.Check("wound:bite"), "beating the opening wolf always leaves a bite");
         Pick(e, "Walk on");
         WalkUntil(e, Gate(e), () => e.Area.id == "skelmed");
+        var bite = e.S.body.afflictions.First(x => x.id == "bite");
+        Assert(e.data.Affliction("bite").parts.Contains(bite.part) && bite.from.Contains("wolf"), "the bite is on an arm or leg, and the wolf did it: " + bite.part + ", " + bite.from);
+        Assert(e.Objects().Any(o => o.id == "bess_gate") && e.Objects().All(o => o.id != "bess"), "Bess is down at the gate when you walk in bitten");
         e.S.stepsSinceFight = -1000;
         e.S.energy = 80; e.S.hunger = 80; e.S.thirst = 80;
         WalkUntil(e, (17, 20), () => e.S.scene == "bess_patch");
@@ -927,6 +930,10 @@ static class Program
         e.S.result = "";
         Assert(e.Treat("", "bite", "clean") && e.Treat("", "bite", "bandage"), "you clean and bind it yourself");
         Assert(e.S.Has("patch_done") && e.S.result.Contains("Bess"), "Bess approves");
+        Assert(e.Objects().Any(o => o.id == "bess") && e.Objects().All(o => o.id != "bess_gate") && e.Walks.Contains(("bess_gate", "bess")), "then she walks home to the inn");
+        Assert(e.NextStep("", "bite") == null, "nothing left to do but wait");
+        Rules.Advance(e.S, e.data, 60 * 60, true);
+        Assert(e.S.body.afflictions.All(x => x.id != "bite") && e.S.body.scars.Any(x => x.name == "Bite scar" && x.part == bite.part && x.from.Contains("wolf")), "a healed bite leaves a scar where it was");
 
         var f = AtDog(6);
         f.S.inCombat = false;   // AtDog picks "Fight it"; go back to the meeting itself
@@ -1171,6 +1178,7 @@ static class Program
                 if (o.id.StartsWith("fire") || o.id == "orlen_fire") { v.S.flags.Add("fire_started"); v.S.spells.Add("draw_water"); }
                 if (o.id == "brazier_lit") v.S.flags.Add("brazier_lit");
                 if (o.id == "alpha") v.S.flags.Add("quest:pack");
+                if (o.id == "bess_gate") { Rules.Afflict(v.S, v.data, v.S.body, "bite", null); v.S.flags.Add("patch_lesson"); }
                 if (!v.All(o.when)) throw new Exception(o.id + " isn't there to test");
                 v.S.coins = 2000;
                 v.S.flags.Add("dog_met");
