@@ -12,6 +12,7 @@ namespace Loran.Core
         public string kind;     // hit, crit, glance, parry, guard, heal, flee
         public int amount;
         public string text;     // what to show, e.g. "14" or "+30 hunger"
+        public string from = ""; // who did it, for the screen to animate: "player", "enemy", "follower0" ... ("" = nobody moves)
     }
 
     /// <summary>
@@ -374,7 +375,7 @@ namespace Loran.Core
             int dealt = Math.Max(1, (int)Math.Round(dmg));
             S.enemyHp -= dealt;
             youHurtIt = true;
-            Events.Add(new BattleEvent { target = "enemy", kind = how, amount = dealt, text = dealt.ToString() });
+            Events.Add(new BattleEvent { from = "player", target = "enemy", kind = how, amount = dealt, text = dealt.ToString() });
             return dealt;
         }
 
@@ -400,7 +401,7 @@ namespace Loran.Core
                     int t = Math.Max(1, (int)Math.Round(back));
                     S.hp -= t;
                     lines.Add(foe + " was waiting for that, and snaps back at you for " + t + ".");
-                    Events.Add(new BattleEvent { target = "player", kind = "hit", amount = t, text = t.ToString() });
+                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "hit", amount = t, text = t.ToString() });
                     if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
                     return;
                 }
@@ -432,7 +433,7 @@ namespace Loran.Core
                 int ft = Math.Max(1, (int)Math.Round(hit));
                 m.hp -= ft;
                 lines.Add(foe + " " + move.name.Replace("your", f.name + "'s").Replace(" you", " " + f.name) + " for " + ft + ".");
-                Events.Add(new BattleEvent { target = "follower" + S.party.IndexOf(m), kind = "hit", amount = ft, text = ft.ToString() });
+                Events.Add(new BattleEvent { from = "enemy", target = "follower" + S.party.IndexOf(m), kind = "hit", amount = ft, text = ft.ToString() });
                 if (m.hp <= -Rules.MemberMaxHp(m, f) * 0.5f)
                 {
                     lines.Add(f.name + " is killed!");
@@ -450,13 +451,13 @@ namespace Loran.Core
                 {
                     hit *= 1.4f;
                     lines.Add("You throw yourself aside, but it was a feint. It catches you as you land.");
-                    Events.Add(new BattleEvent { target = "player", kind = "glance", text = "Feint!" });
+                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "glance", text = "Feint!" });
                 }
                 else if (pendingTiming >= TimingGood)
                 {
                     bool opens = kind == "heavy" || pendingTiming == TimingPerfect;
                     lines.Add(foe + " " + move.name + ", but you slip aside" + (opens ? " and it overreaches. It's wide open!" : "."));
-                    Events.Add(new BattleEvent { target = "player", kind = "dodge", text = "Dodged" });
+                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "dodge", text = "Dodged" });
                     if (opens)
                     {
                         S.enemyOpen = 2;
@@ -481,7 +482,7 @@ namespace Loran.Core
                     hit *= pendingTiming == TimingPerfect ? 0.45f : pendingTiming == TimingGood ? 0.65f : 0.9f;
                     S.stamina -= 10;
                     lines.Add("The blow smashes through your guard and knocks the wind out of you.");
-                    Events.Add(new BattleEvent { target = "player", kind = "glance", text = "-10 stamina" });
+                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "glance", text = "-10 stamina" });
                 }
                 else hit *= pendingTiming == TimingGood ? 0.4f : 0.7f;
             }
@@ -494,7 +495,7 @@ namespace Loran.Core
             int taken = Math.Max(0, (int)Math.Round(hit));
             S.hp -= taken;
             lines.Add(foe + " " + move.name + " for " + taken + ".");
-            Events.Add(new BattleEvent { target = "player", kind = kind == "heavy" && !covered ? "crit" : "hit", amount = taken, text = taken.ToString() });
+            Events.Add(new BattleEvent { from = "enemy", target = "player", kind = kind == "heavy" && !covered ? "crit" : "hit", amount = taken, text = taken.ToString() });
             if (S.defending) Rules.Train(S, Stat.End, 0.5f, "taking hits");
             if (S.hp > 0) MaybeWound(move, S.body, null, taken, covered);
             if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
@@ -513,8 +514,8 @@ namespace Loran.Core
             int counter = Math.Max(1, (int)Math.Round(WeaponHit() * Rules.ParryCounter));
             S.enemyHp -= counter;
             lines.Add(foe + " " + move.name + ", but you turn it aside and strike back for " + counter + "!");
-            Events.Add(new BattleEvent { target = "player", kind = "parry", text = "Parry!" });
-            Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = counter, text = counter.ToString() });
+            Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "parry", text = "Parry!" });
+            Events.Add(new BattleEvent { from = "player", target = "enemy", kind = "hit", amount = counter, text = counter.ToString() });
             Rules.Train(S, Stat.Agi, 1f, "parrying");
             if (HasShield()) TrainSkill("shield", 2, "parrying");
             if (S.enemyHp <= 0)

@@ -65,48 +65,16 @@ namespace Loran.UnityLayer
             Add(head, new Label(("Fight  ·  " + place).ToUpperInvariant()), "place");
             Add(head, new Label("ROUND " + s.round), "battle-round");
 
-            // The stage: a painted backdrop with you on the left and the enemy on the right, both on the ground.
+            // The stage: the painted backdrop, you and your party on the left, the beast on the right (GameUI.Stage.cs)
             arena = Add(battle, new VisualElement(), "arena");
-            var backdrop = Sprite("Backdrops/" + BackdropFor()) ?? Sprite("Backdrops/" + BackdropFor().Replace("_night", "")) ?? Sprite("Backdrops/coast");
-            if (backdrop != null) arena.style.backgroundImage = new StyleBackground(backdrop);
-            float stageH = battleHeight - 300f;                 // what's left after the header, log and commands
-            int scale = Mathf.Clamp(Mathf.FloorToInt(stageH * 0.5f / DollH), 3, 9);
-
-            playerSpot = Add(arena, new VisualElement(), "spot-player");
-            playerPic = PlayerDoll(playerSpot, scale);
-            if (s.hp <= 0) playerSpot.AddToClassList("portrait-down");
-
-            // Your party stands behind you, staggered so everyone can be seen; drawn back to front
+            BuildStage(arena, e);
+            playerPic = youActor.el;
+            enemyPic = foeActor.el;
+            playerSpot = youActor.el;
+            enemySpot = foeActor.el;
             followerSpots.Clear();
             followerPics.Clear();
-            for (int pi = 0; pi < s.party.Count; pi++) { followerSpots.Add(null); followerPics.Add(null); }
-            for (int pi = s.party.Count - 1; pi >= 0; pi--)
-            {
-                var m = s.party[pi];
-                var fol = engine.data.Follower(m.id);
-                if (fol == null) continue;
-                var spot = Add(arena, new VisualElement(), "spot-follower");
-                spot.style.left = Length.Percent(6 - pi * 4f);
-                spot.style.bottom = Length.Percent(14 + pi * 9);
-                var pic = Doll(spot, Mathf.Max(2, scale - (pi > 0 ? 1 : 0)), fol.figure, fol.skin, fol.hair, fol.worn.Select(g => (g, engine.data.Gear(g)?.slot ?? "body")));
-                if (m.hp <= 0) spot.AddToClassList("portrait-down");
-                var tag = Add(spot, new VisualElement(), "follower-tag");
-                var trouble = Rules.Conditions(m, engine.data);
-                Add(tag, new Label(fol.name + (trouble.Count > 0 ? "  ·  " + trouble[0] : "")), "follower-name");
-                var ft = Add(tag, new VisualElement(), "need-track");
-                var ff = Add(ft, new VisualElement(), "need-fill");
-                ff.style.width = Length.Percent(Mathf.Clamp01(m.hp / Rules.MemberMaxHp(m, fol)) * 100f);
-                ColorUtility.TryParseHtmlString("#c8573f", out var fc);
-                ff.style.backgroundColor = fc;
-                followerSpots[pi] = spot;
-                followerPics[pi] = pic;
-            }
-            playerSpot.BringToFront();
-
-            enemySpot = Add(arena, new VisualElement(), "spot-enemy");
-            enemyPic = EnemySprite(enemySpot, e, DollH * scale * 1.15f * Mathf.Max(1f, e.size));
-            if (enemyPic == null) Add(enemySpot, new Label(e.name.Substring(0, 1)), "portrait-letter");
-            if (s.enemyHp <= 0) enemySpot.AddToClassList("portrait-down");
+            foreach (var a in partyActors) { followerSpots.Add(a?.el); followerPics.Add(a?.el); }
 
             // You: top left
             playerCard = Add(arena, new VisualElement(), "fighter-card");
@@ -116,6 +84,20 @@ namespace Loran.UnityLayer
             Bar(playerCard, "MANA", s.mana, Rules.MaxMana(s), "#4f86d8", 4, false);
             Bar(playerCard, "STAMINA", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a", 2, false);
             Bar(playerCard, "ENERGY", s.energy, 100, "#9d8fd0", 3, false);
+            // your party, in brief, under your own bars
+            foreach (var m in s.party)
+            {
+                var fol = engine.data.Follower(m.id);
+                if (fol == null) continue;
+                var row = Add(playerCard, new VisualElement(), "fighter-ally");
+                Add(row, new Label(fol.name + (m.hp <= 0 ? "  ·  DOWN" : "")), "fighter-ally-name");
+                var tr = Add(row, new VisualElement(), "need-track");
+                tr.AddToClassList("fighter-ally-track");
+                var fl = Add(tr, new VisualElement(), "need-fill");
+                fl.style.width = Length.Percent(Mathf.Clamp01(m.hp / Rules.MemberMaxHp(m, fol)) * 100f);
+                ColorUtility.TryParseHtmlString("#c8573f", out var ac);
+                fl.style.backgroundColor = ac;
+            }
             var weapon = s.InSlot("weapon");
             Add(playerCard, new Label(weapon != null ? weapon.name + "  (" + weapon.rank + ")" : "Bare hands"), "fighter-sub");
             if (s.inCombat && engine.Berserk) StatusChip(playerCard, "BERSERK", "chip-bad", "Below 30% health: your blows land 30% harder.");
@@ -403,37 +385,31 @@ namespace Loran.UnityLayer
             else if (e.kind == "heal" && !lastAct.StartsWith("fight:eat") && lastAct != "fight:drink") GameAudio.Play("heal");
         }
 
+        /// <summary>
+        /// Plays what just happened, one thing after another: whoever acts moves first (you dash in, the beast springs,
+        /// a companion steps up), and the blow lands as they arrive: the number, the flash, the shake and the flinch.
+        /// </summary>
         void PlayEvents(List<BattleEvent> events)
         {
-            int delay = 120;
+            float delay = 0.12f;
             foreach (var ev in events)
             {
                 var e = ev;
-                root.schedule.Execute(() =>
-                {
-                    int fi = e.target.StartsWith("follower") && int.TryParse(e.target.Substring(8), out var n) ? n : -1;
-                    var fSpot = fi >= 0 && fi < followerSpots.Count ? followerSpots[fi] : null;
-                    var fPic = fi >= 0 && fi < followerPics.Count ? followerPics[fi] : null;
-                    bool isF = e.target.StartsWith("follower");
-                    var card = e.target == "enemy" ? enemyCard : isF ? fSpot : playerCard;
-                    if (card == null) return;
-                    var spot = e.target == "enemy" ? enemySpot : isF ? fSpot : playerSpot;
-                    string cls = e.kind == "crit" ? "pop-crit" : e.kind == "glance" ? "pop-glance" : e.kind == "heal" ? "pop-heal"
-                               : e.kind == "parry" || e.kind == "dodge" || e.kind == "open" ? "pop-perfect" : e.kind == "rage" ? "pop-crit"
-                               : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
-                    Popup(spot ?? card, e.text, cls, 0);
-                    BattleSound(e);
-                    BattleEffect(e, e.target == "enemy" ? enemyPic : isF ? fPic : playerPic, arena);
-                    if (e.kind == "hit" || e.kind == "crit" || e.kind == "glance")
+                var by = ActorFor(e.from);
+                float lead = 0f, after = 0.42f;
+                if (by == foeActor) { lead = 0.2f; after = 0.5f; }
+                else if (by == youActor) { lead = 0.15f; after = 0.45f; }
+                else if (by != null) { lead = 0.13f; after = 0.4f; }
+                float start = delay;
+                if (by != null)
+                    root.schedule.Execute(() =>
                     {
-                        Flash(card);
-                        var pic = e.target == "enemy" ? enemyPic : isF ? fPic : playerPic;
-                        HitFlash(pic);
-                        Shake(pic, e.kind == "crit" ? 12f : 6f);
-                        Shake(e.kind == "crit" ? (e.target == "player" ? arena : card) : card, e.kind == "crit" ? 14f : e.kind == "glance" ? 4f : 8f);
-                    }
-                }).StartingIn(delay);
-                delay += 420;
+                        if (by == foeActor) { FoeDoes("attack"); Play(foeActor, "lunge", LungeTo(ActorFor(e.target))); }
+                        else if (by == youActor) Play(youActor, "dash", DashReach());
+                        else Play(by, "step");
+                    }).StartingIn(Mathf.RoundToInt(start * 1000));
+                root.schedule.Execute(() => Land(e)).StartingIn(Mathf.RoundToInt((start + lead) * 1000));
+                delay = start + lead + after;
             }
             root.schedule.Execute(() =>
             {
@@ -442,13 +418,44 @@ namespace Loran.UnityLayer
                 {
                     if (engine.S.enemyHp <= 0 && engine.S.hp > 0)
                     {
+                        FoeDoes("dead");
                         GameAudio.Play("enemy_die");
                         GameAudio.Play("victory", 0.9f, 0f, 0.5f);
                     }
-                    root.schedule.Execute(() => { outro = false; Render(); }).StartingIn(700);
+                    root.schedule.Execute(() => { outro = false; Render(); }).StartingIn(1100);
                 }
                 else Render();
-            }).StartingIn(delay + 150);
+            }).StartingIn(Mathf.RoundToInt((delay + 0.15f) * 1000));
+        }
+
+        /// <summary>One blow (or dodge, or parry) arriving.</summary>
+        void Land(BattleEvent e)
+        {
+            var target = ActorFor(e.target);
+            int fi = e.target.StartsWith("follower") && int.TryParse(e.target.Substring(8), out var n) ? n : -1;
+            bool isF = fi >= 0;
+            var card = e.target == "enemy" ? enemyCard : isF ? (fi < followerSpots.Count ? followerSpots[fi] : null) : playerCard;
+            var pic = target?.el;
+            string cls = e.kind == "crit" ? "pop-crit" : e.kind == "glance" ? "pop-glance" : e.kind == "heal" ? "pop-heal"
+                       : e.kind == "parry" || e.kind == "dodge" || e.kind == "open" ? "pop-perfect" : e.kind == "rage" ? "pop-crit"
+                       : e.kind == "guard" || e.kind == "flee" ? "pop-good" : "pop-hit";
+            Popup(target?.tag ?? card, e.text, cls, 0);
+            BattleSound(e);
+            BattleEffect(e, pic, arena);
+            bool hit = e.kind == "hit" || e.kind == "crit" || e.kind == "glance";
+            if (hit && !(e.kind == "glance" && e.from == "enemy"))
+            {
+                if (card != null && card != pic) Flash(card);
+                HitFlash(target == foeActor ? enemySheet : pic);
+                if (target == foeActor) FoeDoes("hurt");
+                Play(target, "hurt");
+                if (e.kind == "crit") Shake(stage, target == youActor ? 10f : 7f);
+            }
+            else if (e.kind == "glance") Play(target, "guard");
+            else if (e.kind == "dodge") Play(target, "dodge");
+            else if (e.kind == "parry") Play(target, "guard");
+            else if (e.kind == "flee" && e.text == "Escaped") Play(youActor, "flee");
+            else if (e.kind == "rage") { FoeDoes("tell"); Shake(pic, 5f); }
         }
 
         // ------------------------------------------------------------------ feedback

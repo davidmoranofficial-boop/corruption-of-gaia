@@ -264,7 +264,7 @@ namespace Loran.Core
                 S.enemyHp -= dealt;
                 lines.Add(aimed ? f.name + " takes careful aim. An aimed shot hits " + FoeName(e) + " for " + dealt + "!"
                                 : f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");
-                Events.Add(new BattleEvent { target = "enemy", kind = aimed ? "crit" : "hit", amount = dealt, text = dealt.ToString() });
+                Events.Add(new BattleEvent { from = "follower" + S.party.IndexOf(m), target = "enemy", kind = aimed ? "crit" : "hit", amount = dealt, text = dealt.ToString() });
             }
             return pinned;
         }

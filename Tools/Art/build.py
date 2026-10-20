@@ -439,18 +439,8 @@ def main():
         made.append(save(render(icon(g)), 'Icons', gid + '.png'))
     for gid, rows in ICON_ONLY.items():
         made.append(save(render([list(r.ljust(16, '.')) for r in rows] + [['.'] * 16] * (16 - len(rows))), 'Icons', gid + '.png'))
-    from beasts import wolf
-    g, w, h = wolf()
-    made.append(save(render(g), 'Enemies', 'wolf.png'))
-    # the pack leader: the same wolf, darker, black along the spine, a scar across the muzzle and hot yellow eyes
-    alpha = recolour(g, {'Y': 'y', 'y': 'G', 'G': 'g', 'g': 'o', 'W': 'Y'})
-    for (x, y) in ((3, 12), (4, 13), (5, 13), (6, 14), (7, 14)):
-        if alpha[y][x] != '.': alpha[y][x] = 'r'
-    alpha[11][9], alpha[11][10] = 'a', 'r'
-    made.append(save(render(alpha), 'Enemies', 'wolf_alpha.png'))
-    from beasts import boar
-    g, w, h = boar()
-    made.append(save(render(g), 'Enemies', 'boar.png'))
+    import beasts2   # the battle beasts, shaded and animated (20 Oct)
+    made += beasts2.main()
     from backdrops import BACKDROPS
     for name, paint in BACKDROPS.items():
         made.append(save(paint(), 'Backdrops', name + '.png'))

@@ -2543,3 +2543,17 @@
 .party-cols { flex-direction: row; }
 .party-col { flex-grow: 1; flex-basis: 0; min-width: 0; margin-right: 18px; }
 .party-go { align-self: flex-start; margin: 4px 0 6px 0; }
+
+/* ---------- the battle stage (20 Oct): one pixel grid, sized and placed from code ---------- */
+.battle .arena { background-image: none; }
+.stage { position: absolute; -unity-background-scale-mode: stretch-to-fill; overflow: hidden; }
+.stage-clouds { position: absolute; top: 0; left: 0; -unity-background-scale-mode: stretch-to-fill; }
+.stage-shadow { position: absolute; -unity-background-scale-mode: stretch-to-fill; }
+.stage-actor { position: absolute; transform-origin: 50% 100%; }
+.stage-actor .doll { position: absolute; left: 0; top: 0; }
+.stage-tag { position: absolute; }
+.stage-tag .pop { top: 0; right: auto; left: 0; width: 100%; -unity-text-align: middle-center; }
+.fighter-ally { flex-direction: row; align-items: center; margin-top: 6px; }
+.fighter-ally-name { font-size: 15px; color: var(--text); width: 130px; }
+.fighter-ally-track { flex-grow: 1; }
+
