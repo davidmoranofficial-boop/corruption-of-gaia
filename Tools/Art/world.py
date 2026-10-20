@@ -222,7 +222,6 @@ def coast_road():
         ],
         'events': [
             # Fights start straight away, Final Fantasy style. win is where you go after winning.
-            {'enemy': 'dog', 'win': 'ev_wolf_won', 'kind': 'fight', 'weight': 3, 'terrain': '.go=s', 'area': north},
             {'enemy': 'crab', 'win': 'ev_crab_won', 'kind': 'fight', 'weight': 3, 'terrain': ',', 'area': north},
         ],
         'rows': rows,
@@ -383,6 +382,8 @@ def skelmed():
         'zones': [
             {'x0': 17, 'y0': 26, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
             {'x0': 12, 'y0': 0, 'x1': 13, 'y1': 0, 'to': 'hills_gate'},
+            # Bess sees the wolf bite as you walk in, and shows you how to treat it
+            {'x0': 14, 'y0': 22, 'x1': 21, 'y1': 23, 'scene': 'bess_patch', 'when': ['untreated:bite', '!flag:patch_lesson']},
         ],
         'uses': [
             {'tile': 'O', 'scene': 'well_drink'},
@@ -489,7 +490,7 @@ def hills():
     return {
         'id': 'skelmed_hills',
         'name': 'The hills above Skelmed',
-        'minutes': 2, 'eventChance': 0, 'fightChance': 4, 'fightGap': 14,
+        'minutes': 2, 'eventChance': 0, 'fightChance': 0, 'fightGap': 14,
         'doors': [(24, 29)],
         'spots': [
             {'id': 'hills_gate', 'x': gx, 'y': H - 3, 'facing': 'up'},
@@ -529,9 +530,7 @@ def hills():
             {'tile': 'w', 'scene': 'hill_stream'},
             {'tile': 'q', 'scene': 'quarry_dig'},
         ],
-        'events': [
-            {'enemy': 'dog', 'win': 'ev_wolf_won', 'kind': 'fight', 'weight': 1, 'terrain': '.go', 'area': [0, 0, W - 1, H - 6]},
-        ],
+        'events': [],   # no random wolves (David, 19 Oct): only the scripted one on the road
         'rows': rows,
     }
 

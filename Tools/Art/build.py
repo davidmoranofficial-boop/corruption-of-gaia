@@ -364,6 +364,41 @@ ICON_ONLY = {
         "..odddddddddDo..", "..odaadddbbbDo..", "..odaAdddddddo..", "..odddddbbbbDo..",
         "..odbbbbddddDo..", "..odddddddddDo..", "..oDDDDDDDDDDo..", "..oooooooooooo..",
     ],
+    'health_potion': [
+        "................", "......ooo.......", ".....obbbo......", "......obo.......",
+        ".....oyWyo......", "....oyWWyyo.....", "...orWrrrrRo....", "...orWrrrrRo....",
+        "...orrrrrRRo....", "...oRrrrRRmo....", "....oRRRRmo.....", ".....ooooo......",
+    ],
+    'bandage': [
+        "................", "................", "................", "................",
+        "......ooooo.....", ".....oWWWddo....", "....oWWddWWdo...", "....oWdoodWdo...",
+        "....oWdoodWdooo.", "....oWWddWWddWWo", ".....oWWWddoooo.", "......ooooo.....",
+    ],
+    'spirits': [
+        "................", ".......oo.......", "......obbo......", "......oyyo......",
+        "......oyyo......", ".....oyccyo.....", "....ocWccCco....", "....ocWaaaCo....",
+        "....ocWaAaCo....", "....ocWcccCo....", "....oCCCCCCo....", ".....oooooo.....",
+    ],
+    'willow_bark': [
+        "................", "................", "................", "................",
+        "...ooooooo......", "..obDbDDbbooo...", "..oDbbDbDbbDbo..", "...oobDbbDbDbDo.",
+        ".....oooDbbDbo..", "........ooooo...",
+    ],
+    'sewing_kit': [
+        "................", "................", "................", "...ooooooooo....",
+        "..obbbbbbbbbo...", "..obBBBBBBBbo...", "..obBaaaaaBbo.o.", "..obBBBBBBBbooWo",
+        "..obbbbbbbbbo.oo", "...ooooooooo..o.", "..............o.",
+    ],
+    'yarrow': [
+        "................", "...oo.oo.oo.....", "..oWWoWWoWWo....", "...oWWWWWWo.....",
+        "....ooFoFoo.....", "......oFo.......", "....oo.Fo.oo....", "...ofFoFofFo....",
+        "....ooiFFoo.....", "......oFo.......", "......oFo.......", ".......o........",
+    ],
+    'splint': [
+        "................", "................", "................", "..oooooooooooo..",
+        "..ojJJJJJJJJjo..", "..oooooooooooo..", "....oWo..oWo....", "..oooooooooooo..",
+        "..ojJJJJJJJJjo..", "..oooooooooooo..",
+    ],
     'copper_ring': [
         "................",
         "................",

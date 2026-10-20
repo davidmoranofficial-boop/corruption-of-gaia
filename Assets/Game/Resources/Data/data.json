@@ -193,6 +193,13 @@
       "kind": "medicine"
     },
     {
+      "id": "health_potion",
+      "name": "Health potion",
+      "desc": "A little stoppered bottle of something red and bitter. Gives back 40 health at once, even in a fight, and gets someone who's down back on their feet.",
+      "kind": "medicine",
+      "heal": 40
+    },
+    {
       "id": "willow_bark",
       "name": "Willow bark",
       "desc": "Chewed or brewed, it brings a fever down.",
@@ -1889,7 +1896,7 @@
           "target": 4
         },
         {
-          "text": "Fill the water butt with two pails from the hill stream",
+          "text": "Fill the water butt with a pail from the hill stream",
           "when": "flag:butt_full"
         }
       ],
@@ -2167,6 +2174,31 @@
         "castaway_trousers",
         "leather_boots",
         "hunting_bow"
+      ],
+      "level": 2,
+      "role": "Hunter, archer",
+      "trait": "hill_born",
+      "traitName": "Hill-born",
+      "traitDesc": "Grew up in these hills, living off very little. He eats and drinks half what anyone else does, so he's cheap to keep on a long road.",
+      "abilities": [
+        {
+          "id": "aimed_shot",
+          "name": "Aimed shot",
+          "desc": "Every third round he takes his time over a shot: it hits 50% harder and goes straight through a guard.",
+          "level": 1
+        },
+        {
+          "id": "pin_down",
+          "name": "Pin down",
+          "desc": "Once a fight, when the enemy gathers itself for a big attack, he pins it with an arrow before it can spring.",
+          "level": 2
+        },
+        {
+          "id": "field_dressing",
+          "name": "Field dressing",
+          "desc": "After a fight he binds the worst bleeding wound in the party, yours included, without using your linen.",
+          "level": 3
+        }
       ]
     }
   ],

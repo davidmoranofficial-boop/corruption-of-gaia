@@ -48,6 +48,7 @@ namespace Loran.Core
         public float hp;
         public float hunger = 80, thirst = 80, energy = 90;   // the same needs as yours, 0 to 100
         public float morale = 60;                            // 0 to 100: at 0 they leave you
+        public int level = 1, exp;                           // they level up from the same fights and jobs as you
         public int x, y;
         public string facing = "down";
         public List<string> conditions = new List<string>(); // hungry, thirsty, exhausted, wounded, low (spirits), as last told to the player
@@ -143,6 +144,7 @@ namespace Loran.Core
         public bool defending;
         public string enemyMove = "";          // what the enemy is about to do (shown to the player as a tell)
         public int enemyStun;                  // actions the enemy loses (staggered)
+        public bool pinUsed;                   // a party member has already pinned the enemy down this fight
         public int enemyOpen;                  // rounds left that it's off balance: your next blow is a sure crit
         public int enemyRage;                  // how worked up it is: each point is +30% to its blows
         public bool enemyFury;                 // it has already flown into its low-health rage

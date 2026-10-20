@@ -43,6 +43,9 @@ namespace Loran.Core
 
         public bool PlayerActsFirst => Rules.Speed(S, data) >= (data.Enemy(S.enemy)?.speed ?? 0);
 
+        /// <summary>Is someone in your party, on their feet, bringing this trait?</summary>
+        public bool PartyTrait(string trait) => PartyUp.Any(m => data.Follower(m.id)?.trait == trait);
+
         /// <summary>Does this combat choice use the timing bar?</summary>
         public bool NeedsTiming(ChoiceDef c)
         {
@@ -58,7 +61,7 @@ namespace Loran.Core
             string e = c.effects.Count > 0 ? c.effects[0] : "";
             if (e == "fight:attack") return "attack";
             if (e == "fight:kindle" || e.StartsWith("fight:move:")) return "skill";
-            if (e.StartsWith("fight:eat:") || e == "fight:drink") return "item";
+            if (e.StartsWith("fight:eat:") || e.StartsWith("fight:potion:") || e == "fight:drink") return "item";
             if (e == "fight:defend") return "defend";
             if (e == "fight:dodge") return "dodge";
             if (e == "fight:flee") return "flee";
@@ -87,6 +90,7 @@ namespace Loran.Core
             S.enemyOpen = 0;
             S.enemyRage = 0;
             S.enemyFury = false;
+            S.pinUsed = false;
             S.battleLog.Clear();
             S.enemyMove = PickMove(e).id;
             Events.Clear();
@@ -126,6 +130,8 @@ namespace Loran.Core
                 var def = data.Item(it.id);
                 if (def != null && def.food)
                     sc.choices.Add(new ChoiceDef { label = "Eat: " + def.name + (it.count > 1 ? " (" + it.count + ")" : ""), time = 1, effects = { "fight:eat:" + it.id } });
+                if (def != null && def.heal > 0 && it.count > 0)
+                    sc.choices.Add(new ChoiceDef { label = "Drink: " + def.name + (it.count > 1 ? " (" + it.count + ")" : ""), time = 1, effects = { "fight:potion:" + it.id } });
             }
             if (S.water > 0)
                 sc.choices.Add(new ChoiceDef { label = "Drink from your waterskin (" + S.water + ")", time = 1, effects = { "fight:drink" } });
@@ -165,7 +171,8 @@ namespace Loran.Core
             }
 
             if (!Fumbles(kind, lines)) PlayerActs(kind, e, move, lines);
-            if (S.inCombat && S.enemyHp > 0 && FollowerUp) FollowerActs(e, move, lines);
+            bool pinned = false;
+            if (S.inCombat && S.enemyHp > 0 && FollowerUp) pinned = FollowerActs(e, move, lines, !enemyFirst);
             Fury(e, lines);
 
             if (S.inCombat && S.enemyHp <= 0)
@@ -179,7 +186,7 @@ namespace Loran.Core
             {
                 EnemyActs(e, move, lines);
             }
-            if (!S.inCombat) { DownedAfterFight(); FollowerAfterFight(); }
+            if (!S.inCombat) { DownedAfterFight(); FollowerAfterFight(); FieldDressing(); }
 
             if (S.inCombat && S.hp > 0)
             {
@@ -287,6 +294,20 @@ namespace Loran.Core
                 }
                 default:
                     if (mv != null) { UseMove(mv, e, move, lines); break; }
+                    if (kind.StartsWith("potion:"))
+                    {
+                        string id = kind.Substring(7);
+                        var it = data.Item(id);
+                        if (it != null && it.heal > 0 && S.Count(id) > 0)
+                        {
+                            S.AddItem(id, -1);
+                            int back = (int)Math.Min(it.heal, Rules.MaxHp(S) - S.hp);
+                            S.hp += it.heal;
+                            lines.Add("You gulp down the " + it.name.ToLowerInvariant() + ".");
+                            Events.Add(new BattleEvent { target = "player", kind = "heal", amount = back, text = "+" + back + " health" });
+                        }
+                        break;
+                    }
                     if (kind.StartsWith("eat:"))
                     {
                         string id = kind.Substring(4);
@@ -412,7 +433,7 @@ namespace Loran.Core
                 m.hp -= ft;
                 lines.Add(foe + " " + move.name.Replace("your", f.name + "'s").Replace(" you", " " + f.name) + " for " + ft + ".");
                 Events.Add(new BattleEvent { target = "follower" + S.party.IndexOf(m), kind = "hit", amount = ft, text = ft.ToString() });
-                if (m.hp <= -f.hp * 0.5f)
+                if (m.hp <= -Rules.MemberMaxHp(m, f) * 0.5f)
                 {
                     lines.Add(f.name + " is killed!");
                     Rules.Die(S, data, m, "a blow from " + FoeName(e));

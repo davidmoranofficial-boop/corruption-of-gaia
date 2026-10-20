@@ -284,7 +284,7 @@ namespace Loran.UnityLayer
                 var fd = engine.data.Follower(m.id);
                 if (fd == null) continue;
                 var trouble = Rules.Conditions(m, engine.data);
-                var line = Add(left, new Label(fd.name + "  " + Mathf.CeilToInt(Mathf.Max(0, m.hp)) + " / " + Mathf.RoundToInt(fd.hp) +
+                var line = Add(left, new Label(fd.name + "  " + Mathf.CeilToInt(Mathf.Max(0, m.hp)) + " / " + Mathf.RoundToInt(Rules.MemberMaxHp(m, fd)) +
                                                (trouble.Count > 0 ? "  ·  " + string.Join(", ", trouble) : "")), "hud-follower");
                 if (trouble.Count > 0) line.AddToClassList("hud-follower-trouble");
             }
@@ -447,64 +447,143 @@ namespace Loran.UnityLayer
             Render();
         }
 
-        void MenuParty(VisualElement left, VisualElement right)
+        string partySel = "";   // the party member picked in the Party menu
+
+        /// <summary>
+        /// The party screen, laid out like most RPGs' (David, 20 Oct): everyone in the party down the left with their level
+        /// and health, and the one you pick on the right: who they are, level and experience, their own trait and
+        /// abilities (locked ones show the level they open at), how they're holding up, what they wear, and what you can give them.
+        /// </summary>
+        void MenuParty(VisualElement body)
         {
             var s = engine.S;
             var d = engine.data;
             bool free = engine.FreeToAct;
+            var row = Add(body, new VisualElement(), "inv");
 
-            var who = Section(left, "YOUR PARTY  ·  " + s.party.Count + " OF " + Rules.PartyMax);
-            if (s.party.Count == 0) Add(who, new Label("Nobody's walking with you. Some jobs are better done with company, and some people out there are worth finding."), "line-muted");
-            var foods = s.items.Where(i => d.Item(i.id)?.food == true && i.count > 0).ToList();
+            var list = Add(row, new VisualElement(), "inv-col");
+            list.AddToClassList("skill-list");
+            Add(list, new Label("YOUR PARTY  ·  " + s.party.Count + " OF " + Rules.PartyMax), "section-head");
+            if (s.party.All(m => m.id != partySel)) partySel = s.party.FirstOrDefault()?.id ?? "";
             foreach (var m in s.party)
             {
                 var f = d.Follower(m.id);
                 if (f == null) continue;
-                var card = Add(who, new VisualElement(), "party-card");
-                var top = Add(card, new VisualElement(), "party-top");
-                Add(top, new Label(f.name), "detail-name");
-                var trouble = Rules.Conditions(m, d);
-                var state = Add(top, new Label(m.hp <= 0 ? "down" : trouble.Count == 0 ? "doing well" : string.Join(", ", trouble)), "party-state");
-                if (trouble.Count > 0 || m.hp <= 0) state.AddToClassList("party-state-bad");
-                if (!string.IsNullOrEmpty(f.desc)) Add(card, new Label(f.desc), "line-muted");
-                if (!string.IsNullOrEmpty(f.until) && engine.All(f.untilWhen)) Add(card, new Label(f.until), "line");
-                Need(card, "HEALTH", Mathf.Max(0, m.hp), f.hp, "#c8573f");
-                var small = Add(card, new VisualElement(), "hud-small");
-                Need(small, "HUNGER", m.hunger, 100, "#d08a4a");
-                Need(small, "THIRST", m.thirst, 100, "#4f9b97");
-                var small2 = Add(card, new VisualElement(), "hud-small");
-                Need(small2, "ENERGY", m.energy, 100, "#9d8fd0");
-                Need(small2, "SPIRITS", m.morale, 100, "#d4b45a");
-                int power = Mathf.RoundToInt(Rules.PartyPower(m, d) * 100);
-                Add(card, new Label(m.hp <= 0 ? "Down: they can't fight until their wound is bound." : Rules.NoFight(m.body, d) ? "In no state to fight." : "Fights at " + power + "% of their best."), "line-muted");
-                if (m.body.afflictions.Count > 0) Add(card, new Label("Treat their wounds under Survival (S)."), "line-muted");
-                if (!string.IsNullOrEmpty(f.quest))
-                {
-                    var q = d.Quest(f.quest);
-                    string status = engine.Check("done:" + f.quest) ? "done" : engine.Check("quest:" + f.quest) ? "under way" : "not started";
-                    if (q != null) Add(card, new Label("Their quest: " + q.name + " (" + status + ")"), "line");
-                }
-                var row = Add(card, new VisualElement(), "party-btns");
                 string id = m.id;
-                foreach (var food in foods)
-                {
-                    var it = d.Item(food.id);
-                    string fid = food.id;
-                    var b = Add(row, new Button(() => { engine.Feed(id, fid); AfterAction(); }) { text = "Give " + it.name.ToLowerInvariant() + " (" + food.count + ")", focusable = false }, "small-btn");
-                    b.SetEnabled(free);
-                }
-                var w = Add(row, new Button(() => { engine.GiveWater(id); AfterAction(); }) { text = "Give water (" + s.water + ")", focusable = false }, "small-btn");
-                w.SetEnabled(free && s.water > 0);
+                var b = Add(list, new Button(() => { partySel = id; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "party-tab");
+                if (id == partySel) b.AddToClassList("party-tab-on");
+                var face = Add(b, new VisualElement(), "party-tab-face");
+                Portrait(face, f.name, 4);
+                var info = Add(b, new VisualElement(), "party-tab-info");
+                var top = Add(info, new VisualElement(), "skill-tab-top");
+                Add(top, new Label(f.name), "skill-tab-name");
+                Add(top, new Label("Lv " + Rules.MemberLevel(m)), "skill-tab-level");
+                Need(info, "HEALTH", Mathf.Max(0, m.hp), Rules.MemberMaxHp(m, f), "#c8573f");
+                var trouble = Rules.Conditions(m, d);
+                Add(info, new Label(trouble.Count == 0 ? "Doing well" : string.Join(", ", trouble)), trouble.Count == 0 ? "party-ok" : "party-trouble");
+            }
+            for (int k = s.party.Count; k < Rules.PartyMax; k++)
+            {
+                var empty = Add(list, new VisualElement(), "party-tab-empty");
+                Add(empty, new Label("Empty"), "line-muted");
+            }
+            if (s.party.Count == 0)
+                Add(list, new Label("Nobody's walking with you. Some people out there are worth finding, and some jobs are better done with company."), "line-muted");
+            if (s.fallen.Count > 0) Add(list, new Label("Lost for good: " + string.Join(", ", s.fallen.Select(x => d.Follower(x)?.name ?? x)) + "."), "line-muted");
+            // Supplies, since they live off yours
+            var foods = s.items.Where(x => d.Item(x.id)?.food == true && x.count > 0).ToList();
+            int meals = foods.Sum(x => x.count);
+            Add(list, new Label("SUPPLIES"), "section-head").AddToClassList("surv-gap");
+            Add(list, new Label(meals + " thing" + (meals == 1 ? "" : "s") + " to eat  ·  " + s.water + " of " + Rules.WaterskinSize + " drinks  ·  " + s.Count("health_potion") + " potions"), "line");
+            Add(list, new Label((1 + s.party.Count) + " mouths to feed. Your party eats and drinks from your pack when they sleep; going without lowers their spirits, and at nothing most will leave you."), "line-muted");
+
+            // The one picked
+            var det = Add(row, new VisualElement(), "inv-col");
+            det.AddToClassList("skill-detail");
+            var sel = s.party.FirstOrDefault(m => m.id == partySel);
+            var fd = sel != null ? d.Follower(sel.id) : null;
+            if (fd == null) { Add(det, new Label("When someone joins you, you'll see them here: their level, their own trait and abilities, and how they're holding up."), "line-muted"); return; }
+
+            var head = Add(det, new VisualElement(), "party-head");
+            var fig = Add(head, new VisualElement(), "party-figure");
+            var doll = Doll(fig, 4, fd.figure, fd.skin, fd.hair, fd.worn.Select(g => (g, d.Gear(g)?.slot ?? "body")));
+            if (sel.hp <= 0) doll.AddToClassList("portrait-down");
+            var names = Add(head, new VisualElement(), "party-names");
+            Add(names, new Label(fd.name), "char-name");
+            if (!string.IsNullOrEmpty(fd.role)) Add(names, new Label(fd.role), "char-sub");
+            int lv = Rules.MemberLevel(sel);
+            Add(names, new Label("LEVEL " + lv), "char-level");
+            var xt = Add(names, new VisualElement(), "xp-track");
+            Add(xt, new VisualElement(), "xp-fill").style.width = Length.Percent(Mathf.Clamp01(sel.exp / (float)Rules.ExpToNext(lv)) * 100f);
+            Add(names, new Label(sel.exp + " / " + Rules.ExpToNext(lv) + " experience, from the same fights and jobs as you"), "char-sub");
+            if (!string.IsNullOrEmpty(fd.until) && engine.All(fd.untilWhen)) Add(names, new Label(fd.until), "party-until");
+            if (!string.IsNullOrEmpty(fd.desc)) Add(names, new Label(fd.desc), "det-desc");
+
+            var cols = Add(det, new VisualElement(), "party-cols");
+            var c1 = Add(cols, new VisualElement(), "party-col");
+            if (!string.IsNullOrEmpty(fd.traitName))
+            {
+                var perk = Add(c1, new VisualElement(), "perk-card");
+                Add(perk, new Label("TRAIT  ·  " + fd.traitName.ToUpperInvariant()), "perk-name");
+                Add(perk, new Label(fd.traitDesc), "perk-desc");
+            }
+            Add(c1, new Label("ABILITIES"), "section-head").AddToClassList("surv-gap");
+            Add(c1, new Label("They use these themselves, when the moment's right."), "line-muted");
+            foreach (var ab in fd.abilities.OrderBy(a => a.level))
+            {
+                bool has = lv >= ab.level;
+                var node = Add(c1, new VisualElement(), "move-node");
+                node.AddToClassList(has ? "move-known" : "move-locked");
+                Add(node, new Label(has ? "✓" : "Lv " + ab.level), "move-dot");
+                var txt = Add(node, new VisualElement(), "move-text");
+                Add(txt, new Label(ab.name), "move-name");
+                Add(txt, new Label(ab.desc), "line-muted");
             }
 
-            var how = Section(right, "LOOKING AFTER A PARTY");
-            Add(how, new Label("Your party gets hungry, thirsty and tired just like you, and they live off your supplies. When you sleep, anyone hungry eats from your pack and anyone thirsty drinks from your waterskin. If there's nothing to give them, they go without."), "line-muted");
-            Add(how, new Label("Each trouble (hungry, thirsty, exhausted, wounded, low spirits) makes them fight worse. Going without, cold camps and being knocked down lower their spirits; a bed, a meal and helping with their own quest raise them. Let their spirits hit nothing and most will leave you."), "line-muted");
-            var sup = Section(right, "SUPPLIES");
-            int meals = foods.Sum(i => i.count);
-            Add(sup, new Label(meals + " thing" + (meals == 1 ? "" : "s") + " to eat  ·  " + s.water + " of " + Rules.WaterskinSize + " drinks of water"), "line");
-            int mouths = 1 + s.party.Count;
-            Add(sup, new Label("That's " + mouths + " mouth" + (mouths == 1 ? "" : "s") + " to feed."), "line-muted");
+            var c2 = Add(cols, new VisualElement(), "party-col");
+            Add(c2, new Label("HOW THEY'RE DOING"), "section-head");
+            var needs = Add(c2, new VisualElement(), "surv-needs");
+            Need(needs, "HEALTH", Mathf.Max(0, sel.hp), Rules.MemberMaxHp(sel, fd), "#c8573f");
+            Need(needs, "SPIRITS", sel.morale, 100, "#d4b45a");
+            Need(needs, "HUNGER", sel.hunger, 100, "#d08a4a");
+            Need(needs, "THIRST", sel.thirst, 100, "#4f9b97");
+            Need(needs, "ENERGY", sel.energy, 100, "#9d8fd0");
+            int power = Mathf.RoundToInt(Rules.PartyPower(sel, d) * 100);
+            Add(c2, new Label(sel.hp <= 0 ? "Down: they can't fight until a potion or a bandage gets them up." : Rules.NoFight(sel.body, d) ? "In no state to fight." : "Fights at " + power + "% of their best."), power < 100 || sel.hp <= 0 ? "line-warn" : "line");
+            Sheet(c2, "Blows", (fd.atkMin + lv - 1) + " to " + (fd.atkMax + lv - 1) + " damage");
+            if (sel.body.afflictions.Count > 0)
+            {
+                Add(c2, new Label("Hurt: " + string.Join(", ", sel.body.afflictions.Select(a => d.Affliction(a.id)?.name ?? a.id))), "line-warn");
+                var go = Add(c2, new Button(() => { openMenu = "survival"; GameAudio.Play("ui_tick"); Render(); }) { text = "Treat their wounds", focusable = false }, "det-btn");
+                go.AddToClassList("party-go");
+            }
+            if (!string.IsNullOrEmpty(fd.quest))
+            {
+                var q = d.Quest(fd.quest);
+                string status = engine.Check("done:" + fd.quest) ? "done" : engine.Check("quest:" + fd.quest) ? "under way" : "not started";
+                if (q != null) Add(c2, new Label("Their quest: " + q.name + " (" + status + "). Helping with it lifts their spirits."), "line");
+            }
+
+            Add(c2, new Label("WEARING"), "section-head").AddToClassList("surv-gap");
+            Add(c2, new Label(string.Join(", ", fd.worn.Select(g => d.Gear(g)?.name ?? g))), "line-muted");
+
+            Add(c2, new Label("GIVE THEM"), "section-head").AddToClassList("surv-gap");
+            var btns = Add(c2, new VisualElement(), "party-btns");
+            string sid = sel.id;
+            if (s.Count("health_potion") > 0)
+            {
+                var pb = Add(btns, new Button(() => { if (engine.UsePotion(sid, "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Health potion (" + s.Count("health_potion") + ")", focusable = false }, "small-btn");
+                pb.SetEnabled(free && sel.hp < Rules.MemberMaxHp(sel, fd));
+            }
+            foreach (var food in foods)
+            {
+                var it = d.Item(food.id);
+                string fid = food.id;
+                var b = Add(btns, new Button(() => { engine.Feed(sid, fid); AfterAction(); }) { text = it.name + " (" + food.count + ")", focusable = false }, "small-btn");
+                b.SetEnabled(free);
+            }
+            var w = Add(btns, new Button(() => { engine.GiveWater(sid); AfterAction(); }) { text = "Water (" + s.water + ")", focusable = false }, "small-btn");
+            w.SetEnabled(free && s.water > 0);
         }
 
         void SkillRow(VisualElement parent, SkillDef sk)
@@ -588,96 +667,169 @@ namespace Loran.UnityLayer
             SoundSettings(right);
         }
 
-        void MenuSurvival(VisualElement left, VisualElement right)
+        static readonly string[] Medicines = { "health_potion", "bandage", "spirits", "yarrow", "willow_bark", "splint", "sewing_kit" };
+
+        /// <summary>
+        /// Survival: treating wounds comes first (David, 20 Oct). On the left, everyone who's hurt and each wound's
+        /// treatment as numbered steps. On the right, the medicine you carry, then your needs and the weather in brief.
+        /// </summary>
+        void MenuSurvival(VisualElement body)
         {
             var s = engine.S;
-            bool free = engine.FreeToAct;
-
-            var needs = Section(left, "HOW YOU'RE DOING");
-            NeedRow(needs, "Health", s.hp, Rules.MaxHp(s), "#c8573f", "Comes back slowly with sleep. Starving or going thirsty wears it down.");
-            NeedRow(needs, "Hunger", s.hunger, 100, "#d08a4a", "Eat to fill it. Empty means you start losing health.");
-            NeedRow(needs, "Thirst", s.thirst, 100, "#4f9b97", "Drink to fill it. It drops faster than hunger.");
-            NeedRow(needs, "Stamina", s.stamina, Rules.MaxStamina(s, engine.data), "#7fae6a", "Spent running, fighting and working. A short rest brings it back.");
-            NeedRow(needs, "Energy", s.energy, 100, "#9d8fd0", "Your ability to function. Only sleep, food and drink restore it. At zero you collapse, and mid-fight that usually means death.");
-
-            var rest = Section(right, "REST");
-            var breath = Add(rest, new Button(() => { engine.CatchBreath(); AfterAction(); }) { text = "Catch your breath  (15 min, +stamina)" }, "small-btn");
-            breath.AddToClassList("wide-btn");
-            breath.SetEnabled(free);
-            var drink = Add(rest, new Button(() => { engine.Drink(); AfterAction(); }) { text = "Drink from your waterskin  (" + s.water + " left)" }, "small-btn");
-            drink.AddToClassList("wide-btn");
-            drink.SetEnabled(free && s.water > 0);
-            Add(rest, new Label("To sleep, find somewhere to bed down: a fire, an inn, or rough if you must. Sleeping saves your game."), "line-muted");
-
-            // The weather, and what it's doing to you
             var d = engine.data;
-            var sky = Section(right, "WEATHER");
-            var w = Rules.WeatherNow(s, d);
-            bool inside = Rules.Sheltered(s, d);
-            if (w != null)
-            {
-                Add(sky, new Label(w.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, d)) + "°C" + (inside ? "  (you're under a roof)" : "")), "line");
-                Add(sky, new Label(w.desc), "line-muted");
-            }
-            float warmth = Rules.Warmth(s, d);
-            Add(sky, new Label("Your clothes add " + Mathf.RoundToInt(warmth) + "°. It feels like " + Mathf.RoundToInt(Rules.Felt(s, d, s.body, warmth)) + "° to you."), "line-muted");
-            NeedRow(sky, "Cold", s.body.cold, 100, "#7fa6c8", "Below about " + Mathf.RoundToInt(Rules.Comfortable) + "° you get colder. Cold, you tire faster and get your breath back slower. All the way: hypothermia.");
-            NeedRow(sky, "Wet", s.body.wet, 100, "#4f7f9b", "Rain soaks you, and wet makes the cold far worse. A fire or a roof dries you.");
-            if (s.body.heat > 0 || (w != null && w.temp > 5)) NeedRow(sky, "Heat", s.body.heat, 100, "#d08a4a", "Too hot, you get thirsty fast. All the way: heatstroke. Get out of the sun and drink.");
+            bool free = engine.FreeToAct;
+            var row = Add(body, new VisualElement(), "inv");
 
-            // Wounds and ailments: yours, then your party's
-            var hurt = Section(left, "WOUNDS AND AILMENTS");
+            var left = Add(row, new VisualElement(), "inv-col");
+            left.AddToClassList("surv-wounds");
+            Add(left, new Label("WOUNDS AND AILMENTS"), "section-head");
             if (s.Has("patch_lesson") && !s.Has("patch_done") && engine.Check("untreated:bite"))
-                Add(hurt, new Label("Bess is watching. Clean the bite first (that uses the spirits), then bandage it. This is where you treat every wound: open Survival with S, or from the menu wheel (I)."), "tutorial-hint");
-            bool any = false;
-            any |= WoundList(hurt, "", "You", s.body, free);
+                Add(left, new Label("Bess is watching. Do the steps in order: clean the bite first (that uses the spirits), then bandage it. This is where you treat every wound: S, or the menu wheel (I)."), "tutorial-hint");
+            bool any = WoundList(left, "", s.name, s.hp, Rules.MaxHp(s), s.body, free, true);
             foreach (var m in s.party)
             {
                 var f = d.Follower(m.id);
-                if (f != null) any |= WoundList(hurt, m.id, f.name + (m.hp <= 0 ? " (down)" : ""), m.body, free);
+                if (f != null) any |= WoundList(left, m.id, f.name, m.hp, Rules.MemberMaxHp(m, f), m.body, free, false);
             }
-            if (!any) Add(hurt, new Label("Nothing, for now. Fights leave bites, cuts and broken bones; the weather leaves chills. Carry bandages, spirits, and a sewing kit if you can."), "line-muted");
-            if (s.fallen.Count > 0)
-                Add(hurt, new Label("Lost: " + string.Join(", ", s.fallen.Select(id => d.Follower(id)?.name ?? id)) + "."), "line-muted");
+            if (!any)
+            {
+                var ok = Add(left, new VisualElement(), "surv-none");
+                Add(ok, new Label("No wounds."), "surv-none-head");
+                Add(ok, new Label("Fights leave bites, cuts and broken bones, and the weather leaves chills. When something happens it shows here, with each step to treat it. Carry bandages and spirits, and a sewing kit if you can."), "line-muted");
+            }
+            if (s.fallen.Count > 0) Add(left, new Label("Lost: " + string.Join(", ", s.fallen.Select(id => d.Follower(id)?.name ?? id)) + "."), "line-muted");
+
+            var right = Add(row, new VisualElement(), "inv-col");
+            right.AddToClassList("surv-side");
+            // What you've got to treat them with
+            Add(right, new Label("MEDICINE IN YOUR PACK"), "section-head");
+            var grid = Add(right, new VisualElement(), "surv-meds");
+            foreach (var id in Medicines)
+            {
+                var it = d.Item(id);
+                if (it == null) continue;
+                int n = s.Count(id);
+                var cell = Add(grid, new VisualElement(), n > 0 ? "surv-med" : "surv-med-none");
+                Icon(cell, id, 3);
+                Add(cell, new Label(n.ToString()), "surv-med-count");
+                Add(cell, new Label(it.name), "surv-med-name");
+                cell.tooltip = it.desc;
+            }
+            Add(right, new Label("Water " + s.water + " / " + Rules.WaterskinSize + " (two drinks can clean a wound at a pinch)"), "line-muted");
+            int potions = s.Count("health_potion");
+            if (potions > 0)
+            {
+                var pr = Add(right, new VisualElement(), "party-btns");
+                var mine = Add(pr, new Button(() => { if (engine.UsePotion("", "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Drink a potion  (+40 health)", focusable = false }, "small-btn");
+                mine.SetEnabled(free && s.hp < Rules.MaxHp(s));
+                foreach (var m in s.party)
+                {
+                    var f = d.Follower(m.id);
+                    if (f == null) continue;
+                    string mid = m.id;
+                    var g = Add(pr, new Button(() => { if (engine.UsePotion(mid, "health_potion")) GameAudio.Play("pickup"); AfterAction(); }) { text = "Give " + f.name + " a potion", focusable = false }, "small-btn");
+                    g.SetEnabled(free && m.hp < Rules.MemberMaxHp(m, f));
+                }
+            }
+            else Add(right, new Label("No health potions. Bess sells them in Skelmed."), "line-muted");
+
+            // Your needs, in brief
+            Add(right, new Label("HOW YOU'RE DOING"), "section-head").AddToClassList("surv-gap");
+            var needs = Add(right, new VisualElement(), "surv-needs");
+            Need(needs, "HEALTH", s.hp, Rules.MaxHp(s), "#c8573f");
+            Need(needs, "STAMINA", s.stamina, Rules.MaxStamina(s, d), "#7fae6a");
+            Need(needs, "HUNGER", s.hunger, 100, "#d08a4a");
+            Need(needs, "THIRST", s.thirst, 100, "#4f9b97");
+            Need(needs, "ENERGY", s.energy, 100, "#9d8fd0");
+            var drink = Add(right, new Button(() => { engine.Drink(); AfterAction(); }) { text = "Drink from your waterskin  (" + s.water + " left)", focusable = false }, "small-btn");
+            drink.SetEnabled(free && s.water > 0);
+            Add(right, new Label("Health comes back with sleep or a potion. Stamina comes back by itself when you stop running. Only sleep, food and drink restore energy; sleeping saves your game."), "line-muted");
+
+            // The weather, and what it's doing to you
+            var w = Rules.WeatherNow(s, d);
+            bool inside = Rules.Sheltered(s, d);
+            Add(right, new Label("WEATHER"), "section-head").AddToClassList("surv-gap");
+            if (w != null) Add(right, new Label(w.name + "  ·  " + Mathf.RoundToInt(Rules.AirTemp(s, d)) + "°C" + (inside ? "  (under a roof)" : "") + "  ·  feels like " + Mathf.RoundToInt(Rules.Felt(s, d, s.body, Rules.Warmth(s, d))) + "°"), "line");
+            var sky = Add(right, new VisualElement(), "surv-needs");
+            Need(sky, "COLD", s.body.cold, 100, "#7fa6c8");
+            Need(sky, "WET", s.body.wet, 100, "#4f7f9b");
+            if (s.body.heat > 0) Need(sky, "HEAT", s.body.heat, 100, "#d08a4a");
+            Add(right, new Label("Cold and wet tire you and slow your breath; all the way, hypothermia. A fire or a roof warms and dries you."), "line-muted");
         }
 
-        /// <summary>One person's wounds, each with what it's doing to them and buttons for the treatments still to do.</summary>
-        bool WoundList(VisualElement parent, string who, string name, Body body, bool free)
+        /// <summary>One person's wounds: a header with their health, then each wound with its treatment as numbered steps.</summary>
+        bool WoundList(VisualElement parent, string who, string name, float hp, float maxHp, Body body, bool free, bool you)
         {
             var d = engine.data;
             if (body.afflictions.Count == 0) return false;
-            Add(parent, new Label(name.ToUpperInvariant()), "wound-who");
+            var head = Add(parent, new VisualElement(), "surv-who");
+            Add(head, new Label((you ? "YOU" : name.ToUpperInvariant()) + (hp <= 0 ? "  ·  DOWN" : "")), "surv-who-name");
+            var hb = Add(head, new VisualElement(), "surv-who-bar");
+            Need(hb, "HEALTH", Mathf.Max(0, hp), maxHp, "#c8573f");
+            int power = Mathf.RoundToInt(Rules.FightPower(body, d) * 100);
+            Add(head, new Label(Rules.NoFight(body, d) ? "Can't fight" : "Fights at " + power + "%"), power < 100 ? "surv-who-power-bad" : "surv-who-power");
+
             foreach (var a in body.afflictions.ToList())
             {
                 var def = d.Affliction(a.id);
                 if (def == null) continue;
-                var card = Add(parent, new VisualElement(), "party-card");
-                var top = Add(card, new VisualElement(), "party-top");
-                Add(top, new Label(def.name), "detail-name");
                 bool treated = Rules.Treated(a, def);
-                string state = Rules.Bleeding(a, def) ? (def.deadline > 0 ? "bleeding out: " + Mathf.Max(0, Mathf.CeilToInt(def.deadline - a.hours)) + " h left" : "bleeding")
-                             : treated && def.heal > 0 ? "healing  " + Mathf.RoundToInt(Mathf.Clamp01(a.healed / def.heal) * 100) + "%"
-                             : def.cure == "warm" ? "get warm" : def.cure == "cool" ? "cool down" : "untreated";
-                var st = Add(top, new Label(state), "party-state");
-                if (!treated) st.AddToClassList("party-state-bad");
+                bool bleeding = Rules.Bleeding(a, def);
+                var card = Add(parent, new VisualElement(), "wound-card");
+                card.AddToClassList(bleeding ? "wound-card-bleeding" : treated ? "wound-card-healing" : "wound-card-open");
+                var top = Add(card, new VisualElement(), "party-top");
+                Add(top, new Label(def.name), "wound-name");
+                string state = bleeding ? (def.deadline > 0 ? "BLEEDING OUT: " + Mathf.Max(0, Mathf.CeilToInt(def.deadline - a.hours)) + " H LEFT" : "BLEEDING")
+                             : treated && def.heal > 0 ? "HEALING"
+                             : def.cure == "warm" ? "GET WARM" : def.cure == "cool" ? "COOL DOWN" : "NEEDS TREATING";
+                Add(top, new Label(state), bleeding ? "wound-chip-bad" : treated ? "wound-chip-good" : "wound-chip-warn");
                 Add(card, new Label(def.desc), "line-muted");
+
+                // What it's doing to them right now
+                var effects = new List<string>();
+                if (bleeding && def.bleed > 0) effects.Add("loses " + def.bleed.ToString("0.#") + " health an hour");
+                if (def.drain > 0 && !treated) effects.Add("tires you out");
+                if (def.noFight) effects.Add("can't fight");
+                else if (def.fight > 0 && def.fight < 1) effects.Add("fights at " + Mathf.RoundToInt(def.fight * 100) + "%");
+                if (effects.Count > 0) Add(card, new Label(string.Join("  ·  ", effects)), "wound-effects");
                 if (def.worsen != "" && !treated && (def.worsenUnless == "" || !a.done.Contains(def.worsenUnless)))
-                    Add(card, new Label("Turns bad in " + Mathf.Max(0, Mathf.CeilToInt(def.worsenAfter - a.hours)) + " h unless " + (d.Treatment(def.worsenUnless)?.name ?? "treated").ToLowerInvariant() + "."), "line-warn");
-                var row = Add(card, new VisualElement(), "party-btns");
+                    Add(card, new Label("Turns into " + (d.Affliction(def.worsen)?.name ?? def.worsen).ToLowerInvariant() + " in " + Mathf.Max(0, Mathf.CeilToInt(def.worsenAfter - a.hours)) + " h unless you " + (d.Treatment(def.worsenUnless)?.name ?? "treat it").ToLowerInvariant() + "."), "line-warn");
+
+                if (treated && def.heal > 0)
+                {
+                    var hr = Add(card, new VisualElement(), "surv-heal");
+                    float frac = Mathf.Clamp01(a.healed / def.heal);
+                    Need(hr, "HEALED", frac * 100, 100, "#7fae6a");
+                    Add(card, new Label("All it needs now is time: about " + Mathf.CeilToInt((def.heal - a.healed) / (1 + Rules.FirstAidPerLevel * engine.SkillLevel("first_aid"))) + " more hours."), "line-muted");
+                }
+
+                // The treatment, step by step, in order
+                int n = 0;
                 foreach (var step in def.treat)
                 {
                     var t = d.Treatment(step);
                     if (t == null) continue;
-                    if (a.done.Contains(step)) { Add(row, new Label("√ " + t.name), "wound-done"); continue; }
+                    n++;
+                    bool done = a.done.Contains(step);
+                    var sr = Add(card, new VisualElement(), done ? "treat-step-done" : "treat-step");
+                    Add(sr, new Label(done ? "✓" : n.ToString()), "treat-num");
+                    var txt = Add(sr, new VisualElement(), "treat-text");
+                    Add(txt, new Label(t.name), "treat-name");
+                    if (done) { Add(txt, new Label("Done"), "treat-cost"); continue; }
                     var (ok, uses, why) = engine.TreatmentCost(step);
-                    string cost = ok ? (uses.Count == 0 ? "" : "  (" + string.Join(", ", uses.Select(u => u == "water" ? "water" : (d.Item(u)?.name ?? u).ToLowerInvariant())) + ")") : "  (" + why + ")";
+                    string cost = !ok ? Cap(why) : uses.Count == 0 ? (t.minutes > 0 ? t.minutes + " minutes" : t.desc)
+                                : "Uses " + string.Join(" and ", uses.Select(u => u == "water" ? "water" : (d.Item(u)?.name ?? u).ToLowerInvariant())) + (t.minutes > 0 ? "  ·  " + t.minutes + " min" : "");
+                    Add(txt, new Label(cost), ok ? "treat-cost" : "treat-cost-missing");
+                    if (step == "rest") continue;
                     string aid = a.id, sid = step;
-                    var b = Add(row, new Button(() => { if (engine.Treat(who, aid, sid)) GameAudio.Play(sid == "bandage" || sid == "splint" || sid == "stitch" ? "bandage" : "pickup"); AfterAction(); }) { text = t.name + cost, focusable = false }, "small-btn");
+                    var b = Add(sr, new Button(() => { if (engine.Treat(who, aid, sid)) GameAudio.Play(sid == "bandage" || sid == "splint" || sid == "stitch" ? "bandage" : "pickup"); AfterAction(); }) { text = "Do it", focusable = false }, "det-btn");
                     b.SetEnabled(free && ok);
                 }
             }
             return true;
         }
+
+        static string Cap(string t) => string.IsNullOrEmpty(t) ? t : char.ToUpperInvariant(t[0]) + t.Substring(1);
 
         void NeedRow(VisualElement parent, string name, float value, float max, string colour, string help)
         {

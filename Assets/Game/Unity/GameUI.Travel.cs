@@ -37,6 +37,7 @@ namespace Loran.UnityLayer
         Vector2 moveFrom, moveTo;
         ChoiceDef pendingStep;
         int stepCount, unsavedSteps;
+        float breathAt, hudDrawnAt;
 
         public bool InWorld => engine.Area != null && engine.S.scene != Engine.Death && engine.S.scene != Engine.Collapse;
 
@@ -119,23 +120,148 @@ namespace Loran.UnityLayer
             if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
 
+        // Dialogue, the way most RPGs do it (David, 20 Oct): a portrait of whoever's talking beside a speech bubble with their
+        // name on it, the words typed out, one short page at a time. Space finishes the page, then turns to the next;
+        // the choices come up on the last page. Narration (nobody talking) has no portrait.
+        const float TypeCharsPerSecond = 60f;
+        const int PageChars = 230;
+        string dlgKey = "";
+        int dlgPage, dlgTypedPage = -1;
+        List<string> dlgPages = new List<string>();
+        Label dlgText;
+        VisualElement dlgChoices;
+        Label dlgMore;
+        List<ChoiceView> dlgPendingChoices;
+        IVisualElementScheduledItem dlgTick;
+        float dlgStart;
+        bool dlgMessage;
+
+        /// <summary>Splits text into short pages, at sentence ends where it can.</summary>
+        static List<string> Pages(IEnumerable<string> parts)
+        {
+            var pages = new List<string>();
+            foreach (var raw in parts)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) continue;
+                string t = raw.Trim();
+                while (t.Length > PageChars)
+                {
+                    int cut = -1;
+                    for (int k = PageChars; k > PageChars / 3; k--)
+                        if ((t[k - 1] == '.' || t[k - 1] == '?' || t[k - 1] == '!' || (t[k - 1] == '"' && k > 1 && ".?!,".IndexOf(t[k - 2]) >= 0)) && k < t.Length && t[k] == ' ')
+                        { cut = k; break; }
+                    if (cut < 0) break;
+                    pages.Add(t.Substring(0, cut).Trim());
+                    t = t.Substring(cut).Trim();
+                }
+                pages.Add(t);
+            }
+            return pages;
+        }
+
+        bool DialoguePaging => worldView != null && dlgText != null && dlgText.panel != null && (dlgTick != null || dlgPage < dlgPages.Count - 1);
+
         void DialogueBox(string title, string result, List<string> paras, List<ChoiceView> choices, bool message, bool actions = false, string speaker = null)
         {
+            dlgTick?.Pause();
+            dlgTick = null;
+            dlgMessage = message;
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(result)) parts.Add(result);
+            if (paras != null) parts.AddRange(paras);
+            var pages = Pages(parts);
+            string key = engine.S.scene + "|" + string.Join("§", pages) + "|" + (choices?.Count ?? 0) + "|" + message;
+            if (key != dlgKey) { dlgKey = key; dlgPage = 0; dlgTypedPage = -1; }
+            dlgPages = pages;
+            if (dlgPage >= pages.Count) dlgPage = Mathf.Max(0, pages.Count - 1);
+
+            string who = string.IsNullOrEmpty(speaker) ? null : engine.Fill(speaker);
             var box = Add(worldView, new VisualElement(), "dialogue");
-            if (!string.IsNullOrEmpty(speaker)) Add(box, new Label(engine.Fill(speaker)), "dialogue-speaker");
-            var scroll = Add(box, new ScrollView(ScrollViewMode.Vertical), "dialogue-scroll");
-            if (string.IsNullOrEmpty(speaker) && !string.IsNullOrEmpty(title)) Add(scroll, new Label(engine.Fill(title)), "dialogue-title");
-            if (!string.IsNullOrEmpty(result)) Add(scroll, new Label(result), message ? "dialogue-text" : "result");
-            if (paras != null) foreach (var p in paras) Add(scroll, new Label(p), "dialogue-text");
-            if (message)
+            box.AddToClassList(who != null ? "dialogue-talk" : "dialogue-narrate");
+            var row = Add(box, new VisualElement(), "dialogue-row");
+            if (who != null) Portrait(row, who);
+            var bubble = Add(row, new VisualElement(), "dialogue-bubble");
+            if (who != null)
             {
-                Add(box, new Label("Space ▼"), "dialogue-more");
-                box.RegisterCallback<PointerDownEvent>(_ => DismissMessage());
-                return;
+                Add(bubble, new VisualElement(), "dialogue-tail");
+                Add(bubble, new Label(who), "dialogue-speaker");
             }
-            if (choices == null) return;
-            shownChoices = choices;
-            var list = Add(scroll, new VisualElement(), "choices");
+            else if (!string.IsNullOrEmpty(title) && !message) Add(bubble, new Label(engine.Fill(title)), "dialogue-title");
+            var scroll = Add(bubble, new ScrollView(ScrollViewMode.Vertical), "dialogue-scroll");
+            dlgText = Add(scroll, new Label(""), "dialogue-text");
+            dlgMore = Add(bubble, new Label(""), "dialogue-more");
+            dlgChoices = Add(scroll, new VisualElement(), "choices");
+            box.RegisterCallback<PointerDownEvent>(e => { if (!(e.target is VisualElement ve && ve.GetFirstAncestorOfType<Button>() != null) && !(e.target is Button)) DialogueAdvance(); });
+
+            shownChoices = new List<ChoiceView>();
+            dlgPendingChoices = choices;
+            if (choices != null) BuildChoices(choices, actions);
+
+            if (pages.Count == 0) { dlgText.style.display = DisplayStyle.None; ShowChoices(); return; }
+            if (dlgTypedPage >= dlgPage) { dlgText.text = pages[dlgPage]; PageDone(); return; }
+            // type the page out
+            dlgText.text = "";
+            Show(dlgChoices, false);
+            dlgMore.text = "";
+            dlgStart = Time.realtimeSinceStartup;
+            dlgTick = dlgText.schedule.Execute(TypeTick).Every(16);
+        }
+
+        void TypeTick()
+        {
+            if (dlgText == null || dlgText.panel == null) { dlgTick?.Pause(); dlgTick = null; return; }
+            string page = dlgPages[dlgPage];
+            int n = Mathf.Min(page.Length, Mathf.FloorToInt((Time.realtimeSinceStartup - dlgStart) * TypeCharsPerSecond));
+            dlgText.text = page.Substring(0, n);
+            if (n >= page.Length) FinishTyping();
+        }
+
+        void FinishTyping()
+        {
+            dlgTick?.Pause();
+            dlgTick = null;
+            if (dlgPage < dlgPages.Count) dlgText.text = dlgPages[dlgPage];
+            dlgTypedPage = dlgPage;
+            PageDone();
+        }
+
+        /// <summary>The page is all there: show the arrow for more, or the choices on the last page.</summary>
+        void PageDone()
+        {
+            bool last = dlgPage >= dlgPages.Count - 1;
+            if (!last) { dlgMore.text = "Space  ▼"; Show(dlgChoices, false); return; }
+            if (dlgMessage) { dlgMore.text = "Space  ▼"; return; }
+            dlgMore.text = "";
+            ShowChoices();
+        }
+
+        void ShowChoices()
+        {
+            Show(dlgChoices, true);
+            shownChoices = dlgPendingChoices ?? new List<ChoiceView>();
+        }
+
+        /// <summary>Space or a click: finish typing, or turn the page. Returns false if there's nothing left to turn.</summary>
+        bool DialogueAdvance()
+        {
+            if (dlgTick != null) { FinishTyping(); return true; }
+            if (dlgPage < dlgPages.Count - 1)
+            {
+                dlgPage++;
+                GameAudio.Play("ui_tick", 0.5f);
+                dlgText.text = "";
+                Show(dlgChoices, false);
+                dlgMore.text = "";
+                dlgStart = Time.realtimeSinceStartup;
+                dlgTick = dlgText.schedule.Execute(TypeTick).Every(16);
+                return true;
+            }
+            if (dlgMessage) { DismissMessage(); return true; }
+            return false;
+        }
+
+        void BuildChoices(List<ChoiceView> choices, bool actions)
+        {
             for (int i = 0; i < choices.Count; i++)
             {
                 var c = choices[i];
@@ -147,7 +273,7 @@ namespace Loran.UnityLayer
                 Add(text, new Label(engine.Fill(c.def.label)), "choice-label");
                 if (!c.enabled && !string.IsNullOrEmpty(c.reason)) Add(text, new Label(c.reason), "choice-reason");
                 else if (!string.IsNullOrEmpty(c.cost)) Add(text, new Label(c.cost), "choice-meta");
-                list.Add(b);
+                dlgChoices.Add(b);
             }
             if (actions)
             {
@@ -155,8 +281,38 @@ namespace Loran.UnityLayer
                 close.AddToClassList("choice");
                 Add(close, new Label("Esc"), "choice-num");
                 Add(close, new Label("Keep walking"), "choice-label");
-                list.Add(close);
+                dlgChoices.Add(close);
             }
+        }
+
+        /// <summary>The face of whoever's talking: the top of their walking sprite, blown up in a frame.</summary>
+        void Portrait(VisualElement parent, string speaker, int k = 7)
+        {
+            string sheet = PortraitSheet(speaker);
+            var frame = Add(parent, new VisualElement(), "portrait-frame");
+            var tex = sheet != null ? Sprite(sheet) : null;
+            if (tex == null) { Add(frame, new Label(speaker.Substring(0, 1)), "portrait-letter"); return; }
+            var win = Add(frame, new VisualElement { pickingMode = PickingMode.Ignore }, "portrait-window");
+            win.style.width = 16 * k;
+            win.style.height = 15 * k;
+            var img = Add(win, new VisualElement { pickingMode = PickingMode.Ignore }, "walker-sheet");
+            img.style.width = 48 * k;
+            img.style.height = 96 * k;
+            img.style.left = 0;
+            img.style.top = -1 * k;
+            img.style.backgroundImage = new StyleBackground(tex);
+        }
+
+        /// <summary>Which walking sprite belongs to a speaker: whoever in this place opens this scene, or the one named after them.</summary>
+        string PortraitSheet(string speaker)
+        {
+            var o = engine.Objects().FirstOrDefault(x => x.scene == engine.S.scene && !string.IsNullOrEmpty(x.sprite) && x.sprite.StartsWith("npc_"));
+            if (o != null) return "Walk/" + o.sprite;
+            string first = Key(speaker.Split(' ')[0]);
+            if (Sprite("Walk/npc_" + first) != null) return "Walk/npc_" + first;
+            var f = engine.data.file.followers.FirstOrDefault(x => x.name == speaker);
+            if (f != null && !string.IsNullOrEmpty(f.sprite)) return "Walk/" + f.sprite;
+            return null;
         }
 
         void DismissMessage()
@@ -324,6 +480,17 @@ namespace Loran.UnityLayer
             if (worldView == null || worldView.panel == null) return;
             MoveWeather();
             var s = engine.S;
+            // Out of a fight your breath comes back by itself; redraw the bars a few times a second while it does
+            float now = Time.realtimeSinceStartup;
+            float dt = breathAt > 0 ? Mathf.Min(0.5f, now - breathAt) : 0f;
+            breathAt = now;
+            int before = Mathf.CeilToInt(s.stamina);
+            if (engine.Breathe(dt, moving && pendingStep != null && pendingStep.label == "Run") && Mathf.CeilToInt(s.stamina) != before
+                && openMenu == "" && now - hudDrawnAt > 0.2f && !moving)
+            {
+                hudDrawnAt = now;
+                RenderHud();
+            }
             if (moving)
             {
                 float t = Mathf.Clamp01((Time.realtimeSinceStartup - moveStart) / moveSeconds);
@@ -416,6 +583,7 @@ namespace Loran.UnityLayer
 
             var s = engine.S;
             bool confirm = e.keyCode == KeyCode.Space || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter;
+            if (confirm && DialoguePaging && DialogueAdvance()) return true;
             if (engine.Travelling && !string.IsNullOrEmpty(s.result))
             {
                 if (confirm) { DismissMessage(); return true; }

@@ -29,6 +29,27 @@ namespace Loran.Core
                 S.skillPoints++;
                 S.Toasts.Add("Level up! You're level " + S.level + ". More health and stamina, you're patched up, and you have a skill point to spend.");
             }
+            PartyExp(n);
+        }
+
+        /// <summary>Your party learns from the same fights and jobs: everyone with you (and on their feet) gets the same experience.</summary>
+        void PartyExp(int n)
+        {
+            foreach (var m in S.party)
+            {
+                var f = data.Follower(m.id);
+                if (f == null || m.hp <= 0) continue;
+                m.level = Rules.MemberLevel(m);
+                m.exp += n;
+                while (m.exp >= Rules.ExpToNext(m.level))
+                {
+                    m.exp -= Rules.ExpToNext(m.level);
+                    m.level++;
+                    m.hp = Rules.MemberMaxHp(m, f);
+                    var opened = f.abilities.Where(a => a.level == m.level).Select(a => a.name).ToList();
+                    S.Toasts.Add(f.name + " reached level " + m.level + "." + (opened.Count > 0 ? " New ability: " + string.Join(", ", opened) + "." : ""));
+                }
+            }
         }
 
         // ------------------------------------------------------------------ skills
@@ -160,7 +181,9 @@ namespace Loran.Core
             var f = data.Follower(id) ?? throw new Exception("Unknown follower '" + id + "'");
             if (Member(id) != null) return true;
             if (S.party.Count >= Rules.PartyMax) { S.Toasts.Add("Your party is full. " + f.name + " can't come."); return false; }
-            S.party.Add(new PartyMember { id = f.id, hp = f.hp, hunger = f.hunger, thirst = f.thirst, energy = f.energy, morale = f.morale });
+            var joining = new PartyMember { id = f.id, level = Math.Max(1, f.level), hunger = f.hunger, thirst = f.thirst, energy = f.energy, morale = f.morale };
+            joining.hp = Rules.MemberMaxHp(joining, f);
+            S.party.Add(joining);
             PlaceFollower();
             var m = Member(id);
             m.conditions = Rules.Conditions(m, data);
@@ -210,22 +233,59 @@ namespace Loran.Core
             }
         }
 
-        /// <summary>Your party's turn in a fight: each one standing attacks. Hunger, thirst and tiredness make them weaker.</summary>
-        void FollowerActs(EnemyDef e, EnemyMove move, List<string> lines)
+        /// <summary>
+        /// Your party's turn in a fight: each one standing attacks, using their own abilities when the moment's right.
+        /// Hunger, thirst and tiredness make them weaker. Returns true if one of them pinned the enemy before it could act.
+        /// </summary>
+        bool FollowerActs(EnemyDef e, EnemyMove move, List<string> lines, bool enemyStillToAct)
         {
-            int i = 0;
+            bool pinned = false;
             foreach (var m in S.party.ToList())
             {
-                int index = i++;
                 var f = data.Follower(m.id);
                 if (f == null || m.hp <= 0 || S.enemyHp <= 0) continue;
                 if (Rules.NoFight(m.body, data)) { lines.Add(f.name + " is in no state to fight."); continue; }
-                float dmg = Roll(f.atkMin, f.atkMax) * Rules.PartyPower(m, data);
-                if (move.KindOf() == "guard") dmg *= 0.5f;
+                // Pin down: once a fight, they stop a big attack before it lands
+                if (enemyStillToAct && !S.pinUsed && move.KindOf() == "heavy" && Rules.HasAbility(m, f, "pin_down"))
+                {
+                    S.pinUsed = true;
+                    S.enemyStun = 1;
+                    pinned = true;
+                    lines.Add(f.name + " pins " + FoeName(e) + " down before it can spring!");
+                    Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Pinned" });
+                    continue;
+                }
+                float dmg = (Roll(f.atkMin, f.atkMax) + Rules.MemberLevel(m) - 1) * Rules.PartyPower(m, data);
+                // Aimed shot: every third round they take their time over it
+                bool aimed = S.round % 3 == 0 && Rules.HasAbility(m, f, "aimed_shot");
+                if (aimed) dmg *= Rules.AimedShot;
+                else if (move.KindOf() == "guard") dmg *= 0.5f;
                 int dealt = Math.Max(1, (int)Math.Round(dmg));
                 S.enemyHp -= dealt;
-                lines.Add(f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");
-                Events.Add(new BattleEvent { target = "enemy", kind = "hit", amount = dealt, text = dealt.ToString() });
+                lines.Add(aimed ? f.name + " takes careful aim. An aimed shot hits " + FoeName(e) + " for " + dealt + "!"
+                                : f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");
+                Events.Add(new BattleEvent { target = "enemy", kind = aimed ? "crit" : "hit", amount = dealt, text = dealt.ToString() });
+            }
+            return pinned;
+        }
+
+        /// <summary>Field dressing: after a fight, a party member who knows how binds the worst bleeding wound, without using your linen.</summary>
+        void FieldDressing()
+        {
+            foreach (var m in PartyUp.ToList())
+            {
+                var f = data.Follower(m.id);
+                if (!Rules.HasAbility(m, f, "field_dressing") || Rules.NoFight(m.body, data)) continue;
+                var bodies = new List<(Body b, string whose)> { (S.body, "your") };
+                foreach (var o in S.party) bodies.Add((o.body, o == m ? "their own" : (data.Follower(o.id)?.name ?? o.id) + "'s"));
+                var worst = bodies.SelectMany(x => x.b.afflictions.Select(a => (a, x.whose)))
+                                  .Select(x => (x.a, x.whose, def: data.Affliction(x.a.id)))
+                                  .Where(x => x.def != null && x.def.treat.Contains("bandage") && !x.a.done.Contains("bandage") && Rules.Bleeding(x.a, x.def))
+                                  .OrderByDescending(x => x.def.bleed).FirstOrDefault();
+                if (worst.a == null) continue;
+                worst.a.done.Add("bandage");
+                S.Toasts.Add(f.name + " binds " + worst.whose + " " + worst.def.name.ToLowerInvariant() + " with a strip of cloth.");
+                return;
             }
         }
 

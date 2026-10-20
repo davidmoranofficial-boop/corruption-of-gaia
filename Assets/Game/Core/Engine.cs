@@ -382,6 +382,40 @@ namespace Loran.Core
             return true;
         }
 
+        /// <summary>Drinks a potion yourself (who "") or gives it to someone in your party. Someone who's down gets back up, and their worst wound stops bleeding.</summary>
+        public bool UsePotion(string who, string itemId)
+        {
+            var it = data.Item(itemId);
+            if (!FreeToAct || it == null || it.heal <= 0 || S.Count(itemId) <= 0) return false;
+            if (who == "")
+            {
+                if (S.hp >= Rules.MaxHp(S)) { S.result = "You're not hurt."; GoTo(S.scene); return false; }
+                S.AddItem(itemId, -1);
+                Rules.Advance(S, data, 1, false);
+                S.hp += it.heal;
+                Rules.Clamp(S, data);
+                S.result = "You drink the " + it.name.ToLowerInvariant() + ". Warmth spreads through you.";
+                GoTo(S.scene);
+                return true;
+            }
+            var m = Member(who);
+            var f = data.Follower(who);
+            if (m == null || f == null) return false;
+            if (m.hp >= Rules.MemberMaxHp(m, f)) { S.result = f.name + " isn't hurt."; GoTo(S.scene); return false; }
+            S.AddItem(itemId, -1);
+            Rules.Advance(S, data, 1, false);
+            bool wasDown = m.hp <= 0;
+            m.hp = Math.Max(0, m.hp) + it.heal;
+            var grave = m.body.afflictions.FirstOrDefault(a => a.id == "grave");
+            if (grave != null && !grave.done.Contains("bandage")) grave.done.Add("bandage");   // the potion closes the worst of it
+            m.morale += 3;
+            Rules.ClampMember(m, f);
+            m.conditions = Rules.Conditions(m, data);
+            S.result = "You give " + f.name + " the " + it.name.ToLowerInvariant() + "." + (wasDown ? " " + f.name + " is back on their feet." : "");
+            GoTo(S.scene);
+            return true;
+        }
+
         public bool Drink()
         {
             if (!FreeToAct || S.water <= 0) return false;
@@ -392,6 +426,19 @@ namespace Loran.Core
             Rules.Clamp(S, data);
             S.result = "You drink from the waterskin.";
             GoTo(S.scene);
+            return true;
+        }
+
+        /// <summary>
+        /// Out of a fight your breath comes back by itself, a little every real second (the world calls this every frame).
+        /// Not while running, and slower when you're cold. Returns true if your stamina changed.
+        /// </summary>
+        public bool Breathe(float seconds, bool running)
+        {
+            if (!FreeToAct || running || seconds <= 0) return false;
+            float max = Rules.MaxStamina(S, data);
+            if (S.stamina >= max) return false;
+            S.stamina = Math.Min(max, S.stamina + Rules.BreathPerSecond * seconds * (S.body.cold >= Rules.ColdAt ? 0.5f : 1f));
             return true;
         }
 

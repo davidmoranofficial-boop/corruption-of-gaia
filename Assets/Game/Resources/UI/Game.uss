@@ -1492,16 +1492,37 @@
     position: absolute;
     left: 50%;
     translate: -50% 0;
-    width: 1240px;
-    max-width: 92%;
+    width: 1300px;
+    max-width: 94%;
     bottom: 22px;
-    max-height: 58%;
-    background-color: rgba(13, 23, 27, 0.96);
-    border-width: 2px;
-    border-color: rgba(232, 220, 194, 0.55);
-    border-radius: 10px;
-    padding: 20px 28px 16px 28px;
+    max-height: 60%;
 }
+
+/* a portrait on the left, the speech bubble beside it */
+.dialogue-row { flex-direction: row; align-items: flex-end; flex-shrink: 1; max-height: 100%; }
+.portrait-frame {
+    width: 136px; height: 136px; flex-shrink: 0; margin-right: 22px;
+    align-items: center; justify-content: flex-end; overflow: hidden;
+    background-color: #24343b;
+    border-width: 3px; border-color: var(--text); border-radius: 10px;
+}
+.portrait-window { position: relative; overflow: hidden; }
+.portrait-letter { font-size: 64px; color: var(--lantern); -unity-font-style: bold; margin-bottom: 24px; }
+.dialogue-bubble {
+    flex-grow: 1; flex-shrink: 1; min-width: 0;
+    background-color: rgba(13, 23, 27, 0.97);
+    border-width: 2px;
+    border-color: rgba(232, 220, 194, 0.6);
+    border-radius: 12px;
+    padding: 22px 28px 14px 28px;
+}
+.dialogue-talk .dialogue-bubble { border-color: var(--text); border-width: 3px; min-height: 136px; }
+.dialogue-tail {
+    position: absolute; left: -13px; bottom: 40px; width: 22px; height: 22px; rotate: 45deg;
+    background-color: rgba(13, 23, 27, 1);
+    border-left-width: 3px; border-bottom-width: 3px; border-color: var(--text);
+}
+.dialogue-narrate .dialogue-text { color: #d6ccb4; -unity-font-style: italic; }
 
 .dialogue-scroll {
     flex-shrink: 1;
@@ -1516,8 +1537,8 @@
 
 .dialogue-speaker {
     position: absolute;
-    top: -22px;
-    left: 20px;
+    top: -24px;
+    left: 24px;
     padding: 4px 16px;
     font-size: 20px;
     color: var(--lantern);
@@ -1529,7 +1550,8 @@
 }
 
 .dialogue-text {
-    font-size: 22px;
+    font-size: 24px;
+    min-height: 60px;
     color: var(--text);
     white-space: normal;
     margin-bottom: 10px;
@@ -2395,3 +2417,80 @@
 .perk-desc { font-size: 14px; color: var(--moss); white-space: normal; margin-top: 4px; }
 .perk-card { align-self: stretch; margin-top: 12px; padding: 10px 12px; background-color: var(--sea); border-left-width: 3px; border-left-color: var(--moss); border-radius: 4px; }
 .perk-name { font-size: 13px; letter-spacing: 2px; color: var(--moss); -unity-font-style: bold; }
+
+/* ---------- survival: wounds first ---------- */
+.surv-wounds { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.surv-side { width: 470px; flex-shrink: 0; margin-right: 0; }
+.surv-gap { margin-top: 18px; }
+.surv-none { padding: 18px; background-color: var(--sea); border-radius: 8px; }
+.surv-none-head { font-size: 22px; color: var(--moss); -unity-font-style: bold; margin-bottom: 6px; }
+.surv-who { flex-direction: row; align-items: center; margin: 8px 0 8px 0; padding-bottom: 6px; border-bottom-width: 1px; border-bottom-color: var(--line); }
+.surv-who-name { font-size: 15px; letter-spacing: 3px; color: var(--text); -unity-font-style: bold; width: 150px; }
+.surv-who-bar { flex-grow: 1; margin-right: 16px; }
+.surv-who-bar .need { margin-bottom: 0; }
+.surv-who-power { font-size: 14px; color: var(--moss); }
+.surv-who-power-bad { font-size: 14px; color: var(--lantern); }
+.wound-card {
+    padding: 12px 14px; margin-bottom: 12px; background-color: var(--sea);
+    border-width: 1px; border-left-width: 5px; border-color: var(--line); border-radius: 6px;
+}
+.wound-card-bleeding { border-left-color: var(--blood); }
+.wound-card-open { border-left-color: var(--lantern); }
+.wound-card-healing { border-left-color: var(--moss); }
+.wound-name { font-size: 22px; color: var(--text); -unity-font-style: bold; }
+.wound-chip-bad, .wound-chip-warn, .wound-chip-good { font-size: 12px; letter-spacing: 2px; -unity-font-style: bold; padding: 3px 10px; border-radius: 10px; color: var(--sea); }
+.wound-chip-bad { background-color: var(--blood); }
+.wound-chip-warn { background-color: var(--lantern); }
+.wound-chip-good { background-color: var(--moss); }
+.wound-effects { font-size: 15px; color: var(--text); margin: 4px 0 6px 0; }
+.surv-heal { margin: 6px 0 2px 0; }
+.treat-step, .treat-step-done {
+    flex-direction: row; align-items: center; margin-top: 8px; padding: 8px 10px;
+    background-color: var(--hull); border-radius: 6px;
+}
+.treat-step-done { opacity: 0.6; }
+.treat-num {
+    width: 34px; height: 34px; border-radius: 17px; margin-right: 12px; flex-shrink: 0;
+    -unity-text-align: middle-center; font-size: 17px; -unity-font-style: bold;
+    color: var(--sea); background-color: var(--lantern);
+}
+.treat-step-done .treat-num { background-color: var(--moss); }
+.treat-text { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.treat-name { font-size: 18px; color: var(--text); }
+.treat-cost { font-size: 14px; color: var(--muted); white-space: normal; }
+.treat-cost-missing { font-size: 14px; color: var(--blood); white-space: normal; }
+.surv-meds { flex-direction: row; flex-wrap: wrap; margin-bottom: 6px; }
+.surv-med, .surv-med-none {
+    width: 104px; align-items: center; margin: 0 8px 8px 0; padding: 8px 4px 6px 4px;
+    background-color: var(--sea); border-width: 1px; border-color: var(--line); border-radius: 6px;
+}
+.surv-med-none { opacity: 0.4; }
+.surv-med-count { position: absolute; right: 8px; top: 4px; font-size: 16px; color: var(--text); -unity-font-style: bold; }
+.surv-med-name { font-size: 12px; color: var(--muted); margin-top: 4px; -unity-text-align: middle-center; white-space: normal; }
+.surv-needs { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.surv-needs .need { width: 48%; }
+
+/* ---------- party ---------- */
+.party-tab {
+    flex-direction: row; align-items: center; margin: 0 0 8px 0; padding: 8px 10px;
+    background-color: var(--sea); border-width: 2px; border-color: var(--line); border-radius: 8px;
+}
+.party-tab:hover { border-color: var(--muted); }
+.party-tab-on { border-color: var(--lantern); background-color: var(--hull-hi); }
+.party-tab-face .portrait-frame { width: 76px; height: 76px; margin-right: 12px; border-width: 2px; }
+.party-tab-info { flex-grow: 1; }
+.party-tab-info .need { margin: 4px 0 2px 0; }
+.party-ok { font-size: 13px; color: var(--moss); }
+.party-trouble { font-size: 13px; color: var(--lantern); white-space: normal; }
+.party-tab-empty {
+    height: 64px; justify-content: center; align-items: center; margin-bottom: 8px;
+    border-width: 2px; border-color: rgba(42, 61, 69, 0.6); border-radius: 8px; background-color: rgba(13, 23, 27, 0.4);
+}
+.party-head { flex-direction: row; align-items: flex-start; margin-bottom: 10px; }
+.party-figure { width: 150px; height: 200px; align-items: center; justify-content: center; margin-right: 18px; background-color: var(--sea); border-radius: 8px; }
+.party-names { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.party-names .xp-track { width: 320px; flex-grow: 0; margin: 0 0 4px 0; }
+.party-until { font-size: 14px; color: var(--sea); background-color: var(--lantern); padding: 4px 10px; border-radius: 4px; align-self: flex-start; margin: 4px 0; white-space: normal; }
+.party-cols { flex-direction: row; }
+.party-col { flex-grow: 1; flex-basis: 0; min-width: 0; margin-right: 18px; }
+.party-go { align-self: flex-start; margin: 4px 0 6px 0; }

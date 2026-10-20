@@ -73,7 +73,7 @@ namespace Loran.Core
             if (m != null && afflictionId == "grave" && m.hp <= 0 && !Rules.Bleeding(a, def))
             {
                 var f = data.Follower(who);
-                m.hp = Math.Max(m.hp, f.hp * 0.2f);
+                m.hp = Math.Max(m.hp, Rules.MemberMaxHp(m, f) * 0.2f);
                 S.result += " " + f.name + " is back on their feet, just.";
             }
             Rules.Clamp(S, data);
@@ -95,7 +95,7 @@ namespace Loran.Core
         /// <summary>Your wounds may make an action in a fight go wrong (a concussion, say).</summary>
         bool Fumbles(string kind, List<string> lines)
         {
-            if (kind == "defend" || kind == "flee" || kind == "drink" || kind.StartsWith("eat:")) return false;
+            if (kind == "defend" || kind == "flee" || kind == "drink" || kind.StartsWith("eat:") || kind.StartsWith("potion:")) return false;
             int f = Rules.Fumble(S.body, data);
             if (f <= 0 || Roll(1, 100) > f) return false;
             lines.Add("The world swims. Your blow goes nowhere near.");

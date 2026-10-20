@@ -95,7 +95,7 @@ namespace Loran.UnityLayer
                 Add(tag, new Label(fol.name + (trouble.Count > 0 ? "  ·  " + trouble[0] : "")), "follower-name");
                 var ft = Add(tag, new VisualElement(), "need-track");
                 var ff = Add(ft, new VisualElement(), "need-fill");
-                ff.style.width = Length.Percent(Mathf.Clamp01(m.hp / fol.hp) * 100f);
+                ff.style.width = Length.Percent(Mathf.Clamp01(m.hp / Rules.MemberMaxHp(m, fol)) * 100f);
                 ColorUtility.TryParseHtmlString("#c8573f", out var fc);
                 ff.style.backgroundColor = fc;
                 followerSpots[pi] = spot;

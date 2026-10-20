@@ -498,7 +498,7 @@
             "quest:lodge",
             "item:pail+1"
           ],
-          "result": "Ida looks you up and down. \"Food, wood, water. Same as every day, and there's not enough of us to do it.\" She counts on her fingers. \"Rook's snares want checking, up in the hills: three hares. Four logs split at the block. And the water butt's dry. Two pails from the hill stream.\" She shoves a pail at you. \"Do that and you've earned your supper.\""
+          "result": "Ida looks you up and down. \"Food, wood, water. Same as every day, and there's not enough of us to do it.\" She counts on her fingers. \"Rook's snares want checking, up in the hills: three hares. Four logs split at the block. And the water butt's dry. Fill a pail at the hill stream and tip it in.\" She shoves a pail at you. \"Do that and you've earned your supper.\""
         },
         {
           "label": "\"It's all done.\"",
@@ -540,7 +540,7 @@
             "item:bandage+2",
             "item:spirits+1"
           ],
-          "result": "Ida's quiet for a moment. \"The wolves. They didn't used to come down this far, and they didn't used to have eyes like that. Rook says there's one leading them: a big grey brute with a scar across its muzzle, denning past the quarry. Kill the leader and the rest will scatter.\" She whistles, and Rook comes round the side of the lodge with two bows. He hands you the older one. \"He goes with you,\" says Ida. \"He knows the hills. You know how to finish a job.\" She pushes a fish into your hands. \"And he's not eaten since yesterday, the fool. Feed him before you go up there. A hungry man shoots wide.\" Then two rolls of linen and a little flask. \"Bandages, and spirits for the bites. Wolves' mouths are filthy. Clean a bite before you bind it, or it'll go bad on you.\""
+          "result": "\"The wolves. There's a big one leading them now: grey, scar across its muzzle, denning past the quarry. Kill it and the rest will scatter.\" She whistles, and Rook comes round the lodge with two bows. He hands you the older one. \"He goes with you. He knows the hills.\" She pushes a fish, two rolls of linen and a flask of spirits into your arms. \"Feed him first. And clean any bite before you bind it.\""
         },
         {
           "label": "\"The pack leader's dead.\"",
@@ -695,16 +695,9 @@
       "extra": [
         {
           "when": [
-            "!flag:butt_half"
-          ],
-          "text": "It's bone dry."
-        },
-        {
-          "when": [
-            "flag:butt_half",
             "!flag:butt_full"
           ],
-          "text": "It's half full. One more pail."
+          "text": "It's bone dry."
         },
         {
           "when": [
@@ -718,22 +711,6 @@
           "label": "Pour in the pail",
           "when": [
             "item:water_pail",
-            "!flag:butt_half"
-          ],
-          "time": 5,
-          "effects": [
-            "item:water_pail-1",
-            "item:pail+1",
-            "flag:butt_half"
-          ],
-          "go": "travel",
-          "result": "The water goes in with a hollow slosh. Half full. One more trip."
-        },
-        {
-          "label": "Pour in the pail",
-          "when": [
-            "item:water_pail",
-            "flag:butt_half",
             "!flag:butt_full"
           ],
           "time": 5,
@@ -743,7 +720,7 @@
             "flag:butt_full"
           ],
           "go": "travel",
-          "result": "The butt fills to the brim."
+          "result": "The water goes in with a heavy slosh. That'll do Ida for a few days."
         },
         {
           "label": "Leave it",
@@ -1158,17 +1135,17 @@
           "when": [
             "!flag:fire_out"
           ],
-          "text": "\"Half the houses on this street are empty. The young ones went inland when the levy went up. Can't say I blame them.\""
+          "text": "\"Bed, bread or bandages? I've all three, and potions for the bad days.\""
         },
         {
           "when": [
             "flag:fire_out"
           ],
-          "text": "\"Saw what you did at the net shed. That's the most anyone's done for this village in a year.\""
+          "text": "\"Saw what you did at the net shed. Most anyone's done for this village in a year. What can I get you?\""
         },
         {
           "when": [],
-          "text": "She keeps the Net & Anchor, the inn behind her. \"Beds are thirty coppers. Nobody's slept in one since the spring.\""
+          "text": "Beds are thirty coppers. Sleeping saves your game."
         }
       ],
       "choices": [
@@ -1233,6 +1210,18 @@
           "result": "\"For fevers. Brew it, it's foul. Or there's a willow up by the hill stream, if you'd rather pick your own.\""
         },
         {
+          "label": "Buy a health potion (40 coppers)",
+          "need": [
+            "coins>=40"
+          ],
+          "needText": "You haven't the coin.",
+          "effects": [
+            "coins-40",
+            "item:health_potion+1"
+          ],
+          "result": "\"Orlen brews them. Tastes like rust, works like a charm. Keep one back for the bad days.\""
+        },
+        {
           "label": "Buy a sewing kit (80 coppers)",
           "need": [
             "coins>=80"
@@ -1259,7 +1248,7 @@
       "title": "A dockhand",
       "safe": true,
       "text": [
-        "\"Thirty boats, this pier was built for. Three left. King's collector takes half of every catch, and the other half barely feeds us.\""
+        "\"Crabs come up on the sand south of the pier. Mind the claws, but the meat's worth it, if you've a knife.\""
       ],
       "choices": [
         {
@@ -1275,15 +1264,17 @@
       "safe": true,
       "text": [
         "A broad woman in an apron is sweeping the step of the inn. She takes one look at the blood on you and drops the broom.",
-        "\"Wolf? Thought so. Sit down before you fall down.\" She's back in a moment with a flask and a roll of linen. \"Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
+        "\"Wolf? Thought so. Sit down before you fall down.\" She's back in a moment with a flask, a roll of linen and two little red bottles. \"Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
+        "\"The red ones are health potions. Drink one when you're badly hurt, or pour it down a friend who's fallen. I sell them, when you've the coin.\"",
         "\"Go on, you do it. You'll be doing it yourself on the road, with no one to help.\""
       ],
       "choices": [
         {
-          "label": "Take the spirits and linen, and see to the bite",
+          "label": "Take the things, and see to the bite",
           "effects": [
             "item:spirits+1",
             "item:bandage+1",
+            "item:health_potion+2",
             "flag:patch_lesson",
             "menu:survival"
           ],

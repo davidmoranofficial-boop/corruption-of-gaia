@@ -100,7 +100,7 @@
             "flag:y_where"
           ],
           "time": 5,
-          "result": "\"Loran. West coast. That light up the hill is Skelmed. Busiest port on this coast once. Now the king takes half of every catch, the roads have gone bad, and the merchants don't come.\""
+          "result": "\"Loran, the west coast. That light up the hill is Skelmed: the nearest village, and the only one for a day's walk.\""
         },
         {
           "label": "Eat the stew he offers",
@@ -115,20 +115,6 @@
           ],
           "time": 20,
           "result": "Fish stew, mostly water and bones, and the best thing you've ever eaten."
-        },
-        {
-          "label": "Thank him",
-          "when": [
-            "!flag:y_thanks"
-          ],
-          "effects": [
-            "flag:y_thanks"
-          ],
-          "train": [
-            "cha+1"
-          ],
-          "why": "talking with Yenson",
-          "result": "He waves it off. \"Sea takes enough. Wasn't letting it have you as well.\""
         },
         {
           "label": "\"What can I do for you?\"",

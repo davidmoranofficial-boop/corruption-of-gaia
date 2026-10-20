@@ -149,6 +149,7 @@ namespace Loran.Core
         public string id, name, desc;
         public float hunger, thirst, energy;
         public bool food;
+        public float heal;                     // a potion: health it gives back, to you or anyone in your party
         public string kind = "";               // which pocket of the bag: food, medicine, material, tool or key (left empty: food if it's food)
         public string Kind() => !string.IsNullOrEmpty(kind) ? kind : food ? "food" : "material";
     }
@@ -231,6 +232,20 @@ namespace Loran.Core
         // How they look in battle, drawn with the same paper doll as you
         public string figure = "male", skin = "light", hair = "dark brown";
         public List<string> worn = new List<string>();   // gear ids they wear
+        // What makes them themselves: one trait that's always on, and abilities that open up as they level (David, 20 Oct)
+        public int level = 1;                  // the level they join at
+        public string role = "";               // a word or two for the party screen: "Hunter, archer"
+        public string traitName = "", traitDesc = "";
+        public string trait = "";              // the trait's id, which the engine checks for
+        public List<FollowerAbility> abilities = new List<FollowerAbility>();
+    }
+
+    /// <summary>A party member's own ability. They use it themselves in a fight (or after one) once they reach its level.</summary>
+    [Serializable]
+    public class FollowerAbility
+    {
+        public string id, name, desc;
+        public int level = 1;
     }
     /// <summary>The life you had before the boat went down. Each gives one perk, its own way of playing.</summary>
     [Serializable]

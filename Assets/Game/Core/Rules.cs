@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Loran.Core
 {
@@ -13,6 +14,7 @@ namespace Loran.Core
         public const float ThirstPerHour = 4f;
         public const float EnergyPerHour = 3f;         // daily energy: only sleep, food and drink restore it
         public const float StaminaRegenPerHour = 25f;  // stamina comes back with any rest
+        public const float BreathPerSecond = 5f;       // out of a fight, stamina comes back by itself: empty to full in about 20 real seconds (David, 20 Oct)
         public const float StarveDamagePerHour = 4f;   // per empty need (hunger or thirst)
 
         // Corruption: starts at 5%, grows with time. Good local reputation slows it, bad speeds it up.
@@ -116,6 +118,12 @@ namespace Loran.Core
         // ------------------------------------------------------------------ party
 
         public const int PartyMax = 3;
+        public const int MemberHpPerLevel = 6;         // each level a party member gains adds to their health, and 1 to their blows
+        public const float AimedShot = 1.5f;           // a party member's aimed shot hits this much harder, and through a guard
+        public static int MemberLevel(PartyMember m) => Math.Max(1, m.level);
+        public static float MemberMaxHp(PartyMember m, FollowerDef f) => f == null ? 1 : f.hp + (MemberLevel(m) - 1) * MemberHpPerLevel;
+        /// <summary>Has this party member reached the level for this ability of theirs?</summary>
+        public static bool HasAbility(PartyMember m, FollowerDef f, string id) => f != null && f.abilities.Any(a => a.id == id && MemberLevel(m) >= a.level);
         public const float NeedLowAt = 25, TiredAt = 20, WoundedAt = 0.4f, MoraleLowAt = 25;
         public const float MoraleLossPerHour = 1.5f;   // for each need that's low
         public const float MoraleRestPerHour = 0.5f;   // when nothing's wrong, spirits slowly recover (up to 60)
@@ -138,7 +146,7 @@ namespace Loran.Core
             if (m.hunger <= 0) c.Add("starving"); else if (m.hunger < NeedLowAt) c.Add("hungry");
             if (m.thirst <= 0) c.Add("parched"); else if (m.thirst < NeedLowAt) c.Add("thirsty");
             if (m.energy < TiredAt) c.Add("exhausted");
-            if (f != null && m.hp > 0 && m.hp < f.hp * WoundedAt) c.Add("wounded");
+            if (f != null && m.hp > 0 && m.hp < MemberMaxHp(m, f) * WoundedAt) c.Add("wounded");
             if (m.morale < MoraleLowAt) c.Add("low spirits");
             return c;
         }
@@ -153,7 +161,7 @@ namespace Loran.Core
             {
                 var m = s.party[i];
                 var f = d.Follower(m.id);
-                float app = f?.appetite ?? 1;
+                float app = (f?.appetite ?? 1) * (f?.trait == "hill_born" ? 0.5f : 1f);   // Hill-born: lives off little
                 string name = f?.name ?? m.id;
                 if (sleeping) SleepBody(s, d, m.body, f?.warmth ?? 6, start, (int)(h * 60), shelter, name);
                 var (bhp, ben, bth) = AdvanceBody(s, d, m.body, f?.warmth ?? 6, h, name, sleeping, 0, s.minutes, out var killedBy);
@@ -206,7 +214,7 @@ namespace Loran.Core
             m.thirst = Math.Clamp(m.thirst, 0, 100);
             m.energy = Math.Clamp(m.energy, 0, 100);
             m.morale = Math.Clamp(m.morale, f != null && !f.leaves ? 1 : 0, 100);
-            if (f != null) m.hp = Math.Clamp(m.hp, m.hp <= 0 ? -1000 : 0, f.hp);
+            if (f != null) m.hp = Math.Clamp(m.hp, m.hp <= 0 ? -1000 : 0, MemberMaxHp(m, f));
         }
 
         /// <summary>A companion dies. They're gone for good.</summary>

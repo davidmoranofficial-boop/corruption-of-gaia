@@ -29,6 +29,7 @@ static class Program
         Test("running out of energy mid-fight kills you", CombatExhaustion);
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("fights: reading tells wins, mashing loses", DogFights);
         Test("timing: perfect hits beat mistimed ones, parries block", Timing);
+        Test("breath, potions, and Rook's levels, trait and abilities", PartyAndPotions);
         Test("gear ranks, traits and slots", GearRanks);
         Test("equipment slots: clothes, rings, two hands", Slots);
         Test("walking the coast road", Travel);
@@ -209,7 +210,7 @@ static class Program
         Assert(e.Area.id == "skelmed" && e.Objects().Count(o => o.id.StartsWith("fire")) == 3, "the net shed should be burning");
         Keep(e); UseThing(e, "butt");
         Pick(e, "Pour in the pail");
-        Assert(e.Check("flag:butt_half") && e.S.Count("pail") == 1, "half the water butt");
+        Assert(e.Check("flag:butt_full") && e.S.Count("pail") == 1, "one pail fills the water butt");
         Keep(e);
         Keep(e); UseThing(e, "fire1"); Pick(e, "Cast Draw Water");
         Keep(e); UseThing(e, "fire2"); Pick(e, "Cast Draw Water");
@@ -222,12 +223,6 @@ static class Program
         for (int i = 0; i < 4; i++) { Keep(e); Pick(e, "Split a log"); }
         Assert(e.S.Count("split_wood") == 4 && !e.Choices().Any(c => c.def.label == "Split a log"), "four logs split, then enough");
         Pick(e, "Leave it");
-        Keep(e); ToArea(e, "hills_gate");
-        Keep(e); UseTile(e, 'w');
-        Pick(e, "Fill the pail");
-        Keep(e); ToArea(e, "skelmed_north");
-        Keep(e); UseThing(e, "butt");
-        Pick(e, "Pour in the pail");
         Assert(e.Check("ready:lodge"), "hares, wood and water: the lodge job is ready");
         Keep(e); UseThing(e, "ida");
         Pick(e, "It's all done");
@@ -878,6 +873,50 @@ static class Program
         float x1 = w1.S.xp[Stat.Str], x2 = w2.S.xp[Stat.Str];
         Rules.Train(w1.S, Stat.Str, 1f, ""); Rules.Train(w2.S, Stat.Str, 1f, "");
         Assert(Math.Abs((w1.S.xp[Stat.Str] - x1) - (w2.S.xp[Stat.Str] - x2) * Rules.StudiousRate) < 0.01f, "a scholar learns faster");
+    }
+
+    static void PartyAndPotions()
+    {
+        // Stamina comes back by itself out of a fight, but not while running
+        var e = NewEngine(); e.DevStart("village");
+        e.S.stamina = 10;
+        Assert(e.Breathe(2f, false) && Math.Abs(e.S.stamina - (10 + 2 * Rules.BreathPerSecond)) < 0.01f || e.S.body.cold >= Rules.ColdAt, "your breath comes back by itself");
+        float st = e.S.stamina;
+        Assert(!e.Breathe(2f, true) && e.S.stamina == st, "not while you run");
+
+        // A potion heals you, and gets a fallen companion back up
+        e.S.hp = 20;
+        e.S.AddItem("health_potion", 2);
+        Assert(e.UsePotion("", "health_potion") && e.S.hp == 60 && e.S.Count("health_potion") == 1, "a potion gives back 40 health");
+        Assert(e.Join("rook"), "Rook joins");
+        var m = e.Member("rook");
+        Assert(m.level == 2 && Math.Abs(m.hp - Rules.MemberMaxHp(m, e.data.Follower("rook"))) < 0.01f, "Rook joins at level 2 with full health");
+        m.hp = 0;
+        Rules.Afflict(e.S, e.data, m.body, "grave", "Rook");
+        Assert(e.UsePotion("rook", "health_potion") && m.hp == 40 && !Rules.Bleeding(m.body.afflictions[0], e.data.Affliction("grave")), "a potion gets Rook up and stops the grave wound bleeding");
+
+        // Party members level up from the same experience as you
+        int lv = m.level;
+        e.GainExp(Rules.ExpToNext(m.level), "test");
+        Assert(m.level == lv + 1 && Rules.HasAbility(m, e.data.Follower("rook"), "field_dressing"), "Rook levels up and opens Field dressing at 3");
+
+        // Rook's trait: hill-born, he needs half the food and water
+        m.hunger = 90; float h0 = m.hunger;
+        Rules.Advance(e.S, e.data, 120, false);
+        Assert(h0 - m.hunger > 0 && h0 - m.hunger < Rules.HungerPerHour * 2 * 0.6f, "hill-born Rook gets hungry at half the rate");
+        // Pin down stops a heavy attack, once a fight
+        int pins = 0;
+        for (int seed = 0; seed < 30 && pins == 0; seed++)
+        {
+            var g = AtPackLeader(seed);
+            for (int r = 0; r < 30 && g.S.inCombat; r++)
+            {
+                bool heavy = g.Intent.KindOf() == "heavy";
+                g.Act(g.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
+                if (heavy && g.S.battleLog.Any(l => l.Contains("pins"))) { pins++; break; }
+            }
+        }
+        Assert(pins > 0, "Rook pins down a big attack");
     }
 
     static void FirstWound()

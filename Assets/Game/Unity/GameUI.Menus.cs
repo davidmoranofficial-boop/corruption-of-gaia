@@ -70,6 +70,8 @@ namespace Loran.UnityLayer
                 case "character": MenuCharacter(body); break;
                 case "skills": MenuSkills(body); break;
                 case "journal": MenuJournal(body); break;
+                case "survival": MenuSurvival(body); break;
+                case "party": MenuParty(body); break;
                 default:
                 {
                     var cols = Add(body, new VisualElement(), "cols");
@@ -77,10 +79,8 @@ namespace Loran.UnityLayer
                     var right = Add(cols, new VisualElement(), "col");
                     switch (openMenu)
                     {
-                        case "party": MenuParty(left, right); break;
                         case "crafting": MenuCrafting(left, right); break;
                         case "world": MenuWorld(left, right); break;
-                        case "survival": MenuSurvival(left, right); break;
                         case "dev": MenuDev(left, right); break;
                     }
                     break;
@@ -322,6 +322,11 @@ namespace Loran.UnityLayer
                 if (Mathf.Abs(def.thirst) > 0.01f) FoodStat(stats, "Thirst", def.thirst);
                 if (def.energy > 0) FoodStat(stats, "Energy", def.energy);
             }
+            if (def.heal > 0)
+            {
+                var stats = Add(parent, new VisualElement(), "det-stats");
+                FoodStat(stats, "Health", def.heal);
+            }
             if (!string.IsNullOrEmpty(def.desc)) Add(parent, new Label(def.desc), "det-desc");
             var uses = d.file.treatments.Where(t => t.items.Any(x => x.Split('+').Contains(id)) || t.tool == id).Select(t => t.name.ToLowerInvariant()).ToList();
             if (uses.Count > 0) Add(parent, new Label("For wounds: " + string.Join(", ", uses) + ". Treat wounds under Survival (S)."), "det-compare");
@@ -331,6 +336,19 @@ namespace Loran.UnityLayer
             {
                 var b = Add(iacts, new Button(() => InventoryUse()) { text = "Eat", focusable = false }, "det-btn");
                 b.SetEnabled(free);
+            }
+            else if (def.heal > 0)
+            {
+                var b = Add(iacts, new Button(() => InventoryUse()) { text = "Drink", focusable = false }, "det-btn");
+                b.SetEnabled(free && s.hp < Rules.MaxHp(s));
+                foreach (var m in s.party)
+                {
+                    var f = d.Follower(m.id);
+                    if (f == null) continue;
+                    string mid = m.id;
+                    var g = Add(iacts, new Button(() => { if (engine.UsePotion(mid, id)) GameAudio.Play("pickup"); AfterAction(); }) { text = "Give to " + f.name, focusable = false }, "det-btn");
+                    g.SetEnabled(free && m.hp < f.hp);
+                }
             }
             else if (uses.Count > 0)
             {
@@ -354,7 +372,9 @@ namespace Loran.UnityLayer
             else
             {
                 string id = invSel.Substring(5);
-                if (engine.data.Item(id)?.food == true) engine.Eat(id);
+                var it = engine.data.Item(id);
+                if (it?.food == true) engine.Eat(id);
+                else if (it != null && it.heal > 0 && engine.UsePotion("", id)) GameAudio.Play("pickup");
             }
             AfterAction();
         }
