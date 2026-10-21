@@ -150,10 +150,11 @@ static class Program
         Assert(e.Area.id == "coast_road" && AtSpot(e, "shack"), "the door should put you outside the shack");
         e.S.stepsSinceFight = -100000;   // this run is about the story; random fights are tested on their own
         int t0 = e.S.minutes;
-        UseThing(e, "wreck_crate"); Pick(e, "Search it");
-        UseThing(e, "wreck_chest"); Pick(e, "Open it");
-        UseThing(e, "wreck_barrel"); Pick(e, "See what's left");
-        Keep(e); UseTile(e, 'Q'); Pick(e, "Climb inside");
+        UseThing(e, "wreck_crate");
+        Assert(e.Travelling && string.IsNullOrEmpty(e.S.result) && e.S.Count("bread") == 2 && e.S.Toasts.Any(t => t.Contains("+2")), "picking things up is instant: just +2 Bread, no page of text, was " + e.S.scene + " [" + e.S.result + "] " + string.Join("/", e.S.Toasts));
+        UseThing(e, "wreck_chest");
+        UseThing(e, "wreck_barrel");
+        Keep(e); UseTile(e, 'Q');
         Assert(e.S.Count("bread") == 2 && e.S.Count("flint") == 1 && e.S.Count("fish") == 2 && e.S.Count("spirits") == 1 && e.S.coins >= 30
                && e.S.gearItems.Any(g => g.id == "gutting_knife" && !g.equipped), "the wreck: bread, a flint, fish, spirits, coin and a knife");
         Assert(e.Objects().All(o => !o.id.StartsWith("wreck_")), "what you've searched is gone");
@@ -192,7 +193,7 @@ static class Program
         Assert(!e.SceneIds.Any(id => id == "ida_forest" || id == "chop_tree1" || id == "workstump") && e.data.Quest("forest") == null, "Ida's forest lessons are gone");
         int lv0 = e.S.level;
         Keep(e); ToArea(e, "hills_gate");
-        foreach (var w in new[] { "hwood1", "hwood2", "hwood3" }) { Keep(e); UseThing(e, w); Assert(e.Paragraphs().Any(x => x.Contains("Rook")), "Rook has something to say about " + w); Pick(e, "Gather it"); }
+        foreach (var w in new[] { "hwood1", "hwood2", "hwood3" }) { Keep(e); UseThing(e, w); Assert(e.Travelling, "deadwood is picked up straight away"); }
         Assert(e.QuestGoals(e.data.Quest("hunt"))[0].met && e.S.Count("firewood") >= 3, "three bundles of deadwood");
         Assert(e.Objects().Any(o => o.id == "boar"), "the boar's in its glade");
         Keep(e);
@@ -682,7 +683,6 @@ static class Program
         LeaveHut(e);
         e.S.stepsSinceFight = -1000;
         UseThing(e, "pools");
-        Pick(e, "Search the tide pools");
         e.S.hp = 0;
         e.GoTo(e.S.scene);
         Assert(e.S.scene == "death", "hp 0 should kill you");
@@ -1148,7 +1148,8 @@ static class Program
                 v.S.stepsSinceFight = -1000;
                 if (o.id == "alpha") WalkUntil(v, (29, 5), () => v.S.scene == "den");   // the den's edge stops you first
                 else UseThing(v, o.id);
-                Assert(v.S.scene != "travel" || v.S.inCombat, "using " + o.id + " should open its scene");
+                bool quick = v.Scene(o.scene ?? "")?.quick == true;
+                Assert(v.S.scene != "travel" || v.S.inCombat || quick, "using " + o.id + " should open its scene");
                 for (int i = 0; i < 30 && (v.S.scene != "travel" || v.S.inCombat) && v.S.scene != "death"; i++)
                 {
                     if (v.S.inCombat) { v.DevWinFight(); continue; }

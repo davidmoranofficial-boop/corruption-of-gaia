@@ -23,6 +23,7 @@
     {
       "id": "snare1",
       "title": "A snare",
+      "quick": true,
       "text": [
         "A hare hangs limp in the wire loop of one of Rook's snares."
       ],
@@ -54,6 +55,7 @@
     {
       "id": "snare2",
       "title": "A snare",
+      "quick": true,
       "text": [
         "Another of Rook's snares, and another hare in it."
       ],
@@ -252,6 +254,7 @@
     {
       "id": "herb_yarrow1",
       "title": "Yarrow",
+      "quick": true,
       "text": [
         "Yarrow: flat white flower heads on feathery stems. Packed into a wound, it keeps it clean. It'll grow back."
       ],
@@ -275,6 +278,7 @@
     {
       "id": "herb_yarrow2",
       "title": "Yarrow",
+      "quick": true,
       "text": [
         "Yarrow: flat white flower heads on feathery stems. Packed into a wound, it keeps it clean. It'll grow back."
       ],
@@ -298,6 +302,7 @@
     {
       "id": "herb_willow",
       "title": "A young willow",
+      "quick": true,
       "text": [
         "A young willow leaning over the stream. Its bark brings a fever down, chewed or brewed. Take a little and it'll mend."
       ],
@@ -411,16 +416,9 @@
     {
       "id": "forest_wood1",
       "title": "Deadwood",
+      "quick": true,
       "text": [
         "A fallen branch, grey and dry, half sunk in the moss."
-      ],
-      "extra": [
-        {
-          "when": [
-            "follower:rook"
-          ],
-          "text": "Rook kicks at it. \"Dead and grey, that's the stuff. Green wood just smokes and spits at you.\""
-        }
       ],
       "choices": [
         {
@@ -444,16 +442,9 @@
     {
       "id": "forest_wood2",
       "title": "Deadwood",
+      "quick": true,
       "text": [
         "A fallen branch, grey and dry, half sunk in the moss."
-      ],
-      "extra": [
-        {
-          "when": [
-            "follower:rook"
-          ],
-          "text": "\"If it bends, leave it,\" says Rook. \"If it snaps, it burns.\""
-        }
       ],
       "choices": [
         {
@@ -477,16 +468,9 @@
     {
       "id": "forest_wood3",
       "title": "Deadwood",
+      "quick": true,
       "text": [
         "A fallen branch, grey and dry, half sunk in the moss."
-      ],
-      "extra": [
-        {
-          "when": [
-            "follower:rook"
-          ],
-          "text": "Rook hefts your bundle and grunts. \"That'll keep Bess's oven going a day or two. Now the boar.\""
-        }
       ],
       "choices": [
         {
@@ -510,16 +494,9 @@
     {
       "id": "forest_wood4",
       "title": "Deadwood",
+      "quick": true,
       "text": [
         "A fallen branch, grey and dry, half sunk in the moss."
-      ],
-      "extra": [
-        {
-          "when": [
-            "follower:rook"
-          ],
-          "text": "\"Plenty more where that came from,\" says Rook. \"The woods are full of it. Nobody's left to gather it.\""
-        }
       ],
       "choices": [
         {

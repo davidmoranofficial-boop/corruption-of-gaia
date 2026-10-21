@@ -319,6 +319,12 @@ namespace Loran.Core
             Rules.Clamp(S, data);
 
             string result = Join(Fill(c.result), notes.ToString());
+            if (quickPick)
+            {
+                // no page of text for picking things up, just the toasts (+1 Firewood)
+                if (notes.Length > 0) S.Toasts.Add(notes.ToString().Trim());
+                result = "";
+            }
             S.result = result;
 
             GoTo(redirect ?? (string.IsNullOrEmpty(c.go) ? S.scene : c.go));
@@ -365,9 +371,21 @@ namespace Loran.Core
                 foreach (var e in scenes[id].onEnter) Apply(e, notes, ref redirect);
                 Rules.Clamp(S, data);
                 if (notes.Length > 0) S.result = Join(S.result, notes.ToString());
-                if (redirect != null && redirect != id) GoTo(redirect);
+                if (redirect != null && redirect != id) { GoTo(redirect); return; }
+                // something to pick up, used from the world: take it straight away
+                if (prev == TravelId && scenes[id].quick && !quickPick)
+                {
+                    var take = Choices().FirstOrDefault(v => v.enabled);
+                    if (take != null)
+                    {
+                        quickPick = true;
+                        try { Choose(take.def); } finally { quickPick = false; }
+                    }
+                }
             }
         }
+
+        bool quickPick;
 
         // Side actions, available whenever the player is free to act.
 

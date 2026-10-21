@@ -101,7 +101,7 @@ namespace Loran.UnityLayer
 
             usePrompt = Add(worldView, new Label(""), "world-prompt");
             bool canCamp = a.camp && !a.indoor;
-            var help = Add(worldView, new Label("Arrows  walk     Shift  run     Space  talk / use" + (canCamp ? "     Enter  camp" : "") + "     I  menus"), "world-help");
+            var help = Add(worldView, new Label("WASD  walk     Shift  run     E  talk / use" + (canCamp ? "     R  camp" : "") + "     I  inventory     Tab  menus"), "world-help");
             UpdatePrompt();
 
             // The box at the bottom: a story scene, a message, or the actions
@@ -572,7 +572,7 @@ namespace Loran.UnityLayer
         {
             if (usePrompt == null) return;
             string label = engine.Travelling && string.IsNullOrEmpty(engine.S.result) && !actionsOpen ? engine.UseLabel() : null;
-            usePrompt.text = label == null ? "" : "Space: " + label;
+            usePrompt.text = label == null ? "" : "E: " + label;
             usePrompt.style.display = label == null ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
@@ -672,7 +672,7 @@ namespace Loran.UnityLayer
         bool WorldKeyDown(KeyDownEvent e)
         {
             runHeld = e.shiftKey;
-            string dir = e.keyCode switch
+            string dir = NavKey(e.keyCode) switch
             {
                 KeyCode.UpArrow => "up",
                 KeyCode.DownArrow => "down",
@@ -689,7 +689,7 @@ namespace Loran.UnityLayer
             if (e.keyCode == KeyCode.LeftShift || e.keyCode == KeyCode.RightShift) { runHeld = true; return true; }
 
             var s = engine.S;
-            bool confirm = e.keyCode == KeyCode.Space || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter;
+            bool confirm = e.keyCode == KeyCode.Space || e.keyCode == KeyCode.E || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter;
             if (confirm && DialoguePaging && DialogueAdvance()) return true;
             if (engine.Travelling && !string.IsNullOrEmpty(s.result))
             {
@@ -698,7 +698,7 @@ namespace Loran.UnityLayer
             }
             if (actionsOpen && e.keyCode == KeyCode.Escape) { actionsOpen = false; Render(); return true; }
             if (!engine.Travelling || moving || busy) return false;
-            if (e.keyCode == KeyCode.Space)
+            if (e.keyCode == KeyCode.E || e.keyCode == KeyCode.Space)
             {
                 var use = engine.UseChoice();
                 if (use == null) return true;
@@ -710,7 +710,7 @@ namespace Loran.UnityLayer
                 AfterAction();
                 return true;
             }
-            if ((e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && engine.Area.camp && !engine.Area.indoor)
+            if ((e.keyCode == KeyCode.R || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && engine.Area.camp && !engine.Area.indoor)
             {
                 actionsOpen = !actionsOpen;
                 heldDirs.Clear();
@@ -723,7 +723,7 @@ namespace Loran.UnityLayer
         void WorldKeyUp(KeyUpEvent e)
         {
             runHeld = e.shiftKey && e.keyCode != KeyCode.LeftShift && e.keyCode != KeyCode.RightShift;
-            string dir = e.keyCode switch
+            string dir = NavKey(e.keyCode) switch
             {
                 KeyCode.UpArrow => "up",
                 KeyCode.DownArrow => "down",

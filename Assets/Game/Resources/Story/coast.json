@@ -268,6 +268,7 @@
     {
       "id": "pools",
       "title": "The tide pools",
+      "quick": true,
       "text": [
         "Black rocks run out into the sea here, pocked with pools. Weed hangs off everything."
       ],
@@ -395,6 +396,7 @@
     {
       "id": "brambles",
       "title": "Brambles",
+      "quick": true,
       "text": [
         "Bramble bushes crowd the bank, heavy with fruit."
       ],
@@ -440,6 +442,7 @@
     {
       "id": "deadfall",
       "title": "Deadwood",
+      "quick": true,
       "text": [
         "A fallen branch, grey and dry."
       ],
@@ -464,6 +467,7 @@
     {
       "id": "wreck_hull",
       "title": "The wreck",
+      "quick": true,
       "text": [
         "What's left of the trade boat lies on its side in the sand, ribs showing through the planking like a carcass. The tide has been through it, and the gulls after the tide.",
         "You were on this. You don't remember much more than the noise."
@@ -501,6 +505,7 @@
     {
       "id": "wreck_crate",
       "title": "A crate",
+      "quick": true,
       "text": [
         "A crate from the hold, split along one side, its planks stamped with the merchant's mark. Most of what was in it is pulp."
       ],
@@ -524,6 +529,7 @@
     {
       "id": "wreck_chest",
       "title": "A sea chest",
+      "quick": true,
       "text": [
         "A sailor's sea chest, half sunk in the sand, its iron bands already rusting. The lid's been sprung by the sea."
       ],
@@ -547,6 +553,7 @@
     {
       "id": "wreck_barrel",
       "title": "A barrel",
+      "quick": true,
       "text": [
         "A barrel has rolled up the beach and stove itself in on a rock. It smells of brine."
       ],

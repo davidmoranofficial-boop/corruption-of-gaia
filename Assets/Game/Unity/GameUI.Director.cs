@@ -418,7 +418,7 @@ namespace Loran.UnityLayer
         bool DirectorKey(KeyDownEvent e)
         {
             if (e.keyCode == KeyCode.Escape) { GameAudio.Play("ui_confirm"); DirectorFinish(); return true; }
-            bool confirm = e.keyCode == KeyCode.Space || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter;
+            bool confirm = e.keyCode == KeyCode.Space || e.keyCode == KeyCode.E || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter;
             if (confirm && dirStarted && dirStep < dirSteps.Count && IsTalk(dirSteps[dirStep]))
             {
                 if (DialoguePaging && DialogueAdvance()) return true;

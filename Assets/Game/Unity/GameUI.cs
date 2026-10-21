@@ -364,14 +364,14 @@ namespace Loran.UnityLayer
         /// <summary>The menus, in order round the wheel (clockwise from the top). Each also has its own key.</summary>
         static readonly (string id, string name, KeyCode key, string desc)[] Menus =
         {
-            ("inventory", "Inventory", KeyCode.B, "Your gear, your pack, food, water and coin"),
-            ("character", "Character", KeyCode.E, "Your level, stats and what you can do in a fight"),
+            ("inventory", "Inventory", KeyCode.I, "Your gear, your pack, food, water and coin"),
+            ("character", "Character", KeyCode.C, "Your level, stats and what you can do in a fight"),
             ("skills", "Skills", KeyCode.K, "Stats, fighting skills and life skills"),
             ("party", "Party", KeyCode.P, "Who travels with you, and how they're holding up"),
             ("journal", "Journal", KeyCode.J, "Quests and what you've learned"),
-            ("crafting", "Crafting", KeyCode.C, "Make things from what you carry"),
-            ("world", "World", KeyCode.W, "Time, your good name and the sound settings"),
-            ("survival", "Survival", KeyCode.S, "Needs, weather, wounds and treatment"),
+            ("crafting", "Crafting", KeyCode.N, "Make things from what you carry"),
+            ("world", "World", KeyCode.M, "Time, your good name and the sound settings"),
+            ("survival", "Survival", KeyCode.H, "Needs, weather, wounds and treatment"),
         };
 
         const float WheelSize = 560f, WheelRadius = 205f, WheelItem = 124f;
@@ -428,12 +428,13 @@ namespace Loran.UnityLayer
             Render();
         }
 
-        /// <summary>Keys while the wheel is up: arrows turn it, Enter/Space opens, a menu's own key or 1-8 opens that one, I or Esc closes.</summary>
+        /// <summary>Keys while the wheel is up: WASD or arrows turn it, Enter/Space/E opens, a menu's own key or 1-8 opens that one, Tab or Esc closes.</summary>
         void WheelKey(KeyDownEvent e)
         {
             var k = e.keyCode;
-            if (k == KeyCode.Escape || k == KeyCode.I) { GameAudio.Play("ui_close"); openMenu = ""; Render(); return; }
-            if (k == KeyCode.Return || k == KeyCode.KeypadEnter || k == KeyCode.Space) { OpenFromWheel(wheelSel); return; }
+            if (k == KeyCode.Escape || k == KeyCode.Tab) { GameAudio.Play("ui_close"); openMenu = ""; Render(); return; }
+            if (k == KeyCode.Return || k == KeyCode.KeypadEnter || k == KeyCode.Space || k == KeyCode.E) { OpenFromWheel(wheelSel); return; }
+            k = NavKey(k);
             if (k == KeyCode.RightArrow || k == KeyCode.DownArrow) { wheelSel++; UpdateWheel(); GameAudio.Play("ui_tick", 0.7f); return; }
             if (k == KeyCode.LeftArrow || k == KeyCode.UpArrow) { wheelSel--; UpdateWheel(); GameAudio.Play("ui_tick", 0.7f); return; }
             int n = k >= KeyCode.Alpha1 && k <= KeyCode.Alpha9 ? k - KeyCode.Alpha1 : k >= KeyCode.Keypad1 && k <= KeyCode.Keypad9 ? k - KeyCode.Keypad1 : -1;
@@ -724,6 +725,7 @@ namespace Loran.UnityLayer
         bool SurvivalKey(KeyCode k)
         {
             SurvFix();
+            k = NavKey(k);
             if (k == KeyCode.UpArrow || k == KeyCode.DownArrow)
             {
                 var list = SurvWounds(engine.BodyOf(survWho));
@@ -1121,7 +1123,7 @@ namespace Loran.UnityLayer
             if (openMenu != "" && MenuKey(e)) { e.StopPropagation(); return; }
             if (MenusAllowed)
             {
-                if (e.keyCode == KeyCode.I) { OpenWheel(); e.StopPropagation(); return; }
+                if (e.keyCode == KeyCode.Tab) { OpenWheel(); e.StopPropagation(); return; }
                 foreach (var m in Menus)
                     if (e.keyCode == m.key) { ToggleMenu(m.id); e.StopPropagation(); return; }
             }
@@ -1135,6 +1137,10 @@ namespace Loran.UnityLayer
                 e.StopPropagation();
             }
         }
+
+        /// <summary>WASD as arrows (David, 21 Oct: standard controls). Arrows still work.</summary>
+        static KeyCode NavKey(KeyCode k) => k == KeyCode.W ? KeyCode.UpArrow : k == KeyCode.S ? KeyCode.DownArrow
+                                          : k == KeyCode.A ? KeyCode.LeftArrow : k == KeyCode.D ? KeyCode.RightArrow : k;
 
         void AfterAction()
         {
