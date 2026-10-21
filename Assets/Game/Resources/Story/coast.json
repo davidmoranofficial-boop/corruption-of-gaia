@@ -1,6 +1,30 @@
 {
   "scenes": [
     {
+      "id": "wolf_rescue",
+      "title": "Something in the road",
+      "cutscene": "wolf",
+      "onEnter": [
+        "flag:dog_met",
+        "flag:ida_met",
+        "flag:ida_saved",
+        "wound:bite:the wolf"
+      ],
+      "text": [
+        "A wolf is standing in the middle of the road. All ribs, its coat matted with salt and burrs, its eyes a flat, sick yellow. It doesn't blink.",
+        "It's on you before you can move. Teeth sink into your forearm and the ground comes up hard.",
+        "An arrow hisses past your ear. Then another. The wolf yelps, lets go, and doesn't get up.",
+        "\"Steady. It's done.\" A woman with a bow kneels beside you. \"You're the one Yenson pulled out of the sea? Ida. I keep the hunters' lodge in Skelmed.\"",
+        "She looks at your arm. \"That wants cleaning before it turns. Get yourself into Skelmed and find Bess at the gate. Tell her I sent you.\""
+      ],
+      "choices": [
+        {
+          "label": "Get up",
+          "go": "travel"
+        }
+      ]
+    },
+    {
       "id": "dog",
       "title": "Something in the road",
       "onEnter": [
@@ -136,29 +160,6 @@
       ]
     },
     {
-      "id": "ev_crate",
-      "title": "Wreckage",
-      "text": [
-        "A broken crate has washed up against the rocks, its planks stamped with a merchant's mark you recognise. It's from the boat you were on.",
-        "Most of what was in it is ruined. Not all."
-      ],
-      "choices": [
-        {
-          "label": "Search it",
-          "time": 10,
-          "effects": [
-            "item:bread+2"
-          ],
-          "go": "travel",
-          "result": "Two loaves in an oilcloth wrap, damp at the edges but good. You stand there a while longer than you need to, thinking about the crew."
-        },
-        {
-          "label": "Leave it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
       "id": "ev_fisher",
       "title": "A fisherman",
       "text": [
@@ -173,7 +174,7 @@
           ],
           "why": "talking with a stranger",
           "go": "travel",
-          "result": "\"Skelmed? Go and see Garran the smith. He'll find you work, if you've a strong back. Tell him Tam sent you.\""
+          "result": "\"Skelmed? Ask for Ida at the hunters' lodge. She'll find a use for you, if you've a strong back. Tell her Tam sent you.\""
         },
         {
           "label": "Nod and walk on",
@@ -342,19 +343,6 @@
       ],
       "choices": [
         {
-          "label": "Fill Yenson's bucket",
-          "when": [
-            "item:bucket"
-          ],
-          "time": 5,
-          "effects": [
-            "item:bucket-1",
-            "item:water_bucket+1"
-          ],
-          "go": "travel",
-          "result": "You fill the bucket to the brim. It's heavier than it looks."
-        },
-        {
           "label": "Drink and fill your waterskin",
           "time": 10,
           "effects": [
@@ -440,54 +428,106 @@
       ]
     },
     {
-      "id": "boar",
-      "title": "The boar",
-      "onEnter": [
-        "flag:boar_seen"
-      ],
+      "id": "wreck_hull",
+      "title": "The wreck",
       "text": [
-        "A boar comes out of the bracken, bristles up, head low. It's bigger than you expected. It doesn't run."
+        "What's left of the trade boat lies on its side in the sand, ribs showing through the planking like a carcass. The tide has been through it, and the gulls after the tide.",
+        "You were on this. You don't remember much more than the noise."
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:wreck_hull"
+          ],
+          "text": "You've had everything out of the hull that's worth having."
+        }
       ],
       "choices": [
         {
-          "label": "Fight it",
+          "label": "Climb inside and search",
+          "when": [
+            "!flag:wreck_hull"
+          ],
+          "time": 20,
+          "stamina": 8,
           "effects": [
-            "combat:boar:boar_won:boar_fled"
-          ]
+            "flag:wreck_hull",
+            "item:spirits+1",
+            "item:bandage+1"
+          ],
+          "result": "It stinks of wet rope and tar. Wedged under a fallen beam you find the cook's locker: a stoppered flask of something strong and a roll of linen, still dry in its oilcloth.",
+          "go": "travel"
         },
         {
-          "label": "Back away",
-          "go": "travel",
-          "result": "You back off slowly. The boar snorts and goes back to rooting, but it doesn't take its eyes off you."
-        }
-      ]
-    },
-    {
-      "id": "boar_won",
-      "title": "Still",
-      "onEnter": [
-        "flag:boar_killed"
-      ],
-      "text": [
-        "The boar goes down in the leaf litter and doesn't get up. Your hands are shaking.",
-        "Yenson will want to hear about this."
-      ],
-      "choices": [
-        {
-          "label": "Walk on",
+          "label": "Leave it",
           "go": "travel"
         }
       ]
     },
     {
-      "id": "boar_fled",
-      "title": "Away",
+      "id": "wreck_crate",
+      "title": "A crate",
       "text": [
-        "You run, crashing through the bracken, until you're sure it isn't behind you."
+        "A crate from the hold, split along one side, its planks stamped with the merchant's mark. Most of what was in it is pulp."
       ],
       "choices": [
         {
-          "label": "Catch your breath",
+          "label": "Search it",
+          "time": 10,
+          "effects": [
+            "item:bread+2",
+            "item:flint+1"
+          ],
+          "result": "Two loaves in an oilcloth wrap, damp at the edges but good, and a tinderbox with the flint and steel still dry inside. You'll want that, out there.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "wreck_chest",
+      "title": "A sea chest",
+      "text": [
+        "A sailor's sea chest, half sunk in the sand, its iron bands already rusting. The lid's been sprung by the sea."
+      ],
+      "choices": [
+        {
+          "label": "Open it",
+          "time": 10,
+          "effects": [
+            "give:gutting_knife",
+            "coins+30"
+          ],
+          "result": "Somebody's whole life in a box: a spare shirt, ruined, a carved bone comb, a letter too wet to read. And a knife in a sheath, and a purse with thirty coppers in it. Whoever they were, they won't need these now.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "wreck_barrel",
+      "title": "A barrel",
+      "text": [
+        "A barrel has rolled up the beach and stove itself in on a rock. It smells of brine."
+      ],
+      "choices": [
+        {
+          "label": "See what's left",
+          "time": 5,
+          "effects": [
+            "item:fish+2"
+          ],
+          "result": "Salt fish, packed in brine. Most of it is spoiled, but two are good. They'll keep.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
           "go": "travel"
         }
       ]

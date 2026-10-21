@@ -20,10 +20,10 @@ namespace Loran.Core
             ("village", "Skelmed"),
             ("road", "Walk the coast road"),
             ("hut", "Wake in Yenson's hut"),
-            ("hills", "The hills above Skelmed"),
-            ("fire", "The net shed fire"),
+            ("hills", "The forest above Skelmed"),
+            ("forest", "Ida's lessons in the forest"),
+            ("wolf", "The wolf on the road (cutscene)"),
             ("boss", "Boss: the pack leader, with Rook"),
-            ("forge_first", "Forge: your first gear"),
             ("forge_iron", "Forge: buy iron"),
             ("dog", "Fight the wolf"),
             ("crab", "Fight the rock crab"),
@@ -42,8 +42,8 @@ namespace Loran.Core
             S.water = Rules.WaterskinSize;
             S.AddItem("bread", 2);
             S.AddItem("flint", 1);
-            foreach (var f in new[] { "y_met", "y_what", "y_where", "y_stew", "y_thanks", "y_supplies", "yenson_road", "dog_met",
-                                     "quest_done:water", "quest_done:firewood", "quest_done:boar", "boar_seen", "boar_killed" })
+            foreach (var f in new[] { "y_met", "y_what", "y_where", "y_stew", "y_thanks", "y_road", "dog_met", "ida_met", "ida_saved",
+                                     "wreck_hull", "patch_lesson", "patch_done" })
                 if (!S.Has(f)) S.flags.Add(f);
             if (data.Gear("gutting_knife") != null) MakeGear("gutting_knife", null, null);
             DevRefill();
@@ -61,12 +61,12 @@ namespace Loran.Core
                     Jump(TravelId);
                     break;
                 case "hut":
-                    S.flags.RemoveAll(f => f.StartsWith("y_") || f.StartsWith("quest") || f.StartsWith("boar_") || f == "yenson_road" || f == "dog_met");
+                    S.flags.RemoveAll(f => f.StartsWith("y_") || f.StartsWith("quest") || f.StartsWith("ida_") || f.StartsWith("patch_") || f == "dog_met" || f == "wreck_hull");
                     S.gearItems.RemoveAll(g => g.id == "gutting_knife");
                     Jump("wake");
                     break;
                 case "road":
-                    S.flags.Remove("dog_met");
+                    S.flags.RemoveAll(f => f == "dog_met" || f.StartsWith("ida_") || f.StartsWith("patch_"));
                     MoveTo("shack");
                     Jump(TravelId);
                     break;
@@ -74,31 +74,28 @@ namespace Loran.Core
                     MoveTo("hills_gate");
                     Jump(TravelId);
                     break;
-                case "fire":
-                    foreach (var f in new[] { "quest:orlen", "orlen_met", "brazier_lit", "fire_started" }) Flag(f);
-                    S.spells.Add("draw_water");
-                    S.spells.Add("kindle");
-                    MoveTo("village_gate");
-                    S.ax = 12; S.ay = 13; S.facing = "left";
+                case "forest":
+                    Flag("quest:forest");
+                    MakeGear("wood_axe", null, null);
+                    S.AddItem("pail", 1);
+                    MoveTo("forest_camp");
                     Jump(TravelId);
                     break;
+                case "wolf":
+                    S.flags.RemoveAll(f => f == "dog_met" || f.StartsWith("ida_") || f.StartsWith("patch_"));
+                    MoveTo("shack");
+                    Jump("wolf_rescue");
+                    break;
                 case "boss":
-                    foreach (var f in new[] { "quest_done:lodge", "quest:pack" }) Flag(f);
+                    foreach (var f in new[] { "quest_done:forest", "quest:pack" }) Flag(f);
                     MoveTo("hills_gate");
                     S.ax = 28; S.ay = 8; S.facing = "up";
                     Apply("follow:rook", new System.Text.StringBuilder(), ref devRedirect);
                     MakeGear("hunting_bow", null, null);
                     Jump(TravelId);
                     break;
-                case "forge_first":
-                    MoveTo("village_gate");
-                    foreach (var f in new[] { "quest:quarry", "g_met", "ore_in" }) Flag(f);
-                    Jump("smith");
-                    break;
                 case "forge_iron":
                     MoveTo("village_gate");
-                    Flag("smith_done");
-                    Flag("quest_done:quarry");
                     S.coins = 600;
                     Jump("smith");
                     break;

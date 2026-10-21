@@ -440,11 +440,12 @@ namespace Loran.UnityLayer
             var e = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-thing");
             var tex = Sprite("World/" + o.sprite);
             if (tex != null) e.style.backgroundImage = new StyleBackground(tex);
-            // a tall thing (the class stone) stands up out of its tile
+            // a tall thing (a tree) stands up out of its tile; a wide one (the wrecked hull) spreads out either side of it
             int extra = tex != null ? Mathf.Max(0, tex.height - Tile) * k : 0;
-            e.style.width = T;
+            int wide = tex != null ? Mathf.Max(0, tex.width - Tile) * k : 0;
+            e.style.width = T + wide;
             e.style.height = T + extra;
-            e.style.left = o.x * T;
+            e.style.left = o.x * T - wide / 2;
             e.style.top = o.y * T - extra;
         }
 

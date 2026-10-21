@@ -39,13 +39,13 @@
     {
       "id": "flint",
       "name": "Flint and steel",
-      "desc": "From Yenson. For lighting fires.",
+      "desc": "A tinderbox from the wreck, the flint and steel still dry inside. For lighting fires.",
       "kind": "tool"
     },
     {
       "id": "gem",
       "name": "Green gem",
-      "desc": "A small green stone from the old quarry, clear as bottle glass. Garran could set it in something.",
+      "desc": "A small green stone, clear as bottle glass. A smith could set it in something.",
       "kind": "material"
     },
     {
@@ -104,8 +104,8 @@
     },
     {
       "id": "boar_meat",
-      "name": "Smoked boar",
-      "desc": "Yenson's work: dark, salty and rich.",
+      "name": "Roast boar",
+      "desc": "Boar meat, cooked over your own fire. Dark and rich.",
       "food": true,
       "hunger": 40,
       "thirst": -8,
@@ -129,13 +129,13 @@
     {
       "id": "pail",
       "name": "Empty pail",
-      "desc": "The lodge's pail. The water butt wants filling from the hill stream.",
+      "desc": "The lodge's pail, for fetching water from the stream.",
       "kind": "tool"
     },
     {
       "id": "water_pail",
       "name": "Pail of stream water",
-      "desc": "Cold water from the hill stream, for the lodge's water butt.",
+      "desc": "Cold stream water. Boil it before you drink it.",
       "kind": "tool"
     },
     {
@@ -198,6 +198,30 @@
       "name": "Willow bark",
       "desc": "Chewed or brewed, it brings a fever down.",
       "kind": "medicine"
+    },
+    {
+      "id": "raw_boar",
+      "name": "Raw boar meat",
+      "desc": "Fresh off the bone. Cook it on a fire before you eat it.",
+      "kind": "material"
+    },
+    {
+      "id": "boar_hide",
+      "name": "Boar hide",
+      "desc": "A whole hide, bristly and heavy. Scraped, smoked and cut, it makes good leather.",
+      "kind": "material"
+    },
+    {
+      "id": "sinew",
+      "name": "Sinew",
+      "desc": "Boar sinew, dried and twisted. It makes a bowstring.",
+      "kind": "material"
+    },
+    {
+      "id": "stave",
+      "name": "Ash stave",
+      "desc": "A straight length of young ash, split and shaved. The makings of a bow.",
+      "kind": "material"
     }
   ],
   "enemies": [
@@ -526,7 +550,7 @@
       "id": "gutting_knife",
       "name": "Gutting knife",
       "slot": "weapon",
-      "desc": "Yenson's spare. Made for fish, not fights, but it has a point.",
+      "desc": "A sailor's knife from the wreck. Made for gutting fish, not fights, but it has a point.",
       "damage": 2,
       "skill": "dagger"
     },
@@ -728,17 +752,25 @@
       ]
     },
     {
-      "text": "Follow the coast road north to Skelmed.",
+      "text": "Follow the coast road north to Skelmed. Yenson says what's left of your boat washed up on the beach just north of his shack: there may be something there worth taking.",
       "when": [
-        "flag:y_supplies",
-        "!flag:been:skelmed"
+        "flag:y_road",
+        "!flag:dog_met"
       ]
     },
     {
-      "text": "Find work in Skelmed. Ida at the hunters' lodge, Garran at the forge and old Orlen up in the hills could all use a hand.",
+      "text": "Ida drove the wolf off you on the road. Get into Skelmed and have the bite seen to.",
       "when": [
-        "flag:been:skelmed",
-        "!done:lodge|!done:quarry|!done:orlen"
+        "flag:dog_met",
+        "!flag:patch_done"
+      ]
+    },
+    {
+      "text": "Ask Ida at the hunters' lodge how you can help.",
+      "when": [
+        "flag:patch_done",
+        "!quest:forest",
+        "!done:forest"
       ]
     },
     {
@@ -872,12 +904,30 @@
           "scene": "pools"
         },
         {
-          "id": "crate",
+          "id": "wreck_crate",
           "kind": "item",
           "sprite": "obj_crate",
-          "x": 5,
-          "y": 80,
-          "scene": "ev_crate",
+          "x": 8,
+          "y": 86,
+          "scene": "wreck_crate",
+          "once": true
+        },
+        {
+          "id": "wreck_chest",
+          "kind": "item",
+          "sprite": "obj_sea_chest",
+          "x": 10,
+          "y": 81,
+          "scene": "wreck_chest",
+          "once": true
+        },
+        {
+          "id": "wreck_barrel",
+          "kind": "item",
+          "sprite": "obj_barrel",
+          "x": 6,
+          "y": 88,
+          "scene": "wreck_barrel",
           "once": true
         },
         {
@@ -911,7 +961,7 @@
           "when": [
             "!flag:dog_met"
           ],
-          "scene": "dog"
+          "scene": "wolf_rescue"
         },
         {
           "id": "gulls",
@@ -966,19 +1016,6 @@
           "y": 112,
           "scene": "deadfall",
           "once": true
-        },
-        {
-          "id": "boar",
-          "kind": "npc",
-          "sprite": "obj_boar",
-          "x": 21,
-          "y": 110,
-          "facing": "left",
-          "scene": "boar",
-          "when": [
-            "quest:boar",
-            "!flag:boar_killed"
-          ]
         }
       ],
       "zones": [
@@ -1001,21 +1038,9 @@
           "y0": 42,
           "x1": 31,
           "y1": 43,
-          "scene": "dog",
+          "scene": "wolf_rescue",
           "when": [
             "!flag:dog_met"
-          ]
-        },
-        {
-          "x0": 18,
-          "y0": 107,
-          "x1": 24,
-          "y1": 113,
-          "scene": "boar",
-          "when": [
-            "quest:boar",
-            "!flag:boar_killed",
-            "!flag:boar_seen"
           ]
         }
       ],
@@ -1027,6 +1052,10 @@
         {
           "tile": "k",
           "scene": "brambles"
+        },
+        {
+          "tile": "Q",
+          "scene": "wreck_hull"
         }
       ],
       "events": [
@@ -1049,7 +1078,7 @@
         "..HHHHHH..........==HHHHH..TTTTT",
         "..HHHHHH..........==HHHHH..TTTTT",
         "...................==......TTTTT",
-        "~~~~~FFFFFFFFFFFFFF==FFFFFFFFFFF",
+        "~~~~~ZZZZZZZZZZZZI====IZZZZZZZZZ",
         "~~~~~,,............==.......TTTT",
         "~~~~~,,............==T......TTTT",
         "~~~~~,,............==........TTT",
@@ -1123,19 +1152,19 @@
         "~~~,,.....gggg...==.......TTTTTT",
         "~~~,,......gg...==.....T.TTTTTTT",
         "~~~,,...........==...T....TTTTTT",
-        "~~~,,...........==....T...TTTTTT",
-        "~~~,,.........T==.........TTTTTT",
-        "~~~~,,,.o......==.gggg.....TTTTT",
-        "~~~~,,........==.gggggg...oTTTTT",
-        "~~~~,,......r.==.gggggg....TTTTT",
-        "~~~~,,........==.gggggg.....TTTT",
-        "~~~~~,,......==..gggggg.....TTTT",
-        "~~~~~,,......==...gggg......TTTT",
-        "~~~~~,,T.....==..............TTT",
-        "~~~~~,,,T...==...........T...TTT",
-        "~~~~~,,.....==............T.TTTT",
-        "~~~~~,,.....==...............TTT",
-        "~~~~~~,,....==...HHHHH......TTTT",
+        "~~~,,,,,,.......==....T...TTTTTT",
+        "~~~,,,,,,.....T==.........TTTTTT",
+        "~~~~,,,,,,.....==.gggg.....TTTTT",
+        "~~~~,,,,,,,...==.gggggg...oTTTTT",
+        "~~~~,QQQQQ..r.==.gggggg....TTTTT",
+        "~~~~,QQQQQ....==.gggggg.....TTTT",
+        "~~~~~QQQQQ,..==..gggggg.....TTTT",
+        "~~~~~,,,,,,,.==...gggg......TTTT",
+        "~~~~~,,,,,,..==..............TTT",
+        "~~~~~,,,,,,.==...........T...TTT",
+        "~~~~~,,,,,,.==............T.TTTT",
+        "~~~~~,,,,,,,==...............TTT",
+        "~~~~~~,,,,,,==...HHHHH......TTTT",
         "~~~~~~,,....==...HHHHH......TTTT",
         "~~~~~~,,....==...HHDHH......TTTT",
         "~~~~~~,,...=========....o..TTTTT",
@@ -1256,38 +1285,30 @@
       ],
       "objects": [
         {
-          "id": "garran",
-          "kind": "npc",
-          "sprite": "npc_garran",
-          "x": 27,
-          "y": 22,
-          "facing": "right",
-          "scene": "smith"
-        },
-        {
           "id": "ida",
           "kind": "npc",
           "sprite": "npc_ida",
           "x": 19,
           "y": 8,
           "facing": "down",
-          "scene": "ida"
+          "scene": "ida",
+          "when": [
+            "!quest:forest"
+          ]
         },
         {
-          "id": "block",
-          "kind": "item",
-          "sprite": "obj_block",
-          "x": 21,
-          "y": 6,
-          "scene": "chop"
-        },
-        {
-          "id": "butt",
-          "kind": "item",
-          "sprite": "obj_butt",
+          "id": "rook",
+          "kind": "npc",
+          "sprite": "npc_rook",
           "x": 15,
           "y": 7,
-          "scene": "butt"
+          "facing": "down",
+          "scene": "rook",
+          "when": [
+            "!follower:rook",
+            "!flag:dead_rook",
+            "!flag:rook_escort"
+          ]
         },
         {
           "id": "empty_house",
@@ -1297,53 +1318,11 @@
           "text": "Boarded up. Someone has chalked on the door: GONE INLAND."
         },
         {
-          "id": "fire1",
-          "kind": "item",
-          "sprite": "obj_fire",
-          "x": 9,
-          "y": 14,
-          "scene": "fire1",
-          "when": [
-            "flag:fire_started",
-            "!flag:fire1_out"
-          ]
-        },
-        {
-          "id": "fire2",
-          "kind": "item",
-          "sprite": "obj_fire",
-          "x": 11,
-          "y": 16,
-          "scene": "fire2",
-          "when": [
-            "flag:fire_started",
-            "!flag:fire2_out"
-          ]
-        },
-        {
-          "id": "fire3",
-          "kind": "item",
-          "sprite": "obj_fire",
-          "x": 7,
-          "y": 16,
-          "scene": "fire3",
-          "when": [
-            "flag:fire_started",
-            "!flag:fire3_out"
-          ]
-        },
-        {
-          "id": "orlen_fire",
-          "kind": "npc",
-          "sprite": "npc_orlen",
-          "x": 13,
-          "y": 15,
-          "facing": "left",
-          "scene": "orlen_at_fire",
-          "when": [
-            "flag:fire_started",
-            "!flag:fire_out"
-          ]
+          "id": "old_smithy",
+          "kind": "sign",
+          "x": 26,
+          "y": 22,
+          "text": "Boarded up, a cold forge behind the shutters. The smith went inland with the rest. Somebody has nailed a horseshoe over the door, upside down, so the luck runs out."
         },
         {
           "id": "bess",
@@ -1391,7 +1370,7 @@
       "zones": [
         {
           "x0": 17,
-          "y0": 26,
+          "y0": 27,
           "x1": 18,
           "y1": 27,
           "to": "skelmed"
@@ -1419,51 +1398,43 @@
         {
           "tile": "O",
           "scene": "well_drink"
-        },
-        {
-          "tile": "A",
-          "scene": "smith"
-        },
-        {
-          "tile": "L",
-          "scene": "smith"
         }
       ],
       "events": [],
       "rows": [
         "TTTTTTTTTTTT==TTTTTTTTTTTTTTTTTTTTTT",
-        "TTTTTTTTTTTT==TTTTTTTTTTTTTTTTTTTTTT",
-        "~~~~~,,.....==..............oo...TTT",
-        "~~~~~~,HHHHH==HHHHHHH..HHHHH......TT",
-        "~~~~~~,HHHHH==HHHHHHHj.HHHHHvvv..TTT",
-        "~~~~~~,HHHHH==HHHHHHH..HHHHHvvv..TTT",
-        "~~~~~~,HHHHH==HHHHHHH.oHHHHHFFF...TT",
-        "~~~~~~,,.co.==...c.......c.......TTT",
-        "~~~~~~,,.c..==T..c....T..cgg...g.TTT",
-        "~~~~~~,,.ccc==...c.....ccc.HHHHHg.TT",
-        "~YY~~~E,....olcccccccccc...HHHHH.TTT",
-        "~~~~~~,E...nnccccccccSSK...HHHHHgTTT",
-        "PPPPPPPPcccccccccccccccc..gHHHHHg.TT",
-        "PPPPPPPPccccccccccOccccc...HHHHH.TTT",
-        "~~~~~,,....n.ccccccccccccccccc...TTT",
-        "~~~~~,,.HHH..ccccccccccc.......o..TT",
-        "~YY~~,,.HHH.Klcccccceccl........TTTT",
-        "~~~~~,N..........cc..............TTT",
-        "~~~~,,..HHHHH....cc.....HHHHHH....TT",
-        "~~~~,,N.HHHHHgg..cc..T..HHHHHH...TTT",
-        "~~~~,,.gHHHHHg...cc.o..oHHHHHHo..TTT",
-        "~~~~,,..HHHHHgo..cc.....HHHHHHn...TT",
-        "~~~~,,....ccccccccccccccLcccAcnj.TTT",
-        "~~~~,,T......T...ccccccccccccc...TTT",
-        "~~~~,,.....o.....cc............T..TT",
-        "~~~~,,.......o...cc..............TTT",
-        "~~~~FFFFFFFFFFFFFccFFFFFFFFFFFFFFFFF",
-        "TTTTTTTTTTTTTTTTTccTTTTTTTTTTTTTTTTT"
+        "~~~~~,,ZZZZI==IZZZZZZZZZZZZZZZZZZTTT",
+        "~~~~~,,.....==..................ZTTT",
+        "~~~~~~,HHHHH==HHHHHHH..HHHHH....Z.TT",
+        "~~~~~~,HHHHH==HHHHHHHj.HHHHHvvv.ZTTT",
+        "~~~~~~,HHHHH==HHHHHHH.jHHHHHvvv.ZTTT",
+        "~~~~~~,HHHHH==HHHHHHH..HHHHHFFF.Z.TT",
+        "~~~~~~,,.m..==...m.......m......ZTTT",
+        "~~~~~~,,.m..==T.mm....Tmmmmg...gZTTT",
+        "~~~~~~,,.mmm==...m....mmmm.HHHHHZ.TT",
+        "~YY~~~E,.m...lmmmmmmmmmm.m.HHHHHZTTT",
+        "~~~~~~,E...nnmmmmmmmmSSK...HHHHHZTTT",
+        "PPPPPPPPmmmmmmmmmmmmmmmm.mgHHHHHZ.TT",
+        "PPPPPPPPmmmmmmmmmmOmmmmm.m.HHHHHZTTT",
+        "~~~~~,,....n.mmmmmmmmmmmmmmmmm..ZTTT",
+        "~~~~~,,.HHH..mmmmmmmmmmm........Z.TT",
+        "~YY~~,,.HHH.Klmmmmmmemml........ZTTT",
+        "~~~~~,N..........mmm............ZTTT",
+        "~~~~,,..HHHHH....mm.....HHHHHH..Z.TT",
+        "~~~~,,N.HHHHHgg.mmm..T..HHHHHH..ZTTT",
+        "~~~~,,.gHHHHHg...mm.....HHHHHH..ZTTT",
+        "~~~~,,..HHHHHgm..mm.....HHHHHHn.Z.TT",
+        "~~~~,,....mmmmmmmmmmmmmmmmmmmm.jZTTT",
+        "~~~~,,T......Tm..mmmmmmmmmmmmm..ZTTT",
+        "~~~~,,...........mm............TZ.TT",
+        "~~~~,,...........mm.............ZTTT",
+        "~~~~,,ZZZZZZZZZZImmIZZZZZZZZZZZZZTTT",
+        "TTTTTTTTTTTTTTTTTmmTTTTTTTTTTTTTTTTT"
       ]
     },
     {
       "id": "skelmed_hills",
-      "name": "The hills above Skelmed",
+      "name": "The forest above Skelmed",
       "minutes": 2,
       "eventChance": 0,
       "fightChance": 0,
@@ -1474,55 +1445,101 @@
           "x": 16,
           "y": 37,
           "facing": "up"
+        },
+        {
+          "id": "forest_camp",
+          "x": 23,
+          "y": 31,
+          "facing": "right"
         }
       ],
       "objects": [
         {
-          "id": "orlen",
+          "id": "ida_camp",
           "kind": "npc",
-          "sprite": "npc_orlen",
-          "x": 26,
+          "sprite": "npc_ida",
+          "x": 25,
           "y": 31,
           "facing": "left",
-          "scene": "orlen",
+          "scene": "ida_forest",
           "when": [
-            "!flag:fire_started|flag:fire_out"
+            "quest:forest"
           ]
         },
         {
-          "id": "brazier",
+          "id": "firepit",
           "kind": "item",
-          "sprite": "obj_brazier",
-          "x": 22,
-          "y": 30,
-          "scene": "brazier",
-          "when": [
-            "!flag:brazier_lit"
-          ]
-        },
-        {
-          "id": "brazier_lit",
-          "kind": "item",
-          "sprite": "obj_brazier_lit",
-          "x": 22,
-          "y": 30,
-          "scene": "brazier",
-          "when": [
-            "flag:brazier_lit"
-          ]
-        },
-        {
-          "id": "rook",
-          "kind": "npc",
-          "sprite": "npc_rook",
-          "x": 9,
+          "sprite": "obj_firepit",
+          "x": 24,
           "y": 29,
-          "facing": "right",
-          "scene": "rook",
+          "scene": "campfire",
           "when": [
-            "!follower:rook",
-            "!flag:dead_rook",
-            "!flag:rook_escort"
+            "!flag:camp_fire"
+          ]
+        },
+        {
+          "id": "campfire",
+          "kind": "item",
+          "sprite": "obj_campfire",
+          "x": 24,
+          "y": 29,
+          "scene": "campfire",
+          "when": [
+            "flag:camp_fire"
+          ]
+        },
+        {
+          "id": "workstump",
+          "kind": "item",
+          "sprite": "obj_workstump",
+          "x": 27,
+          "y": 30,
+          "scene": "workstump"
+        },
+        {
+          "id": "hide_frame",
+          "kind": "sign",
+          "sprite": "obj_hide_frame",
+          "x": 22,
+          "y": 30,
+          "when": [
+            "flag:lesson_armour"
+          ],
+          "text": "The frame you stretched the boar hide on, smelling of smoke."
+        },
+        {
+          "id": "ash",
+          "kind": "item",
+          "sprite": "obj_ash",
+          "x": 24,
+          "y": 21,
+          "scene": "chop_ash",
+          "when": [
+            "!flag:felled_ash"
+          ]
+        },
+        {
+          "id": "ash_stump",
+          "kind": "item",
+          "sprite": "obj_stump",
+          "x": 24,
+          "y": 21,
+          "scene": "stump",
+          "when": [
+            "flag:felled_ash"
+          ]
+        },
+        {
+          "id": "boar",
+          "kind": "npc",
+          "sprite": "obj_boar",
+          "x": 6,
+          "y": 25,
+          "facing": "right",
+          "scene": "boar",
+          "when": [
+            "flag:lesson_water",
+            "!flag:boar_killed"
           ]
         },
         {
@@ -1605,23 +1622,100 @@
           ]
         },
         {
-          "id": "glint",
-          "kind": "item",
-          "sprite": "obj_glint",
-          "x": 21,
-          "y": 10,
-          "scene": "quarry_gem",
-          "when": [
-            "!flag:gem_found"
-          ]
-        },
-        {
           "id": "sign_hills",
           "kind": "sign",
           "sprite": "obj_sign",
           "x": 17,
           "y": 36,
-          "text": "Up: the old quarry. Right: O. Vey. Left: SNARES, KEEP OFF. (Rook)"
+          "text": "Right: Ida's camp. Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."
+        },
+        {
+          "id": "tree1",
+          "kind": "item",
+          "sprite": "obj_tree",
+          "x": 21,
+          "y": 27,
+          "scene": "chop_tree1",
+          "when": [
+            "!flag:felled_tree1"
+          ]
+        },
+        {
+          "id": "stump1",
+          "kind": "item",
+          "sprite": "obj_stump",
+          "x": 21,
+          "y": 27,
+          "scene": "stump",
+          "when": [
+            "flag:felled_tree1"
+          ]
+        },
+        {
+          "id": "tree2",
+          "kind": "item",
+          "sprite": "obj_tree",
+          "x": 28,
+          "y": 27,
+          "scene": "chop_tree2",
+          "when": [
+            "!flag:felled_tree2"
+          ]
+        },
+        {
+          "id": "stump2",
+          "kind": "item",
+          "sprite": "obj_stump",
+          "x": 28,
+          "y": 27,
+          "scene": "stump",
+          "when": [
+            "flag:felled_tree2"
+          ]
+        },
+        {
+          "id": "tree3",
+          "kind": "item",
+          "sprite": "obj_tree",
+          "x": 21,
+          "y": 34,
+          "scene": "chop_tree3",
+          "when": [
+            "!flag:felled_tree3"
+          ]
+        },
+        {
+          "id": "stump3",
+          "kind": "item",
+          "sprite": "obj_stump",
+          "x": 21,
+          "y": 34,
+          "scene": "stump",
+          "when": [
+            "flag:felled_tree3"
+          ]
+        },
+        {
+          "id": "tree4",
+          "kind": "item",
+          "sprite": "obj_tree",
+          "x": 27,
+          "y": 33,
+          "scene": "chop_tree4",
+          "when": [
+            "!flag:felled_tree4"
+          ]
+        },
+        {
+          "id": "stump4",
+          "kind": "item",
+          "sprite": "obj_stump",
+          "x": 27,
+          "y": 33,
+          "scene": "stump",
+          "when": [
+            "flag:felled_tree4"
+          ]
         }
       ],
       "zones": [
@@ -1643,59 +1737,67 @@
             "!flag:alpha_dead",
             "!flag:den_found"
           ]
+        },
+        {
+          "x0": 3,
+          "y0": 23,
+          "x1": 9,
+          "y1": 29,
+          "scene": "boar",
+          "when": [
+            "flag:lesson_water",
+            "!flag:boar_killed",
+            "!flag:boar_seen"
+          ]
         }
       ],
       "uses": [
         {
           "tile": "w",
           "scene": "hill_stream"
-        },
-        {
-          "tile": "q",
-          "scene": "quarry_dig"
         }
       ],
       "events": [],
       "rows": [
         "TTTTTTTTTTTTTTT.TTTTTTT.TTTT.TTTT.",
-        "TTTTTTTThhuuuuuuuuuuuuuuuhhTTTTTTT",
-        ".T.....Thhhuuuuuuuuuuuuuhhhr..rrTT",
-        "TTTTT.T.hhhuuuuuuuuuuuuuhhh.....TT",
-        "TT....T..hhhuuuuuuuuuuuhhhT....rTT",
-        "TTT.TT...hhhhuuuuuuuuuhhhh......TT",
-        "TT......TThhhhuuuuuuuhhhh......TTT",
-        "TT......T...hhhhhhhhhhh.........TT",
-        "TT......T.T..TqqhqqhqT..........TT",
-        "TT.......,,,,,,,,,==,,,,r,......TT",
-        "TT.......T,r,,,,,===,,,r,.TT....TT",
-        "TT.......TT.,r,,,==,r,,.........TT",
-        "T.T.............T==.............TT",
-        "TT.g====.........==..T.T.ggggg..TT",
-        "TTTggg.=..T...T.===......ggggg..TT",
-        "TT.ggg.=........==.......gggTg..TT",
-        "TT.T...=........==.......ggggg..TT",
-        "TT.....=........==...T.T........TT",
-        ".TTTT..=.......wbbwwwwww....T...TT",
-        "wwTTTT.=....wwwwbbwwwwwwwww.....TT",
+        "TTTTTTTTTTTTTTTT...TTTTTTTTTTTTTTT",
+        ".T.....TT.TTT.....TT..TTr..r..rrTT",
+        "TTTTT.T.TT.TT....T.....T........TT",
+        "TTT...T...T...........T........rTT",
+        "TTT.TTT.T..T..ggggg.............TT",
+        "TT......TT....ggg==.............TT",
+        "TT......T..T..ggg=========......TT",
+        "TT......T.T.......==...T........TT",
+        "TT.......T.T......==...TT..T..TTTT",
+        "TT.......TTT..TTT===T.TT.TTTT...TT",
+        "TT.......TT...T..==..TT.TT......TT",
+        "T.T.............T==......T....T.TT",
+        "TT.g====.......T.==..TTT.gggTg..TT",
+        "TTTggg.=..T...TT===.T..T.ggggg.TTT",
+        "TT.ggg.=........==..T..T.gTgTg..TT",
+        "TTTT...=........==....T..ggggT..TT",
+        "TTT....=..TT....==..TTTT....T..TTT",
+        ".TTTT..=......Twbbwwwwww...TT...TT",
+        "wwTTTT.=....wwwwbbwwwwwwwww.T...TT",
         "wwwwwwwbwwwwwwwT==.T...Twwwwwwwwww",
         "TTwwwwwbwwww..T.==.........wwwwwww",
-        "TT.....=.....T..==.........Tr...TT",
-        "TT.....=.....=====..........T...TT",
-        "TT.....=...T.==.................TT",
-        "TT..ggg=....===......T...o......TT",
-        "TT..ggg=....==T...T..T.HHHH...T.TT",
-        "TT..ggg=....==....T..o.HHHH..T..TT",
-        "TTT....=..o.==.........HHHH...T.TT",
-        "TTT.T=========.....oo..HHHH....oTT",
-        "TT..........==......T.o.=..o....TT",
-        "TTT.TT..T...=============...o...TT",
-        "TT..TTTT....T==....T.oo.=.....T.TT",
-        ".T.......TT..==....Tggo.=...o..TTT",
-        "T..T..T.T....===...Tgg.T.......TTT",
-        "TT.....T.T...T==...gTgT.TT......TT",
-        "TTT.T....o....===T.ggg...o......TT",
-        "TT.TT....T.T...===....oT.....oT.TT",
-        "TT.T....T......===...T..........TT",
+        "TT..T..=.....T..==..TT.....Tr...TT",
+        "TTT....=.....=====..T.......T...TT",
+        "TT.....=...T.==T......T.........TT",
+        "TT..ggg=..T.===TT....T......TTTTTT",
+        "TTT.ggg=....==T...T.T........TT.TT",
+        "TT..ggg=....==....T.............TT",
+        "TTT....=....==....T...........T.TT",
+        "TTT..=========.................TTT",
+        "TT..........==..................TT",
+        "TTT.TT.TT...==========..........TT",
+        "TT..TTTTT...T==..T.T..........TTTT",
+        ".T...T...TT..==....T...........TTT",
+        "T..T..T.T....===.T.T.........T.TTT",
+        "TT.....TTTT..T==....T........TT.TT",
+        "TTTTT.T.T.T...===.T.............TT",
+        "TT.TT....TTT.T.===.....T...T..T.TT",
+        "TT.T..T.T..T...===...TT...T.....TT",
         "TTTTTTTTTTTTTTTT==TTTTTTTTTTTTTTTT"
       ]
     }
@@ -1867,6 +1969,26 @@
       "solid": true
     },
     {
+      "key": "m",
+      "name": "Mud",
+      "road": true
+    },
+    {
+      "key": "Z",
+      "name": "Palisade",
+      "solid": true
+    },
+    {
+      "key": "I",
+      "name": "Gatepost",
+      "solid": true
+    },
+    {
+      "key": "Q",
+      "name": "Wreck",
+      "solid": true
+    },
+    {
       "key": "p",
       "name": "Floor",
       "road": true
@@ -1904,124 +2026,52 @@
   ],
   "quests": [
     {
-      "id": "water",
-      "name": "Water for the pot",
-      "giver": "Yenson",
-      "desc": "Yenson wants his bucket filled at the spring in the copse south of his shack.",
-      "goals": [
-        {
-          "text": "Fill the bucket at the spring",
-          "count": "item:water_bucket",
-          "target": 1
-        }
-      ],
-      "exp": 15
-    },
-    {
-      "id": "firewood",
-      "name": "Deadwood",
-      "giver": "Yenson",
-      "desc": "The fire needs feeding. There's fallen wood all over the copse.",
-      "goals": [
-        {
-          "text": "Gather deadwood in the copse",
-          "count": "item:firewood",
-          "target": 3
-        }
-      ],
-      "exp": 15
-    },
-    {
-      "id": "boar",
-      "name": "The boar at the spring",
-      "giver": "Yenson",
-      "desc": "A boar has been tearing up the ground round the spring, and it's getting bolder. Yenson's too old to go after it.",
-      "goals": [
-        {
-          "text": "Kill the boar in the copse",
-          "when": "flag:boar_killed"
-        }
-      ],
-      "exp": 30
-    },
-    {
-      "id": "lodge",
-      "name": "Stocking the lodge",
+      "id": "forest",
+      "name": "Into the woods",
       "giver": "Ida",
-      "desc": "The hunters' lodge is down to three hunters and an empty larder. Ida wants hares from Rook's snares in the hills, wood split at the block, and the water butt filled from the hill stream.",
+      "exp": 120,
+      "desc": "Ida has taken you up into the forest above Skelmed to teach you how to look after yourself out there: wood, fire, water, food, a bow and something to wear.",
       "goals": [
         {
-          "text": "Take hares from Rook's snares in the hills",
-          "count": "item:hare",
+          "text": "Fell three of Ida's marked trees",
+          "count": "flags:felled_tree",
           "target": 3
         },
         {
-          "text": "Split logs at the lodge's chopping block",
-          "count": "item:split_wood",
-          "target": 4
+          "text": "Build a fire at the camp",
+          "when": "flag:camp_fire"
         },
         {
-          "text": "Fill the water butt with a pail from the hill stream",
-          "when": "flag:butt_full"
+          "text": "Fetch water from the stream and boil it",
+          "when": "flag:lesson_water"
+        },
+        {
+          "text": "Hunt the boar in the glade",
+          "when": "flag:boar_killed"
+        },
+        {
+          "text": "Cook the meat",
+          "when": "flag:lesson_cook"
+        },
+        {
+          "text": "Make a bow from the young ash",
+          "when": "flag:lesson_bow"
+        },
+        {
+          "text": "Make leather armour from the hide",
+          "when": "flag:lesson_armour"
         }
-      ],
-      "exp": 40
-    },
-    {
-      "id": "quarry",
-      "name": "Ore from the old quarry",
-      "giver": "Garran",
-      "desc": "Garran's forge has been cold for months for want of ore. He's lent you his pick for the old quarry at the top of the hill path.",
-      "goals": [
-        {
-          "text": "Dig ore from the rock face at the quarry",
-          "when": "item:ore>=3|flag:ore_in"
-        },
-        {
-          "text": "Bring the ore to Garran",
-          "when": "flag:ore_in"
-        },
-        {
-          "text": "Forge your first piece of gear",
-          "when": "flag:smith_done"
-        }
-      ],
-      "exp": 40
-    },
-    {
-      "id": "orlen",
-      "name": "The old mage",
-      "giver": "Orlen",
-      "desc": "Orlen Vey was mage to the court in Zaron once. Now he grows herbs in the hills above Skelmed, and he's agreed to teach you.",
-      "goals": [
-        {
-          "text": "Learn Draw Water",
-          "when": "spell:draw_water"
-        },
-        {
-          "text": "Learn Kindle",
-          "when": "spell:kindle"
-        },
-        {
-          "text": "Light Orlen's brazier with Kindle",
-          "when": "flag:brazier_lit"
-        },
-        {
-          "text": "Put out the fire at the net shed",
-          "when": "flag:fire_out"
-        }
-      ],
-      "exp": 40
+      ]
     },
     {
       "id": "pack",
       "name": "The pack leader",
       "giver": "Ida",
       "exp": 100,
-      "desc": "The yellow-eyed wolves have a leader: a huge grey brute with a scarred muzzle, denning past the quarry. Ida wants it dead, and she's sent Rook with you.",
+      "desc": "The yellow-eyed wolves have a leader: a huge grey brute with a scarred muzzle, denning in the north-east of the forest above Skelmed. Ida wants it dead, and she's sent Rook with you.",
       "goals": [
         {
-          "text": "Find the den past the quarry, with Rook",
+          "text": "Find the den in the north-east of the forest, with Rook",
           "when": "flag:den_found"
         },
         {
@@ -2097,6 +2147,24 @@
       "name": "First aid",
       "kind": "life",
       "desc": "Grows each time you treat a wound. Every level heals your whole party faster."
+    },
+    {
+      "id": "survival",
+      "name": "Survival",
+      "kind": "life",
+      "desc": "Fires, shelter and clean water. Each level makes the work lighter."
+    },
+    {
+      "id": "cooking",
+      "name": "Cooking",
+      "kind": "life",
+      "desc": "Cooking over a fire. Each level makes the work lighter."
+    },
+    {
+      "id": "crafting",
+      "name": "Crafting",
+      "kind": "life",
+      "desc": "Making your own gear: bows, leather, tools. Each level makes the work lighter."
     }
   ],
   "moves": [

@@ -631,15 +631,27 @@ namespace Loran.UnityLayer
         {
             var s = engine.S;
             var known = Section(left, "WHAT YOU CAN MAKE");
-            if (!s.Has("smith_done"))
-                Add(known, new Label("You don't know how to make anything yet. Someone in Skelmed with a forge could teach you."), "line-muted");
-            else
+            // what Ida's taught you up in the forest (David, 21 Oct); forging waits for the next town
+            var made = new List<(string flag, string name, string how)>
             {
-                Add(known, new Label("Basic forging"), "line");
-                Add(known, new Label("Garran taught you to make a knife, a buckler or work gloves. He'll sell you iron and the use of his forge for 3 coppers. Heat it, hammer it and quench it well, and it comes out a rank better."), "line-muted");
+                ("camp_fire", "A fire", "Three lots of wood and a flint. Small stuff first, then the logs."),
+                ("lesson_water", "Clean water", "Boil stream water over a fire before you drink it."),
+                ("lesson_cook", "Roast meat", "Raw meat over a fire, turned until it's cooked through."),
+                ("lesson_bow", "A hunting bow", "A stave cut from a young ash, and sinew for the string."),
+                ("lesson_armour", "Leather armour", "A hide, scraped, smoked over a fire and cut to fit."),
+                ("smith_done", "Basic forging", "A knife, a buckler or work gloves, from a bar of iron at a forge."),
+            };
+            int count = 0;
+            foreach (var (flag, name, how) in made)
+            {
+                if (!s.Has(flag)) continue;
+                Add(known, new Label(name), "line");
+                Add(known, new Label(how), "line-muted");
+                count++;
             }
+            if (count == 0) Add(known, new Label("You don't know how to make anything yet. Someone in Skelmed who knows the woods could teach you."), "line-muted");
             var where = Section(right, "WHERE TO CRAFT");
-            Add(where, new Label(s.Has("smith_done") ? "Garran's forge, Skelmed" : "Nowhere yet."), "line");
+            Add(where, new Label(s.Has("lesson_bow") ? "Ida's camp, in the forest above Skelmed: the fire and the work stump" : "Nowhere yet."), "line");
             Add(where, new Label("Crafting takes time, and time never stops."), "line-muted");
         }
 

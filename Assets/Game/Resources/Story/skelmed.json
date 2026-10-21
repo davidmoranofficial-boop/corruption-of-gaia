@@ -1,400 +1,6 @@
 {
   "scenes": [
     {
-      "id": "smith",
-      "speaker": "Garran",
-      "title": "Garran's forge",
-      "safe": true,
-      "text": [],
-      "extra": [
-        {
-          "when": [
-            "!flag:g_met",
-            "!done:quarry"
-          ],
-          "text": "\"Another one off the coast road? Garran. This is my forge, such as it is. No ore's come up the road in months, and the forge has been cold since.\""
-        },
-        {
-          "when": [
-            "quest:quarry",
-            "!flag:ore_in",
-            "item:ore<3"
-          ],
-          "text": "\"Quarry's up the hill path, past the stream. Rusty seams in the rock face. Three good lumps.\""
-        },
-        {
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done"
-          ],
-          "text": "\"Iron's ready. Knife, buckler or gloves. Doesn't matter which. Matters that you make it yourself.\""
-        },
-        {
-          "when": [
-            "done:quarry"
-          ],
-          "text": "\"Forge is hot. Iron's sixty coppers a bar. Anything you make, you keep.\""
-        }
-      ],
-      "onEnter": [
-        "flag:g_met"
-      ],
-      "choices": [
-        {
-          "label": "\"Is there any work?\"",
-          "when": [
-            "!quest:quarry",
-            "!done:quarry"
-          ],
-          "time": 5,
-          "effects": [
-            "flag:g_met",
-            "quest:quarry",
-            "item:pick+1"
-          ],
-          "result": "Garran looks at your hands, then at the cold forge. \"Work's the one thing I've plenty of. Ore's the thing I haven't.\" He hands you a pick with a new handle on an old head. \"There's a quarry up in the hills, past the stream. Old seams in the rock face, rusty red. Bring me three good lumps and I'll show you what to do with them.\""
-        },
-        {
-          "label": "\"I've got the ore.\"",
-          "when": [
-            "quest:quarry",
-            "!flag:ore_in",
-            "item:ore>=3"
-          ],
-          "time": 60,
-          "effects": [
-            "item:ore-3",
-            "item:pick-1",
-            "flag:ore_in"
-          ],
-          "result": "Garran weighs each lump in his palm and grunts. He takes his pick back first. Then he banks the furnace and feeds it the ore, and an hour later there's a rough bar of iron cooling on the bench. \"Yours. Now make something of it.\""
-        },
-        {
-          "label": "\"I found this at the quarry.\"",
-          "when": [
-            "item:gem",
-            "!flag:gem_shown",
-            "!flag:gem_hidden"
-          ],
-          "time": 5,
-          "effects": [
-            "flag:gem_shown",
-            "rep:skelmed+4"
-          ],
-          "train": [
-            "cha+1"
-          ],
-          "why": "being straight with Garran",
-          "result": "Garran turns the green stone to the light. \"Green glass, the old quarrymen called it. They'd pocket it and never say.\" He drops it back in your hand. \"It's worth more to you set in something than to me in a drawer. Use it.\""
-        },
-        {
-          "label": "An iron knife",
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done"
-          ],
-          "effects": [
-            "complete:quarry",
-            "flag:smith_done",
-            "forge:knife:E"
-          ],
-          "go": "travel",
-          "result": "Garran shows you how, once, then hands you the tongs. \"Your turn.\"",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "A hide buckler",
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done"
-          ],
-          "effects": [
-            "complete:quarry",
-            "flag:smith_done",
-            "forge:buckler:E"
-          ],
-          "go": "travel",
-          "result": "Garran shows you how, once, then hands you the tongs. \"Your turn.\"",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "Reinforced work gloves",
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done"
-          ],
-          "effects": [
-            "complete:quarry",
-            "flag:smith_done",
-            "forge:gloves:E"
-          ],
-          "go": "travel",
-          "result": "Garran shows you how, once, then hands you the tongs. \"Your turn.\"",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "An iron knife, with the gem in the pommel",
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done",
-            "flag:gem_shown",
-            "item:gem"
-          ],
-          "effects": [
-            "item:gem-1",
-            "complete:quarry",
-            "flag:smith_done",
-            "forge:knife:D:green_gem"
-          ],
-          "go": "travel",
-          "result": "Garran shows you how, once, then hands you the tongs. \"Your turn. Mind the stone.\"",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "A hide buckler, with the gem as its boss",
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done",
-            "flag:gem_shown",
-            "item:gem"
-          ],
-          "effects": [
-            "item:gem-1",
-            "complete:quarry",
-            "flag:smith_done",
-            "forge:buckler:D:green_gem"
-          ],
-          "go": "travel",
-          "result": "Garran shows you how, once, then hands you the tongs. \"Your turn. Mind the stone.\"",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "Work gloves, with the gem set in the cuff",
-          "when": [
-            "flag:ore_in",
-            "!flag:smith_done",
-            "flag:gem_shown",
-            "item:gem"
-          ],
-          "effects": [
-            "item:gem-1",
-            "complete:quarry",
-            "flag:smith_done",
-            "forge:gloves:D:green_gem"
-          ],
-          "go": "travel",
-          "result": "Garran shows you how, once, then hands you the tongs. \"Your turn. Mind the stone.\"",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+2",
-            "int+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "An iron knife (60 coppers)",
-          "when": [
-            "done:quarry"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "forge:knife:D"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "An iron cap (60 coppers)",
-          "when": [
-            "done:quarry"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "forge:iron_cap:D"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "A hide buckler (60 coppers)",
-          "when": [
-            "done:quarry"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "forge:buckler:D"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "Reinforced work gloves (60 coppers)",
-          "when": [
-            "done:quarry"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "forge:gloves:D"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "An iron knife, with your green gem (60 coppers)",
-          "when": [
-            "done:quarry",
-            "item:gem"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "item:gem-1",
-            "forge:knife:C:green_gem"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "A hide buckler, with your green gem (60 coppers)",
-          "when": [
-            "done:quarry",
-            "item:gem"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "item:gem-1",
-            "forge:buckler:C:green_gem"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "Reinforced work gloves, with your green gem (60 coppers)",
-          "when": [
-            "done:quarry",
-            "item:gem"
-          ],
-          "need": [
-            "coins>=60"
-          ],
-          "needText": "Iron costs 60 coppers, and you haven't got them.",
-          "effects": [
-            "coins-60",
-            "item:gem-1",
-            "forge:gloves:C:green_gem"
-          ],
-          "go": "travel",
-          "time": 120,
-          "stamina": 25,
-          "energy": 8,
-          "train": [
-            "str+1"
-          ],
-          "why": "working the forge"
-        },
-        {
-          "label": "\"Another time.\"",
-          "go": "travel"
-        }
-      ]
-    },
-    {
       "id": "well_drink",
       "title": "The well",
       "safe": true,
@@ -438,32 +44,32 @@
       "extra": [
         {
           "when": [
-            "!quest:lodge",
-            "!done:lodge"
+            "untreated:bite"
           ],
-          "text": "\"You're the one Yenson pulled out of the sea? Ida. I keep the hunters' lodge, what's left of it. Three of us, and a larder you could dance in.\""
+          "text": "\"Bite first. Bess is down by the gate. Go on.\""
         },
         {
           "when": [
-            "quest:lodge",
-            "!ready:lodge"
+            "!untreated:bite",
+            "!quest:forest",
+            "!done:forest"
           ],
-          "text": "\"Snares are up in the hills, west of the path. Rook's out there, he'll show you. Wood's by the block. Water from the hill stream, mind, not the well. Folk need the well.\""
+          "text": "Ida looks up from the arrow she's fletching. \"Bess has seen to you? Good. You'll live, then.\""
         },
         {
           "when": [
-            "done:lodge",
+            "done:forest",
             "!quest:pack",
             "!done:pack"
           ],
-          "text": "\"Larder's full for once. But there's something else, and it's been eating at me.\""
+          "text": "\"You did all right up there. Better than all right.\" She sets down the arrow. \"There's something else, though, and it's been eating at me.\""
         },
         {
           "when": [
             "quest:pack",
             "!ready:pack"
           ],
-          "text": "\"The den's past the quarry, up in the north-east corner of the hills. Keep Rook fed and behind you. Bring him back.\""
+          "text": "\"The den's in the north-east corner of the forest, past the stream. Keep Rook fed and behind you. Bring him back.\""
         },
         {
           "when": [
@@ -471,7 +77,7 @@
             "!flag:dead_rook",
             "!flag:ida_town"
           ],
-          "text": "\"Go and see the others, if you haven't. Garran at the forge. Old Orlen up the hill. They could all use a hand.\""
+          "text": "\"The village owes you. I'll not forget it.\""
         },
         {
           "when": [
@@ -482,30 +88,16 @@
       ],
       "choices": [
         {
-          "label": "\"Any work going?\"",
+          "label": "\"Thank you, for the road.\"",
           "when": [
-            "!quest:lodge",
-            "!done:lodge"
+            "!flag:ida_thanks"
           ],
-          "time": 5,
+          "time": 2,
           "effects": [
-            "quest:lodge",
-            "item:pail+1"
+            "flag:ida_thanks",
+            "rep:skelmed+2"
           ],
-          "result": "Ida looks you up and down. \"Food, wood, water. Same as every day, and there's not enough of us to do it.\" She counts on her fingers. \"Rook's snares want checking, up in the hills: three hares. Four logs split at the block. And the water butt's dry. Fill a pail at the hill stream and tip it in.\" She shoves a pail at you. \"Do that and you've earned your supper.\""
-        },
-        {
-          "label": "\"It's all done.\"",
-          "when": [
-            "ready:lodge"
-          ],
-          "time": 5,
-          "effects": [
-            "item:hare-3",
-            "item:split_wood-4",
-            "item:pail-1"
-          ],
-          "go": "ida_pay"
+          "result": "\"Don't. I was after that wolf anyway. Third one this month with eyes like that.\" She frowns. \"You were lucky I was.\""
         },
         {
           "label": "\"What happened to Skelmed?\"",
@@ -516,12 +108,29 @@
           "effects": [
             "flag:ida_why"
           ],
-          "result": "\"The levy happened. Half of every catch to the crown, and the collector takes his own bite on top. The young ones went inland. The merchants stopped coming when the roads went bad.\" She spits. \"Wolves on the coast road. Wolves. In my grandmother's day you'd never see one this side of the hills.\""
+          "result": "\"The levy happened. Half of every catch to the crown, and the collector takes his own bite on top. The young ones went inland. The merchants stopped coming when the roads went bad.\" She spits. \"And now wolves on the coast road. Wolves, with eyes like that. In my grandmother's day you'd never see one this side of the hills.\""
+        },
+        {
+          "label": "\"How can I help?\"",
+          "when": [
+            "!untreated:bite",
+            "!quest:forest",
+            "!done:forest"
+          ],
+          "time": 10,
+          "effects": [
+            "quest:forest",
+            "give:wood_axe",
+            "item:pail+1",
+            "travel:place:forest_camp"
+          ],
+          "result": "Ida laughs, once. \"Help. Right.\" She looks you up and down. \"There's a dozen of us left in Skelmed and most of them are old. What we need is someone who can look after themselves out there, so nobody has to look after them.\" She shoulders her bow and hands you a wood axe and a pail. \"Come on, up the hill. I'll show you how to stay alive in the woods, and you can fill the woodshed while you learn.\" You follow her up the lane, out of the village and in under the trees.",
+          "go": "travel"
         },
         {
           "label": "\"Anything else?\"",
           "when": [
-            "done:lodge",
+            "done:forest",
             "!quest:pack",
             "!done:pack"
           ],
@@ -529,12 +138,11 @@
           "effects": [
             "quest:pack",
             "follow:rook",
-            "give:hunting_bow",
             "item:fish+1",
             "item:bandage+2",
             "item:spirits+1"
           ],
-          "result": "\"The wolves. There's a big one leading them now: grey, scar across its muzzle, denning past the quarry. Kill it and the rest will scatter.\" She whistles, and Rook comes round the lodge with two bows. He hands you the older one. \"He goes with you. He knows the hills.\" She pushes a fish, two rolls of linen and a flask of spirits into your arms. \"Feed him first. And clean any bite before you bind it.\""
+          "result": "\"The wolves. There's a big one leading them now: grey, scar across its muzzle, denning in the north-east of the forest. Kill it and the rest will scatter.\" She whistles, and Rook comes round the lodge with his bow. \"He goes with you. He knows the woods.\" She pushes a fish, two rolls of linen and a flask of spirits into your arms. \"Feed him first. And clean any bite before you bind it. You know how, now.\""
         },
         {
           "label": "\"The pack leader's dead.\"",
@@ -580,463 +188,6 @@
         },
         {
           "label": "\"Goodbye.\"",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "ida_pay",
-      "speaker": "Ida",
-      "title": "Payment",
-      "safe": true,
-      "text": [
-        "Ida counts a silver's worth of coppers into her palm, slowly, the way people count money they can't spare. She holds them out to you, with two parcels of smoked fish."
-      ],
-      "choices": [
-        {
-          "label": "Take it and thank her",
-          "effects": [
-            "complete:lodge",
-            "coins+100",
-            "item:fish+2",
-            "rep:skelmed+3"
-          ],
-          "go": "travel",
-          "result": "\"Earned it,\" says Ida, and that's the end of it."
-        },
-        {
-          "label": "Take the fish, leave the coin. She needs it more",
-          "effects": [
-            "complete:lodge",
-            "item:fish+2",
-            "rep:skelmed+10",
-            "corruption-0.2"
-          ],
-          "go": "travel",
-          "result": "Ida looks at you a long moment, then puts the coins away without a word. Later you hear her telling Bess about it, twice."
-        },
-        {
-          "label": "Tell her it was worth more than a silver",
-          "effects": [
-            "complete:lodge",
-            "coins+160",
-            "item:fish+2",
-            "rep:skelmed-6",
-            "corruption+0.25"
-          ],
-          "go": "travel",
-          "result": "Ida's mouth goes thin. She finds another sixty coppers from somewhere and puts them in your hand, hard. \"There. Don't spend it all at once.\""
-        }
-      ]
-    },
-    {
-      "id": "chop",
-      "title": "The chopping block",
-      "safe": true,
-      "text": [
-        "The lodge's chopping block, an axe bitten into it, and a heap of rounds waiting beside it."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!quest:lodge",
-            "!done:lodge"
-          ],
-          "text": "Not your axe. Not yet."
-        },
-        {
-          "when": [
-            "quest:lodge",
-            "item:split_wood>=4"
-          ],
-          "text": "That's four split. Enough for Ida."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Split a log",
-          "when": [
-            "quest:lodge",
-            "item:split_wood<4"
-          ],
-          "time": 15,
-          "stamina": 12,
-          "energy": 2,
-          "train": [
-            "str+1",
-            "woodcutting+3"
-          ],
-          "why": "splitting wood",
-          "effects": [
-            "item:split_wood+1"
-          ],
-          "result": "Set it, swing, and the round splits clean with a crack that echoes off the houses."
-        },
-        {
-          "label": "Leave it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "butt",
-      "title": "The water butt",
-      "safe": true,
-      "text": [
-        "The lodge's water butt, a barrel as tall as your chest."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!flag:butt_full"
-          ],
-          "text": "It's bone dry."
-        },
-        {
-          "when": [
-            "flag:butt_full"
-          ],
-          "text": "It's full to the brim."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Pour in the pail",
-          "when": [
-            "item:water_pail",
-            "!flag:butt_full"
-          ],
-          "time": 5,
-          "effects": [
-            "item:water_pail-1",
-            "item:pail+1",
-            "flag:butt_full"
-          ],
-          "go": "travel",
-          "result": "The water goes in with a heavy slosh. That'll do Ida for a few days."
-        },
-        {
-          "label": "Leave it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "orlen_at_fire",
-      "speaker": "Orlen",
-      "title": "Orlen",
-      "text": [
-        "\"Water, {name}! Don't think about it, just pull!\""
-      ],
-      "choices": [
-        {
-          "label": "Get back to it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "fire1",
-      "title": "Fire!",
-      "text": [
-        "Flames are climbing the shed wall, eating the dry nets hung on it. The heat slaps your face."
-      ],
-      "choices": [
-        {
-          "label": "Cast Draw Water",
-          "when": [
-            "spell:draw_water",
-            "!flag:fire2_out|!flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire1_out",
-            "flag:fire_magic"
-          ],
-          "go": "travel",
-          "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the flames die back to smoke.",
-          "mana": 8,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Draw Water"
-        },
-        {
-          "label": "Cast Draw Water",
-          "when": [
-            "spell:draw_water",
-            "flag:fire2_out",
-            "flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire1_out",
-            "flag:fire_magic",
-            "flag:fire_out"
-          ],
-          "go": "fire_after",
-          "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the last of the flames die.",
-          "mana": 8,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Draw Water"
-        },
-        {
-          "label": "Beat it out with a wet net",
-          "when": [
-            "!flag:fire2_out|!flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire1_out",
-            "flag:fire_nets"
-          ],
-          "go": "travel",
-          "result": "You drag a net through the shallows and flail at the flames until they give up.",
-          "stamina": 20,
-          "time": 15,
-          "train": [
-            "end+1"
-          ],
-          "why": "fighting the fire"
-        },
-        {
-          "label": "Beat it out with a wet net",
-          "when": [
-            "flag:fire2_out",
-            "flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire1_out",
-            "flag:fire_nets",
-            "flag:fire_out"
-          ],
-          "go": "fire_after",
-          "result": "You drag a net through the shallows and flail at the last of the flames until they give up.",
-          "stamina": 20,
-          "time": 15,
-          "train": [
-            "end+1"
-          ],
-          "why": "fighting the fire"
-        },
-        {
-          "label": "Back off",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "fire2",
-      "title": "Fire!",
-      "text": [
-        "Flames are climbing the shed wall, eating the dry nets hung on it. The heat slaps your face."
-      ],
-      "choices": [
-        {
-          "label": "Cast Draw Water",
-          "when": [
-            "spell:draw_water",
-            "!flag:fire1_out|!flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire2_out",
-            "flag:fire_magic"
-          ],
-          "go": "travel",
-          "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the flames die back to smoke.",
-          "mana": 8,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Draw Water"
-        },
-        {
-          "label": "Cast Draw Water",
-          "when": [
-            "spell:draw_water",
-            "flag:fire1_out",
-            "flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire2_out",
-            "flag:fire_magic",
-            "flag:fire_out"
-          ],
-          "go": "fire_after",
-          "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the last of the flames die.",
-          "mana": 8,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Draw Water"
-        },
-        {
-          "label": "Beat it out with a wet net",
-          "when": [
-            "!flag:fire1_out|!flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire2_out",
-            "flag:fire_nets"
-          ],
-          "go": "travel",
-          "result": "You drag a net through the shallows and flail at the flames until they give up.",
-          "stamina": 20,
-          "time": 15,
-          "train": [
-            "end+1"
-          ],
-          "why": "fighting the fire"
-        },
-        {
-          "label": "Beat it out with a wet net",
-          "when": [
-            "flag:fire1_out",
-            "flag:fire3_out"
-          ],
-          "effects": [
-            "flag:fire2_out",
-            "flag:fire_nets",
-            "flag:fire_out"
-          ],
-          "go": "fire_after",
-          "result": "You drag a net through the shallows and flail at the last of the flames until they give up.",
-          "stamina": 20,
-          "time": 15,
-          "train": [
-            "end+1"
-          ],
-          "why": "fighting the fire"
-        },
-        {
-          "label": "Back off",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "fire3",
-      "title": "Fire!",
-      "text": [
-        "Flames are climbing the shed wall, eating the dry nets hung on it. The heat slaps your face."
-      ],
-      "choices": [
-        {
-          "label": "Cast Draw Water",
-          "when": [
-            "spell:draw_water",
-            "!flag:fire1_out|!flag:fire2_out"
-          ],
-          "effects": [
-            "flag:fire3_out",
-            "flag:fire_magic"
-          ],
-          "go": "travel",
-          "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the flames die back to smoke.",
-          "mana": 8,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Draw Water"
-        },
-        {
-          "label": "Cast Draw Water",
-          "when": [
-            "spell:draw_water",
-            "flag:fire1_out",
-            "flag:fire2_out"
-          ],
-          "effects": [
-            "flag:fire3_out",
-            "flag:fire_magic",
-            "flag:fire_out"
-          ],
-          "go": "fire_after",
-          "result": "You pull, the way Orlen showed you. Water comes out of the hot air in a hissing sheet and the last of the flames die.",
-          "mana": 8,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Draw Water"
-        },
-        {
-          "label": "Beat it out with a wet net",
-          "when": [
-            "!flag:fire1_out|!flag:fire2_out"
-          ],
-          "effects": [
-            "flag:fire3_out",
-            "flag:fire_nets"
-          ],
-          "go": "travel",
-          "result": "You drag a net through the shallows and flail at the flames until they give up.",
-          "stamina": 20,
-          "time": 15,
-          "train": [
-            "end+1"
-          ],
-          "why": "fighting the fire"
-        },
-        {
-          "label": "Beat it out with a wet net",
-          "when": [
-            "flag:fire1_out",
-            "flag:fire2_out"
-          ],
-          "effects": [
-            "flag:fire3_out",
-            "flag:fire_nets",
-            "flag:fire_out"
-          ],
-          "go": "fire_after",
-          "result": "You drag a net through the shallows and flail at the last of the flames until they give up.",
-          "stamina": 20,
-          "time": 15,
-          "train": [
-            "end+1"
-          ],
-          "why": "fighting the fire"
-        },
-        {
-          "label": "Back off",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "fire_after",
-      "title": "The fire's out",
-      "text": [
-        "The last flames hiss out. The net shed is black and steaming, but it's standing, and the boats are untouched. People who've watched you for days from behind their shutters come out to stare.",
-        "\"Lesson two,\" says Orlen, out of breath and leaning on his stick. \"Fire's easy. Anyone can start one. Putting it out, that's the magic.\""
-      ],
-      "extra": [
-        {
-          "when": [
-            "flag:fire_magic"
-          ],
-          "text": "A dockhand is staring at your hands. \"You pulled that water out of nothing,\" he says. By tonight, everyone in Skelmed will have heard it."
-        }
-      ],
-      "onEnter": [
-        "complete:orlen",
-        "rep:skelmed+10",
-        "corruption-0.3"
-      ],
-      "choices": [
-        {
-          "label": "Catch your breath",
           "go": "travel"
         }
       ]
@@ -1136,7 +287,7 @@
             "coins-40",
             "item:health_potion+1"
           ],
-          "result": "\"Orlen brews them. Tastes like rust, works like a charm. Keep one back for the bad days.\""
+          "result": "\"Old Maud up the coast brews them. Tastes like rust, works like a charm. Keep one back for the bad days.\""
         },
         {
           "label": "Buy a sewing kit (80 coppers)",
@@ -1181,7 +332,7 @@
       "safe": true,
       "text": [
         "A broad woman in an apron is haggling with a carter over a basket of fish, just inside the gate. She takes one look at the blood on you and forgets the fish.",
-        "\"Wolf? Thought so. Sit down before you fall down.\" She's back in a moment with a flask, a roll of linen and two little red bottles. \"Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
+        "\"You'll be Ida's stray. She ran past shouting about a wolf.\" She's back in a moment with a flask, a roll of linen and two little red bottles. \"Sit down before you fall down. Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
         "\"The red ones are health potions. Drink one when you're badly hurt, or give one to a friend. They heal, they don't raise the dead, so don't wait too long. I sell them, when you've the coin.\"",
         "\"Go on, you do it. You'll be doing it yourself on the road, with no one to help.\""
       ],
@@ -1210,7 +361,7 @@
           "when": [
             "!flag:patch_lesson"
           ],
-          "text": "\"Wolf? Thought so. Sit down before you fall down.\""
+          "text": "\"You'll be Ida's stray. Sit down before you fall down.\""
         },
         {
           "when": [

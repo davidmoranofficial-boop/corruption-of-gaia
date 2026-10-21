@@ -43,37 +43,15 @@
         {
           "when": [
             "flag:y_met",
-            "!quest:water",
-            "!done:water"
+            "!flag:y_road"
           ],
           "text": "\"Feeling more yourself?\""
         },
         {
           "when": [
-            "quest:water",
-            "!ready:water"
+            "flag:y_road"
           ],
-          "text": "\"Spring's in the copse, south of the shack. Follow the path.\""
-        },
-        {
-          "when": [
-            "quest:firewood",
-            "!ready:firewood"
-          ],
-          "text": "\"Dry stuff, mind. Three good armfuls.\""
-        },
-        {
-          "when": [
-            "quest:boar",
-            "!ready:boar"
-          ],
-          "text": "\"That boar's by the spring, more often than not. Go careful.\""
-        },
-        {
-          "when": [
-            "flag:y_supplies"
-          ],
-          "text": "\"Road's north, past the headland. Mind yourself out there.\""
+          "text": "\"Road's north, past the headland. Skelmed's at the end of it. Mind yourself out there.\""
         }
       ],
       "onEnter": [
@@ -117,63 +95,28 @@
           "result": "Fish stew, mostly water and bones, and the best thing you've ever eaten."
         },
         {
-          "label": "\"What can I do for you?\"",
+          "label": "\"What should I do now?\"",
           "when": [
-            "!quest:water",
-            "!done:water"
+            "!flag:y_road"
           ],
           "time": 5,
           "effects": [
-            "quest:water",
-            "item:bucket+1"
+            "flag:y_road",
+            "water=4"
           ],
-          "result": "\"Can't keep you for nothing. Earn your keep a day or two, and I'll see you right for the road.\" He nods at a wooden bucket by the door. \"Spring's in the copse south of here. Fill that, and we'll talk about supper.\""
+          "result": "Yenson scratches his beard. \"Get yourself to Skelmed. Up the coast road, north, past the headland. They're good folk, what's left of them, and they might be able to help you more than an old man in a shack can.\" He fills your waterskin from his own jug and pushes it back into your hands. \"And before you go: half your boat came ashore on the beach just north of here, when the tide went out. Have a look through it. Whatever's there is yours more than anyone's.\""
         },
         {
-          "label": "\"Here's your water.\"",
+          "label": "\"Thank you, Yenson.\"",
           "when": [
-            "ready:water"
+            "flag:y_road",
+            "!flag:y_thanks"
           ],
-          "time": 10,
+          "time": 2,
           "effects": [
-            "item:water_bucket-1",
-            "complete:water",
-            "quest:firewood",
-            "hunger+20"
+            "flag:y_thanks"
           ],
-          "result": "He tips it into the pot and hands you a bowl of what was in there before. \"Good. Fire wants feeding too. There's deadwood all over that copse. Three good armfuls.\""
-        },
-        {
-          "label": "\"Here's the firewood.\"",
-          "when": [
-            "ready:firewood"
-          ],
-          "time": 10,
-          "effects": [
-            "item:firewood-3",
-            "complete:firewood",
-            "quest:boar",
-            "gear:gutting_knife"
-          ],
-          "result": "He stacks it by the hearth, then goes quiet for a moment. \"One more thing. There's a boar been tearing up the ground round the spring. Big brute, and bolder every week. I'm too old to go after it. You're not.\" He holds out his gutting knife, handle first. \"Mind the tusks.\""
-        },
-        {
-          "label": "\"The boar's dead.\"",
-          "when": [
-            "ready:boar"
-          ],
-          "time": 15,
-          "effects": [
-            "complete:boar",
-            "flag:y_supplies",
-            "flag:yenson_road",
-            "item:boar_meat+2",
-            "item:bread+2",
-            "item:flint+1",
-            "water=4",
-            "coins+40"
-          ],
-          "result": "Yenson whistles through his teeth. \"Well. Didn't think you had it in you.\" He pushes a bundle across the floor: smoked boar from the last one he had, two heels of bread, a flint and a full waterskin, and forty coppers on top. \"That's what I've got. Follow the coast road north to Skelmed. Garran the smith could use a pair of hands like yours.\""
+          "result": "He waves it away. \"Sea gives, sea takes. Today it gave. Go on with you.\""
         },
         {
           "label": "\"Goodbye.\"",

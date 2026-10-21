@@ -18,7 +18,7 @@ KEYS = list(PAL.keys())
 IDX = {k: i for i, k in enumerate(KEYS)}
 RGB = np.array([[int(PAL[k][i:i + 2], 16) for i in (1, 3, 5)] for k in KEYS], dtype=np.uint8)
 
-GRASS, HIGH, SAND, SEA, STREAM, DIRT, COBBLE = range(7)
+GRASS, HIGH, SAND, SEA, STREAM, DIRT, COBBLE, MUD = range(8)
 
 # one shade darker, for shadows
 DARKER = {'f': 'i', 'i': 'F', 'F': 'v', 'v': 'V', 'V': 'V', 'z': 'd', 'd': 'D', 'D': 'b', 'b': 'B', 'B': 'o',
@@ -51,18 +51,112 @@ def ground_class(rows, x, y):
             if 0 <= x + dx < W and 0 <= y + dy < H and rows[y + dy][x + dx] in chars: return True
         return False
     if t in '~PY': return SEA
-    if t in 'lSe': return COBBLE if near('c') or t == 'S' else GRASS
-    if t in 'KE': return SAND if near(',~P') else COBBLE if near('c') else GRASS
+    if t == 'm': return MUD
+    if t == 'Q': return SAND
+    if t in 'ZI': return MUD if near('m') else SAND if near(',~') else GRASS
+    if t in 'lSe': return MUD if near('m') else COBBLE if near('c') or t == 'S' else GRASS
+    if t in 'KE': return SAND if near(',~P') else MUD if near('m') else COBBLE if near('c') else GRASS
     if t == 'N': return SAND if near(',~') else GRASS
     if t == ',': return SAND
     if t in 'wb': return STREAM
     if t in '=D': return DIRT
-    if t in 'cOAL': return COBBLE
-    if t == 'n': return COBBLE if near('c') else GRASS
+    if t in 'OAL': return MUD if near('m') and not near('c') else COBBLE
+    if t == 'c': return COBBLE
+    if t == 'n': return MUD if near('m') else COBBLE if near('c') else GRASS
+    if t in 'jv': return MUD if near('m') else GRASS
     if t in 'uhsq': return HIGH
     if t in 'rR': return SAND if near(',~') else GRASS
-    if t == 'H': return GRASS
+    if t == 'H': return MUD if near('m') else GRASS
     return GRASS
+
+
+def paint_mud(cv, rows, mud, cls, big, small, speck, checker, touching, seed):
+    H, W = len(rows), len(rows[0])
+    PH, PW = mud.shape
+    g = cv.g
+
+    def fill(mask, k):
+        g[mask] = IDX[k]
+    fill(mud, 'b')
+    fill(mud & (big > 0.62) & checker, 'D')                 # drier crusts
+    fill(mud & (big > 0.66), 'D')
+    fill(mud & (big > 0.66) & (small > 0.7) & checker, 'd')
+    fill(mud & (big < 0.3) & (small < 0.45) & checker, 'B')  # wetter, darker hollows
+    fill(mud & (big < 0.2) & (small < 0.35), 'B')
+    fill(mud & (speck < 0.012), 'B')
+    fill(mud & (speck > 0.99), 'D')
+    grass = (cls == GRASS) | (cls == HIGH)
+    # the edge: trampled grass stops raggedly, tufts left standing in the mud
+    fill(touching(mud, grass, 1) & (small > 0.45), 'v')
+    fill(touching(mud, grass, 1) & checker & (small > 0.55), 'F')
+    fill(touching(grass, mud, 1) & (checker | (small < 0.4)), 'v')
+    fill(touching(grass, mud, 2) & (speck < 0.12), 'b')
+
+    def ok(x, y):
+        return 0 <= x < PW and 0 <= y < PH and mud[y, x]
+
+    def put(x, y, k):
+        if ok(x, y): g[y, x] = IDX[k]
+    at = lambda x, y: rows[y][x] if 0 <= x < W and 0 <= y < H else None
+    walk = set('mDlSenKE')
+    for ty in range(H):
+        for tx in range(W):
+            if rows[ty][tx] != 'm': continue
+            r = random.Random(tx * 7213 + ty * 3571 + seed)
+            X0, Y0 = tx * T, ty * T
+            # ruts: two wheel tracks along a street (a run of mud at most two wide), not across the open square
+            def run(dx, dy):
+                n = 1
+                for sgn in (1, -1):
+                    x, y = tx + dx * sgn, ty + dy * sgn
+                    while at(x, y) in walk: n += 1; x += dx * sgn; y += dy * sgn
+                return n
+            wide, tall = run(1, 0), run(0, 1)
+            vert = wide == 2 and tall >= 4          # cart ruts on the two-wide streets; footpaths just get trodden
+            horiz = tall == 2 and wide >= 4
+            lf = at(tx - 1, ty) in walk
+            up = at(tx, ty - 1) in walk
+            if vert and not (wide == 2 and lf):
+                for rx in ((X0 + 4, X0 + 11) if wide == 1 else (X0 + 9, X0 + 22)):
+                    for y in range(Y0, Y0 + T):
+                        x = rx + int(round(1.2 * math.sin((y + tx * 5) / 7.0)))
+                        if r.random() < 0.12: continue
+                        put(x, y, 'B'); put(x - 1, y, 'D' if (y + tx) % 3 else 'b')
+                        if r.random() < 0.3: put(x + 1, y, 'B')
+            if horiz and not (tall == 2 and up):
+                for ry in ((Y0 + 5, Y0 + 12) if tall == 1 else (Y0 + 10, Y0 + 22)):
+                    for x in range(X0, X0 + T):
+                        y = ry + int(round(1.0 * math.sin((x + ty * 3) / 6.0)))
+                        if r.random() < 0.12: continue
+                        put(x, y, 'B'); put(x, y - 1, 'D' if (x + ty) % 3 else 'b')
+            # a puddle, every few tiles: murky water with a dull grey glint, a wet dark lip
+            if r.random() < 0.22:
+                cx, cy = X0 + r.uniform(4, 12), Y0 + r.uniform(4, 12)
+                rx, ry = r.uniform(3, 5.5), r.uniform(1.7, 2.7)
+                pts = {(x, y) for (x, y) in blob(cx, cy, rx, ry) if ok(x, y)}
+                if len(pts) > 6:
+                    for (x, y) in pts:
+                        put(x, y, 'n' if y < cy + 0.6 else 'N')
+                    for (x, y) in pts:
+                        if (x, y - 1) not in pts or (x - 1, y) not in pts: put(x, y, 'B')
+                        elif (x, y + 1) not in pts: put(x, y + 1, 'D')
+                    gx, gy = int(cx), int(round(cy))
+                    if (gx, gy) in pts and (gx + 1, gy) in pts:
+                        put(gx, gy, 'G'); put(gx + 1, gy, 'y' if r.random() < 0.5 else 'G')
+            # footprints: little pairs of dents
+            for _ in range(r.choice((0, 1, 1, 2))):
+                fx, fy = X0 + r.randint(1, 13), Y0 + r.randint(1, 13)
+                for (dx, dy) in ((0, 0), (0, 1), (3, 3), (3, 4)):
+                    if g[fy + dy if fy + dy < PH else PH - 1, min(fx + dx, PW - 1)] != IDX['N']: put(fx + dx, fy + dy, 'B')
+                put(fx, fy - 1, 'D')
+            # a stone pressed into the mud, or a wisp of straw
+            if r.random() < 0.2:
+                sx, sy = X0 + r.randint(1, 14), Y0 + r.randint(1, 14)
+                put(sx, sy, 'y'); put(sx + 1, sy, 'G'); put(sx, sy + 1, 'g'); put(sx + 1, sy + 1, 'B')
+            if r.random() < 0.25:
+                sx, sy = X0 + r.randint(1, 12), Y0 + r.randint(2, 13)
+                d = r.choice((-1, 1))
+                for i in range(r.randint(3, 4)): put(sx + i, sy + (i // 2) * d, 'J' if i % 2 == 0 else 'A')
 
 
 class Canvas:
@@ -131,11 +225,11 @@ def paint(rows, seed=1):
     wobble = (vnoise(PH, PW, 9, seed + 1) - 0.5) * 0.5
     best = np.full((PH, PW), -9.0)
     cls = np.zeros((PH, PW), dtype=np.int8)
-    for c in range(7):
+    for c in range(8):
         m = (cls_t == c).astype(float)
         if not m.any(): continue
-        f = smooth(np.kron(m, np.ones((T, T))), 4 if c in (DIRT, COBBLE) else 7 if c == STREAM else 5)
-        f = f + wobble * (1 if c % 2 else -1) * (0.4 if c in (DIRT, COBBLE) else 1)
+        f = smooth(np.kron(m, np.ones((T, T))), 4 if c in (DIRT, COBBLE, MUD) else 7 if c == STREAM else 5)
+        f = f + wobble * (1 if c % 2 else -1) * (0.4 if c in (DIRT, COBBLE) else 0.7 if c == MUD else 1)
         win = f > best
         best[win] = f[win]
         cls[win] = c
@@ -222,6 +316,10 @@ def paint(rows, seed=1):
     fill(stone & (cy == 3) & (shade != 0), 'G')
     fill(stone & (cy == 0) & (cx == 1) & (shade != 0), 'Y')
     fill(touching(m, cls == GRASS, 1) & checker, 'F')
+    # mud: wet trodden earth, drier crusts, cart ruts along the streets, footprints, puddles, the odd stone or straw
+    mud = cls == MUD
+    if mud.any():
+        paint_mud(cv, rows, mud, cls, big, small, speck, checker, touching, seed)
 
     # the headland: a rock face under its south edge, rims on the other sides
     high = cls == HIGH
@@ -384,7 +482,8 @@ def paint(rows, seed=1):
                 for y in range(Y0 - 13, Y0 - 5):
                     w = (y - (Y0 - 13))
                     for x in range(X0 + 7 - w - 1, X0 + 9 + w):
-                        k = 'R' if (x + y) % 3 else 'r'
+                        k = 'b' if (x - X0) % 3 else 'B'          # a rough plank roof
+                        if (x + y) % 5 == 0: k = 'D'
                         if x in (X0 + 7 - w - 1, X0 + 8 + w) or y == Y0 - 6: k = 'o'
                         cv.put(x, y, k, True)
                 for x in range(X0 + 2, X0 + 14): cv.put(x, Y0 - 4, 'D', True)
@@ -419,6 +518,9 @@ def paint(rows, seed=1):
                 for x in range(4, 12): cv.put(X0 + x, Y0 + 3, 'b')
             else:
                 props(cv, rows, t, tx, ty, X0, Y0, r)
+
+    # ------------------------------------------------------------------ the palisade and its gateposts (tips over the player)
+    paint_walls(cv, rows, seed)
 
     # ------------------------------------------------------------------ trees: trunks and shadows below, tops over the player
     for (tx, ty) in sorted(trees, key=lambda p: p[1]):
@@ -499,17 +601,36 @@ def props(cv, rows, t, tx, ty, X0, Y0, r):
                 for (x, y) in blob(cx, cy, 2.6, 2.6):
                     if (x - cx) ** 2 + (y - cy) ** 2 > 4.3: cv.put(x, y, 'b')
     elif t == 'l':
-        # a lamp post, its lantern up above the tile (drawn over you)
+        # a torch post: a crude pole jammed in among stones, an iron basket of burning pitch-wood on top (over you)
         cx = X0 + 7
-        for (x, y) in blob(cx + 2, Y0 + 14, 4, 1.5): cv.shade(x, y)
+        for (x, y) in blob(cx + 3, Y0 + 14, 4, 1.5): cv.shade(x, y)
         for y in range(Y0 - 8, Y0 + 14):
             over = y < Y0 + 4
-            cv.put(cx, y, 'o', over); cv.put(cx + 1, y, 'g', over); cv.put(cx + 2, y, 'o', over)
-        for (x, y) in _rect(cx - 1, Y0 + 12, cx + 3, Y0 + 14): cv.put(x, y, 'g')
-        for (x, y) in _rect(cx - 2, Y0 - 15, cx + 4, Y0 - 8):
-            edge = x in (cx - 2, cx + 4) or y in (Y0 - 15, Y0 - 8)
-            cv.put(x, y, 'o' if edge else ('W' if (x, y) == (cx, Y0 - 13) else 'a' if y < Y0 - 10 else 'A'), True)
-        for x in range(cx - 3, cx + 6): cv.put(x, Y0 - 16, 'o', True)
+            lean = 1 if y < Y0 - 1 else 0          # not quite straight
+            k = 'D' if (y * 5 + tx) % 7 else 'b'
+            cv.put(cx + lean, y, 'o', over); cv.put(cx + 1 + lean, y, k, over)
+            cv.put(cx + 2 + lean, y, 'B', over); cv.put(cx + 3 + lean, y, 'o', over)
+        for y in (Y0 + 1, Y0 + 2):                  # a lashing round it
+            for x in range(cx, cx + 4): cv.put(x, y, 'J' if (x + y) % 2 else 'A', True)
+        for (sx, sy) in ((cx - 2, Y0 + 13), (cx + 4, Y0 + 13), (cx + 2, Y0 + 14)):   # wedging stones
+            cv.put(sx, sy, 'y'); cv.put(sx + 1, sy, 'G'); cv.put(sx, sy + 1, 'g'); cv.put(sx + 1, sy + 1, 'o')
+        # the basket: iron straps flaring out from the pole top
+        bx = cx + 2
+        for j, hw in enumerate((4, 4, 3, 3, 2, 1)):
+            y = Y0 - 13 + j
+            for x in range(bx - hw, bx + hw + 1):
+                edge = abs(x - bx) == hw
+                k = 'o' if edge else ('g' if (x - bx) % 2 == 0 else ('R' if j < 3 else 'm'))
+                if j == 0: k = 'g' if (x - bx) % 2 == 0 else 'o'
+                cv.put(x, y, k, True)
+        for x in range(bx - 3, bx + 4, 2): cv.put(x, Y0 - 14, 'R' if x != bx else 'r', True)
+        # the flame
+        for (dx, dy, k) in ((0, -15, 'r'), (-1, -15, 'a'), (1, -15, 'R'), (0, -16, 'a'), (-1, -16, 'r'), (1, -16, 'a'),
+                            (0, -17, 'a'), (-1, -18, 'a'), (0, -19, 'W'), (1, -17, 'r'), (2, -15, 'a'), (-2, -15, 'r')):
+            cv.put(bx + dx, Y0 + dy, k, True)
+        cv.put(bx + 2, Y0 - 20, 'G', True); cv.put(bx + 3, Y0 - 22, 'y', True)    # a wisp of smoke
+    elif t == 'Q':
+        paint_wreck(cv, rows, tx, ty, r)
     elif t == 'Y':
         # a small fishing boat, two tiles long (drawn once, from its left tile): pointed bow, square stern, two seats
         if at(tx - 1, ty) == 'Y': return
@@ -564,7 +685,7 @@ def props(cv, rows, t, tx, ty, X0, Y0, r):
             for x in range(cx - 3, cx + 4): cv.put(x, cy + 2, 'B')
             cv.put(cx, cy - 1, 'o'); cv.put(cx + 1, cy - 1, 'o')
     elif t == 'S':
-        # a market stall, empty: a striped awning (over you) on posts, a bare counter
+        # a market stall, empty: an old patched sailcloth stretched over poles (over you), a bare plank counter
         left = at(tx + 1, ty) == 'S'
         for (x, y) in _rect(X0, Y0 + 12, X0 + 15, Y0 + 15): cv.shade(x, y)
         for y in range(Y0 + 6, Y0 + 13):
@@ -574,10 +695,14 @@ def props(cv, rows, t, tx, ty, X0, Y0, r):
         for y in range(Y0 - 8, Y0 + 13): cv.put(px, y, 'B', y < Y0 + 6); cv.put(px + 1, y, 'b', y < Y0 + 6)
         for y in range(Y0 - 12, Y0 - 4):
             for x in range(X0 - (1 if left else 0), X0 + T + (0 if left else 1)):
-                k = 'r' if ((x - X0) // 4) % 2 == 0 else 'W'
-                if y == Y0 - 5: k = 'R' if k == 'r' else 'Y'
+                sag = 1 if 3 < (x - X0) % 16 < 12 else 0
+                k = 'd' if (x - X0) % 6 else 'D'
+                if (y - Y0 + 12) == 1: k = 'z' if (x + tx) % 3 else 'd'
+                if (x - X0 + tx * 5) % 16 in (9, 10, 11) and Y0 - 10 <= y <= Y0 - 7: k = 'D' if (x + y) % 2 else 'b'   # a patch
+                if y == Y0 - 5: k = 'D' if (x % 3) else 'b'
                 if y == Y0 - 12: k = 'o'
-                cv.put(x, y, k, True)
+                cv.put(x, y + (sag if y > Y0 - 9 else 0), k, True)
+                if y == Y0 - 5 and (x % 4 == 0 or sag): cv.put(x, y + sag + 1, 'b' if x % 4 == 0 else 'o', True)
         if left:
             for (x, y) in blob(X0 + 7, Y0 + 9, 2, 1.2): cv.put(x, y, 'z')     # one sorry basket left
     elif t == 'e':
@@ -587,3 +712,270 @@ def props(cv, rows, t, tx, ty, X0, Y0, r):
             cv.shade(x, Y0 + 13)
         for lx in (X0 + 2, X0 + 12):
             for y in range(Y0 + 11, Y0 + 13): cv.put(lx, y, 'B'); cv.put(lx + 1, y, 'o')
+
+
+# ------------------------------------------------------------------ the outpost (21 Oct): palisade, gateposts, the wreck
+
+WALL = 'ZI'
+
+
+def _log(cv, cx, base, w, h, tip, over_y, r, bark=('o', 'D', 'b', 'B'), post=False, pale=True):
+    """One upright sharpened log: bark in vertical streaks lit from the left, a pale cut point on top.
+    Pixels above over_y go on the overlay (drawn over whoever stands behind it)."""
+    ol, lit, mid, dk = bark
+    x0 = cx - w // 2
+    top = base - h
+    knots = {(r.randint(1, w - 2), r.randint(top + 2, base - 2)) for _ in range(2 if post else 1)}
+    for y in range(top, base + 1):
+        for i in range(w):
+            x = x0 + i
+            if i == 0 or i == w - 1 or y == base: k = ol
+            elif i == 1: k = lit if (y + cx) % 5 else mid
+            elif i == w - 2: k = dk
+            else:
+                k = mid
+                if (y * 3 + i * 7 + cx) % 9 == 0 or (i == w // 2 and (y + cx) % 4 == 0): k = dk
+                if post and i == 2 and (y + cx) % 3 == 0: k = lit
+            if (i, y) in knots: k = 'o'
+            cv.put(x, y, k, y < over_y)
+    # the sharpened point: two cut facets, the lit one paler
+    for j in range(tip):
+        y = top - tip + j
+        half = (w / 2.0) * (j + 1) / (tip + 0.5)
+        for x in range(x0, x0 + w):
+            d = x + 0.5 - (x0 + w / 2.0)
+            if abs(d) > half + 0.25: continue
+            if pale: k = 'd' if d < 0 else ('D' if (x + j) % 3 else 'J')
+            else: k = 'D' if d < -1 else ('b' if d < 1.5 else 'B')
+            if abs(d) > half - 0.75: k = ol
+            if j == 0 and abs(d) <= 1: k = 'd' if d < 0 else 'D'
+            cv.put(x, y, k, y < over_y)
+    cv.put(x0 + w // 2 - (0 if w % 2 else 1), top - tip - 1, ol, True)
+    # a ring where the bark was cut: the top edge of the trunk shows lighter wood
+    for i in range(1, w - 1):
+        cv.put(x0 + i, top, 'D' if i < w // 2 else 'b', top < over_y)
+
+
+def _band(cv, x0, x1, y, over):
+    """A lashing of rope across logs."""
+    for x in range(x0, x1):
+        cv.put(x, y, 'J' if x % 2 else 'd', over)
+        cv.put(x, y + 1, 'A' if x % 2 else 'D', over)
+        if x % 3 == 0: cv.put(x, y + 2, 'B', over)
+
+
+def paint_walls(cv, rows, seed):
+    H, W = len(rows), len(rows[0])
+    at = lambda x, y: rows[y][x] if 0 <= x < W and 0 <= y < H else '.'
+    logs = []     # (base, cx, w, h, tip, over_y, rnd, post, band_y), and whether the point is pale (seen side-on)
+    extras = []
+    for ty in range(H):
+        for tx in range(W):
+            t = rows[ty][tx]
+            if t not in WALL: continue
+            X0, Y0 = tx * T, ty * T
+            r = random.Random(tx * 977 + ty * 5233 + seed)
+            lf, rt = at(tx - 1, ty) in WALL, at(tx + 1, ty) in WALL
+            up, dn = at(tx, ty - 1) in WALL, at(tx, ty + 1) in WALL
+            if t == 'I':
+                # a gatepost: one thick tall log, a crossbeam stub reaching over the gap, a skull nailed up
+                for (x, y) in blob(X0 + 11, Y0 + 15, 7, 2.5): cv.shade(x, y)
+                logs.append((Y0 + 14, X0 + 8, 10, 27, 5, Y0 + 4, r, True, Y0 + 4, True))
+                gap = -1 if not lf else 1 if not rt else 0
+                extras.append((X0, Y0, gap, r))
+                continue
+            horiz = lf or rt or not (up or dn)
+            vert = up or dn
+            # shadow: down and to the right
+            if horiz:
+                xa = X0 + (8 if vert and not lf else 0)
+                xb = X0 + (8 if vert and not rt else T)
+                for x in range(xa + 2, xb + 3):
+                    for y in range(Y0 + 14, Y0 + 17): cv.shade(x, y)
+                for x in range(xa, xb):        # a churned strip at the foot, a few tufts left
+                    cv.put(x, Y0 + 14, 'B' if (x + ty) % 3 else 'v')
+                    if r.random() < 0.15: cv.put(x, Y0 + 15, 'F'); cv.put(x, Y0 + 14, 'i')
+                for i, cx in enumerate(range(xa + 2, xb, 4)):
+                    logs.append((Y0 + 13, cx, 5, 17 + r.randint(-1, 2), 3, Y0 + 4, r, False, Y0 + 3, True))
+            if vert:
+                ya = Y0 + (0 if up else 6)
+                yb = Y0 + (T if dn else 15)
+                for y in range(ya, yb + 2):
+                    for x in range(X0 + 12, X0 + 16): cv.shade(x, y)
+                for by in range(Y0 + 4, Y0 + T + 1, 5):
+                    if by > Y0 + 13 and not dn: continue
+                    if by < Y0 + 8 and not up and horiz: continue
+                    logs.append((by, X0 + 8 + r.choice((-1, 0, 0, 1)), 8, 17 + r.randint(-1, 1), 4, by - 9, r, False, by - 10, False))
+    logs.sort(key=lambda l: (l[0], l[1]))
+    for (base, cx, w, h, tip, over_y, r, post, band_y, pale) in logs:
+        _log(cv, cx, base, w, h, tip, over_y, r, post=post, pale=pale)
+        _band(cv, cx - w // 2 + 1, cx - w // 2 + w - 1, band_y, band_y < over_y)
+        if post: _band(cv, cx - w // 2 + 1, cx - w // 2 + w - 1, band_y - 9, True)
+    for (X0, Y0, gap, r) in extras:
+        cx = X0 + 8
+        if gap:
+            # the stub of a crossbeam, pegged into the post, reaching out over the gate
+            sx = cx + 5 if gap > 0 else cx - 5
+            for i in range(7):
+                x = sx + i * gap
+                for y, k in ((Y0 - 9, 'o'), (Y0 - 8, 'D'), (Y0 - 7, 'b'), (Y0 - 6, 'B'), (Y0 - 5, 'o')):
+                    cv.put(x, y, k, True)
+            ex = sx + 6 * gap
+            for y, k in ((Y0 - 8, 'd'), (Y0 - 7, 'D'), (Y0 - 6, 'b')): cv.put(ex, y, k, True)
+            cv.put(sx + 2 * gap, Y0 - 9, 'g', True)
+        # a boar's skull nailed to the post, tusks curling
+        sk = ['.oooo.', 'oWWWWo', 'WoWWoW', 'oWWYWo', '.oYYo.', 'Wo..oW', '.o..o.']
+        for j, row in enumerate(sk):
+            for i, ch in enumerate(row):
+                if ch != '.': cv.put(cx - 3 + i, Y0 - 3 + j, ch, Y0 - 3 + j < Y0 + 4)
+        cv.put(cx - 1, Y0 - 4, 'g', True)
+
+
+def paint_wreck(cv, rows, tx, ty, r):
+    """A trade ship's hull heeled over on its side and half sunk in the sand, its stern snapped off: drawn once from
+    the block's top-left tile across the whole block of Q tiles. Seen from above you get the outside of the hull
+    along the top, the gunwale, then the hold with its ribs, half full of drifted sand; the lower side is buried."""
+    H, W = len(rows), len(rows[0])
+    at = lambda x, y: rows[y][x] if 0 <= x < W and 0 <= y < H else None
+    if at(tx - 1, ty) == 'Q' or at(tx, ty - 1) == 'Q': return
+    tx1, ty1 = tx, ty
+    while at(tx1 + 1, ty) == 'Q': tx1 += 1
+    while at(tx, ty1 + 1) == 'Q': ty1 += 1
+    X0, Y0 = tx * T, ty * T
+    PW, PH = (tx1 - tx + 1) * T, (ty1 - ty + 1) * T
+    L = PW - 4
+    hx0 = X0 + 2
+    hw_max = PH * 0.40
+    band = max(6, int(PH * 0.27))      # how much of the outside of the hull shows
+
+    def hw(u):                        # half-width of the hull: full amidships, a pointed bow on the right
+        if u > 0.62: return hw_max * max(0.0, 1 - ((u - 0.62) / 0.38) ** 1.6)
+        return hw_max * (0.86 + 0.14 * math.sin(u / 0.62 * math.pi / 2))
+
+    def mid(u):                       # lying a little askew
+        return Y0 + PH * 0.55 + (0.5 - u) * PH * 0.12
+
+    shell, outside, hold = {}, set(), set()
+    for X in range(hx0, hx0 + L):
+        u = (X - hx0) / L
+        h = hw(u)
+        if h < 1: continue
+        yt = int(round(mid(u) - h))
+        yb = int(round(mid(u) + h))
+        if u < 0.13: continue         # the stern's gone: only ribs left standing
+        rag = r.randint(0, 3) if u < 0.17 else 0
+        for Y in range(yt + rag, yb + 1):
+            shell[(X, Y)] = u
+            if Y < yt + band * min(1.0, h / hw_max + 0.25): outside.add((X, Y))
+            else: hold.add((X, Y))
+    # its shadow on the sand, down and right
+    for (X, Y) in list(shell):
+        for (dx, dy) in ((2, 3), (4, 2), (3, 4)):
+            if (X + dx, Y + dy) not in shell: cv.shade(X + dx, Y + dy)
+    # the outside of the hull: strakes along the length, sun-bleached grey above, dark and weedy toward the keel
+    tops = {}
+    for (X, Y) in shell:
+        tops[X] = min(tops.get(X, 9999), Y)
+    for (X, Y) in outside:
+        d = Y - tops[X]
+        strake = d // 2
+        k = ('Y', 'y', 'D', 'y', 'D', 'b', 'D', 'b', 'b')[min(strake, 8)] if d % 2 == 0 else ('y', 'G', 'D', 'b', 'b', 'B', 'b', 'B', 'B')[min(strake, 8)]
+        if (X * 5 + strake * 13) % 19 == 0: k = 'g'        # butt joints, trenails
+        cv.put(X, Y, k)
+    # the hold: dark, the far side's planks, ribs curving across, sand drifted in
+    for (X, Y) in hold:
+        u = shell[(X, Y)]
+        k = 'B' if (Y + X // 9) % 3 else 'o'
+        cv.put(X, Y, k)
+    gun = {}
+    for (X, Y) in hold:
+        if (X, Y - 1) in outside: gun[X] = Y
+    for X in range(hx0 + 2, hx0 + L, 5):
+        if X not in gun: continue
+        for j in range(0, int(hw_max * 2)):
+            x = X + int(round(1.5 * math.sin(j / 5.0)))
+            y = gun[X] + j
+            if (x, y) not in hold: break
+            cv.put(x, y, 'D' if j < 3 else 'b'); cv.put(x + 1, y, 'B' if j < 3 else 'o')
+            cv.put(x - 1, y, 'd' if j < 2 else cv.get(x - 1, y))
+    for X, Y in gun.items():                       # the gunwale: a lit rail
+        cv.put(X, Y, 'd' if X % 7 else 'D'); cv.put(X, Y + 1, 'o')
+    # sand drifted into the hold, filling its low side; drifts piled against the outside of the low gunwale
+    sand = set()
+    wob = r.uniform(0, 6)
+    for (X, Y) in hold:
+        u = shell[(X, Y)]
+        if Y > mid(u) + hw(u) * 0.5 + 2.5 * math.sin(X / 7.0 + wob) and (X, Y + 2) in shell: sand.add((X, Y))
+    for i in range(int(L / 7)):
+        X = hx0 + 10 + i * 7 + r.randint(-2, 2)
+        u = min((X - hx0) / L, 0.99)
+        if hw(u) < 2: continue
+        sand |= set(blob(X, mid(u) + hw(u) + 2, r.uniform(4, 7), r.uniform(2, 3)))
+    for i in range(3):     # and over the stern's stumps
+        sand |= set(blob(hx0 + 4 + i * 5, mid(0.05) + hw(0.05) * 0.5 + r.uniform(-1, 2), r.uniform(4, 6), r.uniform(2.5, 4)))
+    # outline the shell where it isn't buried
+    for (X, Y) in shell:
+        if any((X + dx, Y + dy) not in shell for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))): cv.put(X, Y, 'o')
+    # stove in: a ragged hole through the outside planking, splintered ends
+    hcx = hx0 + int(L * 0.42)
+    for X in range(hcx - 6, hcx + 7):
+        if X not in tops: continue
+        depth = int(band * 0.8 * (1 - abs(X - hcx) / 7.5)) + r.randint(-1, 1)
+        for j in range(2, max(2, depth)):
+            cv.put(X, tops[X] + j, 'e' if j > 2 else 'o')
+        if depth > 2: cv.put(X, tops[X] + 1, 'd' if X % 2 else 'D')
+    # the snapped stern: ribs standing up like bones
+    for i in range(3):
+        bx = hx0 + 2 + i * 4
+        u = (bx - hx0) / L
+        yt = int(mid(u) - hw(u)) - 3 + (i % 2) * 3 + i
+        yb = int(mid(u) + hw(u) * 0.6)
+        for y in range(yt, yb):
+            f = (y - yt) / max(1, yb - yt)
+            x = bx - int(round(3 * (1 - f) ** 2))
+            ov = y < Y0
+            cv.put(x - 1, y, 'o', ov); cv.put(x, y, 'd' if y < yt + 4 else 'D', ov); cv.put(x + 1, y, 'b', ov); cv.put(x + 2, y, 'o', ov)
+        cv.put(bx - 3, yt - 1, 'o', yt - 1 < Y0); cv.put(bx - 3, yt, 'o', yt < Y0)
+    # the stem post at the bow, standing up
+    bx = hx0 + L - 2
+    while bx > hx0 and bx not in tops: bx -= 1
+    for j in range(7):
+        x, y = bx - 1 + j // 3, tops.get(bx, Y0) + 1 - j
+        cv.put(x - 1, y, 'o', y < Y0); cv.put(x, y, 'd', y < Y0); cv.put(x + 1, y, 'D', y < Y0); cv.put(x + 2, y, 'o', y < Y0)
+    cv.put(bx + 1, tops.get(bx, Y0) - 6, 'o', True); cv.put(bx + 2, tops.get(bx, Y0) - 6, 'o', True)
+    # the broken mast, fallen out over the low side into the sand, its end splintered
+    mx = hx0 + int(L * 0.5)
+    my = int(mid(0.5) - 2)
+    n = int(PH * 0.55)
+    for i in range(n):
+        y = my + i
+        x = mx - i // 2
+        for j, k in enumerate(('o', 'd', 'D', 'b', 'B', 'o')):
+            cv.put(x + j, y, k)
+    for j, k in enumerate(('o', 'd', 'o', 'D', 'd', 'o')):
+        cv.put(mx - n // 2 + j, my + n + (j % 2), k)
+    for j in range(6): cv.put(mx + j, my - 1, 'o'); cv.put(mx + j, my, 'D' if j < 3 else 'b')
+    # the low gunwale, just showing above the sand
+    for (X, Y) in shell:
+        if (X, Y + 1) not in shell and (X, Y - 2) in shell:
+            cv.put(X, Y, 'o'); cv.put(X, Y - 1, 'D' if X % 5 else 'b'); cv.put(X, Y - 2, 'o')
+    # sand drifted against and into it
+    for (x, y) in sand:
+        k = 'd'
+        if (x, y - 1) not in sand and (x, y - 1) in shell: k = 'D'      # a shadowed lip where it meets the planks
+        elif (x - 1, y - 1) not in sand or (x, y - 1) not in sand: k = 'z'
+        elif (x * 3 + y * 5) % 13 == 0: k = 'D'
+        cv.put(x, y, k)
+    # seaweed draped over the side, barnacles along the old waterline
+    for _ in range(int(L / 9)):
+        X = r.randint(hx0 + 12, hx0 + L - 10)
+        if X not in tops: continue
+        y0 = tops[X] + r.randint(0, 2)
+        for j in range(r.randint(3, band + 3)):
+            x = X + int(round(math.sin(j * 1.1 + X) * 1.0))
+            cv.put(x, y0 + j, 'v' if j % 3 else 'F'); cv.put(x + 1, y0 + j, 'V')
+    for _ in range(int(L / 3)):
+        X = r.randint(hx0 + 4, hx0 + L - 8)
+        if X not in tops: continue
+        Y = tops[X] + band - r.randint(1, 3)
+        if (X, Y) in outside: cv.put(X, Y, 'W' if r.random() < 0.3 else 'Y'); cv.put(X + 1, Y + 1, 'g')

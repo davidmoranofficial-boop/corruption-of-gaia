@@ -176,8 +176,6 @@ namespace Loran.Core
             MigrateGear();
             MigrateMoves();
             MigrateScene();
-            // Saves from before Garran's quarry job: if you've already made your first gear, the job's done
-            if (S.Has("smith_done") && !S.Has("quest_done:quarry")) S.flags.Add("quest_done:quarry");
             if (S.Has("created")) GiveClothes();
             // Saves from older backgrounds: the nearest new life (the 19 Oct jobs, then the first perk lives of 20 Oct)
             var oldLives = new Dictionary<string, string> {
@@ -553,6 +551,8 @@ namespace Loran.Core
         {
             if (key.StartsWith("rep:")) return S.Rep(key.Substring(4));
             if (key.StartsWith("item:")) return S.Count(key.Substring(5));
+            // flags:felled_tree counts the flags that start with that (felled_tree1, felled_tree2 ...)
+            if (key.StartsWith("flags:")) { var pre = key.Substring(6); return S.flags.Count(f => f.StartsWith(pre, StringComparison.Ordinal)); }
             if (key.StartsWith("stat:")) return S.stats[Stat.Parse(key.Substring(5))];
             if (key.StartsWith("morale:")) return Member(key.Substring(7))?.morale ?? 0;
             if (key == "party") return S.party.Count;
@@ -588,7 +588,8 @@ namespace Loran.Core
             {
                 case "flag": if (!S.Has(arg)) S.flags.Add(arg); return;
                 case "unflag": S.flags.Remove(arg); return;
-                case "wound": Rules.Afflict(S, data, S.body, arg, null, null, WoundedBy()); return;
+                // wound:bite, or wound:bite:the wolf to say what did it outside a fight
+                case "wound": Rules.Afflict(S, data, S.body, parts[0], null, null, parts.Length > 1 ? parts[1] : WoundedBy()); return;
                 case "menu": MenuRequest = arg; return;
                 case "spell":
                     if (!S.spells.Contains(arg))
@@ -770,7 +771,7 @@ namespace Loran.Core
                     if (S.Count("flint") > 0)
                     {
                         Rules.Sleep(S, data, mins, 85, "fire");
-                        notes.Append("You scrape together driftwood and get a fire going with Yenson's flint. You sleep warm, with the fire between you and the dark.");
+                        notes.Append("You scrape together driftwood and get a fire going with your flint. You sleep warm, with the fire between you and the dark.");
                     }
                     else
                     {
@@ -896,7 +897,7 @@ namespace Loran.Core
                     case "quest": case "complete":
                         if (data.Quest(parts[0]) == null) problems.Add(where + ": no quest '" + parts[0] + "'");
                         return;
-                    case "wound": if (data.Affliction(arg) == null) problems.Add(where + ": no affliction '" + arg + "'"); return;
+                    case "wound": if (data.Affliction(arg.Split(':')[0]) == null) problems.Add(where + ": no affliction '" + arg + "'"); return;
                     case "menu": return;
                     case "flag": case "unflag": case "hud": case "save": case "clock": case "sleep":
                     case "fight": case "collapse": case "revive": case "restart": case "resume": return;

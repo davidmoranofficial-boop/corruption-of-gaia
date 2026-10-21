@@ -1,195 +1,6 @@
 {
   "scenes": [
     {
-      "id": "orlen",
-      "speaker": "Orlen",
-      "title": "Orlen",
-      "safe": true,
-      "text": [],
-      "onEnter": [
-        "flag:orlen_met"
-      ],
-      "extra": [
-        {
-          "when": [
-            "!quest:orlen",
-            "!done:orlen"
-          ],
-          "text": "An old man in a robe that was royal blue a long time ago is pinching dead leaves off his herbs. \"You'll be the one from the sea. Orlen Vey. I was mage to the court in Zaron, once, when that meant something.\""
-        },
-        {
-          "when": [
-            "quest:orlen",
-            "!spell:draw_water"
-          ],
-          "text": "\"Water first. It's everywhere: in the air, in the ground, in you. Ask it to come.\""
-        },
-        {
-          "when": [
-            "quest:orlen",
-            "spell:draw_water",
-            "!spell:kindle"
-          ],
-          "text": "\"Good. Now the other side of it.\""
-        },
-        {
-          "when": [
-            "quest:orlen",
-            "spell:kindle",
-            "!flag:brazier_lit"
-          ],
-          "text": "\"The brazier, then. Light it.\""
-        },
-        {
-          "when": [
-            "done:orlen",
-            "flag:fire_ignored"
-          ],
-          "text": "Orlen doesn't look up from his herbs. \"I've nothing to say to you.\""
-        },
-        {
-          "when": [
-            "done:orlen",
-            "!flag:fire_ignored"
-          ],
-          "text": "\"Come by whenever you like. Magic's mostly practice, and I've no one else to bore.\""
-        }
-      ],
-      "choices": [
-        {
-          "label": "\"Will you teach me magic?\"",
-          "when": [
-            "!quest:orlen",
-            "!done:orlen"
-          ],
-          "time": 10,
-          "effects": [
-            "quest:orlen"
-          ],
-          "result": "He looks at you properly for the first time. \"Everyone has a little. Most never find it. Let's see if you're most.\" He sets an empty cup on the garden wall. \"Water first. Ask it to come.\""
-        },
-        {
-          "label": "Try to fill the cup",
-          "when": [
-            "quest:orlen",
-            "!spell:draw_water"
-          ],
-          "time": 30,
-          "mana": 6,
-          "train": [
-            "int+2",
-            "magic+3"
-          ],
-          "why": "learning magic",
-          "effects": [
-            "spell:draw_water"
-          ],
-          "result": "Nothing. Nothing. Then a cold bead forms on the rim, and another, and the cup fills from the bottom up. \"There,\" says Orlen. \"Draw Water. It'll fill your waterskin, and it'll put out a small fire, which matters more than you'd think.\""
-        },
-        {
-          "label": "\"What comes next?\"",
-          "when": [
-            "quest:orlen",
-            "spell:draw_water",
-            "!spell:kindle"
-          ],
-          "time": 30,
-          "mana": 6,
-          "train": [
-            "int+2"
-          ],
-          "why": "learning magic",
-          "effects": [
-            "spell:kindle"
-          ],
-          "result": "\"Fire. The same pull, the other way.\" It takes you longer this time, and when the spark comes it nearly takes your eyebrows. Orlen chuckles. \"Kindle. A spark, no more. Light my brazier there and we'll call it a day.\""
-        },
-        {
-          "label": "\"What happened in Zaron?\"",
-          "when": [
-            "!flag:orlen_zaron"
-          ],
-          "time": 15,
-          "effects": [
-            "flag:orlen_zaron"
-          ],
-          "result": "\"King Melvin was a good man once. Fair. Stubborn. Then, a few years ago, something changed in him. His eyes went flat. He stopped sleeping. The taxes started.\" Orlen's hands go still on his herbs. \"I told him something was wrong, and he thanked me for my service and sent me here. It isn't only him. Animals with yellow eyes. Wells that taste of iron. Something is getting into things.\""
-        },
-        {
-          "label": "\"Goodbye.\"",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "brazier",
-      "title": "Orlen's brazier",
-      "text": [
-        "An iron brazier full of dry kindling."
-      ],
-      "extra": [
-        {
-          "when": [
-            "flag:brazier_lit"
-          ],
-          "text": "It's burning steadily. Orlen keeps feeding it sprigs of something that smells of pine."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Cast Kindle",
-          "when": [
-            "spell:kindle",
-            "!flag:brazier_lit"
-          ],
-          "mana": 6,
-          "time": 5,
-          "train": [
-            "int+1",
-            "magic+3"
-          ],
-          "why": "casting Kindle",
-          "effects": [
-            "flag:brazier_lit"
-          ],
-          "go": "mage_fire"
-        },
-        {
-          "label": "Leave it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "mage_fire",
-      "title": "Smoke",
-      "text": [
-        "The kindling catches with a soft whump. Orlen opens his mouth to say something, and a bell starts clanging down in the village.",
-        "You both turn. Black smoke is rising from the harbour. \"The net shed,\" says Orlen. \"Dry nets go up like straw.\" He's already reaching for his stick. \"Well. Lesson two.\""
-      ],
-      "choices": [
-        {
-          "label": "Run down to the village",
-          "effects": [
-            "flag:fire_started"
-          ],
-          "go": "travel",
-          "result": "You run. Orlen follows as fast as his old legs let him."
-        },
-        {
-          "label": "Stay here. It's not your shed",
-          "effects": [
-            "flag:fire_ignored",
-            "complete:orlen",
-            "rep:skelmed-10",
-            "corruption+0.4"
-          ],
-          "go": "travel",
-          "result": "Orlen looks at you for a long moment, then goes down the hill alone. By the time the bell stops, the net shed is ash, and half the nets in Skelmed with it."
-        }
-      ]
-    },
-    {
       "id": "rook",
       "speaker": "Rook",
       "title": "Rook",
@@ -197,20 +8,13 @@
       "extra": [
         {
           "when": [
-            "!quest:lodge",
-            "!done:lodge"
+            "!done:forest"
           ],
-          "text": "A wiry boy with Ida's red hair. \"Snares are mine. Hands off, unless Ma says.\""
+          "text": "A wiry lad with Ida's red hair, restringing a bow on the lodge step. \"Rook. Ma's told me about you. Wolf got you, eh? Got me too, once.\" He shows you a white crescent of scars on his wrist."
         },
         {
           "when": [
-            "quest:lodge"
-          ],
-          "text": "\"Ma sent you? Rook. Snares are along this track, three of them. The last one's right up at the top. Something's been robbing it. I don't go up there now.\""
-        },
-        {
-          "when": [
-            "done:lodge",
+            "done:forest",
             "!done:pack"
           ],
           "text": "\"Ma says you're all right. That's high praise, from her.\""
@@ -224,21 +28,6 @@
       ],
       "choices": [
         {
-          "label": "\"Got a spare hare?\"",
-          "when": [
-            "quest:lodge",
-            "item:hare<3",
-            "flag:snare1_done",
-            "flag:snare2_done",
-            "flag:snare3_done"
-          ],
-          "time": 60,
-          "effects": [
-            "item:hare+1"
-          ],
-          "result": "Rook sighs and takes you down a line of his own you didn't know about. There's one hare in it. \"Don't tell Ma.\""
-        },
-        {
           "label": "\"Goodbye.\"",
           "go": "travel"
         }
@@ -250,20 +39,11 @@
       "text": [
         "A hare hangs limp in the wire loop of one of Rook's snares."
       ],
-      "extra": [
-        {
-          "when": [
-            "!quest:lodge"
-          ],
-          "text": "Rook's snare. Not yours to take."
-        }
-      ],
+      "extra": [],
       "choices": [
         {
           "label": "Take the hare and reset the snare",
-          "when": [
-            "quest:lodge"
-          ],
+          "when": [],
           "time": 10,
           "train": [
             "agi+1",
@@ -279,7 +59,8 @@
         },
         {
           "label": "Leave it",
-          "go": "travel"
+          "go": "travel",
+          "when": []
         }
       ]
     },
@@ -289,20 +70,11 @@
       "text": [
         "Another of Rook's snares, and another hare in it."
       ],
-      "extra": [
-        {
-          "when": [
-            "!quest:lodge"
-          ],
-          "text": "Rook's snare. Not yours to take."
-        }
-      ],
+      "extra": [],
       "choices": [
         {
           "label": "Take the hare and reset the snare",
-          "when": [
-            "quest:lodge"
-          ],
+          "when": [],
           "time": 10,
           "train": [
             "agi+1",
@@ -318,7 +90,8 @@
         },
         {
           "label": "Leave it",
-          "go": "travel"
+          "go": "travel",
+          "when": []
         }
       ]
     },
@@ -328,27 +101,19 @@
       "text": [
         "A wolf has its muzzle in the last snare, tearing at what's left of a hare. It lifts its head and looks at you. Yellow eyes."
       ],
-      "extra": [
-        {
-          "when": [
-            "!quest:lodge"
-          ],
-          "text": "It goes back to eating. It's not your snare, and not your fight."
-        }
-      ],
+      "extra": [],
       "choices": [
         {
           "label": "Fight it",
-          "when": [
-            "quest:lodge"
-          ],
+          "when": [],
           "effects": [
             "combat:dog:snare3_won:travel"
           ]
         },
         {
           "label": "Back away",
-          "go": "travel"
+          "go": "travel",
+          "when": []
         }
       ]
     },
@@ -371,9 +136,11 @@
             "flag:snare3_done"
           ],
           "go": "travel",
-          "result": "That's the snare line done."
+          "result": "That's the snare line done.",
+          "when": []
         }
-      ]
+      ],
+      "extra": []
     },
     {
       "id": "den",
@@ -461,9 +228,9 @@
     },
     {
       "id": "hill_stream",
-      "title": "The hill stream",
+      "title": "The stream",
       "text": [
-        "The hill stream runs quick and cold over the stones."
+        "The stream runs quick and cold over the stones."
       ],
       "choices": [
         {
@@ -477,7 +244,7 @@
             "item:water_pail+1"
           ],
           "go": "travel",
-          "result": "You fill the pail. It's heavy, and the path down is steep."
+          "result": "You fill the pail to the brim. Ida will want it boiled before anyone drinks it."
         },
         {
           "label": "Drink and fill your waterskin",
@@ -487,91 +254,11 @@
             "thirst+20"
           ],
           "go": "travel",
-          "result": "It tastes of moss and stone. You drink, then fill the skin."
+          "result": "It tastes of moss and stone. You drink, then fill the skin. Ida would tell you to boil it first."
         },
         {
           "label": "Leave it",
           "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "quarry_dig",
-      "title": "The rock face",
-      "text": [
-        "Rusty seams run through the rock where the old quarrymen stopped cutting."
-      ],
-      "extra": [
-        {
-          "when": [
-            "!item:pick"
-          ],
-          "text": "You'd need a pick. Garran has one."
-        },
-        {
-          "when": [
-            "item:pick",
-            "item:ore>=3"
-          ],
-          "text": "That's three good lumps. Enough for Garran."
-        }
-      ],
-      "choices": [
-        {
-          "label": "Swing the pick",
-          "when": [
-            "item:pick",
-            "item:ore<3",
-            "!flag:ore_in"
-          ],
-          "time": 30,
-          "stamina": 20,
-          "energy": 3,
-          "train": [
-            "str+1",
-            "end+1",
-            "mining+4"
-          ],
-          "why": "mining",
-          "effects": [
-            "item:ore+1"
-          ],
-          "result": "Chips fly, and your arms ring with every blow. At last a lump of ore comes away, heavy and red-brown."
-        },
-        {
-          "label": "Leave it",
-          "go": "travel"
-        }
-      ]
-    },
-    {
-      "id": "quarry_gem",
-      "title": "A glint",
-      "text": [
-        "Something in the spoil heap at the foot of the rock face catches the light: a green stone the size of a fingernail, clear as bottle glass."
-      ],
-      "choices": [
-        {
-          "label": "Take it, to show Garran",
-          "time": 5,
-          "effects": [
-            "item:gem+1",
-            "flag:gem_found"
-          ],
-          "go": "travel",
-          "result": "You wrap it in a scrap of cloth."
-        },
-        {
-          "label": "Pocket it. Nobody would ever know",
-          "time": 5,
-          "effects": [
-            "item:gem+1",
-            "flag:gem_found",
-            "flag:gem_hidden",
-            "corruption+0.25"
-          ],
-          "go": "travel",
-          "result": "It goes in your pocket, and stays there."
         }
       ]
     },
@@ -640,6 +327,785 @@
         },
         {
           "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ida_forest",
+      "speaker": "Ida",
+      "title": "Ida",
+      "safe": true,
+      "text": [],
+      "extra": [
+        {
+          "when": [
+            "flags:felled_tree<3"
+          ],
+          "text": "\"Wood first. The trees with my mark on them, a white blaze on the bark: three of them. Stand facing the trunk and use it (Space). Feet apart, and let the axe do the work.\""
+        },
+        {
+          "when": [
+            "flags:felled_tree>=3",
+            "!flag:camp_fire"
+          ],
+          "text": "\"Now a fire, in the ring of stones there. You've a flint? Dry stuff first, the small stuff, then the logs. A fire's the difference between a cold night and your last one.\""
+        },
+        {
+          "when": [
+            "flag:camp_fire",
+            "!flag:lesson_water"
+          ],
+          "text": "\"Water next. Take the pail down to the stream, fill it, and boil it over the fire before anyone drinks a drop. Stream water will give you the flux.\""
+        },
+        {
+          "when": [
+            "flag:lesson_water",
+            "!flag:boar_killed"
+          ],
+          "text": "\"Now we eat. There's a boar been rooting up the glade west of the camp. When it lowers its head it's going to charge: be ready to meet it. And if it goes badly, run. No shame in it.\""
+        },
+        {
+          "when": [
+            "flag:boar_killed",
+            "!flag:lesson_cook"
+          ],
+          "text": "\"Meat on the fire, before it turns. Raw pig will kill you slower than a wolf, but it'll kill you.\""
+        },
+        {
+          "when": [
+            "flag:lesson_cook",
+            "!flag:lesson_bow"
+          ],
+          "text": "\"You'll want a bow. See the young ash down by the stream, straight as a spear? Cut it, then bring the stave and the boar's sinew to the work stump.\""
+        },
+        {
+          "when": [
+            "flag:lesson_bow",
+            "!flag:lesson_armour"
+          ],
+          "text": "\"Last thing. That hide. Scrape it, smoke it, cut it to fit you. Bring it to the stump and I'll talk you through it.\""
+        },
+        {
+          "when": [
+            "ready:forest"
+          ],
+          "text": "Ida looks you over: the bow on your back, the leather on your shoulders, the smoke in your hair. \"Well. Look at you.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Why the marked trees?\"",
+          "when": [
+            "!flag:ida_marks"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:ida_marks"
+          ],
+          "result": "\"Because you don't just take. I mark the old ones and the ones crowding the young. Cut the wrong tree and in twenty years there's no wood up here at all.\""
+        },
+        {
+          "label": "\"How do you know all this?\"",
+          "when": [
+            "!flag:ida_how"
+          ],
+          "time": 3,
+          "effects": [
+            "flag:ida_how"
+          ],
+          "result": "\"My da. He hunted these woods, and his ma before him. He used to say the woods'll feed you, warm you and dress you, if you know how to ask.\" She smiles, a little. \"He never said what they'd do if you didn't.\""
+        },
+        {
+          "label": "\"That's everything.\"",
+          "when": [
+            "ready:forest"
+          ],
+          "time": 10,
+          "effects": [
+            "complete:forest",
+            "rep:skelmed+10"
+          ],
+          "result": "\"It is. You'll do.\" Ida kicks dirt over the last of the fire. \"Most folk who wash up here sit by Yenson's fire and wait for someone to come and fetch them. You didn't.\" She shoulders her bow. \"Come down to the lodge when you're ready. There's more I'd ask of you, if you'll hear it.\" She heads off down the path to the village.",
+          "go": "travel"
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "chop_tree1",
+      "title": "A marked tree",
+      "text": [
+        "An old tree with a pale blaze cut into its bark: one of Ida's."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!gear:wood_axe"
+          ],
+          "text": "You'd need an axe."
+        },
+        {
+          "when": [
+            "flags:felled_tree<1"
+          ],
+          "text": "Ida calls across from the camp: \"Feet apart. Let the axe do the work, not your arms. And mind which way it's going to fall.\""
+        }
+      ],
+      "choices": [
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree1",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree<2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths."
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree1",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree==2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. That's three. \"Good,\" Ida calls. \"Now bring that wood over to the stones and make us a fire.\""
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree1",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree>=3"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. More than Ida asked for. The lodge's woodshed won't complain."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "chop_tree2",
+      "title": "A marked tree",
+      "text": [
+        "An old tree with a pale blaze cut into its bark: one of Ida's."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!gear:wood_axe"
+          ],
+          "text": "You'd need an axe."
+        },
+        {
+          "when": [
+            "flags:felled_tree<1"
+          ],
+          "text": "Ida calls across from the camp: \"Feet apart. Let the axe do the work, not your arms. And mind which way it's going to fall.\""
+        }
+      ],
+      "choices": [
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree2",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree<2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths."
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree2",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree==2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. That's three. \"Good,\" Ida calls. \"Now bring that wood over to the stones and make us a fire.\""
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree2",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree>=3"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. More than Ida asked for. The lodge's woodshed won't complain."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "chop_tree3",
+      "title": "A marked tree",
+      "text": [
+        "An old tree with a pale blaze cut into its bark: one of Ida's."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!gear:wood_axe"
+          ],
+          "text": "You'd need an axe."
+        },
+        {
+          "when": [
+            "flags:felled_tree<1"
+          ],
+          "text": "Ida calls across from the camp: \"Feet apart. Let the axe do the work, not your arms. And mind which way it's going to fall.\""
+        }
+      ],
+      "choices": [
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree3",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree<2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths."
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree3",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree==2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. That's three. \"Good,\" Ida calls. \"Now bring that wood over to the stones and make us a fire.\""
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree3",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree>=3"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. More than Ida asked for. The lodge's woodshed won't complain."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "chop_tree4",
+      "title": "A marked tree",
+      "text": [
+        "An old tree with a pale blaze cut into its bark: one of Ida's."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!gear:wood_axe"
+          ],
+          "text": "You'd need an axe."
+        },
+        {
+          "when": [
+            "flags:felled_tree<1"
+          ],
+          "text": "Ida calls across from the camp: \"Feet apart. Let the axe do the work, not your arms. And mind which way it's going to fall.\""
+        }
+      ],
+      "choices": [
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree4",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree<2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths."
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree4",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree==2"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. That's three. \"Good,\" Ida calls. \"Now bring that wood over to the stones and make us a fire.\""
+        },
+        {
+          "time": 40,
+          "stamina": 25,
+          "energy": 3,
+          "train": [
+            "str+1",
+            "woodcutting+4"
+          ],
+          "why": "felling trees",
+          "effects": [
+            "flag:felled_tree4",
+            "item:firewood+2"
+          ],
+          "go": "travel",
+          "label": "Chop it down",
+          "when": [
+            "gear:wood_axe",
+            "flags:felled_tree>=3"
+          ],
+          "result": "Chip by chip, you cut a wedge out of the side facing the clearing, then the back cut, a hand higher. The tree groans, leans, and goes over with a crash that sends birds up all through the wood. You cut what you can carry into lengths. More than Ida asked for. The lodge's woodshed won't complain."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "stump",
+      "title": "A stump",
+      "text": [
+        "A fresh stump, the cut face pale and sticky with sap. Ida says it will put up new shoots in the spring."
+      ],
+      "choices": [
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "chop_ash",
+      "title": "A young ash",
+      "text": [
+        "A young ash by the stream, straight and smooth and grey, no thicker than your wrist."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!flag:lesson_cook"
+          ],
+          "text": "\"Not that one,\" Ida calls. \"That one's a bow, or it will be. Leave it for now.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Cut it and split out a stave",
+          "when": [
+            "flag:lesson_cook",
+            "gear:wood_axe",
+            "!flag:felled_ash"
+          ],
+          "time": 45,
+          "stamina": 15,
+          "energy": 2,
+          "train": [
+            "woodcutting+3",
+            "crafting+2"
+          ],
+          "why": "cutting a bow stave",
+          "effects": [
+            "flag:felled_ash",
+            "item:stave+1"
+          ],
+          "result": "Two clean cuts, and Ida shows you how to split it down the middle with the axe and a wedge, following the grain. You shave one half until it bends evenly, belly and back. \"That's your stave. Take it to the stump.\"",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "campfire",
+      "title": "The camp",
+      "safe": true,
+      "text": [],
+      "extra": [
+        {
+          "when": [
+            "!flag:camp_fire"
+          ],
+          "text": "A ring of blackened stones, cold ash in the middle."
+        },
+        {
+          "when": [
+            "flag:camp_fire"
+          ],
+          "text": "Your fire, crackling away in its ring of stones. It smells of woodsmoke and resin."
+        },
+        {
+          "when": [
+            "!flag:camp_fire",
+            "flags:felled_tree<3"
+          ],
+          "text": "You'll need wood for it first."
+        }
+      ],
+      "onEnter": [],
+      "choices": [
+        {
+          "label": "Build a fire",
+          "when": [
+            "!flag:camp_fire",
+            "flags:felled_tree>=3"
+          ],
+          "need": [
+            "item:firewood>=3",
+            "item:flint"
+          ],
+          "needText": "You need three lots of wood, and a flint to light it.",
+          "time": 30,
+          "stamina": 8,
+          "train": [
+            "survival+4"
+          ],
+          "why": "building a fire",
+          "effects": [
+            "item:firewood-3",
+            "flag:camp_fire"
+          ],
+          "result": "Shavings first, curled off a dry stick with the axe. Then twigs, then the small split stuff, then the logs, leant together like a little roof. You strike the flint, again, again, and a spark catches. You blow on it until it's a flame. Ida nods. \"Good. Now water. Pail, stream, and bring it back here to boil.\"",
+          "go": "travel"
+        },
+        {
+          "label": "\"I've nothing to light it with.\"",
+          "when": [
+            "!flag:camp_fire",
+            "!item:flint"
+          ],
+          "time": 1,
+          "effects": [
+            "item:flint+1"
+          ],
+          "result": "Ida tosses you a flint and steel from her belt. \"Keep it. I've three. Never go into the woods without one.\""
+        },
+        {
+          "label": "Boil the water",
+          "when": [
+            "flag:camp_fire",
+            "item:water_pail"
+          ],
+          "time": 30,
+          "train": [
+            "survival+3"
+          ],
+          "why": "boiling water",
+          "effects": [
+            "item:water_pail-1",
+            "item:pail+1",
+            "water=4",
+            "flag:lesson_water"
+          ],
+          "result": "You hang the pail over the fire on a green stick and wait for it to roll. When it's cooled you fill your waterskin. \"Every time,\" says Ida. \"However thirsty you are.\" Then she looks west into the trees. \"Now, dinner. There's a boar in the glade over there that's been asking for it.\"",
+          "go": "travel"
+        },
+        {
+          "label": "Cook the boar meat",
+          "when": [
+            "flag:camp_fire",
+            "item:raw_boar"
+          ],
+          "time": 40,
+          "train": [
+            "cooking+4"
+          ],
+          "why": "cooking",
+          "effects": [
+            "item:raw_boar-2",
+            "item:boar_meat+2",
+            "flag:lesson_cook",
+            "hunger+15"
+          ],
+          "result": "Spitted on green sticks over the coals, turned, and turned again until the fat spits and the outside goes dark. Ida cuts a slice off the end to check it's cooked through, and eats it. \"That's done.\" It's the best thing you've eaten since Yenson's stew. \"Now. You'll want a bow. See that young ash down by the stream?\"",
+          "go": "travel"
+        },
+        {
+          "label": "Sit by the fire a while",
+          "when": [
+            "flag:camp_fire"
+          ],
+          "time": 20,
+          "effects": [
+            "stamina+30"
+          ],
+          "result": "You sit and let the warmth soak in.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "workstump",
+      "title": "The work stump",
+      "text": [
+        "A wide old stump Ida uses as a bench, a hatchet bitten into it."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!flag:lesson_cook"
+          ],
+          "text": "Nothing to make here yet."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Make a bow",
+          "when": [
+            "!flag:lesson_bow",
+            "flag:lesson_cook"
+          ],
+          "need": [
+            "item:stave",
+            "item:sinew"
+          ],
+          "needText": "You need an ash stave and the boar's sinew.",
+          "time": 120,
+          "stamina": 10,
+          "energy": 4,
+          "train": [
+            "crafting+5",
+            "agi+1"
+          ],
+          "why": "making a bow",
+          "effects": [
+            "item:stave-1",
+            "item:sinew-1",
+            "give:hunting_bow",
+            "flag:lesson_bow"
+          ],
+          "result": "Ida shows you how to notch the tips, then thin the limbs a shaving at a time until they bend together, evenly, like a pair. The sinew twists into a string. The first time you draw it the whole thing creaks, and you're sure it'll snap. It doesn't. \"Put it in your pack (B), and wear it when you want it,\" says Ida. \"Now that hide.\"",
+          "go": "travel"
+        },
+        {
+          "label": "Make leather armour",
+          "when": [
+            "flag:lesson_bow",
+            "!flag:lesson_armour"
+          ],
+          "need": [
+            "item:boar_hide"
+          ],
+          "needText": "You need the boar hide.",
+          "time": 180,
+          "stamina": 15,
+          "energy": 6,
+          "train": [
+            "crafting+5"
+          ],
+          "why": "making leather armour",
+          "effects": [
+            "item:boar_hide-1",
+            "give:leather_jerkin",
+            "flag:lesson_armour"
+          ],
+          "result": "Scrape it clean, flesh side and hair side, with the back of the hatchet. Rub it with the brains, as Ida says (you try not to think about it), stretch it on a frame and smoke it over the fire until it's soft and brown. Then you cut it to fit, and Ida laces up the sides with thongs from the offcuts. A stiff, smoky, ugly jerkin. It's yours, and it'll turn a tooth. \"Wear it (B),\" says Ida. \"Then come and talk to me.\"",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "boar",
+      "title": "The boar",
+      "onEnter": [
+        "flag:boar_seen"
+      ],
+      "text": [
+        "A boar comes out of the bracken, bristles up, head low. It's bigger than you expected. It doesn't run.",
+        "Somewhere behind you, Ida has gone very quiet."
+      ],
+      "choices": [
+        {
+          "label": "Fight it",
+          "effects": [
+            "combat:boar:boar_won:boar_fled"
+          ]
+        },
+        {
+          "label": "Back away",
+          "go": "travel",
+          "result": "You back off slowly. The boar snorts and goes back to rooting, but it doesn't take its eyes off you."
+        }
+      ]
+    },
+    {
+      "id": "boar_won",
+      "title": "Still",
+      "onEnter": [
+        "flag:boar_killed",
+        "item:raw_boar+2",
+        "item:boar_hide+1",
+        "item:sinew+1"
+      ],
+      "text": [
+        "The boar goes down in the leaf litter and doesn't get up. Your hands are shaking.",
+        "Ida comes through the bracken with her knife already out. \"Good. Now the work starts.\" She shows you how to bleed it, open it and skin it, and which parts to keep: the meat, the hide, and the long white sinews down its back."
+      ],
+      "choices": [
+        {
+          "label": "Carry it all back to the camp",
+          "time": 40,
+          "train": [
+            "hunting+4"
+          ],
+          "why": "butchering",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "boar_fled",
+      "title": "Away",
+      "text": [
+        "You run, crashing through the bracken, until you're sure it isn't behind you.",
+        "\"No shame in it,\" says Ida, when you get back. \"Get your breath, and try again.\""
+      ],
+      "choices": [
+        {
+          "label": "Catch your breath",
           "go": "travel"
         }
       ]

@@ -1,0 +1,174 @@
+{
+  "scenes": [
+    {
+      "id": "smith",
+      "speaker": "Garran",
+      "title": "The forge",
+      "safe": true,
+      "text": [],
+      "extra": [
+        {
+          "when": [],
+          "text": "\"Forge is hot. Iron's sixty coppers a bar. Anything you make, you keep.\""
+        }
+      ],
+      "onEnter": [],
+      "choices": [
+        {
+          "label": "An iron knife (60 coppers)",
+          "when": [],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "forge:knife:D"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "An iron cap (60 coppers)",
+          "when": [],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "forge:iron_cap:D"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "A hide buckler (60 coppers)",
+          "when": [],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "forge:buckler:D"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "Reinforced work gloves (60 coppers)",
+          "when": [],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "forge:gloves:D"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "An iron knife, with your green gem (60 coppers)",
+          "when": [
+            "item:gem"
+          ],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "item:gem-1",
+            "forge:knife:C:green_gem"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "A hide buckler, with your green gem (60 coppers)",
+          "when": [
+            "item:gem"
+          ],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "item:gem-1",
+            "forge:buckler:C:green_gem"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "Reinforced work gloves, with your green gem (60 coppers)",
+          "when": [
+            "item:gem"
+          ],
+          "need": [
+            "coins>=60"
+          ],
+          "needText": "Iron costs 60 coppers, and you haven't got them.",
+          "effects": [
+            "coins-60",
+            "item:gem-1",
+            "forge:gloves:C:green_gem"
+          ],
+          "go": "travel",
+          "time": 120,
+          "stamina": 25,
+          "energy": 8,
+          "train": [
+            "str+1"
+          ],
+          "why": "working the forge"
+        },
+        {
+          "label": "\"Another time.\"",
+          "go": "travel",
+          "when": []
+        }
+      ]
+    }
+  ]
+}

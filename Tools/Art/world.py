@@ -13,6 +13,7 @@ Tile letters:
   w  stream         b  bridge                     k  bramble       h  cliff
   u  high ground    s  steps                      F  fence         H  building
   o  flowers        q  ore seam (in a cliff face)
+  m  mud            Z  palisade (log wall)        I  gatepost      Q  wrecked hull (on the beach)
 """
 import json, math, os, random
 from PIL import Image
@@ -37,6 +38,8 @@ TILES = [
     ('v', 'Vegetable patch', True, False), ('j', 'Woodpile', True, False), ('l', 'Lamp post', True, False),
     ('Y', 'Boat', True, False), ('N', 'Net rack', True, False), ('K', 'Crates', True, False),
     ('E', 'Lobster pots', True, False), ('S', 'Market stall', True, False), ('e', 'Bench', True, False),
+    # the outpost look (21 Oct): mud underfoot, a log palisade with a gatepost each side, a wrecked hull on the beach
+    ('m', 'Mud', False, True), ('Z', 'Palisade', True, False), ('I', 'Gatepost', True, False), ('Q', 'Wreck', True, False),
     # indoors
     ('p', 'Floor', False, True), ('W', 'Wall', True, False), ('x', 'Wall', True, False), ('M', 'Doorway', False, True),
     ('f', 'Hearth', True, False), ('B', 'Bed', True, False), ('t', 'Table', True, False),
@@ -135,10 +138,10 @@ def coast_road():
     for (x, y) in ((8, 13), (17, 38), (25, 44), (14, 54), (7, 27), (25, 16), (12, 82), (19, 90)):
         if g[y][x] in '.o': g[y][x] = 'r'
 
-    # Skelmed's fence across the top, the gate on the road, the first roofs beyond
+    # Skelmed's palisade across the top, a gatepost each side of the road, the first roofs beyond
     rect(0, 0, W - 1, 3, '.')
     for x in range(W):
-        if g[4][x] != '~': g[4][x] = 'F'
+        if g[4][x] != '~': g[4][x] = 'Z'
     rect(2, 0, 7, 2, 'H')
     rect(19, 0, 24, 2, 'H')
     rect(27, 0, W - 1, 3, 'T')
@@ -174,11 +177,27 @@ def coast_road():
     for x in range(road(33) + 2, steps_x):
         setc(x, 33, '=')
 
+    # the gate gap in the palisade, with its posts
+    for x in range(road(4) - 1, road(4) + 3): g[4][x] = '='
+    g[4][road(4) - 2] = g[4][road(4) + 3] = 'I'
+
+    # the wreck of your boat (David, 21 Oct): the beach widens below the headland of the bay north of the shack,
+    # and what's left of the hull lies in the sand with the crate, the chest and the barrel the tide dropped round it
+    for y in range(78, 91):
+        c = coast(y)
+        for x in range(c, c + 6 + (y % 4 == 1)):
+            if g[y][x] in '.goT': g[y][x] = ','
+    WRECK = (5, 82)                                   # top left of the hull: 5 tiles wide, 3 deep
+    rect(WRECK[0], WRECK[1], WRECK[0] + 4, WRECK[1] + 2, 'Q')
+
     rows = [''.join(r) for r in g]
     rx = road(41)
     north = [0, 5, W - 1, ROAD_END - 4]            # fights happen north of the shack, not round it or in the copse
     area = {
         'id': 'coast_road',
+        # Skelmed's first houses, beyond the palisade: log, like the rest of the outpost
+        'styles': {'2,0': {'wall': 'log', 'roof': 'shingle'}, '19,0': {'wall': 'log', 'roof': 'thatch', 'smoke': True},
+                   '17,90': {'wall': 'log', 'roof': 'thatch', 'smoke': True, 'moss': True}},
         'name': 'The coast road',
         'minutes': 2,
         'eventChance': 0,
@@ -198,30 +217,30 @@ def coast_road():
             {'id': 'sign_gate', 'kind': 'sign', 'sprite': 'obj_sign', 'x': road(6) + 2, 'y': 6,
              'text': 'SKELMED. Nets, rope, fish. Mind the dogs. The word "dogs" has been scratched out and "wolves" written over it.'},
             {'id': 'pools', 'kind': 'spot', 'sprite': '', 'x': pools[0][0], 'y': pools[0][1], 'scene': 'pools'},
-            {'id': 'crate', 'kind': 'item', 'sprite': 'obj_crate', 'x': coast(80) + 1, 'y': 80, 'scene': 'ev_crate', 'once': True},
+            {'id': 'wreck_crate', 'kind': 'item', 'sprite': 'obj_crate', 'x': 8, 'y': 86, 'scene': 'wreck_crate', 'once': True},
+            {'id': 'wreck_chest', 'kind': 'item', 'sprite': 'obj_sea_chest', 'x': 10, 'y': 81, 'scene': 'wreck_chest', 'once': True},
+            {'id': 'wreck_barrel', 'kind': 'item', 'sprite': 'obj_barrel', 'x': 6, 'y': 88, 'scene': 'wreck_barrel', 'once': True},
             {'id': 'fisher', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': coast(70) + 1, 'y': 70, 'facing': 'left',
              'scene': 'ev_fisher', 'once': True, 'when': ['!night']},
             {'id': 'lookout', 'kind': 'spot', 'sprite': 'obj_cairn', 'x': 24, 'y': 31, 'scene': 'lookout_climb'},
-            {'id': 'wolf', 'kind': 'npc', 'sprite': 'obj_wolf', 'x': rx, 'y': 41, 'facing': 'down', 'when': ['!flag:dog_met'], 'scene': 'dog'},
+            {'id': 'wolf', 'kind': 'npc', 'sprite': 'obj_wolf', 'x': rx, 'y': 41, 'facing': 'down', 'when': ['!flag:dog_met'], 'scene': 'wolf_rescue'},
             {'id': 'gulls', 'kind': 'item', 'sprite': 'obj_gulls', 'x': coast(21) + 1, 'y': 21, 'scene': 'ev_taint', 'once': True},
             {'id': 'log1', 'kind': 'item', 'sprite': 'obj_log', 'x': 14, 'y': 103, 'scene': 'deadfall', 'once': True},
             {'id': 'log2', 'kind': 'item', 'sprite': 'obj_log', 'x': 9, 'y': 107, 'scene': 'deadfall', 'once': True},
             {'id': 'log3', 'kind': 'item', 'sprite': 'obj_log', 'x': 16, 'y': 98, 'scene': 'deadfall', 'once': True},
             {'id': 'log4', 'kind': 'item', 'sprite': 'obj_log', 'x': 22, 'y': 107, 'scene': 'deadfall', 'once': True},
             {'id': 'log5', 'kind': 'item', 'sprite': 'obj_log', 'x': 19, 'y': 112, 'scene': 'deadfall', 'once': True},
-            {'id': 'boar', 'kind': 'npc', 'sprite': 'obj_boar', 'x': 21, 'y': 110, 'facing': 'left', 'scene': 'boar',
-             'when': ['quest:boar', '!flag:boar_killed']},
         ],
         'zones': [
             {'x0': DOOR_X, 'y0': SHACK_Y, 'x1': DOOR_X, 'y1': SHACK_Y, 'to': 'hut_door'},
             {'x0': road(4) - 1, 'y0': 0, 'x1': road(4) + 2, 'y1': 4, 'to': 'village_gate'},
-            # the wolf waits on the road below the headland; the boar charges when you get close
-            {'x0': 0, 'y0': 42, 'x1': W - 1, 'y1': 43, 'scene': 'dog', 'when': ['!flag:dog_met']},
-            {'x0': 18, 'y0': 107, 'x1': 24, 'y1': 113, 'scene': 'boar', 'when': ['quest:boar', '!flag:boar_killed', '!flag:boar_seen']},
+            # the wolf waits on the road below the headland, and Ida's arrows find it (a cutscene)
+            {'x0': 0, 'y0': 42, 'x1': W - 1, 'y1': 43, 'scene': 'wolf_rescue', 'when': ['!flag:dog_met']},
         ],
         'uses': [
             {'tile': 'w', 'scene': 'stream_drink'},
             {'tile': 'k', 'scene': 'brambles'},
+            {'tile': 'Q', 'scene': 'wreck_hull'},
         ],
         'events': [
             # Fights start straight away, Final Fantasy style. win is where you go after winning.
@@ -272,6 +291,8 @@ def yenson_hut():
 # ============================================================================================== Skelmed
 
 def skelmed():
+    """Skelmed: what's left of a port, now a rough outpost behind a log palisade (David, 21 Oct): mud underfoot,
+    log houses, the harbour open to the sea on the west."""
     W, H = 36, 28
     g = [['.'] * W for _ in range(H)]
     rnd = random.Random(23)
@@ -290,24 +311,19 @@ def skelmed():
             if x < c: g[y][x] = '~'
             elif x < c + 2: g[y][x] = ','
 
-    # woods round the north and east, the fence along the south with the gate in it
-    rect(0, 0, W - 1, 1, 'T')
+    # woods round the north and east, outside the wall
+    rect(0, 0, W - 1, 0, 'T')
     for y in range(H):
         for x in range(W - 3 + (y % 3 == 0), W): g[y][x] = 'T'
-    for x in range(W):
-        if g[26][x] != '~': g[26][x] = 'F'
     rect(0, 27, W - 1, 27, 'T')
-    for y in range(27, H): g[y][17] = g[y][18] = 'c'
-    for y in range(26, H): g[y][17] = g[y][18] = 'c'
 
-    # the square, the well in the middle
-    rect(13, 10, 23, 16, 'c')
+    # the square, trodden to mud, the well in the middle; the main street from the gate up to it
+    rect(13, 10, 23, 16, 'm')
     setc(18, 13, 'O')
-    # the main street from the gate up to the square
-    rect(17, 16, 18, 26, 'c')
+    rect(17, 16, 18, 27, 'm')
 
     # the harbour: a lane down to the shore and the old pier, far too long for the boats left
-    rect(coast(12) + 2, 12, 12, 13, 'c')
+    rect(coast(12) + 2, 12, 12, 13, 'm')
     for x in range(0, coast(12) + 2):
         g[12][x] = g[13][x] = 'P'
 
@@ -318,66 +334,69 @@ def skelmed():
     for (x0, y0, x1, y1, dx) in houses:
         rect(x0, y0, x1, y1, 'H')
         doors.append((dx, y1))
-    # cobbled paths from the doors to the square
+    # muddy tracks from the doors to the square
     for (x0, y0, x1, y1, dx) in houses:
         end = 10 if y1 < 10 else 15 if y1 < 18 else 23
-        for y in range(y1 + 1, end): setc(dx, y, 'c')
-    rect(9, 9, 13, 9, 'c')
-    rect(23, 9, 25, 9, 'c')
-    rect(23, 14, 29, 14, 'c')
-    rect(10, 22, 18, 22, 'c')
-    rect(18, 22, 29, 23, 'c')
+        for y in range(y1 + 1, end): setc(dx, y, 'm')
+    rect(9, 9, 13, 9, 'm')
+    rect(23, 9, 25, 9, 'm')
+    rect(23, 14, 29, 14, 'm')
+    rect(10, 22, 18, 22, 'm')
+    rect(18, 22, 29, 23, 'm')
 
-    # the lane north out of the village, up into the hills
+    # the lane north out of the village, up into the forest
     for y in range(0, 10):
         setc(12, y, '='); setc(13, y, '=')
 
     # the net shed down by the harbour
     rect(8, 15, 10, 16, 'H')
 
-    # Garran's forge in front of the smithy: the forge itself and the anvil
-    setc(24, 22, 'L')
-    setc(28, 22, 'A')
-    setc(30, 21, 'n'); setc(30, 22, 'n')
+    # the palisade: sharpened logs along the north, east and south, open to the harbour on the west;
+    # a gate in the south wall onto the coast road and one in the north onto the forest lane
+    for x in range(coast(1) + 2, W - 3): setc(x, 1, 'Z')
+    for y in range(1, 27): setc(W - 4, y, 'Z')
+    for x in range(coast(26) + 2, W - 3): setc(x, 26, 'Z')
+    setc(12, 1, '='); setc(13, 1, '='); setc(11, 1, 'I'); setc(14, 1, 'I')
+    setc(17, 26, 'm'); setc(18, 26, 'm'); setc(16, 26, 'I'); setc(19, 26, 'I')
 
-    # barrels and crates by the harbour, trees and flowers
-    for (x, y) in ((11, 11), (12, 11), (11, 14)):
+    # barrels by the harbour, a few trees left standing inside the wall
+    for (x, y) in ((11, 11), (12, 11), (11, 14), (30, 21)):
         setc(x, y, 'n')
-    for (x, y) in ((4, 4), (3, 21), (13, 23), (22, 8), (32, 16), (21, 19), (6, 23), (14, 8), (31, 24)):
+    for (x, y) in ((4, 4), (3, 21), (13, 23), (22, 8), (21, 19), (6, 23), (14, 8), (31, 24)):
         if g[y][x] in '.,': g[y][x] = 'T'
-    # ---- life in the village (20 Oct): boats, nets and pots by the harbour, an empty stall and lamps on the square,
-    # gardens and woodpiles, and the empty houses gone to seed (half the village has left)
+    # ---- life in the village: boats, nets and pots by the harbour, an empty stall and torches on the square,
+    # a garden and woodpiles, and the empty houses gone to seed (half the village has left)
     for x in (1, 2): setc(x, 10, 'Y'); setc(x, 16, 'Y')          # two boats tied up by the pier
     for (x, y) in ((6, 10), (7, 11)): setc(x, y, 'E')             # lobster pots on the shingle
     for (x, y) in ((6, 17), (6, 19)): setc(x, y, 'N')             # nets drying on racks
     setc(12, 16, 'K')                                             # crates by the net shed
     setc(21, 11, 'S'); setc(22, 11, 'S')                          # the market stall, nothing on it
     setc(23, 11, 'K')                                             # and the crates it came in
-    setc(13, 16, 'l'); setc(23, 16, 'l'); setc(13, 10, 'l')       # lamp posts round the square
+    setc(13, 16, 'l'); setc(23, 16, 'l'); setc(13, 10, 'l')       # torch posts round the square
     setc(20, 16, 'e')                                             # a bench
-    setc(21, 4, 'j'); setc(31, 22, 'j')                           # woodpiles by the lodge and the smithy
+    setc(21, 4, 'j'); setc(31, 22, 'j'); setc(22, 5, 'j')         # woodpiles by the lodge and the east houses
     rect(28, 4, 30, 5, 'v')                                       # a vegetable patch behind the east house
     for x in range(28, 31): setc(x, 6, 'F')
-    # the empty houses: long grass grown up round them
-    for (x, y) in ((26, 8), (27, 8), (31, 8), (32, 9), (32, 11), (32, 12), (26, 12), (13, 19), (14, 19), (13, 20), (7, 20), (13, 21)):
+    # mud wherever feet and carts go, grass hanging on by the walls; long grass round the empty houses
+    for _ in range(70):
+        x, y = rnd.randrange(7, W - 4), rnd.randrange(2, 26)
+        if g[y][x] == '.' and any(g[y + dy][x + dx] == 'm' for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            g[y][x] = 'm'
+    for (x, y) in ((26, 8), (27, 8), (31, 8), (31, 9), (31, 11), (31, 12), (26, 12), (13, 19), (14, 19), (13, 20), (7, 20), (13, 21)):
         if g[y][x] == '.': g[y][x] = 'g'
-    for _ in range(30):
-        x, y = rnd.randrange(W), rnd.randrange(2, 26)
-        if g[y][x] == '.' and not (11 <= x <= 14 and y < 3): g[y][x] = 'o'
 
     rows = [''.join(r) for r in g]
     return {
         'id': 'skelmed',
-        # who lives where: Bess's inn, Ida's hunters' lodge, a family at the east end, Garran's smithy;
-        # the house by the square and the one by the harbour stand empty
+        # who lives where: Bess's inn, Ida's hunters' lodge, a family at the east end; the rest stand empty
         'styles': {
-            '7,3': {'wall': 'stone', 'roof': 'slate', 'sign': 'inn', 'flowers': True, 'smoke': True},
-            '14,3': {'wall': 'plank', 'roof': 'thatch', 'sign': 'lodge', 'smoke': True, 'moss': True},
-            '23,3': {'wall': 'plank', 'roof': 'tile', 'flowers': True, 'smoke': True},
-            '24,18': {'wall': 'stone', 'roof': 'tile', 'sign': 'smith', 'smoke': True},
-            '27,9': {'wall': 'plank', 'roof': 'thatch', 'boarded': True},
-            '8,18': {'wall': 'plank', 'roof': 'tile', 'boarded': True},
-            '8,15': {'wall': 'plank', 'roof': 'slate'},
+            '7,3': {'wall': 'log', 'roof': 'shingle', 'sign': 'inn', 'smoke': True},
+            '14,3': {'wall': 'log', 'roof': 'thatch', 'sign': 'lodge', 'smoke': True, 'moss': True},
+            '23,3': {'wall': 'log', 'roof': 'thatch', 'smoke': True},
+            '24,18': {'wall': 'log', 'roof': 'shingle', 'boarded': True},
+            '27,9': {'wall': 'log', 'roof': 'thatch', 'boarded': True},
+            '8,18': {'wall': 'log', 'roof': 'shingle', 'boarded': True},
+            '8,15': {'wall': 'log', 'roof': 'shingle'},
         },
         'name': 'Skelmed',
         'minutes': 1, 'eventChance': 0, 'fightChance': 0, 'fightGap': 10,
@@ -388,22 +407,15 @@ def skelmed():
             {'id': 'skelmed_north', 'x': 12, 'y': 2, 'facing': 'down'},
         ],
         'objects': [
-            {'id': 'garran', 'kind': 'npc', 'sprite': 'npc_garran', 'x': 27, 'y': 22, 'facing': 'right', 'scene': 'smith'},
-            # the hunters' lodge is the long house at the top; its chopping block and water butt stand outside
-            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 19, 'y': 8, 'facing': 'down', 'scene': 'ida'},
-            {'id': 'block', 'kind': 'item', 'sprite': 'obj_block', 'x': 21, 'y': 6, 'scene': 'chop'},
-            {'id': 'butt', 'kind': 'item', 'sprite': 'obj_butt', 'x': 15, 'y': 7, 'scene': 'butt'},
+            # the hunters' lodge is the long house at the top; Ida's outside it unless she's up in the forest with you
+            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 19, 'y': 8, 'facing': 'down', 'scene': 'ida',
+             'when': ['!quest:forest']},
+            {'id': 'rook', 'kind': 'npc', 'sprite': 'npc_rook', 'x': 15, 'y': 7, 'facing': 'down', 'scene': 'rook',
+             'when': ['!follower:rook', '!flag:dead_rook', '!flag:rook_escort']},
             {'id': 'empty_house', 'kind': 'sign', 'x': 29, 'y': 14,
              'text': 'Boarded up. Someone has chalked on the door: GONE INLAND.'},
-            # the net shed fire, once it's started
-            {'id': 'fire1', 'kind': 'item', 'sprite': 'obj_fire', 'x': 9, 'y': 14, 'scene': 'fire1',
-             'when': ['flag:fire_started', '!flag:fire1_out']},
-            {'id': 'fire2', 'kind': 'item', 'sprite': 'obj_fire', 'x': 11, 'y': 16, 'scene': 'fire2',
-             'when': ['flag:fire_started', '!flag:fire2_out']},
-            {'id': 'fire3', 'kind': 'item', 'sprite': 'obj_fire', 'x': 7, 'y': 16, 'scene': 'fire3',
-             'when': ['flag:fire_started', '!flag:fire3_out']},
-            {'id': 'orlen_fire', 'kind': 'npc', 'sprite': 'npc_orlen', 'x': 13, 'y': 15, 'facing': 'left', 'scene': 'orlen_at_fire',
-             'when': ['flag:fire_started', '!flag:fire_out']},
+            {'id': 'old_smithy', 'kind': 'sign', 'x': 26, 'y': 22,
+             'text': "Boarded up, a cold forge behind the shutters. The smith went inland with the rest. Somebody has nailed a horseshoe over the door, upside down, so the luck runs out."},
             # Bess keeps the inn; but when you first walk in bitten she's down at the gate (she was buying fish) and
             # sees to you there, then walks home once the bite's seen to (David, 20 Oct)
             {'id': 'bess', 'kind': 'npc', 'sprite': 'npc_bess', 'x': 9, 'y': 8, 'facing': 'down', 'scene': 'bess',
@@ -415,26 +427,25 @@ def skelmed():
              'text': 'The noticeboard. One notice, months old: BY ORDER OF THE CROWN, THE HARBOUR LEVY IS RAISED TO ONE HALF.'},
         ],
         'zones': [
-            {'x0': 17, 'y0': 26, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
+            {'x0': 17, 'y0': 27, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
             {'x0': 12, 'y0': 0, 'x1': 13, 'y1': 0, 'to': 'hills_gate'},
             # Bess sees the wolf bite as you walk in, and shows you how to treat it
             {'x0': 14, 'y0': 22, 'x1': 21, 'y1': 23, 'scene': 'bess_patch', 'when': ['untreated:bite', '!flag:patch_lesson']},
         ],
         'uses': [
             {'tile': 'O', 'scene': 'well_drink'},
-            {'tile': 'A', 'scene': 'smith'},
-            {'tile': 'L', 'scene': 'smith'},
         ],
         'events': [],
         'rows': rows,
     }
 
 
-# ============================================================================================== the hills
+# ============================================================================================== the forest
 
 def hills():
-    """The hills north of Skelmed: Rook's snare line in the woods to the west, the stream, old Orlen's cottage,
-    and Garran's old quarry at the top."""
+    """The forest above Skelmed (David, 21 Oct): Ida's camp in a clearing near the bottom, where she teaches you
+    to look after yourself; her marked trees round it, the young ash by the stream, the boar's glade and Rook's
+    snare line to the west, and the pack leader's den up in the north-east."""
     W, H = 34, 40
     g = [['.'] * W for _ in range(H)]
     rnd = random.Random(31)
@@ -447,30 +458,24 @@ def hills():
             for x in range(x0, x1 + 1):
                 if keep is None or (0 <= y < H and 0 <= x < W and g[y][x] in keep): setc(x, y, t)
 
-    # the path from the village (bottom) winding up to the quarry (top)
+    # the path from the village (bottom) winding up through the trees
     path = lambda y: int(round(16 + 2.5 * math.sin(y / 6.0) - 1.5 * math.sin(y / 13.0)))
 
-    # woods: thick round the edges, scattered inside, thicker in the west where the snares are
+    # forest: thick round the edges, close everywhere, thicker still in the west and the north
     for y in range(H):
         for x in range(W):
             edge = min(x, W - 1 - x, y)
-            p = 0.95 if edge < 2 else (0.30 if x < 12 else 0.12)
+            p = 0.95 if edge < 2 else (0.42 if x < 12 or y < 12 else 0.26)
             if rnd.random() < p: g[y][x] = 'T'
     rect(0, H - 1, W - 1, H - 1, 'T')
 
-    # the quarry: a bite out of the hillside, high ground behind a rock face with seams of ore in it
-    for y in range(1, 9):
-        for x in range(8, 27):
-            d = ((x - 17) / 9.5) ** 2 + ((y - 1) / 7.5) ** 2
-            if d <= 1.0: setc(x, y, 'h')
-            if d <= 0.55: setc(x, y, 'u')
-    for y in range(9, 13):                # the quarry floor: gravel and spoil, spilling out from under the face
-        for x in range(8, 27):
-            if ((x - 17) / 8.2) ** 2 + ((y - 8.6) / 3.3) ** 2 <= 1 and g[y][x] not in 'hqu': setc(x, y, ',')
-    for x in range(12, 23):
-        if g[8][x] == 'h' and x % 3 != 1: setc(x, 8, 'q')
-    for (x, y) in ((11, 10), (23, 10), (20, 11), (13, 11), (24, 9)):
+    # an old clearing up at the top of the path, and the den: a hollow under rocks in the north-east corner
+    rect(12, 4, 21, 9, '.', keep='T.')
+    rect(14, 5, 18, 7, 'g', keep='.')
+    rect(24, 2, 31, 8, '.', keep='T.')
+    for (x, y) in ((27, 2), (31, 2), (31, 4), (30, 2), (24, 2)):
         setc(x, y, 'r')
+    for x in range(20, 26): setc(x, 7, '=')
 
     # the stream, from the woods in the east down to the west
     stream_y = lambda x: int(round(19 + 1.4 * math.sin(x / 4.0)))
@@ -478,36 +483,30 @@ def hills():
         y0 = stream_y(x)
         for y in (y0, y0 + 1): setc(x, y, 'w')
 
-    # old Orlen's cottage on the slope east of the path, herbs round it
-    rect(22, 26, 27, 29, '.')
-    rect(21, 30, 28, 33, '.')
-    rect(23, 26, 26, 29, 'H')
-    for (x, y) in ((22, 30), (27, 30), (28, 31), (21, 32), (28, 33), (22, 33)):
-        setc(x, y, 'o')
-    for y in range(30, 34): setc(24, y, '=')
+    # Ida's camp: a clearing east of the path, near the bottom
+    rect(20, 26, 29, 35, '.')
+    for (x, y) in ((20, 26), (29, 26), (20, 35), (29, 35), (29, 34)):
+        setc(x, y, 'T')
 
-    # clearings along the snare line in the west woods
-    for (x0, y0, x1, y1) in ((3, 24, 8, 28), (4, 12, 9, 16), (2, 6, 6, 10), (6, 28, 14, 30), (6, 16, 9, 24), (4, 9, 8, 13)):
+    # clearings along the snare line in the west woods, and the boar's glade
+    for (x0, y0, x1, y1) in ((3, 23, 9, 29), (4, 12, 9, 16), (2, 6, 6, 10), (6, 28, 14, 30), (6, 16, 9, 24), (4, 9, 8, 13)):
         rect(x0, y0, x1, y1, '.', keep='T.')
     # long grass
-    for (x0, y0, x1, y1) in ((4, 25, 7, 27), (25, 13, 29, 16), (19, 33, 21, 36), (3, 13, 5, 15)):
+    for (x0, y0, x1, y1) in ((4, 25, 6, 27), (25, 13, 29, 16), (3, 13, 5, 15)):
         rect(x0, y0, x1, y1, 'g', keep='.')
-    for _ in range(25):
-        x, y = rnd.randrange(W), rnd.randrange(12, H - 1)
-        if g[y][x] == '.': g[y][x] = 'o'
     for (x, y) in ((28, 22), (10, 33), (13, 24)):
-        if g[y][x] in '.o': g[y][x] = 'r'
+        if g[y][x] in '.': g[y][x] = 'r'
 
-    # the path itself, two wide, with a footbridge over the stream; a track off it to Orlen's door
+    # the path itself, two wide, with a footbridge over the stream; a track off it to the camp
     # and a narrower one west along the snare line
     prev = None
-    for y in range(9, H):
+    for y in range(6, H):
         x = path(16) if 16 <= y <= 22 else path(y)
         lo, hi = (x, x + 1) if prev is None else (min(x, prev), max(x, prev) + 1)
         for xx in range(lo, hi + 1):
             setc(xx, y, 'b' if g[y][xx] == 'w' else '=')
         prev = x
-    for x in range(path(31) + 2, 25): setc(x, 31, '=')
+    for x in range(path(31) + 2, 22): setc(x, 31, '=')
     for x in range(5, path(29)):
         if g[29][x] != 'w': setc(x, 29, '=')
     for y in range(13, 29): setc(7, y, 'b' if g[y][7] == 'w' else '=')
@@ -516,54 +515,66 @@ def hills():
     gx = path(H - 1)
     for y in range(H - 3, H): setc(gx, y, '='); setc(gx + 1, y, '=')
 
-    # the den: a hollow under rocks in the north-east corner
-    for (x, y) in ((27, 2), (31, 2), (31, 4), (30, 2)):
-        setc(x, y, 'r')
+    # Ida's marked trees round the camp, the young ash on the stream bank: the ground under them clear
+    marked = [(21, 27), (28, 27), (21, 34), (27, 33)]
+    ash = (24, stream_y(24) + 2)
+    for (x, y) in marked + [ash, (5, 17), (path(36) + 2, 36)]: setc(x, y, '.')
+    setc(ash[0], ash[1] + 1, '.'); setc(ash[0] - 1, ash[1] + 1, '.')
 
     rows = [''.join(r) for r in g]
     snares = [(4, 26), (8, 14), (3, 8)]
+    objects = [
+        # Ida, at her camp, while she's teaching you
+        {'id': 'ida_camp', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 25, 'y': 31, 'facing': 'left', 'scene': 'ida_forest',
+         'when': ['quest:forest']},
+        {'id': 'firepit', 'kind': 'item', 'sprite': 'obj_firepit', 'x': 24, 'y': 29, 'scene': 'campfire', 'when': ['!flag:camp_fire']},
+        {'id': 'campfire', 'kind': 'item', 'sprite': 'obj_campfire', 'x': 24, 'y': 29, 'scene': 'campfire', 'when': ['flag:camp_fire']},
+        {'id': 'workstump', 'kind': 'item', 'sprite': 'obj_workstump', 'x': 27, 'y': 30, 'scene': 'workstump'},
+        {'id': 'hide_frame', 'kind': 'sign', 'sprite': 'obj_hide_frame', 'x': 22, 'y': 30, 'when': ['flag:lesson_armour'],
+         'text': 'The frame you stretched the boar hide on, smelling of smoke.'},
+        {'id': 'ash', 'kind': 'item', 'sprite': 'obj_ash', 'x': ash[0], 'y': ash[1], 'scene': 'chop_ash', 'when': ['!flag:felled_ash']},
+        {'id': 'ash_stump', 'kind': 'item', 'sprite': 'obj_stump', 'x': ash[0], 'y': ash[1], 'scene': 'stump', 'when': ['flag:felled_ash']},
+        # the boar, rooting in the glade west of the camp once Ida sends you after it
+        {'id': 'boar', 'kind': 'npc', 'sprite': 'obj_boar', 'x': 6, 'y': 25, 'facing': 'right', 'scene': 'boar',
+         'when': ['flag:lesson_water', '!flag:boar_killed']},
+        # the pack leader's den, in the north-east corner
+        {'id': 'alpha', 'kind': 'npc', 'sprite': 'obj_wolf_alpha', 'x': 29, 'y': 3, 'facing': 'down', 'scene': 'den',
+         'when': ['quest:pack', '!flag:alpha_dead']},
+        {'id': 'snare1', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[0][0], 'y': snares[0][1], 'scene': 'snare1',
+         'when': ['!flag:snare1_done']},
+        {'id': 'snare2', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[1][0], 'y': snares[1][1], 'scene': 'snare2',
+         'when': ['!flag:snare2_done']},
+        {'id': 'snare3', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[2][0], 'y': snares[2][1], 'scene': 'snare3',
+         'when': ['!flag:snare3_done']},
+        # herbs for wounds: yarrow by the path, willow by the stream (both come back the next day)
+        {'id': 'yarrow1', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 19, 'y': 23, 'scene': 'herb_yarrow1', 'when': ['!flag:yarrow1_today']},
+        {'id': 'yarrow2', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 5, 'y': 17, 'scene': 'herb_yarrow2', 'when': ['!flag:yarrow2_today']},
+        {'id': 'willow', 'kind': 'item', 'sprite': 'obj_willow', 'x': 12, 'y': 21, 'scene': 'herb_willow', 'when': ['!flag:willow_today']},
+        {'id': 'sign_hills', 'kind': 'sign', 'sprite': 'obj_sign', 'x': path(36) + 2, 'y': 36,
+         'text': "Right: Ida's camp. Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."},
+    ]
+    for i, (x, y) in enumerate(marked, 1):
+        objects.append({'id': 'tree%d' % i, 'kind': 'item', 'sprite': 'obj_tree', 'x': x, 'y': y, 'scene': 'chop_tree%d' % i,
+                        'when': ['!flag:felled_tree%d' % i]})
+        objects.append({'id': 'stump%d' % i, 'kind': 'item', 'sprite': 'obj_stump', 'x': x, 'y': y, 'scene': 'stump',
+                        'when': ['flag:felled_tree%d' % i]})
     return {
         'id': 'skelmed_hills',
-        'name': 'The hills above Skelmed',
+        'name': 'The forest above Skelmed',
         'minutes': 2, 'eventChance': 0, 'fightChance': 0, 'fightGap': 14,
-        'doors': [(24, 29)],
         'spots': [
             {'id': 'hills_gate', 'x': gx, 'y': H - 3, 'facing': 'up'},
+            {'id': 'forest_camp', 'x': 23, 'y': 31, 'facing': 'right'},
         ],
-        'objects': [
-            {'id': 'orlen', 'kind': 'npc', 'sprite': 'npc_orlen', 'x': 26, 'y': 31, 'facing': 'left', 'scene': 'orlen',
-             'when': ['!flag:fire_started|flag:fire_out']},
-            {'id': 'brazier', 'kind': 'item', 'sprite': 'obj_brazier', 'x': 22, 'y': 30, 'scene': 'brazier',
-             'when': ['!flag:brazier_lit']},
-            {'id': 'brazier_lit', 'kind': 'item', 'sprite': 'obj_brazier_lit', 'x': 22, 'y': 30, 'scene': 'brazier',
-             'when': ['flag:brazier_lit']},
-            {'id': 'rook', 'kind': 'npc', 'sprite': 'npc_rook', 'x': 9, 'y': 29, 'facing': 'right', 'scene': 'rook',
-             'when': ['!follower:rook', '!flag:dead_rook', '!flag:rook_escort']},
-            # the pack leader's den, in the north-east corner
-            {'id': 'alpha', 'kind': 'npc', 'sprite': 'obj_wolf_alpha', 'x': 29, 'y': 3, 'facing': 'down', 'scene': 'den',
-             'when': ['quest:pack', '!flag:alpha_dead']},
-            {'id': 'snare1', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[0][0], 'y': snares[0][1], 'scene': 'snare1',
-             'when': ['!flag:snare1_done']},
-            {'id': 'snare2', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[1][0], 'y': snares[1][1], 'scene': 'snare2',
-             'when': ['!flag:snare2_done']},
-            {'id': 'snare3', 'kind': 'item', 'sprite': 'obj_snare', 'x': snares[2][0], 'y': snares[2][1], 'scene': 'snare3',
-             'when': ['!flag:snare3_done']},
-            # herbs for wounds: yarrow by the path, willow by the stream (both come back the next day)
-            {'id': 'yarrow1', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 19, 'y': 23, 'scene': 'herb_yarrow1', 'when': ['!flag:yarrow1_today']},
-            {'id': 'yarrow2', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 5, 'y': 17, 'scene': 'herb_yarrow2', 'when': ['!flag:yarrow2_today']},
-            {'id': 'willow', 'kind': 'item', 'sprite': 'obj_willow', 'x': 12, 'y': 21, 'scene': 'herb_willow', 'when': ['!flag:willow_today']},
-            {'id': 'glint', 'kind': 'item', 'sprite': 'obj_glint', 'x': 21, 'y': 10, 'scene': 'quarry_gem',
-             'when': ['!flag:gem_found']},
-            {'id': 'sign_hills', 'kind': 'sign', 'sprite': 'obj_sign', 'x': path(36) + 2, 'y': 36,
-             'text': 'Up: the old quarry. Right: O. Vey. Left: SNARES, KEEP OFF. (Rook)'},
-        ],
+        'objects': objects,
         'zones': [
             {'x0': gx, 'y0': H - 1, 'x1': gx + 1, 'y1': H - 1, 'to': 'skelmed_north'},
             {'x0': 26, 'y0': 2, 'x1': 31, 'y1': 6, 'scene': 'den', 'when': ['quest:pack', '!flag:alpha_dead', '!flag:den_found']},
+            # the boar charges when you come into its glade
+            {'x0': 3, 'y0': 23, 'x1': 9, 'y1': 29, 'scene': 'boar', 'when': ['flag:lesson_water', '!flag:boar_killed', '!flag:boar_seen']},
         ],
         'uses': [
             {'tile': 'w', 'scene': 'hill_stream'},
-            {'tile': 'q', 'scene': 'quarry_dig'},
         ],
         'events': [],   # no random wolves (David, 19 Oct): only the scripted one on the road
         'rows': rows,
@@ -892,21 +903,112 @@ ROOFS = {
     'slate': ('c', 'C', 'n', 'N'),      # light, mid, dark, darkest
     'thatch': ('a', 'A', 'b', 'B'),
     'tile': ('r', 'R', 'm', 'o'),
+    'shingle': ('Y', 'y', 'G', 'g'),    # split-wood shakes, weathered grey
 }
+ROUGH_THATCH = ('A', 'j', 'b', 'B')     # old straw gone dull and brown
 WALLS = {
     'plank': ('d', 'D', 'b'),
     'stone': ('Y', 'y', 'G'),
+    'log': ('D', 'b', 'B'),             # round logs laid flat, mud chinking between
 }
 
 
+def rough_roof(put, X0, Y0, X1, RY, roof, cols, r, moss, holes):
+    """Repaints a roof rough: courses that sag toward the middle, uneven split shakes (shingle) or patchy straw (thatch),
+    a ragged eave."""
+    rl, rm, rd, rx = cols
+    span = max(1, X1 - X0)
+    roof_h = max(1, RY - Y0)
+    sag = lambda X: 2.2 * math.sin(math.pi * (X - X0) / span)
+    shakes = {}
+
+    def shake(c, X):
+        """Which shake of course c is at X, and its tone and length (cached per course)."""
+        if c not in shakes:
+            row, x = [], X0 - 1
+            while x <= X1 + 1:
+                wdt = r.randint(2, 5)
+                tone = r.choice((rl, rm, rm, rd, rd)) if r.random() > 0.15 else r.choice(('D', 'b'))
+                row.append((x, x + wdt, tone, r.random() < 0.3, holes and r.random() < 0.05))
+                x += wdt + 1
+            shakes[c] = row
+        for s in shakes[c]:
+            if s[0] <= X <= s[1]: return s
+        return (X, X, rm, False, False)
+
+    for X in range(X0 - 1, X1 + 2):
+        sg = sag(X)
+        eave = RY + int(round(sg * 0.8))
+        for Y in range(Y0, eave + 1):
+            f = (Y - Y0) / roof_h
+            yy = (Y - Y0) - sg * f                   # position down the roof, bent by the sag
+            t = yy / roof_h
+            if roof == 'shingle':
+                c = int(yy // 4)
+                cy = yy - c * 4
+                x0s, x1s, tone, longer, hole = shake(c, X)
+                k = tone
+                if cy < 1: k = rx                              # shadow under the course above
+                elif X == x1s + 1 or X == x0s - 1: k = rx      # the gap between shakes
+                elif cy >= 3: k = rd if not longer else tone
+                elif X == x0s and cy < 2.5 and tone != rl: k = rl
+                if hole and 1 <= cy < 3: k = 'e'
+            else:
+                c = int(yy // 3)
+                cy = yy - c * 3
+                k = rm
+                if cy >= 2: k = rd
+                elif (X + c * 2 + (c * 7) % 3) % 4 == 0: k = rl
+                elif (X * 5 + c * 3) % 11 == 0: k = 'y'                 # grey, weathered straw
+                if t < 0.15 and cy < 2: k = rl if (X + c) % 3 else rm
+            if X >= X1 - 2: k = rd if k not in ('e', rx) else k
+            if X in (X0 - 1, X1 + 1) or Y == Y0 or Y == eave: k = 'o'
+            put(X, Y, k)
+        for Y in range(eave + 1, RY + 3):          # where the eave sags, the shadow under it follows
+            put(X, Y, 'o' if Y == eave + 1 else 'B')
+        put(X, Y0 + 1, rl if X not in (X0 - 1, X1 + 1) else 'o')
+        if roof != 'shingle' and r.random() < 0.45:  # straws hanging ragged off the eave
+            for j in range(r.randint(1, 2)): put(X, eave + j, rd if j == 0 else rx)
+    # patches: rotten dark hollows, newer repairs, moss
+    for _ in range(span // 14 + 2):
+        cx, cy = r.randint(X0 + 4, X1 - 6), r.randint(Y0 + 4, RY - 4)
+        k = rx if r.random() < 0.6 else ('D' if roof == 'thatch' else 'b')
+        for (dx, dy) in ((0, 0), (1, 0), (2, 0), (-1, 1), (0, 1), (1, 1), (2, 1), (3, 1), (0, 2), (1, 2)):
+            if r.random() < 0.75: put(cx + dx, cy + dy + int(sag(cx)), k)
+    if moss:
+        for _ in range(span // 8 + 2):
+            cx, cy = r.randint(X0 + 2, X1 - 4), r.randint(Y0 + 3, RY - 3)
+            for (dx, dy) in ((0, 0), (1, 0), (0, 1), (-1, 0), (1, 1), (2, 0)):
+                if r.random() < 0.7: put(cx + dx, cy + dy, 'i' if (dx + dy) % 2 else 'F')
+
+
+def log_corners(put, X0, X1, RY, Y1):
+    """The round ends of the wall logs sticking out past each corner, alternating long and short like a notched cabin."""
+    for n, Y in enumerate(range(RY + 5, Y1 - 1, 5)):
+        for side in (-1, 1):
+            stick = 2 if (n + (side > 0)) % 2 else 1
+            cx = (X0 - stick) if side < 0 else (X1 + stick)
+            cy = Y + 1
+            for dy in range(-2, 3):
+                for dx in range(-2, 3):
+                    d = dx * dx + dy * dy
+                    if d > 5: continue
+                    k = 'o' if d >= 4 else ('J' if d == 0 else 'd' if dx + dy < 0 else 'D')
+                    put(cx + dx, cy + dy, k)
+            put(cx, cy, 'b')                     # the heart of the log
+
+
 def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None, over=None, boarded=False, sign=None,
-                flowers=False, smoke=False, moss=False):
+                flowers=False, smoke=False, moss=False, rough=False):
     """A house seen from above and in front. boarded: an empty house, windows nailed shut and the roof gone mossy.
-    sign: a board hung by the door ('inn', 'smith', 'lodge'). flowers: window boxes. smoke: a curl from the chimney (over)."""
+    sign: a board hung by the door ('inn', 'smith', 'lodge'). flowers: window boxes. smoke: a curl from the chimney (over).
+    wall: 'plank', 'stone' or 'log' (a frontier cabin). roof: 'thatch', 'slate', 'tile' or 'shingle' (grey split shakes).
+    rough: an old patchy roof, sagging in the middle (thatch goes dull brown; log houses are always rough)."""
     px = img.load()
     opx = over.load() if over is not None else None
     X0, Y0, X1, Y1 = x0 * T, y0 * T, (x0 + w) * T - 1, (y0 + h) * T - 1
-    rl, rm, rd, rx = ROOFS[roof]
+    rough = rough or wall == 'log'
+    rl, rm, rd, rx = ROUGH_THATCH if (rough and roof == 'thatch') else ROOFS[roof]
     wl, wm, wd = WALLS[wall]
     roof_h = int((Y1 - Y0 + 1) * 0.58)
     RY = Y0 + roof_h                      # where the roof's front edge meets the wall
@@ -932,6 +1034,14 @@ def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None, ove
         for X in range(X0 + 1, X1):
             if wall == 'plank':
                 k = wd if (X - X0) % 6 == 0 else (wl if (X - X0) % 6 == 1 else wm)
+            elif wall == 'log':
+                # round logs, 5 px a course: lit top, bark, shaded underside, a line of mud chinking
+                c = (Y - RY) % 5
+                n = (Y - RY) // 5
+                k = (wl, wm, wm, wd, 'j')[c]
+                if c in (1, 2) and (X * 3 + n * 11 + c * 5) % 13 == 0: k = wd           # bark cracks, knots
+                if c == 0 and (X + n * 7) % 9 == 0: k = wm
+                if c == 4 and (X * 7 + n) % 5 == 0: k = 'J' if (X + n) % 2 else 'B'    # straw and grit in the mud
             else:
                 row = (Y - RY) // 4
                 k = wd if (Y - RY) % 4 == 3 or (X - X0 + row * 3) % 8 == 0 else (wl if (X + Y) % 5 == 0 else wm)
@@ -969,6 +1079,10 @@ def paint_house(img, x0, y0, w, h, wall='plank', roof='thatch', door_x=None, ove
     for X in range(X0, X1 + 1): put(X, RY - 1, rd)
     for Y in range(Y0 + 1, RY):
         put(X0, Y, rl); put(X1, Y, rx)
+    if roof == 'shingle' or rough:
+        rough_roof(put, X0, Y0, X1, RY, roof, (rl, rm, rd, rx), random.Random(x0 * 53 + y0 * 29), moss or boarded, boarded)
+    if wall == 'log':
+        log_corners(put, X0, X1, RY, Y1)
 
     # windows with shutters and sills
     windows = []
@@ -1387,6 +1501,276 @@ def object_sprite(text):
     return img
 
 
+# ============================================================================================== big object sprites
+
+class Spr:
+    """A small transparent picture drawn with palette letters (objects are drawn bottom-centre on their tile)."""
+    def __init__(self, w, h):
+        self.w, self.h = w, h
+        self.img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        self.px = self.img.load()
+
+    def put(self, x, y, k, a=255):
+        x, y = int(x), int(y)
+        if 0 <= x < self.w and 0 <= y < self.h: self.px[x, y] = C(k)[:3] + (a,)
+
+    def get(self, x, y):
+        return self.px[x, y][3] if 0 <= x < self.w and 0 <= y < self.h else 0
+
+    def shadow(self, cx, cy, rx, ry):
+        """A soft shadow on the ground (dark green, see-through), under whatever is drawn after."""
+        for (x, y) in terrain.blob(cx, cy, rx, ry):
+            if not self.get(x, y): self.put(x, y, 'V', 110)
+
+    def outline(self, k='o'):
+        """A dark rim round everything solid drawn so far (shadows aside)."""
+        solid = {(x, y) for x in range(self.w) for y in range(self.h) if self.px[x, y][3] == 255}
+        for (x, y) in solid:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                if (x + dx, y + dy) not in solid: self.put(x + dx, y + dy, k)
+
+    def save(self, out, name):
+        self.img.save(os.path.join(out, name + '.png'))
+
+
+def _canopy(s, cx, cy, rad, seed, airy=False):
+    """A round leafy crown built from lumps, lit from the top left, like the painted trees."""
+    r = random.Random(seed)
+    pts = set()
+    n = 7 if airy else 5
+    lumps = [(cx, cy, rad * (0.55 if airy else 0.75))] + [
+        (cx + rad * 0.6 * math.cos(a), cy + rad * 0.55 * math.sin(a), rad * (0.38 if airy else 0.5))
+        for a in [r.uniform(0, 6.28) + i * 6.28 / n for i in range(n)]]
+    for (lx, ly, lr) in lumps:
+        pts |= set(terrain.blob(lx, ly, lr, lr * 0.92))
+    if airy:      # gaps the sky shows through
+        for _ in range(int(rad * 0.6)):
+            hx, hy = cx + r.uniform(-rad, rad) * 0.8, cy + r.uniform(-rad, rad) * 0.7
+            pts -= set(terrain.blob(hx, hy, r.uniform(0.8, 1.6), r.uniform(0.8, 1.4)))
+    for (x, y) in pts:
+        dx, dy = (x - cx) / rad, (y - cy) / rad
+        l = -dx * 0.6 - dy * 0.9 + r.uniform(-0.35, 0.35)
+        k = 'f' if l > 0.75 else 'i' if l > 0.25 else 'F' if l > -0.35 else 'v'
+        if airy: k = 'f' if l > 0.45 else 'i' if l > -0.15 else 'F'
+        if (x, y + 1) not in pts: k = 'v' if airy else 'V'
+        elif (x + 1, y) not in pts or (x - 1, y) not in pts: k = ('F' if airy else 'v') if dy > -0.2 else ('i' if airy else 'F')
+        s.put(x, y, k)
+    for (x, y) in pts:          # a dark rim so it stands off the grass
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if (x + dx, y + dy) not in pts and not s.get(x + dx, y + dy): s.put(x + dx, y + dy, 'V' if dy >= 0 and dx >= 0 else 'v')
+    return pts
+
+
+def big_objects(out):
+    """Things to chop and scavenge, drawn with PIL: trees wider and taller than a tile, stumps, fire pits,
+    wreckage washed up on the beach."""
+    # --- a big tree you can fell: a crown like the painted ones, a thick trunk, roots, a pale axe blaze
+    s = Spr(36, 48)
+    s.shadow(20, 45, 13, 3)
+    tx = 17
+    for y in range(24, 46):
+        flare = 0 if y < 43 else (y - 42)
+        for x in range(tx - 3 - flare, tx + 4 + flare):
+            k = 'b'
+            if x <= tx - 2 - flare: k = 'D' if (y + x) % 4 else 'b'
+            elif x >= tx + 2 + flare: k = 'B'
+            elif (x * 5 + y * 3) % 11 == 0: k = 'B'
+            s.put(x, y, k)
+    for (x, y) in ((tx - 7, 46), (tx - 6, 45), (tx + 7, 46), (tx + 6, 45), (tx - 8, 46), (tx + 8, 46)):   # roots
+        s.put(x, y, 'b' if x < tx else 'B')
+    s.outline()
+    # the blaze: a strip of bark hacked off, pale wood showing
+    for y in range(35, 40):
+        s.put(tx - 1, y, 'J' if y < 38 else 'd'); s.put(tx, y, 'd' if y > 35 else 'J'); s.put(tx + 1, y, 'B')
+    s.put(tx - 1, 34, 'o'); s.put(tx, 34, 'o'); s.put(tx - 1, 40, 'o'); s.put(tx, 40, 'o')
+    s.put(tx + 3, 44, 'J'); s.put(tx - 5, 45, 'd')          # chips on the ground
+    _canopy(s, 18, 17, 15, 11)
+    s.save(out, 'obj_tree')
+
+    # --- a young ash: straight pale grey pole of a trunk, light airy leaves (a bow stave)
+    s = Spr(22, 40)
+    s.shadow(12, 38, 7, 2)
+    for y in range(8, 39):
+        for x, k in ((10, 'Y'), (11, 'y')):
+            s.put(x, y, 'G' if (y * 7) % 9 == 0 and x == 11 else k)
+    s.put(9, 38, 'y'); s.put(12, 38, 'G')
+    s.outline()
+    pts = _canopy(s, 11, 15, 9, 21, airy=True)
+    pts |= _canopy(s, 10, 9, 7, 5, airy=True)
+    for (x0, y0, dx) in ((11, 24, 1), (10, 20, -1)):     # thin twigs below the leaves
+        for i in range(4): s.put(x0 + dx * (i + 1), y0 - i, 'y' if i < 2 else 'G')
+    s.save(out, 'obj_ash')
+
+    # --- a fresh stump: pale cut top with rings, chips round it
+    s = Spr(16, 16)
+    s.shadow(9, 13, 7, 2.2)
+    for y in range(8, 14):
+        for x in range(3, 13):
+            s.put(x, y, 'D' if x < 5 else 'B' if x > 10 else 'b' if (x + y) % 4 else 'B')
+    s.put(2, 13, 'b'); s.put(13, 13, 'B'); s.put(1, 14, 'b'); s.put(14, 14, 'B')
+    s.outline()
+    for (x, y) in terrain.blob(7.5, 8, 5.2, 2.6):
+        d = ((x - 7.5) / 5.2) ** 2 + ((y - 8) / 2.6) ** 2
+        k = 'z' if d < 0.15 else 'J' if d < 0.45 else 'D' if d < 0.55 else 'J' if d < 0.8 else 'd'
+        s.put(x, y, k)
+    for x in range(3, 13):
+        if s.get(x, 5): s.put(x, 5, 'o')
+    for (x, y) in terrain.blob(7.5, 8, 5.2, 2.6):
+        if not any((x + dx, y + dy) in set(terrain.blob(7.5, 8, 5.2, 2.6)) for dx, dy in ((0, -1),)): s.put(x, y - 1, 'o')
+    for (x, y, k) in ((1, 11, 'J'), (2, 11, 'd'), (14, 11, 'J'), (12, 15, 'd'), (13, 15, 'J'), (4, 15, 'J'), (0, 14, 'd')):
+        s.put(x, y, k)
+    s.save(out, 'obj_stump')
+
+    def ring(s, oy, lit=False):
+        """A ring of fire stones round a bed of ash."""
+        s.shadow(9, 12 + oy, 7.5, 2.6)
+        for (x, y) in terrain.blob(8, 10.5 + oy, 5.5, 3):
+            s.put(x, y, 'g' if (x + y) % 3 else 'G')
+        for (x, y) in terrain.blob(8, 10.5 + oy, 3.5, 1.8):
+            s.put(x, y, ('y' if (x * 3 + y) % 4 else 'Y') if not lit else ('m' if (x + y) % 2 else 'R'))
+        stones = []
+        for i in range(9):
+            a = i / 9 * 2 * math.pi + 0.3
+            stones.append((8 + 6 * math.cos(a), 10.5 + oy + 3.4 * math.sin(a)))
+        for (sx, sy) in sorted(stones, key=lambda p: p[1]):
+            pts = set(terrain.blob(sx, sy, 1.6, 1.2))
+            for (x, y) in pts:
+                k = 'y'
+                if (x, y - 1) not in pts or (x - 1, y) not in pts: k = 'Y'
+                if (x, y + 1) not in pts or (x + 1, y) not in pts: k = 'G'
+                s.put(x, y, k)
+            for (x, y) in pts:
+                if (x, y + 1) not in pts: s.put(x, y + 1, 'o')
+
+    # --- a cold fire pit: a ring of stones, ash and a charred log end
+    s = Spr(16, 16)
+    ring(s, 0)
+    for (x, y, k) in ((6, 10, 'o'), (7, 10, 'g'), (8, 11, 'o'), (9, 10, 'B'), (10, 11, 'g'), (7, 11, 'W')):
+        s.put(x, y, k)
+    s.save(out, 'obj_firepit')
+
+    # --- the same ring with a small fire going, logs crossed
+    s = Spr(16, 20)
+    ring(s, 4, lit=True)
+    for i in range(8):        # two logs crossed over the coals
+        for (x, y, k) in ((4 + i, 15 - i // 2, 'b'), (4 + i, 16 - i // 2, 'B'), (11 - i, 15 - i // 2, 'D'), (11 - i, 16 - i // 2, 'b')):
+            s.put(x, y, k)
+    s.put(3, 15, 'J'); s.put(12, 15, 'J')
+    flame = [
+        '.......a........',
+        '......aa...a....',
+        '......ara..a....',
+        '.....aarRa.aa...',
+        '....aarRRaarRa..',
+        '....arRRWRrRRa..',
+        '...aarRWWRRRra..',
+        '...arRRWaRRmRa..',
+        '...aRRmRRRmmRa..',
+        '....aRmmRmmRa...',
+        '.....aRmmmRa....',
+    ]
+    for j, row in enumerate(flame):
+        for i, ch in enumerate(row):
+            if ch != '.': s.put(i, j + 1, ch)
+    s.save(out, 'obj_campfire')
+
+    # --- a sea chest washed up: iron bands, half sunk in the sand
+    s = Spr(16, 16)
+    s.shadow(9, 13, 7.5, 2)
+    for y in range(4, 14):
+        for x in range(2, 14):
+            if y < 7:
+                k = 'D' if y == 4 else 'b'          # the curved lid
+                if (x in (2, 13)) and y == 4: continue
+            else:
+                k = 'b' if (y - 7) % 3 else 'B'
+                if x < 4: k = 'D' if y % 3 else 'b'
+            if x >= 12: k = 'B'
+            s.put(x, y, k)
+    s.outline()
+    for x in range(1, 15):
+        if s.get(x, 7): s.put(x, 7, 'o')
+    for bx in (4, 11):                              # iron bands, rusted
+        for y in range(3, 14):
+            if s.get(bx, y): s.put(bx, y, 'G' if y % 4 else 'R'); s.put(bx + 1, y, 'g')
+    for (x, y, k) in ((7, 7, 'g'), (8, 7, 'g'), (7, 8, 'G'), (8, 8, 'y'), (7, 9, 'g'), (8, 9, 'g')):   # the hasp
+        s.put(x, y, k)
+    sand = set(terrain.blob(4, 14, 7, 3.2)) | set(terrain.blob(12, 15, 5, 2))
+    for (x, y) in sand:
+        s.put(x, y, 'z' if (x, y - 1) not in sand else ('d' if (x + y) % 5 else 'D'))
+    for (x, y) in ((13, 9), (13, 10), (14, 11), (14, 12)): s.put(x, y, 'v')    # a strand of weed
+    s.save(out, 'obj_sea_chest')
+
+    # --- a barrel stove in, lying on its side
+    s = Spr(16, 16)
+    s.shadow(9, 13, 7.5, 2)
+    for y in range(6, 14):
+        for x in range(3, 15):
+            k = 'D' if y < 8 else 'b' if y < 12 else 'B'
+            if (y - 6) % 3 == 0 and y > 6: k = 'B'
+            s.put(x, y, k)
+    s.outline()
+    for hx in (6, 11):                              # hoops
+        for y in range(6, 14): s.put(hx, y, 'g' if y > 7 else 'G')
+    # the open end, staves broken in
+    for (x, y) in terrain.blob(3, 9.5, 2.2, 3.6):
+        s.put(x, y, 'e')
+    for (x, y) in ((1, 7), (1, 12), (3, 6), (3, 13), (2, 6), (0, 9), (0, 10)):
+        s.put(x, y, 'o')
+    for (x, y, k) in ((1, 8, 'd'), (2, 9, 'D'), (1, 11, 'b'), (0, 8, 'd')):
+        s.put(x, y, k)
+    for (x, y, k) in ((9, 5, 'o'), (10, 4, 'd'), (11, 4, 'o'), (9, 7, 'e'), (10, 7, 'e'), (10, 6, 'o')):   # a stave sprung loose
+        s.put(x, y, k)
+    s.save(out, 'obj_barrel')
+
+    # --- a boar hide stretched on a pole frame to dry
+    s = Spr(16, 24)
+    s.shadow(9, 22, 7, 1.8)
+    for px in (1, 13):
+        for y in range(1, 23):
+            s.put(px, y, 'D' if y > 1 else 'd'); s.put(px + 1, y, 'B')
+    for x in range(0, 16):
+        s.put(x, 3, 'b'); s.put(x, 4, 'B')
+        s.put(x, 18, 'b'); s.put(x, 19, 'B')
+    s.outline()
+    hide = set(terrain.blob(8, 11, 5.2, 6.2)) - {(x, y) for x in range(16) for y in range(0, 6) if abs(x - 8) > 2} \
+        | {(5, 6), (11, 6), (4, 16), (12, 16)}
+    for (x, y) in hide:
+        k = 'j' if (x * 3 + y) % 5 else 'J'          # the flesh side, scraped pale
+        if (x - 8) ** 2 + (y - 11) ** 2 < 6: k = 'J'
+        if (x + 1, y) not in hide or (x, y + 1) not in hide: k = 'b'
+        if (x - 1, y) not in hide or (x, y - 1) not in hide: k = 'B'
+        s.put(x, y, k)
+    for (x, y) in ((8, 5), (8, 4), (3, 7), (13, 7), (3, 15), (13, 15), (5, 17), (11, 17)):   # lashings
+        s.put(x, y, 'z')
+    for (x, y) in ((4, 7), (12, 7), (4, 15), (12, 15)): s.put(x, y, 'o')
+    for (x, y) in ((7, 9), (9, 12), (6, 13)): s.put(x, y, 'q')
+    s.save(out, 'obj_hide_frame')
+
+    # --- a wide working stump with a hatchet bitten into it
+    s = Spr(16, 16)
+    s.shadow(9, 14, 7.5, 2)
+    for y in range(9, 15):
+        for x in range(1, 15):
+            s.put(x, y, 'D' if x < 3 else 'B' if x > 12 else 'b' if (x * 3 + y) % 5 else 'B')
+    s.outline()
+    top = set(terrain.blob(7.5, 9, 6.6, 2.8))
+    for (x, y) in top:
+        d = ((x - 7.5) / 6.6) ** 2 + ((y - 9) / 2.8) ** 2
+        s.put(x, y, 'd' if d > 0.75 else 'J' if (int(d * 6)) % 2 else 'D')
+    for (x, y) in top:
+        if (x, y - 1) not in top: s.put(x, y - 1, 'o')
+    for (x, y) in ((3, 10), (5, 9), (9, 10), (11, 8)): s.put(x, y, 'B')        # old cut marks
+    # the hatchet: head bitten into the top, handle up to the right
+    for i in range(7):
+        s.put(9 + i // 1 - 0, 7 - i, 'o'); s.put(9 + i, 8 - i, 'D' if i < 5 else 'b'); s.put(10 + i, 8 - i, 'o')
+    for (x, y, k) in ((6, 7, 'o'), (7, 7, 'G'), (8, 7, 'y'), (9, 7, 'g'), (6, 8, 'o'), (7, 8, 'Y'), (8, 8, 'G'), (9, 8, 'g'),
+                      (5, 7, 'o'), (6, 6, 'o'), (7, 6, 'o'), (8, 6, 'o')):
+        s.put(x, y, k)
+    for (x, y, k) in ((0, 15, 'J'), (14, 15, 'd'), (15, 13, 'J')): s.put(x, y, k)
+    s.save(out, 'obj_workstump')
+
+
 # ============================================================================================== weather
 
 def fx_sprites(out):
@@ -1447,6 +1831,7 @@ def main():
 
     for name, text in OBJECTS.items():
         object_sprite(text).save(os.path.join(out, name + '.png'))
+    big_objects(out)
     fx_sprites(out)
     print('world: %d areas' % len(AREAS))
 

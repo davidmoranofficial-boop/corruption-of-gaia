@@ -7,9 +7,11 @@ using UnityEngine.UIElements;
 namespace Loran.UnityLayer
 {
     /// <summary>
-    /// The opening cutscene: the trade boat in the storm, the wave, black, the beach at dawn, Yenson finding you
-    /// and hauling you up to his shack. A scene with "cutscene" set in the story plays here instead of as text;
-    /// its text lines are the captions, in order. When it ends (or Enter skips it) the scene's first choice is taken.
+    /// Cutscenes. A scene with "cutscene" set in the story plays here instead of as text; its text lines are the
+    /// captions, in order. When it ends (or Enter skips it) the scene's first choice is taken.
+    ///   shipwreck: the trade boat in the storm, the wave, black, the beach at dawn, Yenson finding you and hauling
+    ///              you up to his shack; it ends on black with Wake up in the middle.
+    ///   wolf:      the wolf on the coast road, and Ida's arrows (GameUI.CutWolf.cs).
     ///
     /// Everything is drawn at 320 x 180 pixels (art in Sprites/Cutscene, made by Tools/Art/cutscene.py) and scaled
     /// up by a whole number, and every frame is worked out from the time since it started, so it can't drift.
@@ -20,12 +22,15 @@ namespace Loran.UnityLayer
 
         VisualElement cutPage, cutView, cutFade, cutFlash, cutBolt, cutHint;
         Label cutCaption;
-        string cutId;
+        string cutId, cutKind;
         float cutStart;
         int cutK = 4, cutCue;
         bool cutEnding, cutWaiting;   // waiting: the cutscene's over, black, with Wake up in the middle
         readonly Dictionary<string, VisualElement> cutEls = new Dictionary<string, VisualElement>();
         (VisualElement box, VisualElement sheet) cutYou, cutYenson;
+        readonly List<(VisualElement box, VisualElement sheet)> cutWalkers = new List<(VisualElement, VisualElement)>();
+        bool IsWolfCut => cutKind == "wolf";
+        float CutLength => IsWolfCut ? WolfEnd : CutEnd;
         readonly Dictionary<string, float> cutAmb = new Dictionary<string, float>();
 
         // when each shot starts and how long the whole thing runs (seconds)
@@ -60,7 +65,9 @@ namespace Loran.UnityLayer
             if (cutPage != null && cutPage.panel != null && cutId == sc.id) return;   // already playing: don't restart it
             screen.Clear();
             cutEls.Clear();
+            cutWalkers.Clear();
             cutId = sc.id;
+            cutKind = sc.cutscene;
             cutStart = Time.realtimeSinceStartup;
             cutCue = 0;
             cutEnding = false;
@@ -72,7 +79,23 @@ namespace Loran.UnityLayer
             cutPage = Add(screen, new VisualElement(), "cut-page");
             FillScreen(cutPage);
             cutView = Add(cutPage, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-view");
+            if (IsWolfCut) WolfBuild();
+            else ShipwreckBuild();
 
+            cutFlash = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-flash");
+            cutFade = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-fade");
+            cutCaption = Add(cutPage, new Label(""), "cut-caption");
+            cutHint = Add(cutPage, new Label("Enter  skip"), "cut-hint");
+
+            cutPage.RegisterCallback<GeometryChangedEvent>(_ => CutLayout());
+            cutPage.RegisterCallback<PointerDownEvent>(_ => CutSkip());
+            cutPage.schedule.Execute(CutTick).Every(16);
+            CutLayout();
+            CutTick();
+        }
+
+        void ShipwreckBuild()
+        {
             // the storm
             CutLayer("sky", "cs_storm_sky", CutW, CutH);
             CutLayer("clouds_a", "cs_storm_clouds", 640, 80);
@@ -102,26 +125,23 @@ namespace Loran.UnityLayer
             CutLayer("shack", "cs_shack", CutW, CutH);
 
             // you, lying where the sea left you, and Yenson
-            cutYou = Walker(cutView, 1, PlayerWalkLayers());
+            cutYou = CutWalkerAdd(PlayerWalkLayers());
             cutYou.box.style.rotate = new Rotate(new Angle(90));   // head towards Yenson when he drags you
-            cutYenson = Walker(cutView, 1, new List<string> { "Walk/npc_yenson" });
-
-            cutFlash = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-flash");
-            cutFade = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-fade");
-            cutCaption = Add(cutPage, new Label(""), "cut-caption");
-            cutHint = Add(cutPage, new Label("Enter  skip"), "cut-hint");
-
-            cutPage.RegisterCallback<GeometryChangedEvent>(_ => CutLayout());
-            cutPage.RegisterCallback<PointerDownEvent>(_ => CutSkip());
-            cutPage.schedule.Execute(CutTick).Every(16);
-            CutLayout();
-            CutTick();
+            cutYenson = CutWalkerAdd(new List<string> { "Walk/npc_yenson" });
         }
 
+        (VisualElement box, VisualElement sheet) CutWalkerAdd(List<string> sheets)
+        {
+            var w = Walker(cutView, 1, sheets);
+            cutWalkers.Add(w);
+            return w;
+        }
+
+        /// <summary>A picture in the cutscene: art is in Sprites/Cutscene unless it names its own folder (World/...).</summary>
         VisualElement CutLayer(string key, string art, int w, int h)
         {
             var e = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-layer");
-            var tex = Sprite("Cutscene/" + art);
+            var tex = Sprite(art.Contains("/") ? art : "Cutscene/" + art);
             if (tex != null) e.style.backgroundImage = new StyleBackground(tex);
             e.userData = new Vector2Int(w, h);
             cutEls[key] = e;
@@ -158,7 +178,7 @@ namespace Loran.UnityLayer
                 kv.Value.style.width = size.x * k;
                 kv.Value.style.height = size.y * k;
             }
-            foreach (var w in new[] { cutYou, cutYenson })
+            foreach (var w in cutWalkers)
             {
                 if (w.box == null) continue;
                 w.box.style.width = 16 * k;
@@ -202,13 +222,15 @@ namespace Loran.UnityLayer
         {
             if (cutPage == null || cutPage.panel == null || cutEnding || cutWaiting) return;
             float t = Time.realtimeSinceStartup - cutStart;
-            if (t >= CutEnd) { CutWake(); return; }
+            if (t >= CutLength) { if (IsWolfCut) CutFinish(); else CutWake(); return; }
 
-            while (cutCue < CutSounds.Length && t >= CutSounds[cutCue].at)
+            var sounds = IsWolfCut ? WolfSounds : CutSounds;
+            while (cutCue < sounds.Length && t >= sounds[cutCue].at)
             {
-                GameAudio.Play(CutSounds[cutCue].id, CutSounds[cutCue].vol, 0.02f);
+                GameAudio.Play(sounds[cutCue].id, sounds[cutCue].vol, 0.02f);
                 cutCue++;
             }
+            if (IsWolfCut) { WolfFrame(t); CutWords(t, WolfCaptions); return; }
 
             bool storm = t < ShotBlack, beach = t >= ShotBeach && t < ShotShack, shack = t >= ShotShack;
             float fade = 0, flash = 0;
@@ -304,12 +326,22 @@ namespace Loran.UnityLayer
 
             cutFade.style.opacity = fade;
             cutFlash.style.opacity = flash;
+            CutWords(t, CutCaptions);
 
-            // ---- the words
+            // the sea and the weather, by shot
+            cutAmb.Clear();
+            if (storm) { cutAmb["amb_rain"] = 1f; cutAmb["amb_wind"] = 1f; cutAmb["amb_sea"] = 1f; }
+            else if (beach || shack) { cutAmb["amb_sea"] = 0.6f; cutAmb["amb_wind"] = 0.2f; }
+            GameAudio.SetAmbience(cutAmb);
+        }
+
+        /// <summary>The caption showing at this moment, typed out a letter at a time.</summary>
+        void CutWords(float t, (float from, float to, int line, bool centre)[] captions)
+        {
             string text = "";
             bool centre = false;
             var lines = engine.Current?.text;
-            foreach (var (from, to, line, c) in CutCaptions)
+            foreach (var (from, to, line, c) in captions)
             {
                 if (t < from || t > to || lines == null || line >= lines.Count) continue;
                 string full = engine.Fill(lines[line]);
@@ -321,12 +353,6 @@ namespace Loran.UnityLayer
             cutCaption.text = text;
             cutCaption.EnableInClassList("cut-caption-centre", centre);
             cutCaption.style.display = text == "" ? DisplayStyle.None : DisplayStyle.Flex;
-
-            // the sea and the weather, by shot
-            cutAmb.Clear();
-            if (storm) { cutAmb["amb_rain"] = 1f; cutAmb["amb_wind"] = 1f; cutAmb["amb_sea"] = 1f; }
-            else if (beach || shack) { cutAmb["amb_sea"] = 0.6f; cutAmb["amb_wind"] = 0.2f; }
-            GameAudio.SetAmbience(cutAmb);
         }
 
         /// <summary>Enter or a click: skips to the end of the cutscene, or, once it's over, wakes you.</summary>
@@ -334,7 +360,7 @@ namespace Loran.UnityLayer
         {
             if (cutEnding) return;
             GameAudio.Play("ui_confirm");
-            if (cutWaiting) CutFinish();
+            if (cutWaiting || IsWolfCut) CutFinish();
             else CutWake();
         }
 
