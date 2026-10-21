@@ -11,7 +11,6 @@ namespace Loran.UnityLayer
     /// captions, in order. When it ends (or Enter skips it) the scene's first choice is taken.
     ///   shipwreck: the trade boat in the storm, the wave, black, the beach at dawn, Yenson finding you and hauling
     ///              you up to his shack; it ends on black with Wake up in the middle.
-    ///   wolf:      the wolf on the coast road, and Ida's arrows (GameUI.CutWolf.cs).
     ///
     /// Everything is drawn at 320 x 180 pixels (art in Sprites/Cutscene, made by Tools/Art/cutscene.py) and scaled
     /// up by a whole number, and every frame is worked out from the time since it started, so it can't drift.
@@ -29,8 +28,7 @@ namespace Loran.UnityLayer
         readonly Dictionary<string, VisualElement> cutEls = new Dictionary<string, VisualElement>();
         (VisualElement box, VisualElement sheet) cutYou, cutYenson;
         readonly List<(VisualElement box, VisualElement sheet)> cutWalkers = new List<(VisualElement, VisualElement)>();
-        bool IsWolfCut => cutKind == "wolf";
-        float CutLength => IsWolfCut ? WolfEnd : CutEnd;
+        float CutLength => CutEnd;
         readonly Dictionary<string, float> cutAmb = new Dictionary<string, float>();
 
         // when each shot starts and how long the whole thing runs (seconds)
@@ -79,8 +77,7 @@ namespace Loran.UnityLayer
             cutPage = Add(screen, new VisualElement(), "cut-page");
             FillScreen(cutPage);
             cutView = Add(cutPage, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-view");
-            if (IsWolfCut) WolfBuild();
-            else ShipwreckBuild();
+            ShipwreckBuild();
 
             cutFlash = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-flash");
             cutFade = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-fade");
@@ -222,15 +219,14 @@ namespace Loran.UnityLayer
         {
             if (cutPage == null || cutPage.panel == null || cutEnding || cutWaiting) return;
             float t = Time.realtimeSinceStartup - cutStart;
-            if (t >= CutLength) { if (IsWolfCut) CutFinish(); else CutWake(); return; }
+            if (t >= CutLength) { CutWake(); return; }
 
-            var sounds = IsWolfCut ? WolfSounds : CutSounds;
+            var sounds = CutSounds;
             while (cutCue < sounds.Length && t >= sounds[cutCue].at)
             {
                 GameAudio.Play(sounds[cutCue].id, sounds[cutCue].vol, 0.02f);
                 cutCue++;
             }
-            if (IsWolfCut) { WolfFrame(t); CutWords(t, WolfCaptions); return; }
 
             bool storm = t < ShotBlack, beach = t >= ShotBeach && t < ShotShack, shack = t >= ShotShack;
             float fade = 0, flash = 0;
@@ -360,7 +356,7 @@ namespace Loran.UnityLayer
         {
             if (cutEnding) return;
             GameAudio.Play("ui_confirm");
-            if (cutWaiting || IsWolfCut) CutFinish();
+            if (cutWaiting) CutFinish();
             else CutWake();
         }
 

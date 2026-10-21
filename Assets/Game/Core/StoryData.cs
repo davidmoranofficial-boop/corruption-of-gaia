@@ -24,6 +24,7 @@ namespace Loran.Core
         public List<string> text = new List<string>();      // paragraphs; {name} etc. are filled in
         public List<CondText> extra = new List<CondText>(); // paragraphs shown only when their conditions hold
         public List<string> onEnter = new List<string>();   // effects run when the player arrives
+        public List<string> script = new List<string>();    // an in-world cutscene (GameUI.Director.cs), played before the choices
         public List<ChoiceDef> choices = new List<ChoiceDef>();
     }
 

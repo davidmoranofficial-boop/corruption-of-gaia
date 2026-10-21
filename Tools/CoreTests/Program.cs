@@ -21,7 +21,7 @@ static class Program
         Root = FindRoot();
         if (Environment.GetEnvironmentVariable("PERKS") == "1") { Test("perk balance", PerkBalance); return failures; }
         Test("content has no broken links", ContentIsValid);
-        Test("full playthrough: hut, the wreck, Ida and the wolf, Bess, Ida's lessons in the forest, the pack leader", FullPlaythrough);
+        Test("full playthrough: hut, the wreck, Ida and the wolf, Bess, the hunt with Rook, Ida sends you to Eastmere", FullPlaythrough);
         Test("save and load round trip", SaveLoad);
         Test("hair styles and beards: chosen, saved, drawn", Looks);
         Test("dying in basic mode wakes you at your last sleep", BasicDeath);
@@ -162,7 +162,8 @@ static class Program
 
         // The wolf in the road, and Ida
         WalkUntil(e, Gate(e), () => e.S.scene == "wolf_rescue");
-        Assert(e.Current.cutscene == "wolf" && e.Current.text.Count == 5 && e.Check("untreated:bite") && e.Check("flag:ida_saved"), "the wolf should be a cutscene, and leave a bite");
+        Assert(e.Current.script.Contains("lie:you") && e.Current.script.Any(x => x.StartsWith("say:Ida:")) && e.Check("untreated:bite") && e.Check("flag:ida_saved"),
+               "the wolf should be acted out on the road, and leave a bite");
         Assert(e.S.body.afflictions.First(x => x.id == "bite").from.Contains("wolf"), "the wolf did it");
         Pick(e, "Get up");
         Assert(e.Travelling && e.Objects().All(o => o.id != "wolf"), "the wolf is gone from the road");
@@ -178,102 +179,61 @@ static class Program
         e.S.result = "";
         Assert(e.Journal().Any(j => j.Contains("Ida") && j.Contains("help")), "the journal should send you to Ida");
 
-        // Ida takes you up into the forest
+        // Ida sends you out with Rook: deadwood and the boar
         foreach (var food in e.S.items.Where(i => e.data.Item(i.id).food).Select(i => i.id).ToList()) e.Eat(food);
         int t1 = e.S.minutes;
         Keep(e); UseThing(e, "ida");
         Assert(e.S.scene == "ida" && e.Current.speaker == "Ida", "Ida should talk");
         Pick(e, "Thank you");
         Pick(e, "How can I help");
-        Assert(e.Check("quest:forest") && e.Area.id == "skelmed_hills" && AtSpot(e, "forest_camp") && e.S.Count("pail") == 1
-               && e.S.gearItems.Any(g => g.id == "wood_axe"), "Ida should take you up to her camp with an axe and a pail, was " + e.S.scene + " in " + e.Area.id);
-        Assert(e.Objects().Any(o => o.id == "ida_camp"), "Ida is at the camp");
-        Keep(e); UseThing(e, "ida_camp");
-        Assert(e.Paragraphs().Any(p => p.Contains("three")), "Ida tells you what to do first");
-        Leave(e);
-
-        // 1. three marked trees
-        Keep(e); UseThing(e, "workstump");
-        Assert(!e.Choices().Any(c => c.def.label.StartsWith("Make")), "nothing to make yet");
-        Leave(e);
-        Keep(e); UseThing(e, "ash");
-        Assert(!e.Choices().Any(c => c.def.label.StartsWith("Cut")), "not the ash yet");
-        Leave(e);
-        foreach (var t in new[] { "tree1", "tree2", "tree3" }) { Keep(e); UseThing(e, t); Pick(e, "Chop it down"); }
-        Assert(e.S.Count("firewood") == 6 && e.Objects().Count(o => o.id.StartsWith("stump")) == 3 && e.QuestGoals(e.data.Quest("forest"))[0].met,
-               "three trees down, three stumps, wood to burn");
-        Assert(e.S.result.Contains("That's three"), "Ida says so on the third");
-        // 2. the fire
-        Keep(e); UseThing(e, "firepit");
-        Pick(e, "Build a fire");
-        Assert(e.Check("flag:camp_fire") && e.Objects().Any(o => o.id == "campfire") && e.S.Count("firewood") == 3, "a fire in the ring of stones");
-        // 3. water
-        Keep(e); UseTile(e, 'w'); Pick(e, "Fill the pail");
-        Keep(e); UseThing(e, "campfire"); Pick(e, "Boil the water");
-        Assert(e.Check("flag:lesson_water") && e.S.Count("pail") == 1 && e.S.water == 4, "boiled water in your skin");
-        // 4. the boar
-        Assert(e.Objects().Any(o => o.id == "boar"), "now the boar's in its glade");
+        Assert(e.S.scene == "ida_send" && e.Current.script.Any(x => x.StartsWith("walk:rook")), "Ida calls Rook over (acted out)");
+        Pick(e, "Go with Rook");
+        Assert(e.Travelling && e.Check("quest:hunt") && e.Member("rook") != null && e.Objects().All(o => o.id != "rook"), "Rook walks with you now");
+        Assert(!e.SceneIds.Any(id => id == "ida_forest" || id == "chop_tree1" || id == "workstump") && e.data.Quest("forest") == null, "Ida's forest lessons are gone");
+        int lv0 = e.S.level;
+        Keep(e); ToArea(e, "hills_gate");
+        foreach (var w in new[] { "hwood1", "hwood2", "hwood3" }) { Keep(e); UseThing(e, w); Assert(e.Paragraphs().Any(x => x.Contains("Rook")), "Rook has something to say about " + w); Pick(e, "Gather it"); }
+        Assert(e.QuestGoals(e.data.Quest("hunt"))[0].met && e.S.Count("firewood") >= 3, "three bundles of deadwood");
+        Assert(e.Objects().Any(o => o.id == "boar"), "the boar's in its glade");
         Keep(e);
         var boar = e.Area.objects.First(o => o.id == "boar");
         WalkUntil(e, (boar.x + 1, boar.y), () => e.S.scene == "boar");
         if (e.S.stamina < 80) e.CatchBreath();
         Pick(e, "Fight it");
         Assert(e.S.inCombat && e.S.enemy == "boar", "the boar should fight");
-        for (int i = 0; i < 80 && e.S.inCombat; i++) StepToward(e, (0, 0));
-        Assert(e.S.scene == "boar_won" && e.S.Count("raw_boar") == 2 && e.S.Count("boar_hide") == 1 && e.S.Count("sinew") == 1,
-               "beat the boar and butcher it, was " + e.S.scene + " " + e.S.deathCause);
-        Pick(e, "Carry it");
-        // 5. cook it
-        Keep(e); UseThing(e, "campfire"); Pick(e, "Cook the boar");
-        Assert(e.Check("flag:lesson_cook") && e.S.Count("boar_meat") == 2 && e.S.Count("raw_boar") == 0, "roast boar");
-        // 6. a bow from the young ash
-        Keep(e); UseThing(e, "ash"); Pick(e, "Cut it");
-        Assert(e.S.Count("stave") == 1 && e.Objects().Any(o => o.id == "ash_stump"), "a stave, and a stump where the ash was");
-        Keep(e); UseThing(e, "workstump"); Pick(e, "Make a bow");
-        Assert(e.Check("flag:lesson_bow") && e.S.gearItems.Any(g => g.id == "hunting_bow" && !g.equipped), "your own bow, in your pack");
-        // 7. leather from the hide
-        Keep(e); UseThing(e, "workstump"); Pick(e, "Make leather armour");
-        Assert(e.Check("flag:lesson_armour") && e.S.gearItems.Any(g => g.id == "leather_jerkin"), "a leather jerkin");
-        Assert(e.Check("ready:forest"), "every lesson done");
-        Keep(e); UseThing(e, "ida_camp"); Pick(e, "That's everything");
-        Assert(e.Check("done:forest") && e.Objects().All(o => o.id != "ida_camp"), "the lessons are done and Ida's gone home");
-        Assert(new[] { "woodcutting", "survival", "cooking", "crafting", "hunting" }.All(k => e.SkillLevel(k) >= 1 || e.SkillProgress(k) > 0),
-               "the lessons grow your skills: " + string.Join(", ", e.S.skills.Select(k => k.id + " " + k.level)));
-        Console.WriteLine("    Ida's lessons took " + Engine.Duration(e.S.minutes - t1) + ", level " + e.S.level);
-
-        // Ida's next job: the pack leader, with Rook beside you
-        Keep(e); ToArea(e, "skelmed_north");
-        Keep(e); UseThing(e, "rook"); Leave(e);
-        Keep(e); UseThing(e, "ida");
-        Pick(e, "Anything else");
-        Assert(e.Check("quest:pack") && e.Member("rook") != null, "Ida should send Rook with you");
-        Leave(e);
-        Assert(e.Objects().All(o => o.id != "rook"), "Rook walks with you now");
-        foreach (var g in new[] { "hunting_bow", "leather_jerkin" }) e.Equip(e.S.gearItems.First(x => x.id == g).uid);
-        int lv0 = e.S.level;
-        Keep(e); ToArea(e, "hills_gate");
-        Keep(e); UseThing(e, "snare1"); Pick(e, "Take the hare");
-        Keep(e);
-        WalkUntil(e, (29, 5), () => e.S.scene == "den");
-        Pick(e, "Fight it");
-        Assert(e.S.inCombat && e.S.enemy == "pack_leader", "the pack leader should fight");
         int rounds = 0;
-        for (; rounds < 200 && e.S.inCombat; rounds++) StepToward(e, (0, 0));
-        Assert(e.S.scene == "den_won", "should beat the pack leader with Rook, was " + e.S.scene);
-        Console.WriteLine("    pack leader took " + rounds + " rounds, hp " + e.S.hp + ", Rook " + e.Member("rook").hp + " (" + string.Join(", ", Rules.Conditions(e.Member("rook"), e.data)) + ")");
-        Pick(e, "Skin it");
-        Assert(e.S.Count("wolf_pelt") == 1 && e.Check("ready:pack"), "the pelt, and the job ready");
+        for (; rounds < 120 && e.S.inCombat; rounds++) StepToward(e, (0, 0));
+        Assert(e.S.scene == "boar_won" && e.S.Count("raw_boar") == 2 && e.S.Count("boar_hide") == 1 && e.S.Count("sinew") == 1,
+               "beat the boar with Rook and butcher it, was " + e.S.scene + " " + e.S.deathCause);
+        Console.WriteLine("    the boar took " + rounds + " rounds, hp " + e.S.hp + ", Rook " + e.Member("rook").hp);
+        Pick(e, "Carry it");
+        Assert(e.Check("ready:hunt"), "wood and meat: ready to go home");
+        Assert(new[] { "woodcutting", "hunting" }.All(k => e.SkillLevel(k) >= 1 || e.SkillProgress(k) > 0), "the hunt grows your skills");
+
+        // Back at the lodge: Ida's thanks, and Eastmere
         Keep(e); ToArea(e, "skelmed_north");
         Keep(e); UseThing(e, "ida");
-        Pick(e, "The pack leader");
-        Assert(e.Check("done:pack") && e.Member("rook") != null && e.Check("flag:rook_escort") && e.S.level > lv0, "the job's done, you've levelled, and Rook walks on with you to the town");
-        Pick(e, "What now");
-        Assert(e.S.result.Contains("town inland"), "Ida should point you inland");
-        Pick(e, "Goodbye");
-        Assert(!e.ActiveQuests.Any() && e.FinishedQuests.Count() == 2, "both jobs done");
+        Pick(e, "We're back");
+        Assert(e.S.scene == "ida_home" && e.Check("done:hunt"), "Ida takes it all in (acted out)");
+        Assert(e.Current.script.Any(x => x.Contains("Things are getting worse around here. If we don't get help soon, this village is done for.")), "Ida's words to Rook");
+        Pick(e, "Go with Rook to Eastmere");
+        Assert(new[] { "leather_jerkin", "leather_boots", "hunting_dagger" }.All(g => e.S.gearItems.Any(x => x.id == g)), "leather gear and a dagger from Ida");
+        Assert(e.Check("flag:rook_escort") && e.Check("quest:eastmere") && e.Member("rook") != null && e.S.level > lv0, "off to Eastmere with Rook, a level up");
+        Assert(e.Journal().Any(j => j.Contains("north gate")), "the journal says where Rook's waiting");
+        Keep(e); UseThing(e, "ida");
+        Assert(e.Paragraphs().Any(x => x.Contains("Look after him")), "Ida sees you off");
+        Leave(e);
         Assert(!e.SceneIds.Any(id => id == "orlen" || id == "quarry_dig" || id == "ida_pay" || id == "chop" || id == "fire1"), "the old jobs are gone");
         Assert(e.data.file.areas.All(ar => ar.objects.All(o => o.id != "garran" && o.id != "orlen")), "no smith or mage in Skelmed");
-        Console.WriteLine("    Skelmed took " + Engine.Duration(e.S.minutes - t1) + ", rep " + e.S.Rep("skelmed"));
+        Console.WriteLine("    Skelmed took " + Engine.Duration(e.S.minutes - t1) + ", level " + e.S.level + ", rep " + e.S.Rep("skelmed"));
+
+        // The north gate ends the opening, for now
+        Keep(e);
+        WalkUntil(e, (12, 1), () => e.S.scene == "north_gate");
+        Assert(e.Check("flag:left_skelmed") && e.Current.script.Any(x => x.StartsWith("fade:out")), "the opening ends at the north gate");
+        Pick(e, "Back into Skelmed");
+        Assert(e.Travelling && e.Area.id == "skelmed" && AtSpot(e, "skelmed_north"), "back inside the gate");
+        Assert(e.ActiveQuests.Count() == 1 && e.FinishedQuests.Count() == 1, "the hunt's done; Eastmere's ahead");
 
         // Out through the gate and back down the road
         WalkUntil(e, (17, 27), () => e.Area.id == "coast_road");
@@ -672,11 +632,13 @@ static class Program
         // Ida, if Rook died on the hunt
         var i = NewEngine();
         i.DevStart("village");
-        i.S.flags.Add("quest:pack"); i.S.flags.Add("den_found"); i.S.flags.Add("alpha_dead"); i.S.flags.Add("dead_rook");
+        foreach (var f in new[] { "quest:hunt", "hunt_wood1", "hunt_wood2", "hunt_wood3", "boar_killed", "dead_rook" }) i.S.flags.Add(f);
         Keep(i); UseThing(i, "ida");
-        Assert(i.Choices().Any(c => c.enabled && c.def.label.Contains("isn't coming back")) && !i.Choices().Any(c => c.enabled && c.def.label == "\"The pack leader's dead.\""), "Ida hears Rook's dead");
-        Pick(i, "isn't coming back");
-        Assert(i.Check("done:pack"), "the job's still done");
+        Assert(i.Choices().Any(c => c.enabled && c.def.label.Contains("Rook isn't")) && !i.Choices().Any(c => c.enabled && c.def.label.Contains("Wood, and a boar")), "Ida hears Rook's dead");
+        Pick(i, "Rook isn't");
+        Assert(i.Check("done:hunt") && i.Check("quest:eastmere") && i.S.gearItems.Any(g => g.id == "hunting_dagger"), "the job's still done, and Eastmere's still ahead");
+        Leave(i);
+        WalkUntil(i, (12, 1), () => i.S.scene == "north_gate_alone");
     }
 
     static void SaveLoad()
@@ -1259,7 +1221,7 @@ static class Program
         var expect = new Dictionary<string, string>
         {
             { "village", "travel" }, { "road", "travel" }, { "hut", "wake" }, { "forge_iron", "smith" },
-            { "hills", "travel" }, { "forest", "travel" }, { "wolf", "wolf_rescue" }, { "boss", "travel" },
+            { "hills", "travel" }, { "hunt", "travel" }, { "home", "ida_home" }, { "wolf", "wolf_rescue" }, { "boss", "travel" },
             { "dog", "travel" }, { "crab", "travel" },
         };
         foreach (var (id, _) in Engine.DevStarts)
@@ -1270,7 +1232,8 @@ static class Program
             if (e.S.scene != "travel" || e.S.inCombat) Assert(e.Choices().Any(c => c.enabled), id + " should have something to do");
             if (id == "dog" || id == "crab") Assert(e.S.inCombat && e.S.enemy == id, id + " should start the fight");
             if (id == "forge_iron") { Pick(e, "An iron cap"); Assert(e.S.scene == "forge", "should be at the anvil"); e.FinishForge(1, 1, 1); Assert(e.Travelling, "back in the village"); }
-            if (id == "forest") Assert(e.Objects().Any(o => o.id == "ida_camp") && e.Check("gear:wood_axe"), "Ida's at her camp, and you've an axe");
+            if (id == "hunt") Assert(e.Member("rook") != null && e.Objects().Any(o => o.id == "hwood1") && e.Objects().Any(o => o.id == "boar"), "out hunting with Rook");
+            if (id == "home") { Pick(e, "Go with Rook"); Assert(e.Travelling && e.Check("flag:rook_escort") && e.S.gearItems.Any(g => g.id == "hunting_dagger"), "Ida's gifts, and off to Eastmere"); }
             if (id == "wolf") { Pick(e, "Get up"); Assert(e.Travelling && e.Check("untreated:bite"), "bitten, back on the road"); }
             if (id == "boss") { Assert(e.Member("rook") != null, "Rook should be with you"); WalkUntil(e, (29, 5), () => e.S.scene == "den"); Pick(e, "Fight it"); Assert(e.S.inCombat && e.S.enemy == "pack_leader", "should face the pack leader"); }
             if (id == "dog") { e.DevWinFight(); Pick(e, "Walk on"); Assert(e.S.scene == "travel", "winning should go back to the road"); }

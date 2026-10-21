@@ -223,7 +223,7 @@ def coast_road():
             {'id': 'fisher', 'kind': 'npc', 'sprite': 'npc_fisher', 'x': coast(70) + 1, 'y': 70, 'facing': 'left',
              'scene': 'ev_fisher', 'once': True, 'when': ['!night']},
             {'id': 'lookout', 'kind': 'spot', 'sprite': 'obj_cairn', 'x': 24, 'y': 31, 'scene': 'lookout_climb'},
-            {'id': 'wolf', 'kind': 'npc', 'sprite': 'obj_wolf', 'x': rx, 'y': 41, 'facing': 'down', 'when': ['!flag:dog_met'], 'scene': 'wolf_rescue'},
+            {'id': 'wolf', 'kind': 'npc', 'sprite': 'obj_wolf', 'x': rx, 'y': 38, 'facing': 'down', 'when': ['!flag:dog_met'], 'scene': 'wolf_rescue'},
             {'id': 'gulls', 'kind': 'item', 'sprite': 'obj_gulls', 'x': coast(21) + 1, 'y': 21, 'scene': 'ev_taint', 'once': True},
             {'id': 'log1', 'kind': 'item', 'sprite': 'obj_log', 'x': 14, 'y': 103, 'scene': 'deadfall', 'once': True},
             {'id': 'log2', 'kind': 'item', 'sprite': 'obj_log', 'x': 9, 'y': 107, 'scene': 'deadfall', 'once': True},
@@ -408,8 +408,7 @@ def skelmed():
         ],
         'objects': [
             # the hunters' lodge is the long house at the top; Ida's outside it unless she's up in the forest with you
-            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 19, 'y': 8, 'facing': 'down', 'scene': 'ida',
-             'when': ['!quest:forest']},
+            {'id': 'ida', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 19, 'y': 8, 'facing': 'down', 'scene': 'ida'},
             {'id': 'rook', 'kind': 'npc', 'sprite': 'npc_rook', 'x': 15, 'y': 7, 'facing': 'down', 'scene': 'rook',
              'when': ['!follower:rook', '!flag:dead_rook', '!flag:rook_escort']},
             {'id': 'empty_house', 'kind': 'sign', 'x': 29, 'y': 14,
@@ -428,6 +427,8 @@ def skelmed():
         ],
         'zones': [
             {'x0': 17, 'y0': 27, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
+            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate', 'when': ['flag:rook_escort']},
+            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate_alone', 'when': ['flag:ida_alone']},
             {'x0': 12, 'y0': 0, 'x1': 13, 'y1': 0, 'to': 'hills_gate'},
             # Bess sees the wolf bite as you walk in, and shows you how to treat it
             {'x0': 14, 'y0': 22, 'x1': 21, 'y1': 23, 'scene': 'bess_patch', 'when': ['untreated:bite', '!flag:patch_lesson']},
@@ -443,9 +444,8 @@ def skelmed():
 # ============================================================================================== the forest
 
 def hills():
-    """The forest above Skelmed (David, 21 Oct): Ida's camp in a clearing near the bottom, where she teaches you
-    to look after yourself; her marked trees round it, the young ash by the stream, the boar's glade and Rook's
-    snare line to the west, and the pack leader's den up in the north-east."""
+    """The forest above Skelmed (David, 21 Oct): an old camp clearing near the bottom, deadwood along the paths,
+    the boar's glade and Rook's snare line to the west, and the pack leader's den up in the north-east."""
     W, H = 34, 40
     g = [['.'] * W for _ in range(H)]
     rnd = random.Random(31)
@@ -520,23 +520,19 @@ def hills():
     ash = (24, stream_y(24) + 2)
     for (x, y) in marked + [ash, (5, 17), (path(36) + 2, 36)]: setc(x, y, '.')
     setc(ash[0], ash[1] + 1, '.'); setc(ash[0] - 1, ash[1] + 1, '.')
+    for (x, y) in ((path(34) + 3, 34), (24, 28), (10, 30), (27, 33)): setc(x, y, '.')   # deadwood for the hunt
 
     rows = [''.join(r) for r in g]
     snares = [(4, 26), (8, 14), (3, 8)]
     objects = [
-        # Ida, at her camp, while she's teaching you
-        {'id': 'ida_camp', 'kind': 'npc', 'sprite': 'npc_ida', 'x': 25, 'y': 31, 'facing': 'left', 'scene': 'ida_forest',
-         'when': ['quest:forest']},
-        {'id': 'firepit', 'kind': 'item', 'sprite': 'obj_firepit', 'x': 24, 'y': 29, 'scene': 'campfire', 'when': ['!flag:camp_fire']},
-        {'id': 'campfire', 'kind': 'item', 'sprite': 'obj_campfire', 'x': 24, 'y': 29, 'scene': 'campfire', 'when': ['flag:camp_fire']},
-        {'id': 'workstump', 'kind': 'item', 'sprite': 'obj_workstump', 'x': 27, 'y': 30, 'scene': 'workstump'},
-        {'id': 'hide_frame', 'kind': 'sign', 'sprite': 'obj_hide_frame', 'x': 22, 'y': 30, 'when': ['flag:lesson_armour'],
-         'text': 'The frame you stretched the boar hide on, smelling of smoke.'},
-        {'id': 'ash', 'kind': 'item', 'sprite': 'obj_ash', 'x': ash[0], 'y': ash[1], 'scene': 'chop_ash', 'when': ['!flag:felled_ash']},
-        {'id': 'ash_stump', 'kind': 'item', 'sprite': 'obj_stump', 'x': ash[0], 'y': ash[1], 'scene': 'stump', 'when': ['flag:felled_ash']},
+        # deadwood for the village, while you're out with Rook (the hunt)
+        {'id': 'hwood1', 'kind': 'item', 'sprite': 'obj_log', 'x': path(34) + 3, 'y': 34, 'scene': 'forest_wood1', 'when': ['quest:hunt', '!flag:hunt_wood1']},
+        {'id': 'hwood2', 'kind': 'item', 'sprite': 'obj_log', 'x': 24, 'y': 28, 'scene': 'forest_wood2', 'when': ['quest:hunt', '!flag:hunt_wood2']},
+        {'id': 'hwood3', 'kind': 'item', 'sprite': 'obj_log', 'x': 10, 'y': 30, 'scene': 'forest_wood3', 'when': ['quest:hunt', '!flag:hunt_wood3']},
+        {'id': 'hwood4', 'kind': 'item', 'sprite': 'obj_log', 'x': 27, 'y': 33, 'scene': 'forest_wood4', 'when': ['quest:hunt', '!flag:hunt_wood4']},
         # the boar, rooting in the glade west of the camp once Ida sends you after it
         {'id': 'boar', 'kind': 'npc', 'sprite': 'obj_boar', 'x': 6, 'y': 25, 'facing': 'right', 'scene': 'boar',
-         'when': ['flag:lesson_water', '!flag:boar_killed']},
+         'when': ['quest:hunt', '!flag:boar_killed']},
         # the pack leader's den, in the north-east corner
         {'id': 'alpha', 'kind': 'npc', 'sprite': 'obj_wolf_alpha', 'x': 29, 'y': 3, 'facing': 'down', 'scene': 'den',
          'when': ['quest:pack', '!flag:alpha_dead']},
@@ -551,13 +547,8 @@ def hills():
         {'id': 'yarrow2', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 5, 'y': 17, 'scene': 'herb_yarrow2', 'when': ['!flag:yarrow2_today']},
         {'id': 'willow', 'kind': 'item', 'sprite': 'obj_willow', 'x': 12, 'y': 21, 'scene': 'herb_willow', 'when': ['!flag:willow_today']},
         {'id': 'sign_hills', 'kind': 'sign', 'sprite': 'obj_sign', 'x': path(36) + 2, 'y': 36,
-         'text': "Right: Ida's camp. Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."},
+         'text': "Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."},
     ]
-    for i, (x, y) in enumerate(marked, 1):
-        objects.append({'id': 'tree%d' % i, 'kind': 'item', 'sprite': 'obj_tree', 'x': x, 'y': y, 'scene': 'chop_tree%d' % i,
-                        'when': ['!flag:felled_tree%d' % i]})
-        objects.append({'id': 'stump%d' % i, 'kind': 'item', 'sprite': 'obj_stump', 'x': x, 'y': y, 'scene': 'stump',
-                        'when': ['flag:felled_tree%d' % i]})
     return {
         'id': 'skelmed_hills',
         'name': 'The forest above Skelmed',
@@ -571,7 +562,7 @@ def hills():
             {'x0': gx, 'y0': H - 1, 'x1': gx + 1, 'y1': H - 1, 'to': 'skelmed_north'},
             {'x0': 26, 'y0': 2, 'x1': 31, 'y1': 6, 'scene': 'den', 'when': ['quest:pack', '!flag:alpha_dead', '!flag:den_found']},
             # the boar charges when you come into its glade
-            {'x0': 3, 'y0': 23, 'x1': 9, 'y1': 29, 'scene': 'boar', 'when': ['flag:lesson_water', '!flag:boar_killed', '!flag:boar_seen']},
+            {'x0': 3, 'y0': 23, 'x1': 9, 'y1': 29, 'scene': 'boar', 'when': ['quest:hunt', '!flag:boar_killed', '!flag:boar_seen']},
         ],
         'uses': [
             {'tile': 'w', 'scene': 'hill_stream'},

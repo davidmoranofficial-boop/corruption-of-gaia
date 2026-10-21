@@ -665,6 +665,15 @@
       "skill": "bow",
       "desc": "Rook's old bow, ash and sinew, worn smooth where the hand goes. It takes both hands.",
       "damage": 5
+    },
+    {
+      "id": "hunting_dagger",
+      "name": "Hunting dagger",
+      "slot": "weapon",
+      "part": "pommel",
+      "desc": "Ida's gift: a broad-bladed hunter's dagger in a worn sheath. Short, sharp and honest.",
+      "damage": 4,
+      "skill": "dagger"
     }
   ],
   "traits": [
@@ -769,18 +778,19 @@
       "text": "Ask Ida at the hunters' lodge how you can help.",
       "when": [
         "flag:patch_done",
-        "!quest:forest",
-        "!done:forest"
+        "!quest:hunt",
+        "!done:hunt"
       ]
     },
     {
-      "text": "Ida says Skelmed's troubles come down the road from the town inland. (The road inland opens in the next part of the game.)",
+      "text": "Rook is waiting at Skelmed's north gate to set out for Eastmere. (Eastmere and the road to it open in the next part of the game.)",
       "when": [
-        "done:pack"
+        "flag:rook_escort",
+        "!flag:left_skelmed"
       ]
     },
     {
-      "text": "Rook is walking with you as far as the town inland. He has business there.",
+      "text": "Rook is walking with you to Eastmere, where Ida's sent him to find help for Skelmed.",
       "when": [
         "follower:rook",
         "flag:rook_escort"
@@ -956,7 +966,7 @@
           "kind": "npc",
           "sprite": "obj_wolf",
           "x": 15,
-          "y": 41,
+          "y": 38,
           "facing": "down",
           "when": [
             "!flag:dog_met"
@@ -1291,10 +1301,7 @@
           "x": 19,
           "y": 8,
           "facing": "down",
-          "scene": "ida",
-          "when": [
-            "!quest:forest"
-          ]
+          "scene": "ida"
         },
         {
           "id": "rook",
@@ -1377,6 +1384,26 @@
         },
         {
           "x0": 12,
+          "y0": 1,
+          "x1": 13,
+          "y1": 1,
+          "scene": "north_gate",
+          "when": [
+            "flag:rook_escort"
+          ]
+        },
+        {
+          "x0": 12,
+          "y0": 1,
+          "x1": 13,
+          "y1": 1,
+          "scene": "north_gate_alone",
+          "when": [
+            "flag:ida_alone"
+          ]
+        },
+        {
+          "x0": 12,
           "y0": 0,
           "x1": 13,
           "y1": 0,
@@ -1455,78 +1482,51 @@
       ],
       "objects": [
         {
-          "id": "ida_camp",
-          "kind": "npc",
-          "sprite": "npc_ida",
-          "x": 25,
-          "y": 31,
-          "facing": "left",
-          "scene": "ida_forest",
+          "id": "hwood1",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 17,
+          "y": 34,
+          "scene": "forest_wood1",
           "when": [
-            "quest:forest"
+            "quest:hunt",
+            "!flag:hunt_wood1"
           ]
         },
         {
-          "id": "firepit",
+          "id": "hwood2",
           "kind": "item",
-          "sprite": "obj_firepit",
+          "sprite": "obj_log",
           "x": 24,
-          "y": 29,
-          "scene": "campfire",
+          "y": 28,
+          "scene": "forest_wood2",
           "when": [
-            "!flag:camp_fire"
+            "quest:hunt",
+            "!flag:hunt_wood2"
           ]
         },
         {
-          "id": "campfire",
+          "id": "hwood3",
           "kind": "item",
-          "sprite": "obj_campfire",
-          "x": 24,
-          "y": 29,
-          "scene": "campfire",
+          "sprite": "obj_log",
+          "x": 10,
+          "y": 30,
+          "scene": "forest_wood3",
           "when": [
-            "flag:camp_fire"
+            "quest:hunt",
+            "!flag:hunt_wood3"
           ]
         },
         {
-          "id": "workstump",
+          "id": "hwood4",
           "kind": "item",
-          "sprite": "obj_workstump",
+          "sprite": "obj_log",
           "x": 27,
-          "y": 30,
-          "scene": "workstump"
-        },
-        {
-          "id": "hide_frame",
-          "kind": "sign",
-          "sprite": "obj_hide_frame",
-          "x": 22,
-          "y": 30,
+          "y": 33,
+          "scene": "forest_wood4",
           "when": [
-            "flag:lesson_armour"
-          ],
-          "text": "The frame you stretched the boar hide on, smelling of smoke."
-        },
-        {
-          "id": "ash",
-          "kind": "item",
-          "sprite": "obj_ash",
-          "x": 24,
-          "y": 21,
-          "scene": "chop_ash",
-          "when": [
-            "!flag:felled_ash"
-          ]
-        },
-        {
-          "id": "ash_stump",
-          "kind": "item",
-          "sprite": "obj_stump",
-          "x": 24,
-          "y": 21,
-          "scene": "stump",
-          "when": [
-            "flag:felled_ash"
+            "quest:hunt",
+            "!flag:hunt_wood4"
           ]
         },
         {
@@ -1538,7 +1538,7 @@
           "facing": "right",
           "scene": "boar",
           "when": [
-            "flag:lesson_water",
+            "quest:hunt",
             "!flag:boar_killed"
           ]
         },
@@ -1627,95 +1627,7 @@
           "sprite": "obj_sign",
           "x": 17,
           "y": 36,
-          "text": "Right: Ida's camp. Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."
-        },
-        {
-          "id": "tree1",
-          "kind": "item",
-          "sprite": "obj_tree",
-          "x": 21,
-          "y": 27,
-          "scene": "chop_tree1",
-          "when": [
-            "!flag:felled_tree1"
-          ]
-        },
-        {
-          "id": "stump1",
-          "kind": "item",
-          "sprite": "obj_stump",
-          "x": 21,
-          "y": 27,
-          "scene": "stump",
-          "when": [
-            "flag:felled_tree1"
-          ]
-        },
-        {
-          "id": "tree2",
-          "kind": "item",
-          "sprite": "obj_tree",
-          "x": 28,
-          "y": 27,
-          "scene": "chop_tree2",
-          "when": [
-            "!flag:felled_tree2"
-          ]
-        },
-        {
-          "id": "stump2",
-          "kind": "item",
-          "sprite": "obj_stump",
-          "x": 28,
-          "y": 27,
-          "scene": "stump",
-          "when": [
-            "flag:felled_tree2"
-          ]
-        },
-        {
-          "id": "tree3",
-          "kind": "item",
-          "sprite": "obj_tree",
-          "x": 21,
-          "y": 34,
-          "scene": "chop_tree3",
-          "when": [
-            "!flag:felled_tree3"
-          ]
-        },
-        {
-          "id": "stump3",
-          "kind": "item",
-          "sprite": "obj_stump",
-          "x": 21,
-          "y": 34,
-          "scene": "stump",
-          "when": [
-            "flag:felled_tree3"
-          ]
-        },
-        {
-          "id": "tree4",
-          "kind": "item",
-          "sprite": "obj_tree",
-          "x": 27,
-          "y": 33,
-          "scene": "chop_tree4",
-          "when": [
-            "!flag:felled_tree4"
-          ]
-        },
-        {
-          "id": "stump4",
-          "kind": "item",
-          "sprite": "obj_stump",
-          "x": 27,
-          "y": 33,
-          "scene": "stump",
-          "when": [
-            "flag:felled_tree4"
-          ]
+          "text": "Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."
         }
       ],
       "zones": [
@@ -1745,7 +1657,7 @@
           "y1": 29,
           "scene": "boar",
           "when": [
-            "flag:lesson_water",
+            "quest:hunt",
             "!flag:boar_killed",
             "!flag:boar_seen"
           ]
@@ -1793,7 +1705,7 @@
         "TTT.TT.TT...==========..........TT",
         "TT..TTTTT...T==..T.T..........TTTT",
         ".T...T...TT..==....T...........TTT",
-        "T..T..T.T....===.T.T.........T.TTT",
+        "T..T..T.T....===...T.........T.TTT",
         "TT.....TTTT..T==....T........TT.TT",
         "TTTTT.T.T.T...===.T.............TT",
         "TT.TT....TTT.T.===.....T...T..T.TT",
@@ -2026,40 +1938,37 @@
   ],
   "quests": [
     {
-      "id": "forest",
-      "name": "Into the woods",
+      "id": "hunt",
+      "name": "Wood and meat",
       "giver": "Ida",
-      "exp": 120,
-      "desc": "Ida has taken you up into the forest above Skelmed to teach you how to look after yourself out there: wood, fire, water, food, a bow and something to wear.",
+      "exp": 80,
+      "desc": "Ida has sent you up into the forest above Skelmed with her son Rook, to gather deadwood for the village and hunt the boar that's been rooting up the garden. Take it all back to her at the lodge.",
       "goals": [
         {
-          "text": "Fell three of Ida's marked trees",
-          "count": "flags:felled_tree",
+          "text": "Gather three bundles of deadwood in the forest",
+          "count": "flags:hunt_wood",
           "target": 3
         },
         {
-          "text": "Build a fire at the camp",
-          "when": "flag:camp_fire"
-        },
-        {
-          "text": "Fetch water from the stream and boil it",
-          "when": "flag:lesson_water"
-        },
-        {
-          "text": "Hunt the boar in the glade",
+          "text": "Hunt the boar with Rook",
           "when": "flag:boar_killed"
+        }
+      ]
+    },
+    {
+      "id": "eastmere",
+      "name": "The road to Eastmere",
+      "giver": "Ida",
+      "exp": 0,
+      "desc": "\"Things are getting worse around here. If we don't get help soon, this village is done for.\" Ida is sending Rook to Eastmere, the nearest town, to find someone who'll help Skelmed, and you're going with him.",
+      "goals": [
+        {
+          "text": "Set out with Rook through Skelmed's north gate",
+          "when": "flag:left_skelmed"
         },
         {
-          "text": "Cook the meat",
-          "when": "flag:lesson_cook"
-        },
-        {
-          "text": "Make a bow from the young ash",
-          "when": "flag:lesson_bow"
-        },
-        {
-          "text": "Make leather armour from the hide",
-          "when": "flag:lesson_armour"
+          "text": "Reach Eastmere",
+          "when": "flag:eastmere_reached"
         }
       ]
     },
@@ -2294,7 +2203,7 @@
       "energy": 80,
       "morale": 55,
       "leaves": false,
-      "until": "Walking with you as far as the town inland, where he has business. Then he goes his own way.",
+      "until": "Ida's sent him to Eastmere to find help for Skelmed, and you're walking with him. After that he goes his own way.",
       "untilWhen": [
         "flag:rook_escort"
       ],

@@ -928,6 +928,24 @@ namespace Loran.Core
             {
                 foreach (var x in sc.extra) foreach (var c in x.when) Cond(sc.id + " (extra text)", c);
                 foreach (var e in sc.onEnter) Effect(sc.id + " (on enter)", e);
+                foreach (var step in sc.script)
+                {
+                    var sp = step.Split(':');
+                    int need;
+                    switch (sp[0])
+                    {
+                        case "say": need = 3; break;
+                        case "narrate": case "wait": case "hide": case "show": case "lie": case "stand": case "camera": case "fade": case "flash": case "sound": need = 2; break;
+                        case "shake": need = 1; break;
+                        case "face": case "emote": need = 3; break;
+                        case "walk": need = 4; break;
+                        case "spawn": need = 5; break;
+                        case "arrow": need = 5; break;
+                        default: problems.Add(sc.id + " (script): unknown step '" + step + "'"); continue;
+                    }
+                    if (sp.Length < need) problems.Add(sc.id + " (script): '" + step + "' is missing something");
+                }
+                if (sc.script.Count > 0 && sc.choices.Count == 0) problems.Add(sc.id + ": a scene with a script needs a choice to take when it ends");
                 for (int i = 0; i < sc.choices.Count; i++)
                 {
                     var ch = sc.choices[i];

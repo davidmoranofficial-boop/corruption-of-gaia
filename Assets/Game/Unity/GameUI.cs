@@ -631,14 +631,9 @@ namespace Loran.UnityLayer
         {
             var s = engine.S;
             var known = Section(left, "WHAT YOU CAN MAKE");
-            // what Ida's taught you up in the forest (David, 21 Oct); forging waits for the next town
+            // crafting at stations comes in its own step (slice plan, 21 Oct); for now, what you've picked up
             var made = new List<(string flag, string name, string how)>
             {
-                ("camp_fire", "A fire", "Three lots of wood and a flint. Small stuff first, then the logs."),
-                ("lesson_water", "Clean water", "Boil stream water over a fire before you drink it."),
-                ("lesson_cook", "Roast meat", "Raw meat over a fire, turned until it's cooked through."),
-                ("lesson_bow", "A hunting bow", "A stave cut from a young ash, and sinew for the string."),
-                ("lesson_armour", "Leather armour", "A hide, scraped, smoked over a fire and cut to fit."),
                 ("smith_done", "Basic forging", "A knife, a buckler or work gloves, from a bar of iron at a forge."),
             };
             int count = 0;
@@ -649,9 +644,9 @@ namespace Loran.UnityLayer
                 Add(known, new Label(how), "line-muted");
                 count++;
             }
-            if (count == 0) Add(known, new Label("You don't know how to make anything yet. Someone in Skelmed who knows the woods could teach you."), "line-muted");
+            if (count == 0) Add(known, new Label("You don't know how to make anything yet."), "line-muted");
             var where = Section(right, "WHERE TO CRAFT");
-            Add(where, new Label(s.Has("lesson_bow") ? "Ida's camp, in the forest above Skelmed: the fire and the work stump" : "Nowhere yet."), "line");
+            Add(where, new Label("Nowhere yet."), "line");
             Add(where, new Label("Crafting takes time, and time never stops."), "line-muted");
         }
 
@@ -1118,6 +1113,7 @@ namespace Loran.UnityLayer
             }
             if (engine.S.scene == Engine.Title && TitleKey(e)) { e.StopPropagation(); return; }
             if (InBattle) { BattleKey(e); e.StopPropagation(); return; }
+            if (DirectorActive && InWorld && openMenu == "") { DirectorKey(e); e.StopPropagation(); return; }
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
             if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
             if (openMenu == "wheel") { WheelKey(e); e.StopPropagation(); return; }

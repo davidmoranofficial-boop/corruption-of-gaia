@@ -107,7 +107,10 @@ namespace Loran.UnityLayer
             // The box at the bottom: a story scene, a message, or the actions
             shownChoices = new List<ChoiceView>();
             bool scene = s.scene != Engine.TravelId || s.inCombat;
-            if (scene)
+            if (!HasScript) dirScene = null;
+            dlgDirector = false;
+            if (scene && HasScript) DirectorDraw();
+            else if (scene)
             {
                 var sc = engine.Current;
                 DialogueBox(sc.title, s.result, engine.Paragraphs(), engine.Choices(), false, false, sc.speaker);
@@ -116,7 +119,7 @@ namespace Loran.UnityLayer
             else if (actionsOpen) DialogueBox("What now?", null, null, engine.Choices(), false, true);
 
             bool talking = worldView.Q(className: "dialogue") != null;
-            help.style.display = talking ? DisplayStyle.None : DisplayStyle.Flex;
+            help.style.display = talking || DirectorActive ? DisplayStyle.None : DisplayStyle.Flex;
             hud.EnableInClassList("hud-talking", talking);   // the bars step aside while the dialogue box is up
             if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
@@ -136,6 +139,7 @@ namespace Loran.UnityLayer
         IVisualElementScheduledItem dlgTick;
         float dlgStart;
         bool dlgMessage;
+        bool dlgDirector;   // a line in an in-world cutscene: Space moves the cutscene on
 
         /// <summary>Splits text into short pages, at sentence ends where it can.</summary>
         static List<string> Pages(IEnumerable<string> parts)
@@ -230,7 +234,7 @@ namespace Loran.UnityLayer
         void PageDone()
         {
             bool last = dlgPage >= dlgPages.Count - 1;
-            if (!last) { dlgMore.text = "Space  ▼"; Show(dlgChoices, false); return; }
+            if (!last || dlgDirector) { dlgMore.text = "Space  ▼"; Show(dlgChoices, false); return; }
             if (dlgMessage) { dlgMore.text = "Space  ▼"; return; }
             dlgMore.text = "";
             ShowChoices();
@@ -580,6 +584,7 @@ namespace Loran.UnityLayer
         {
             if (worldView == null || worldView.panel == null) return;
             MoveWeather();
+            if (DirectorActive) { DirectorTick(); return; }
             if (walkPath != null) PlaceWalk();
             var s = engine.S;
             // Out of a fight your breath comes back by itself; redraw the bars a few times a second while it does

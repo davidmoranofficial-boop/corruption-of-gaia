@@ -3,25 +3,59 @@
     {
       "id": "wolf_rescue",
       "title": "Something in the road",
-      "cutscene": "wolf",
       "onEnter": [
         "flag:dog_met",
         "flag:ida_met",
         "flag:ida_saved",
         "wound:bite:the wolf"
       ],
-      "text": [
-        "A wolf is standing in the middle of the road. All ribs, its coat matted with salt and burrs, its eyes a flat, sick yellow. It doesn't blink.",
-        "It's on you before you can move. Teeth sink into your forearm and the ground comes up hard.",
-        "An arrow hisses past your ear. Then another. The wolf yelps, lets go, and doesn't get up.",
-        "\"Steady. It's done.\" A woman with a bow kneels beside you. \"You're the one Yenson pulled out of the sea? Ida. I keep the hunters' lodge in Skelmed.\"",
-        "She looks at your arm. \"That wants cleaning before it turns. Get yourself into Skelmed and find Bess at the gate. Tell her I sent you.\""
-      ],
+      "text": [],
       "choices": [
         {
           "label": "Get up",
           "go": "travel"
         }
+      ],
+      "script": [
+        "walk:you:15:43",
+        "face:you:up",
+        "sound:wolf_growl:0.9",
+        "emote:you:!",
+        "wait:0.6",
+        "narrate:A wolf is standing in the middle of the road. All ribs, its coat matted with salt and burrs, its eyes a flat, sick yellow.",
+        "narrate:It doesn't blink.",
+        "sound:wolf_snarl",
+        "walk:wolf:15:42:run",
+        "sound:player_hurt",
+        "sound:hit:0.8",
+        "flash:red:0.7",
+        "shake:0.5",
+        "lie:you",
+        "wait:0.5",
+        "narrate:It's on you before you can move. Teeth sink into your forearm, and the ground comes up hard.",
+        "arrow:16.4:31:16.2:42.2",
+        "wait:0.6",
+        "arrow:15.6:31:15.2:41.6:0.3",
+        "sound:beast_hurt",
+        "walk:wolf:16:41:run",
+        "lie:wolf",
+        "sound:enemy_die:0.7",
+        "wait:0.6",
+        "narrate:An arrow hisses past your ear. Then another. The wolf yelps, lets go, and doesn't get up.",
+        "spawn:ida:npc_ida:16:32:down",
+        "camera:15.5:38:1.2",
+        "walk:ida:16:42",
+        "face:ida:left",
+        "say:Ida:\"Steady. It's done.\"",
+        "camera:you:0.8",
+        "stand:you",
+        "face:you:right",
+        "say:Ida:\"You're the one Yenson pulled out of the sea? Ida. I keep the hunters' lodge in Skelmed.\"",
+        "emote:ida:...",
+        "say:Ida:She takes your arm and turns it to the light. \"Third one this month with eyes like that.\"",
+        "say:Ida:\"That bite wants cleaning before it turns. Get yourself into Skelmed and find Bess at the gate. Tell her I sent you.\"",
+        "walk:ida:16:33",
+        "hide:ida"
       ]
     },
     {

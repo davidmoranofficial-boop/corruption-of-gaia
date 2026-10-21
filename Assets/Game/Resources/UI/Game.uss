@@ -1563,6 +1563,51 @@
     color: var(--lantern);
 }
 
+/* ---------- in-world cutscenes (GameUI.Director.cs) ---------- */
+.dir-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 7%;
+    background-color: rgb(0, 0, 0);
+}
+.dir-bar-top { top: 0; }
+.dir-bar-bottom { bottom: 0; }
+.dir-cover {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+}
+.dir-hint {
+    position: absolute;
+    right: 24px;
+    top: 1.5%;
+    font-size: 15px;
+    color: rgba(230, 220, 200, 0.6);
+}
+.dir-emote {
+    position: absolute;
+    padding: 0 6px;
+    border-radius: 6px;
+    background-color: rgb(250, 244, 228);
+    color: rgb(40, 28, 20);
+    border-width: 2px;
+    border-color: rgb(40, 28, 20);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+.dir-arrow {
+    position: absolute;
+    background-color: rgb(107, 74, 43);
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(216, 216, 208);
+    border-top-width: 2px;
+    border-top-color: rgb(232, 224, 208);
+}
+
 /* ---------- forge ---------- */
 
 .forge {

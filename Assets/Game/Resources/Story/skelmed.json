@@ -51,37 +51,34 @@
         {
           "when": [
             "!untreated:bite",
-            "!quest:forest",
-            "!done:forest"
+            "!quest:hunt",
+            "!done:hunt"
           ],
           "text": "Ida looks up from the arrow she's fletching. \"Bess has seen to you? Good. You'll live, then.\""
         },
         {
           "when": [
-            "done:forest",
-            "!quest:pack",
-            "!done:pack"
+            "quest:hunt",
+            "!ready:hunt"
           ],
-          "text": "\"You did all right up there. Better than all right.\" She sets down the arrow. \"There's something else, though, and it's been eating at me.\""
+          "text": "\"Deadwood and that boar. Rook knows where. Go on, the pair of you.\""
         },
         {
           "when": [
-            "quest:pack",
-            "!ready:pack"
+            "done:hunt",
+            "!flag:rook_escort"
           ],
-          "text": "\"The den's in the north-east corner of the forest, past the stream. Keep Rook fed and behind you. Bring him back.\""
+          "text": "\"Well?\""
         },
         {
           "when": [
-            "done:pack",
-            "!flag:dead_rook",
-            "!flag:ida_town"
+            "flag:rook_escort"
           ],
-          "text": "\"The village owes you. I'll not forget it.\""
+          "text": "\"Look after him. And yourself.\" She doesn't look up from the arrow, but her hands have gone still."
         },
         {
           "when": [
-            "flag:dead_rook"
+            "flag:ida_alone"
           ],
           "text": "Ida doesn't quite look at you. There's a bow hung over the lodge door that wasn't there before."
         }
@@ -97,7 +94,7 @@
             "flag:ida_thanks",
             "rep:skelmed+2"
           ],
-          "result": "\"Don't. I was after that wolf anyway. Third one this month with eyes like that.\" She frowns. \"You were lucky I was.\""
+          "result": "\"Don't. I was after that wolf anyway.\" She frowns. \"You were lucky I was.\""
         },
         {
           "label": "\"What happened to Skelmed?\"",
@@ -114,77 +111,35 @@
           "label": "\"How can I help?\"",
           "when": [
             "!untreated:bite",
-            "!quest:forest",
-            "!done:forest"
+            "!quest:hunt",
+            "!done:hunt"
           ],
-          "time": 10,
-          "effects": [
-            "quest:forest",
-            "give:wood_axe",
-            "item:pail+1",
-            "travel:place:forest_camp"
-          ],
-          "result": "Ida laughs, once. \"Help. Right.\" She looks you up and down. \"There's a dozen of us left in Skelmed and most of them are old. What we need is someone who can look after themselves out there, so nobody has to look after them.\" She shoulders her bow and hands you a wood axe and a pail. \"Come on, up the hill. I'll show you how to stay alive in the woods, and you can fill the woodshed while you learn.\" You follow her up the lane, out of the village and in under the trees.",
-          "go": "travel"
+          "go": "ida_send"
         },
         {
-          "label": "\"Anything else?\"",
+          "label": "\"We're back. Wood, and a boar.\"",
           "when": [
-            "done:forest",
-            "!quest:pack",
-            "!done:pack"
-          ],
-          "time": 10,
-          "effects": [
-            "quest:pack",
-            "follow:rook",
-            "item:fish+1",
-            "item:bandage+2",
-            "item:spirits+1"
-          ],
-          "result": "\"The wolves. There's a big one leading them now: grey, scar across its muzzle, denning in the north-east of the forest. Kill it and the rest will scatter.\" She whistles, and Rook comes round the lodge with his bow. \"He goes with you. He knows the woods.\" She pushes a fish, two rolls of linen and a flask of spirits into your arms. \"Feed him first. And clean any bite before you bind it. You know how, now.\""
-        },
-        {
-          "label": "\"The pack leader's dead.\"",
-          "when": [
-            "ready:pack",
+            "ready:hunt",
             "follower:rook"
           ],
-          "time": 15,
-          "effects": [
-            "complete:pack",
-            "coins+200",
-            "rep:skelmed+10",
-            "item:fish+2",
-            "flag:rook_escort"
-          ],
-          "result": "Ida looks at the pelt, then at Rook, then at you, and lets out a breath she seems to have been holding for a month. \"Good.\" She presses two silver on you, and this time she won't hear a word about it. Rook clears his throat. \"I've business in the town inland. Pelts to sell, and a man there who owes the lodge money.\" He shrugs his bow higher on his shoulder. \"Roads are bad. I'll walk with you as far as the town, if you're going. After that you're on your own.\""
+          "go": "ida_home"
         },
         {
-          "label": "\"The pack leader's dead. Rook isn't coming back.\"",
+          "label": "\"We're back. Rook isn't.\"",
           "when": [
-            "ready:pack",
+            "ready:hunt",
             "!follower:rook"
           ],
           "time": 20,
           "effects": [
-            "complete:pack",
-            "coins+200",
-            "rep:skelmed+5"
+            "complete:hunt",
+            "give:leather_jerkin",
+            "give:leather_boots",
+            "give:hunting_dagger",
+            "quest:eastmere",
+            "flag:ida_alone"
           ],
-          "result": "Ida takes the pelt without looking at it. For a long time she doesn't say anything at all. \"He was nineteen,\" she says at last. She puts two silver in your hand and closes your fingers over them, and goes inside, and shuts the door."
-        },
-        {
-          "label": "\"What now?\"",
-          "when": [
-            "done:pack",
-            "!flag:ida_town"
-          ],
-          "time": 5,
-          "effects": [
-            "flag:ida_town"
-          ],
-          "result": "Ida's quiet for a while. \"You've done right by us. But a few odd jobs won't mend this place. Everything that's wrong here comes down the road from the town inland: the collector, the levy, the soldiers who won't clear the roads.\" She looks you up and down. \"Somebody ought to go and see. Somebody who can handle themselves.\""
+          "result": "Ida doesn't say anything for a long time. \"He was nineteen,\" she says at last. She goes into the lodge and comes back with his old jerkin and boots, and a dagger, and puts them in your arms. \"Take them. He'd want them used.\" Then, quieter: \"Things are getting worse around here. If we don't get help soon, this village is done for. He was going to go to Eastmere for us.\" She looks at you. \"Somebody still has to.\""
         },
         {
           "label": "\"Goodbye.\"",
@@ -373,6 +328,158 @@
       "choices": [
         {
           "label": "\"I'm on it.\"",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ida_send",
+      "title": "Ida",
+      "speaker": "Ida",
+      "safe": true,
+      "text": [],
+      "script": [
+        "walk:you:19:9",
+        "face:you:up",
+        "emote:ida:...",
+        "say:Ida:\"Help.\" She laughs, once. \"Right.\"",
+        "say:Ida:\"There's a dozen of us left in Skelmed and most of them are old. The woodshed's near empty, and we've eaten nothing but fish for a month.\"",
+        "face:ida:left",
+        "say:Ida:\"Rook!\"",
+        "emote:rook:!",
+        "walk:rook:18:9",
+        "face:rook:up",
+        "say:Rook:\"Ma?\"",
+        "say:Ida:\"Take our guest up the hill. Deadwood for the shed, and that boar that's been rooting up the garden. Bring back both.\"",
+        "face:rook:right",
+        "face:you:left",
+        "say:Rook:\"Wolf-bitten and straight out hunting.\" He grins at you. \"Ma likes you. Come on, the forest's up the north lane.\""
+      ],
+      "choices": [
+        {
+          "label": "Go with Rook",
+          "effects": [
+            "quest:hunt",
+            "follow:rook"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ida_home",
+      "title": "Ida",
+      "speaker": "Ida",
+      "safe": true,
+      "text": [],
+      "onEnter": [
+        "complete:hunt",
+        "rep:skelmed+5"
+      ],
+      "script": [
+        "walk:you:19:9",
+        "face:you:up",
+        "walk:rook:18:9",
+        "face:rook:up",
+        "say:Ida:\"Well. Look at that.\" She walks round the boar twice. \"Clean kill. And the shed'll be full by dark.\"",
+        "say:Ida:\"You came out of the sea with nothing, and the first thing you did was help us. That's rarer than you'd think, round here.\"",
+        "walk:ida:17:7",
+        "face:ida:up",
+        "hide:ida",
+        "wait:1.2",
+        "show:ida",
+        "walk:ida:19:8",
+        "face:ida:down",
+        "say:Ida:She hands you an armful of leather and a dagger in a worn sheath. \"Rook's old jerkin and boots. He's grown out of them, he just won't say so.\"",
+        "say:Ida:\"And a proper blade. That fish knife won't stop anything bigger than a crab.\"",
+        "face:rook:right",
+        "say:Rook:\"I've not grown out of them.\" A pause. \"...They pinch.\"",
+        "emote:ida:...",
+        "face:ida:left",
+        "narrate:Ida's smile goes. She looks past you both, down the street, at the boarded doors.",
+        "say:Ida:\"Rook. Things are getting worse around here. If we don't get help soon, this village is done for.\"",
+        "face:rook:up",
+        "say:Rook:\"Ma...\"",
+        "say:Ida:\"Wolves on the coast road with eyes like that. The levy. Half the houses empty. We can't mend that with bows.\"",
+        "say:Ida:\"I want you to go to Eastmere. Find the reeve, the guard captain, anyone who'll listen, and tell them what's happening here.\"",
+        "emote:rook:!",
+        "say:Rook:\"Eastmere? That's days on a bad road.\"",
+        "face:ida:down",
+        "say:Ida:\"Then you'd best not go alone.\" She looks at you.",
+        "say:Ida:\"You can look after yourself. I've seen it. Go with him and see him there safe. There's nothing for you here but fish.\"",
+        "face:rook:right",
+        "say:Rook:\"Ready when you are. I'll be at the north gate.\""
+      ],
+      "choices": [
+        {
+          "label": "Go with Rook to Eastmere",
+          "effects": [
+            "give:leather_jerkin",
+            "give:leather_boots",
+            "give:hunting_dagger",
+            "flag:rook_escort",
+            "quest:eastmere"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "north_gate",
+      "title": "The north gate",
+      "text": [],
+      "onEnter": [
+        "flag:left_skelmed"
+      ],
+      "script": [
+        "walk:you:12:2",
+        "face:you:up",
+        "walk:rook:13:2",
+        "face:rook:up",
+        "say:Rook:\"Eastmere's inland, east past the forest and over the hills. A few days, if the road's kind.\"",
+        "face:rook:left",
+        "say:Rook:\"It won't be.\"",
+        "face:rook:up",
+        "walk:you:12:0:nowait",
+        "walk:rook:13:0",
+        "fade:out:1.5",
+        "narrate:And so you leave Skelmed behind you, with Rook at your side and the road to Eastmere ahead.",
+        "narrate:This is where the opening ends for now. Eastmere, and the road to it, are being built next.",
+        "fade:in:1"
+      ],
+      "choices": [
+        {
+          "label": "Back into Skelmed",
+          "effects": [
+            "travel:place:skelmed_north"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "north_gate_alone",
+      "title": "The north gate",
+      "text": [],
+      "onEnter": [
+        "flag:left_skelmed"
+      ],
+      "script": [
+        "walk:you:12:2",
+        "face:you:up",
+        "wait:0.8",
+        "walk:you:12:0",
+        "fade:out:1.5",
+        "narrate:And so you leave Skelmed behind you, alone, with the road to Eastmere ahead and Rook's dagger at your belt.",
+        "narrate:This is where the opening ends for now. Eastmere, and the road to it, are being built next.",
+        "fade:in:1"
+      ],
+      "choices": [
+        {
+          "label": "Back into Skelmed",
+          "effects": [
+            "travel:place:skelmed_north"
+          ],
           "go": "travel"
         }
       ]

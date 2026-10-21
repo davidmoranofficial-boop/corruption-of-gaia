@@ -1397,6 +1397,8 @@ WHITE = ['#e8e2d6', '#cfc6bb', '#a69e9a']
 OLDBLUE = ['#5a7f88', '#46676a', '#253236']
 
 # Townsfolk: figure, skin, hair style, hair colour, beard, then what they wear (layers from the waist out) and carry.
+ITEM_ART['hunting_dagger'] = ITEM_ART['knife']   # Ida's gift looks like a plain knife on the belt
+
 NPCS = {
     'npc_yenson': ('male', 'olive', 'short', 'grey', 'beard',
                    [Look({'thigh': SLATE, 'shin': SLATE, 'belt': SLATE, 'buckle': SLATE}), Look({'foot': DARKLEATHER}),

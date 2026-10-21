@@ -359,6 +359,8 @@ def paint(rows, seed=1):
                 cv.put(jx + dx, by + dy, k)
                 if front: cv.put(jx + dx, by + dy, k, over=True)
 
+    paint_bridges(cv, rows, cls, seed)
+
     # ------------------------------------------------------------------ things on the ground
     trees = []
     for ty in range(H):
@@ -437,14 +439,7 @@ def paint(rows, seed=1):
                         cv.put(px, y, 'D' if y > Y0 + 3 else 'd'); cv.put(px + 1, y, 'b')
                     cv.shade(px, Y0 + 14); cv.shade(px + 1, Y0 + 14); cv.shade(px + 2, Y0 + 14)
             elif t == 'b':
-                for y in range(Y0, Y0 + T):
-                    for x in range(X0 + 1, X0 + T - 1):
-                        k = 'D' if (y - Y0) % 4 else 'b'
-                        if (x * 5 + y) % 23 == 0: k = 'd'
-                        cv.put(x, y, k)
-                    for x in (X0, X0 + T - 1): cv.put(x, y, 'B')
-                for x in (X0 + 1, X0 + T - 2):
-                    for y in range(Y0, Y0 + T): cv.put(x, y, 'b' if y % 4 else 'B')
+                pass                                      # bridges are drawn whole by paint_bridges
             elif t == 's':
                 for y in range(Y0, Y0 + T):
                     for x in range(X0 + 2, X0 + T - 2):
@@ -979,3 +974,231 @@ def paint_wreck(cv, rows, tx, ty, r):
         if X not in tops: continue
         Y = tops[X] + band - r.randint(1, 3)
         if (X, Y) in outside: cv.put(X, Y, 'W' if r.random() < 0.3 else 'Y'); cv.put(X + 1, Y + 1, 'g')
+
+
+# ------------------------------------------------------------------ bridges (21 Oct)
+
+PLANK = {'d': ('z', 'd', 'D'), 'D': ('d', 'D', 'b'), 'b': ('D', 'b', 'B')}   # lit edge, face, shaded edge
+
+
+def paint_bridges(cv, rows, cls, seed):
+    """Each run of 'b' tiles becomes one bridge, drawn whole: a deck of planks laid across the way you walk, log rails
+    on posts (rope rails on a one-tile footbridge), pilings standing in the water with foam round them, the deck's
+    shadow on the stream, and a sill log with a few stones where it rests on each bank. Which way the bridge runs is
+    read from the tiles beside it: water to the sides means you walk it up and down."""
+    H, W = len(rows), len(rows[0])
+    cells = {(x, y) for y in range(H) for x in range(W) if rows[y][x] == 'b'}
+    seen = set()
+    for c0 in sorted(cells, key=lambda p: (p[1], p[0])):
+        if c0 in seen: continue
+        comp, i = [c0], 0
+        seen.add(c0)
+        while i < len(comp):
+            x, y = comp[i]; i += 1
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                n = (x + dx, y + dy)
+                if n in cells and n not in seen: seen.add(n); comp.append(n)
+        _bridge(cv, rows, cls, comp, random.Random(seed * 31 + c0[0] * 977 + c0[1] * 131))
+
+
+def _bridge(cv, rows, cls, comp, r):
+    H, W = len(rows), len(rows[0])
+    PH, PW = cls.shape
+
+    def wet_tile(x, y):
+        return 0 <= x < W and 0 <= y < H and rows[y][x] == 'w'
+    side = sum(wet_tile(x - 1, y) + wet_tile(x + 1, y) for x, y in comp)
+    ends = sum(wet_tile(x, y - 1) + wet_tile(x, y + 1) for x, y in comp)
+    vert = side >= ends                       # walked up and down; the stream runs left to right under it
+    xs, ys = [p[0] for p in comp], [p[1] for p in comp]
+    a0, a1 = (min(ys), max(ys)) if vert else (min(xs), max(xs))
+    c0, c1 = (min(xs), max(xs)) if vert else (min(ys), max(ys))
+    V0, Wd = c0 * T, (c1 - c0 + 1) * T       # across the deck
+    wide = Wd >= 2 * T
+
+    def P(u, v):                              # bridge space (u along the way you walk, v across) to pixels
+        return (V0 + v, U0 + u) if vert else (U0 + u, V0 + v)
+
+    def water_at(x, y):
+        return 0 <= x < PW and 0 <= y < PH and cls[y, x] == STREAM
+
+    # how far the water reaches under the deck decides where the banks are
+    U0 = 0
+    wetA = [A for A in range((a0 - 1) * T, (a1 + 2) * T)
+            if any(water_at(*((V0 + v, A) if vert else (A, V0 + v))) for v in range(Wd))]
+    ws, we = (min(wetA), max(wetA)) if wetA else (a0 * T, (a1 + 1) * T - 1)
+    start = max(min(a0 * T, ws - 3), a0 * T - 6)
+    end = min(max((a1 + 1) * T, we + 4), (a1 + 1) * T + 6)
+    U0, L = start, end - start
+    wu0, wu1 = ws - U0, we - U0              # the water, in bridge space
+
+    def put(u, v, k, over=False):
+        cv.put(*P(u, v), k, over)
+
+    def shade(u, v, n=1):
+        x, y = P(u, v)
+        if water_at(x, y): cv.shade(x, y, n)
+
+    def wet(u, v):
+        return water_at(*P(u, v))
+
+    lo_d, hi_d = (-1, Wd) if wide else (2, Wd - 3)          # how far the planks reach across
+    if not vert: hi_d = min(hi_d, Wd - 1)
+
+    # the deck's shadow on the water: deep on the side away from the light, a thin rim on the lit side
+    for u in range(-1, L + 1):
+        for d in range(1, 6):
+            shade(u, hi_d + d, 2 if d <= (3 if vert else 4) else 1)
+        shade(u, lo_d - 1)
+        if vert: shade(u, lo_d - 2)
+
+    # pilings, with foam and ripples where they meet the water
+    posts = [1, L - 5]
+    if L > 34: posts.insert(1, L // 2 - 2)
+    span = wu1 - wu0
+    pu = [wu0 + span // 4, wu1 - span // 4] if span > 20 else [(wu0 + wu1) // 2 - 1]
+    pu = [u for u in pu if 0 <= u < L - 3 and all(abs(u - q) > 5 for q in posts)]
+
+    def foam(x, y, out_dx, out_dy):
+        for (dx, dy, k) in ((-1, 0, 'c'), (1, 0, 'c'), (0, -1, 'c'), (0, 1, 'c'), (-1, -1, 'C'), (1, 1, 'C')):
+            if water_at(x + dx, y + dy) and cv.get(x + dx, y + dy) not in 'oBbDd': cv.put(x + dx, y + dy, k)
+        for i in range(2, 6):                 # a little wake trailing off, broken up
+            for s in (-1, 1):
+                X, Y = x + out_dx * i + (s * (i // 2) if out_dy == 0 else 0) * 0, y + out_dy * i
+                X, Y = (x + out_dx * i, y + s * (i // 2)) if out_dy == 0 else (x + s * (i // 2), y + out_dy * i)
+                if (i + s) % 3 and water_at(X, Y): cv.put(X, Y, 'c' if i < 4 else 'C')
+        if water_at(x + out_dx * 2, y + out_dy * 2): cv.put(x + out_dx * 2, y + out_dy * 2, 'W')
+
+    for u in pu:
+        if vert:
+            pw = 4 if wide else 3
+            for (x0, out) in ((V0 + lo_d - pw - 1, -1), (V0 + hi_d + 2, 1)):
+                y0 = U0 + u
+                if not water_at(x0 + pw // 2, y0 + 3): continue
+                _post(cv, x0, y0, pw, 3, 3)
+                foam(x0 + (0 if out < 0 else pw - 1), y0 + 5, out, 0)
+                for i in range(pw):
+                    if water_at(x0 + i, y0 + 6): cv.put(x0 + i, y0 + 6, 'c' if i % 2 else 'W')
+        else:
+            pw = 4 if wide else 3
+            if not wet(u + 1, hi_d + 4): continue
+            x0, y0 = P(u, hi_d + 3)
+            for j in range(4 if wide else 3):
+                for i in range(pw):
+                    k = ('o', 'b', 'B', 'o')[i] if pw == 4 else ('o', 'b', 'o')[i]
+                    if j == 0 and 0 < i < pw - 1: k = 'D'
+                    cv.put(x0 + i, y0 + j, k)
+            y1 = y0 + (4 if wide else 3)
+            for i in range(pw): cv.put(x0 + i, y1, 'W' if i % 2 else 'c')
+            foam(x0 + pw // 2, y1, 0, 1)
+
+    # the side of the deck: a stringer's dark edge over the water (the front face, on a bridge you cross sideways)
+    for u in range(0, L):
+        if vert:
+            if wet(u, hi_d + 1): put(u, hi_d + 1, 'B')
+        else:
+            put(u, hi_d + 1, 'b' if u % 5 else 'B'); put(u, hi_d + 2, 'B'); shade(u, hi_d + 3, 2)
+
+    # the deck: planks laid across the way, each lit along one edge and shaded on the other, with gaps between
+    pitch = 5 if wide else 4
+    for p in range(-(-L // pitch)):
+        tone = r.choice('DDDDbbd')
+        lit, mid, dark = PLANK[tone]
+        lo = lo_d + r.choice((0, 0, 1)); hi = hi_d - r.choice((0, 0, 1))
+        if not wide: lo, hi = lo - r.choice((0, 1)), hi + r.choice((0, 1))
+        grain = [(r.randint(lo + 1, max(lo + 1, hi - 4)), r.randint(2, 5)) for _ in range(2 if wide else 1)]
+        knot = r.randint(lo + 2, max(lo + 2, hi - 2)) if r.random() < 0.4 else None
+        split = r.randint(lo + 3, max(lo + 3, hi - 3)) if r.random() < 0.15 else None
+        for j in range(pitch):
+            u = p * pitch + j
+            if u >= L: break
+            for v in range(lo_d - 1, hi_d + 1):
+                if j == pitch - 1 or v < lo or v > hi:          # the gap between planks, or past a plank's end
+                    if lo_d <= v <= hi_d or j == pitch - 1 and lo <= v <= hi:
+                        put(u, v, 'o' if wet(u, v) and (v + p * 5) % 13 < 3 else 'B')
+                    continue
+                k = lit if j == 0 else dark if j == pitch - 2 else mid
+                if v in (lo, hi) and j > 0: k = dark                      # plank ends
+                if 0 < j < pitch - 2:
+                    for (g0, gl) in grain:
+                        if g0 <= v < g0 + gl and (j + p) % 2 == 0: k = dark
+                    if knot is not None and v == knot and j == 1: k = PLANK['b'][2]
+                    if split is not None and split <= v < split + 3 and j == pitch - 3: k = 'B'
+                put(u, v, k)
+        if wide:                                                # nails over the two inner stringers
+            for sv in (Wd // 3, Wd - 1 - Wd // 3):
+                if lo < sv < hi and p * pitch + 1 < L: put(p * pitch + 1, sv, 'B' if tone != 'b' else 'o')
+
+    # sill logs where the deck rests on the banks, a few stones packed round them
+    sv0, sv1 = (lo_d - 3, hi_d + 3) if wide else (lo_d - 2, hi_d + 2)
+    for (s0, face) in ((-3, 'o'), (L, 'o')):
+        for i, k in enumerate(('d', 'D', 'b')):
+            for v in range(sv0, sv1 + 1):
+                kk = k
+                if v in (sv0, sv1): kk = ('D', 'b', 'B')[i]
+                if (v * 3 + i) % 7 == 0 and i == 1: kk = 'b'
+                put(s0 + i, v, kk)
+        for v in range(sv0, sv1 + 1): put(s0 + 3, v, face if s0 == L or not vert else 'B')
+        put(s0 + 1, sv0 - 1, 'o'); put(s0 + 1, sv1 + 1, 'o')
+        for (sv, sd) in ((sv0 - 5, -1), (sv1 + 1, 1)):     # a big stone and a small one each side
+            xa, ya = P(s0 - 1 + r.choice((0, 1)), sv); xb, yb = P(s0 + 3, sv + 4)
+            _stone(cv, min(xa, xb), min(ya, yb), 5, 4)
+            xa, ya = P(s0 + (4 if s0 < 0 else -3), sv + 1 + sd); xb, yb = P(s0 + (6 if s0 < 0 else -1), sv + 3 + sd)
+            _stone(cv, min(xa, xb), min(ya, yb), 3, 3)
+
+    # rails
+    if wide:
+        for u in range(1, L - 1):
+            notch = (u * 7 + r.randint(0, 1)) % 9 == 0
+            for (v0, inner_shadow) in ((lo_d, True), (hi_d - 2, False)):
+                put(u, v0, 'd' if not notch else 'D'); put(u, v0 + 1, 'D' if not notch else 'b'); put(u, v0 + 2, 'b')
+                if inner_shadow:
+                    x, y = P(u, v0 + 3); cv.shade(x, y)
+                else:
+                    put(u, v0 - 1, 'B')
+                    if vert: put(u, v0 + 3, 'B')
+        for u in posts:
+            for (v0, near) in ((lo_d - 2, False), (hi_d - 2, not vert)):
+                xa, ya = P(u, v0); xb, yb = P(u + 4, v0 + 4)
+                _post(cv, min(xa, xb), min(ya, yb), 5, 4, 2, over=near)
+    else:
+        rope = {}
+        for (vr, sgn) in ((lo - 0 if False else lo_d - 1, -1), (hi_d + 1, 1)):
+            for u in range(1, L - 1):
+                put(u, vr, 'J' if u % 3 else 'A')
+                x, y = P(u, vr + (1 if sgn < 0 else 0) + (0 if vert else 1))
+                if not vert or sgn < 0: cv.shade(x, y)
+            for u in posts:
+                xa, ya = P(u + 1, vr - 1); xb, yb = P(u + 3, vr + 1)
+                _post(cv, min(xa, xb), min(ya, yb), 3, 3, 2, over=not vert and sgn > 0)
+
+
+def _post(cv, x0, y0, w, h, face, over=False):
+    """A squared log post seen from above: its sawn top (lit from the upper left, a dark heart), then `face` rows of
+    its front below, darkening down to where it stands."""
+    for j in range(h + face):
+        for i in range(w):
+            corner = i in (0, w - 1) and j in (0, h + face - 1)
+            if j < h:
+                if corner and j == 0: k = 'B'
+                elif j == 0 or i == 0: k = 'd'
+                elif i == w - 1 or j == h - 1: k = 'b'
+                else: k = 'D'
+                if w >= 4 and h >= 3 and i == w // 2 and j == h // 2: k = 'b'
+            else:
+                k = ('b', 'B', 'o')[min(2, (j - h) * 3 // max(1, face))] if i < w - 1 else 'o'
+                if i == 0 and j - h < face - 1: k = 'D' if j == h else 'b'
+            cv.put(x0 + i, y0 + j, k)
+            if over: cv.put(x0 + i, y0 + j, k, True)
+    for j in range(h + face):                 # its shadow, to the right
+        cv.shade(x0 + w, y0 + j + 1)
+
+
+def _stone(cv, x0, y0, w, h):
+    """A rounded field stone, lit from the upper left, sitting in its own shadow."""
+    for i in range(w + 1): cv.shade(x0 + i, y0 + h)
+    for j in range(h):
+        for i in range(w):
+            if i in (0, w - 1) and j in (0, h - 1) and w > 2: continue
+            k = 'Y' if i + j == 1 or (i == 1 and j == 0) else 'g' if j == h - 1 or i == w - 1 else 'y' if i + j < w - 1 else 'G'
+            cv.put(x0 + i, y0 + j, k)

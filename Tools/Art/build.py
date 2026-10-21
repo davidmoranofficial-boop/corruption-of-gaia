@@ -243,6 +243,7 @@ GEAR = {
     'castaway_boots': (boots, False),
     'gutting_knife': (gutting_knife, False),
     'knife': (iron_knife(), False),
+    'hunting_dagger': (iron_knife(), False),
     'wood_axe': (wood_axe(), False),
     'hunting_bow': (hunting_bow(), False),
     'buckler': (buckler(), True),

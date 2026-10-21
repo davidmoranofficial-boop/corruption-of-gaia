@@ -21,7 +21,8 @@ namespace Loran.Core
             ("road", "Walk the coast road"),
             ("hut", "Wake in Yenson's hut"),
             ("hills", "The forest above Skelmed"),
-            ("forest", "Ida's lessons in the forest"),
+            ("hunt", "The hunt with Rook"),
+            ("home", "Back to Ida (reward and Eastmere)"),
             ("wolf", "The wolf on the road (cutscene)"),
             ("boss", "Boss: the pack leader, with Rook"),
             ("forge_iron", "Forge: buy iron"),
@@ -74,20 +75,29 @@ namespace Loran.Core
                     MoveTo("hills_gate");
                     Jump(TravelId);
                     break;
-                case "forest":
-                    Flag("quest:forest");
-                    MakeGear("wood_axe", null, null);
-                    S.AddItem("pail", 1);
-                    MoveTo("forest_camp");
+                case "hunt":
+                    Flag("quest:hunt");
+                    Apply("follow:rook", new System.Text.StringBuilder(), ref devRedirect);
+                    MoveTo("hills_gate");
                     Jump(TravelId);
+                    break;
+                case "home":
+                    foreach (var f in new[] { "quest:hunt", "hunt_wood1", "hunt_wood2", "hunt_wood3", "boar_killed" }) Flag(f);
+                    S.AddItem("firewood", 3);
+                    S.AddItem("raw_boar", 2);
+                    MoveTo("village_gate");
+                    S.ax = 19; S.ay = 10; S.facing = "up";
+                    Apply("follow:rook", new System.Text.StringBuilder(), ref devRedirect);
+                    Jump("ida_home");
                     break;
                 case "wolf":
                     S.flags.RemoveAll(f => f == "dog_met" || f.StartsWith("ida_") || f.StartsWith("patch_"));
                     MoveTo("shack");
+                    S.ax = 15; S.ay = 44; S.facing = "up";
                     Jump("wolf_rescue");
                     break;
                 case "boss":
-                    foreach (var f in new[] { "quest_done:forest", "quest:pack" }) Flag(f);
+                    foreach (var f in new[] { "quest_done:hunt", "quest:pack" }) Flag(f);
                     MoveTo("hills_gate");
                     S.ax = 28; S.ay = 8; S.facing = "up";
                     Apply("follow:rook", new System.Text.StringBuilder(), ref devRedirect);
