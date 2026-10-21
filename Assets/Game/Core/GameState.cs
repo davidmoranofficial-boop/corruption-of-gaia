@@ -178,6 +178,14 @@ namespace Loran.Core
         public string facing = "down";
         public int stepsSinceFight;
 
+        // On a long road (the journey screen): which, how far along, which way, walking or stopped, pushing on in the dark
+        public string journey = "";
+        public float journeyMiles;
+        public bool journeyBack, journeyWalking, journeyDark;
+        public float journeyHour;                             // minutes walked since the last roll for something on the road
+        public int journeyDay = 1, journeyStartDay = 1;
+        public List<string> journeyPassed = new List<string>();   // stops passed on this trip
+
         // Old saves only: the coast road from before the map (which road, steps along it, and which way you faced)
         public string travelRoute = "";
         public int travelAt;
@@ -237,7 +245,7 @@ namespace Loran.Core
             body ??= new Body(); body.Fix();
             devWeather ??= "";
             enemyMove ??= "";
-            travelRoute ??= ""; area ??= ""; if (string.IsNullOrEmpty(facing)) facing = "down";
+            travelRoute ??= ""; journey ??= ""; journeyPassed ??= new List<string>(); area ??= ""; if (string.IsNullOrEmpty(facing)) facing = "down";
             forging ??= ""; forgeMaterial ??= ""; forgeMax ??= ""; forgeNext ??= ""; forgeIntro ??= "";
             if (travelDir == 0) travelDir = 1;
             if (nextGearId < 1) nextGearId = 1;

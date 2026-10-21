@@ -431,6 +431,7 @@ def skelmed():
         ],
         'zones': [
             {'x0': 17, 'y0': 27, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
+            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_road', 'when': ['flag:left_skelmed']},
             {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate', 'when': ['flag:rook_escort']},
             {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate_alone', 'when': ['flag:ida_alone']},
             {'x0': 12, 'y0': 0, 'x1': 13, 'y1': 0, 'to': 'hills_gate'},

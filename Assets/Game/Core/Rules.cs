@@ -21,9 +21,18 @@ namespace Loran.Core
         public const float StartCorruption = 5f;
         public const float CorruptionPerDay = 0.3f;
 
-        // Time walking: each step takes this many seconds (half running). At normal walking pace that's
-        // about an hour of game time for a minute of real time.
-        public const float StepSeconds = 12f;
+        // The clock (David, 21 Oct: days passed too fast, and time should pass whether you move or not).
+        // Out in the world the clock runs on its own, walking or standing: 20 game seconds a real second,
+        // so a day and a night take 72 real minutes. Talking, menus and fights stop it.
+        public const float ClockRate = 20f;
+        public const float StepSeconds = 12f;          // old: game seconds a step used to take (now only the dev "walk" sums use it)
+
+        // Journeys: long roads between towns, walked on their own screen. An hour on the road passes in 10 real seconds.
+        public const float JourneyMinutesPerSecond = 6f;
+        public const float WalkMph = 2.5f;              // a steady walk with a pack, rests included
+        public const float DarkPace = 0.6f;             // pushing on at night: slower, colder, and more finds you
+        public const int DuskHour = 20, DawnHour = 6;   // walking stops at dusk unless you push on
+        public const float MarchNeeds = 1.3f, MarchEnergy = 1.5f;   // a day's march: hungrier, thirstier, and it wears you out
 
         public const int WaterskinSize = 4;
 
@@ -127,6 +136,16 @@ namespace Loran.Core
         /// <summary>Studious is the scholar's perk; training has no GameData to hand, so it goes by the background's id.</summary>
         /// <summary>Intellect: you learn 4% faster per point over 3 (Studious on top).</summary>
         public static float LearnRate(GameState s) => (s.background == "scholar" ? StudiousRate : 1f) * Math.Clamp(1f + (s.stats[Stat.Int] - 3) * LearnPerInt, 0.85f, 1.4f);
+
+        /// <summary>The extra a march takes out of you on top of the time itself (Advance has already taken the resting share).</summary>
+        public static void March(GameState s, GameData d, int minutes)
+        {
+            float h = minutes / 60f;
+            s.hunger -= HungerPerHour * h * HungerRate(s, d) * (MarchNeeds - 1f);
+            s.thirst -= ThirstPerHour * h * ThirstRate(s, d) * (MarchNeeds - 1f);
+            s.energy -= EnergyPerHour * h * (MarchEnergy - 1f);
+            Clamp(s, d);
+        }
 
         /// <summary>Time passes. Time never stops, whatever the player is doing.</summary>
         public static void Advance(GameState s, GameData d, int minutes, bool exerting)

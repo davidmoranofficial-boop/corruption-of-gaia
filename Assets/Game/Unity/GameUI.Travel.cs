@@ -39,7 +39,7 @@ namespace Loran.UnityLayer
         int stepCount, unsavedSteps;
         float breathAt, hudDrawnAt;
 
-        public bool InWorld => engine.Area != null && engine.S.scene != Engine.Death && engine.S.scene != Engine.Collapse;
+        public bool InWorld => engine.Area != null && !engine.OnJourney && engine.S.scene != Engine.Death && engine.S.scene != Engine.Collapse;
 
         float TravelHeight()
         {
@@ -688,6 +688,7 @@ namespace Loran.UnityLayer
         void WorldTick()
         {
             if (worldView == null || worldView.panel == null) return;
+            if (engine.OnJourney) { if (!InBattle) JourneyTick(); return; }
             MoveWeather();
             if (DirectorActive) { DirectorTick(); return; }
             if (walkPath != null) PlaceWalk();
@@ -702,6 +703,13 @@ namespace Loran.UnityLayer
             {
                 hudDrawnAt = now;
                 RenderHud();
+            }
+            // The clock runs whether you walk or stand still (David, 21 Oct); talking and menus stop it
+            if (FreeToWalk && engine.Tick(dt))
+            {
+                if (!engine.Travelling) { heldDirs.Clear(); moving = false; pendingStep = null; SaveNow(); Render(); return; }
+                if (!moving && (Rules.WeatherNow(s, engine.data)?.id ?? "") != drawnWeather) { Render(); return; }
+                if (openMenu == "" && now - hudDrawnAt > 0.5f) { hudDrawnAt = now; RenderHud(); }
             }
             if (moving)
             {

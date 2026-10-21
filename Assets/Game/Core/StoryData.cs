@@ -124,6 +124,7 @@ namespace Loran.Core
         public List<NpcDef> npcs = new List<NpcDef>();
         public List<OriginDef> origins = new List<OriginDef>();
         public List<QuirkDef> quirks = new List<QuirkDef>();
+        public List<JourneyDef> journeys = new List<JourneyDef>();
     }
 
     /// <summary>
@@ -453,6 +454,35 @@ namespace Loran.Core
     /// straight away and goes to win afterwards; the rest open scene. terrain lists the tile letters it can happen on
     /// (empty = anywhere); area is x0, y0, x1, y1 (empty = the whole area).
     /// </summary>
+    /// <summary>A long road between two places, walked on the journey screen (David, 21 Oct: two days away should take two days).</summary>
+    [Serializable]
+    public class JourneyDef
+    {
+        public string id, name;
+        public string from, to;                               // the places at each end, by name ("Skelmed", "Eastmere")
+        public string fromSpot, toSpot;                       // where you're put in the world when you get there (empty: no area yet)
+        public string arrive, arriveBack;                     // scenes on arriving (optional)
+        public float miles = 30;
+        public string climate = "coast";
+        public int eventChance = 12;                          // % each hour on the road: someone or something on the way
+        public int fightChance = 8;                           // % each hour: a fight (doubled in the dark)
+        public List<JourneyStop> stops = new List<JourneyStop>();   // set places along it (a ford, a ruin)
+        public List<JourneyStop> camps = new List<JourneyStop>();   // talk round the fire, the first that holds, once each
+        public List<TravelEvent> events = new List<TravelEvent>();  // what might happen on the way
+        public List<JourneyStop> legs = new List<JourneyStop>();    // names for stretches of the road, by the mile they start at
+    }
+
+    [Serializable]
+    public class JourneyStop
+    {
+        public float mile;
+        public string scene;
+        public string name;                                   // legs: what this stretch is called ("the forest road")
+        public string look;                                   // legs: how it looks on the journey screen (heath, forest, hills, farm)
+        public bool every;                                    // stops: happens every time you pass (a well, a ford), not just the first
+        public List<string> when = new List<string>();
+    }
+
     [Serializable]
     public class TravelEvent
     {
@@ -485,6 +515,7 @@ namespace Loran.Core
         public MoveDef Move(string id) => Find(file.moves, x => x.id, id);
         public FollowerDef Follower(string id) => Find(file.followers, x => x.id, id);
         public OriginDef Origin(string id) => string.IsNullOrEmpty(id) ? null : file.origins.Find(x => x.id == id);
+        public JourneyDef Journey(string id) => string.IsNullOrEmpty(id) ? null : file.journeys.Find(x => x.id == id);
         public QuirkDef Quirk(string id) => string.IsNullOrEmpty(id) ? null : file.quirks.Find(x => x.id == id);
         public NpcDef Npc(string nameOrId) => string.IsNullOrEmpty(nameOrId) ? null : file.npcs.Find(x => x.id == nameOrId || x.name == nameOrId);
         public BackgroundDef Background(string id) => Find(file.backgrounds, x => x.id, id);

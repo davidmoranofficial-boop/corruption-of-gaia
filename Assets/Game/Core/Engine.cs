@@ -121,7 +121,7 @@ namespace Loran.Core
 
         public IEnumerable<string> SceneIds => scenes.Keys;
         public SceneDef Scene(string id) => scenes.TryGetValue(id, out var s) ? s : null;
-        public SceneDef Current => S.inCombat ? CombatScene() : S.scene == TravelId ? TravelScene() : S.scene == ForgeId ? ForgeScene() : scenes[S.scene];
+        public SceneDef Current => S.inCombat ? CombatScene() : S.scene == TravelId ? TravelScene() : S.scene == JourneyId ? JourneyScene() : S.scene == ForgeId ? ForgeScene() : scenes[S.scene];
 
         // ------------------------------------------------------------------ setup
 
@@ -241,7 +241,8 @@ namespace Loran.Core
                 S.scene = TravelId;
             }
             MigrateRoad();
-            if (S.scene == TravelId ? Area != null : S.scene == ForgeId ? S.forging != "" : scenes.ContainsKey(S.scene)) return;
+            if (S.scene == JourneyId && !OnJourney) S.scene = TravelId;
+            if (S.scene == TravelId ? Area != null : S.scene == JourneyId || (S.scene == ForgeId ? S.forging != "" : scenes.ContainsKey(S.scene))) return;
             // A scene that's been taken out (the old text pages): carry on in the world, or in Yenson's hut
             if (Area == null) MoveTo(S.Has("arrived") || S.Has("been:skelmed") ? "skelmed" : "hut_bed");
             S.scene = TravelId;
@@ -460,7 +461,8 @@ namespace Loran.Core
 
             if (id == TravelId && Area == null) throw new Exception("Not out in the world");
             if (id == ForgeId && S.forging == "") throw new Exception("Nothing on the anvil");
-            if (!scenes.ContainsKey(id) && id != TravelId && id != ForgeId) throw new Exception("No scene called '" + id + "'");
+            if (id == JourneyId && !OnJourney) throw new Exception("Not on a journey");
+            if (!scenes.ContainsKey(id) && id != TravelId && id != ForgeId && id != JourneyId) throw new Exception("No scene called '" + id + "'");
             S.repeat = id == prev && !freshView;
             freshView = false;
             enteringFromSafe = scenes.TryGetValue(prev, out var p) && p.safe;
@@ -808,6 +810,7 @@ namespace Loran.Core
                 }
                 case "fight": Fight(arg, notes, ref redirect); return;
                 case "travel": Travel(parts, notes, ref redirect); return;
+                case "journey": JourneyEffect(parts, notes, ref redirect); return;
                 case "forge": Forge(parts, notes, ref redirect); return;
                 case "collapse": DoCollapse(notes); return;
                 case "revive":
@@ -930,7 +933,8 @@ namespace Loran.Core
             notes.Append(partyNotes);
             // Out in the world (in a bed, or camping), you wake standing where you slept, not in the bed's talk box
             string scene = S.scene;
-            if (Area != null) S.scene = TravelId;
+            if (OnJourney) S.scene = JourneyId;
+            else if (Area != null) S.scene = TravelId;
             Snapshot();
             S.scene = scene;
             S.Toasts.Add("Saved. If you die, you'll wake from this sleep.");
@@ -1001,7 +1005,7 @@ namespace Loran.Core
             S = probe;
             void Scene(string where, string id)
             {
-                if (!string.IsNullOrEmpty(id) && id != TravelId && id != ForgeId && !scenes.ContainsKey(id)) problems.Add(where + ": no scene called '" + id + "'");
+                if (!string.IsNullOrEmpty(id) && id != TravelId && id != ForgeId && id != JourneyId && !scenes.ContainsKey(id)) problems.Add(where + ": no scene called '" + id + "'");
             }
             void Cond(string where, string c)
             {
@@ -1044,6 +1048,10 @@ namespace Loran.Core
                         if (parts.Length < 2 || data.Gear(parts[0]) == null) problems.Add(where + ": no gear '" + parts[0] + "'");
                         else if (Rules.Ranks.IndexOf(parts[1]) < 0 || parts[1].Length != 1) problems.Add(where + ": no rank '" + parts[1] + "'");
                         if (parts.Length > 2 && data.Material(parts[2]) == null) problems.Add(where + ": no material '" + parts[2] + "'");
+                        return;
+                    case "journey":
+                        if (!new[] { "go", "halt", "dark", "rest", "camp", "sleep", "turn" }.Contains(parts[0]) && data.Journey(parts[0]) == null)
+                            problems.Add(where + ": no journey '" + parts[0] + "'");
                         return;
                     case "travel":
                         if ((parts[0] == "at" || parts[0] == "place") && data.Spot(parts[1]).spot == null) problems.Add(where + ": no spot '" + parts[1] + "'");
@@ -1194,6 +1202,28 @@ namespace Loran.Core
                     else Scene(where, ev.scene);
                     foreach (var w in ev.when) Cond(where, w);
                 }
+            }
+            foreach (var j in data.file.journeys)
+            {
+                string jw = "journey " + j.id;
+                foreach (var sp in new[] { j.fromSpot, j.toSpot })
+                    if (!string.IsNullOrEmpty(sp) && data.Spot(sp).spot == null) problems.Add(jw + ": no spot '" + sp + "'");
+                Scene(jw, j.arrive);
+                Scene(jw, j.arriveBack);
+                if (data.Climate(j.climate) == null) problems.Add(jw + ": no climate '" + j.climate + "'");
+                foreach (var st in j.stops.Concat(j.camps))
+                {
+                    if (string.IsNullOrEmpty(st.scene)) problems.Add(jw + ": a stop with no scene");
+                    else Scene(jw, st.scene);
+                    foreach (var w in st.when) Cond(jw, w);
+                }
+                foreach (var ev in j.events)
+                {
+                    if (ev.kind == "fight") { if (data.Enemy(ev.enemy) == null) problems.Add(jw + ": no enemy '" + ev.enemy + "'"); Scene(jw, ev.win); }
+                    else Scene(jw, ev.scene);
+                    foreach (var w in ev.when) Cond(jw, w);
+                }
+                if (j.legs.Count == 0) problems.Add(jw + ": no legs (names for the stretches of road)");
             }
             foreach (var need in new[] { Title, Creation, Death, Collapse }) Scene("required", need);
             S = saved;

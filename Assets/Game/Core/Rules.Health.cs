@@ -46,7 +46,8 @@ namespace Loran.Core
         public static ClimateDef ClimateAt(GameState s, GameData d)
         {
             var a = d.Area(s.area);
-            return d.Climate(a?.climate ?? "coast") ?? d.file.climates.FirstOrDefault();
+            string id = d.Journey(s.journey)?.climate ?? a?.climate ?? "coast";
+            return d.Climate(id) ?? d.file.climates.FirstOrDefault();
         }
 
         public static bool Sheltered(GameState s, GameData d) => d.Area(s.area)?.indoor == true;

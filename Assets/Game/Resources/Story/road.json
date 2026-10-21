@@ -1,0 +1,374 @@
+{
+  "scenes": [
+    {
+      "id": "jr_lookback",
+      "title": "The last of the sea",
+      "speaker": "Rook",
+      "text": [
+        "The track tops a rise and you turn without meaning to. Behind you Skelmed is a smudge of smoke and palisade, and past it the sea, flat and bright and harmless-looking."
+      ],
+      "greet": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "mood": "sad",
+          "text": "\"Never been further than the hills,\" Rook says. He doesn't look back. \"Ma says Eastmere's got stone walls. Real ones.\""
+        },
+        {
+          "text": "[[voice:Endurance]]Forty miles, near enough. Two days, if your legs hold and the road's kind."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"We'll be back.\"",
+          "tone": "kind",
+          "when": [
+            "follower:rook"
+          ],
+          "effects": [
+            "bond:rook+2",
+            "journey:go"
+          ],
+          "result": "[[mood:happy]]\"Course we will.\" He hitches his bow higher on his shoulder. \"Someone has to tell her I was right about everything.\""
+        },
+        {
+          "label": "Turn your back on the sea and walk on",
+          "effects": [
+            "journey:go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jr_ford",
+      "title": "The Brannock ford",
+      "text": [
+        "The road runs down into a river and comes out the other side. The water's brown and quick and knee-deep over flat stones, cold enough to make your teeth ache just looking at it."
+      ],
+      "greet": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook is already filling his skin. \"Last clean water till the farms,\" he says. \"Drink till it hurts.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Fill your waterskin, drink, and wade across",
+          "time": 20,
+          "effects": [
+            "water=4",
+            "thirst+40",
+            "journey:go"
+          ],
+          "result": "You drink until your stomach sloshes, fill the skin to bursting, and wade across with your boots round your neck. The cold bites to the bone, then lets go."
+        },
+        {
+          "label": "Wade straight across",
+          "effects": [
+            "journey:go"
+          ],
+          "time": 10
+        }
+      ]
+    },
+    {
+      "id": "jr_farmstead",
+      "title": "An empty farm",
+      "speaker": "Rook",
+      "text": [
+        "A farmhouse stands back from the road with its door hanging open. The fields round it have gone to thistle. Someone painted a mark on the gatepost, a crown over a coin, and someone else tried to scrub it off."
+      ],
+      "greet": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "mood": "angry",
+          "text": "\"Tax mark,\" Rook says. \"Means they couldn't pay. Means the king's men came and took the rest.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Search the house",
+          "time": 30,
+          "topic": "search",
+          "effects": [
+            "item:hazelnuts+2",
+            "item:mushrooms+1"
+          ],
+          "result": "Bare boards and a cold hearth. Whoever lived here took what they could carry. In the root cellar you find a sack with a handful of hazelnuts, and mushrooms growing in the damp."
+        },
+        {
+          "label": "\"Who were they?\"",
+          "tone": "kind",
+          "topic": "who",
+          "when": [
+            "follower:rook"
+          ],
+          "effects": [
+            "bond:rook+1"
+          ],
+          "result": "[[mood:sad]]\"Dunno. Folk like us.\" He looks at the scrubbed mark a long time. \"That's the thing. They're always folk like us.\""
+        },
+        {
+          "label": "Walk on",
+          "effects": [
+            "journey:go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jr_hamlet",
+      "title": "Thornby well",
+      "text": [
+        "A huddle of six houses round a well, the first people you've seen since Skelmed. A woman is drawing water and watches you come the way you'd watch a dog you didn't know."
+      ],
+      "greet": [
+        {
+          "text": "\"Eastmere road?\" she says. \"Half a day on. You can fill your skins. Bread's six coppers, if you've got them.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Fill your waterskin at the well",
+          "time": 10,
+          "topic": "water",
+          "effects": [
+            "water=4",
+            "thirst+25"
+          ],
+          "result": "The well water tastes of iron and cold stone. Better than anything you've ever drunk."
+        },
+        {
+          "label": "Buy a loaf of bread ({price:6})",
+          "need": [
+            "afford:6"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:6",
+            "item:bread+1"
+          ],
+          "result": "She wraps it in a cloth and doesn't quite smile. \"Mind the road after dark. It's not been right this year.\""
+        },
+        {
+          "label": "Walk on",
+          "effects": [
+            "journey:go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jr_peddler",
+      "title": "A peddler",
+      "speaker": "Peddler",
+      "text": [
+        "A man with a pack the size of a barrel is resting on a milestone, fanning himself with his hat."
+      ],
+      "greet": [
+        {
+          "mood": "happy",
+          "text": "\"Customers! On this road! Sit, sit. Bandages, bread, a little something for the cold. All honest prices, or near enough.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Buy bread ({price:8})",
+          "need": [
+            "afford:8"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:8",
+            "item:bread+1"
+          ],
+          "result": "\"Baked this week. Mostly.\""
+        },
+        {
+          "label": "Buy a bandage ({price:18})",
+          "need": [
+            "afford:18"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:18",
+            "item:bandage+1"
+          ],
+          "result": "\"Clean linen. Boiled, even.\""
+        },
+        {
+          "label": "\"What's the road like ahead?\"",
+          "topic": "road",
+          "result": "[[mood:worried]]\"Quiet. Too quiet. Used to be you'd pass ten carts a day. Now it's me and the crows, and the crows look at you funny.\""
+        },
+        {
+          "label": "Wish him well and walk on",
+          "effects": [
+            "journey:go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jr_refugees",
+      "title": "People walking west",
+      "text": [
+        "A cart comes the other way, pulled by a man instead of a horse. A woman walks beside it with a baby, and two children ride on top of everything they own."
+      ],
+      "greet": [
+        {
+          "mood": "worried",
+          "text": "\"Don't go to Eastmere,\" the man says, without stopping. \"Or go, see for yourself. We're going to the coast. My brother's in Skelmed.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Skelmed's struggling too.\"",
+          "topic": "warn",
+          "result": "[[mood:sad]]He just nods, like he knew, and keeps pulling. \"Then we'll struggle by the sea. At least there's fish.\""
+        },
+        {
+          "label": "Give them some food",
+          "need": [
+            "item:bread"
+          ],
+          "needText": "You've no bread to give.",
+          "tone": "kind",
+          "effects": [
+            "item:bread-1",
+            "rep:skelmed+2",
+            "journey:go"
+          ],
+          "result": "The woman takes the loaf with both hands. She doesn't say anything. She doesn't need to."
+        },
+        {
+          "label": "Let them pass and walk on",
+          "effects": [
+            "journey:go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jr_hare",
+      "title": "Something in the grass",
+      "quick": true,
+      "text": [
+        "A patch of mushrooms in the verge."
+      ],
+      "choices": [
+        {
+          "label": "Pick them",
+          "effects": [
+            "item:mushrooms+2",
+            "journey:go"
+          ],
+          "result": "Mushrooms, the safe kind."
+        }
+      ]
+    },
+    {
+      "id": "jr_camp_rook",
+      "title": "Round the fire",
+      "speaker": "Rook",
+      "text": [
+        "You find a hollow out of the wind and get a fire going. Rook skins nothing, cooks nothing, just sits and feeds sticks into it and watches the dark."
+      ],
+      "greet": [
+        {
+          "mood": "worried",
+          "text": "\"First night I've ever slept out of sight of the sea,\" he says. \"It's too quiet. You can hear yourself think.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Tell me about Ida.\"",
+          "topic": "ida",
+          "tone": "warm",
+          "effects": [
+            "bond:rook+3"
+          ],
+          "result": "[[mood:happy]]\"Ma?\" He snorts. \"She was a soldier, once. King's archer, back when Melvin was worth fighting for. She won't talk about why she stopped.\"\n\n[[mood:sad]]\"She sent me because she can't leave them. She'll never leave them. That's Ma.\""
+        },
+        {
+          "label": "\"What will you do in Eastmere?\"",
+          "topic": "plan",
+          "result": "\"Find someone in charge. Tell them about the wolves, the levy, all of it.\" He pokes the fire. \"And if no one's listening, find someone who will.\""
+        },
+        {
+          "label": "\"Get some sleep. I'll take first watch.\"",
+          "tone": "kind",
+          "effects": [
+            "bond:rook+2",
+            "journey:sleep"
+          ],
+          "result": "[[mood:happy]]\"Wake me if anything's got more than four legs.\" He's asleep almost before he's finished saying it."
+        },
+        {
+          "label": "Get some sleep",
+          "effects": [
+            "journey:sleep"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "eastmere_end",
+      "title": "Eastmere",
+      "speaker": "Rook",
+      "text": [
+        "The road climbs one last rise and there it is: Eastmere, grey walls on a low hill, smoke from a hundred chimneys, a banner over the gate you can't make out from here.",
+        "This is as far as the slice goes for now. Eastmere itself is being built next."
+      ],
+      "greet": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "mood": "surprised",
+          "text": "\"Stone walls,\" Rook says quietly. \"Real ones.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Turn around and walk back to Skelmed",
+          "effects": [
+            "journey:turn",
+            "journey:go"
+          ]
+        },
+        {
+          "label": "Stay here a while",
+          "go": "journey"
+        }
+      ]
+    },
+    {
+      "id": "north_road",
+      "title": "The north gate",
+      "text": [
+        "The gate stands open on the road north and east, toward the forest, the hills, and Eastmere two days beyond them."
+      ],
+      "choices": [
+        {
+          "label": "Set off for Eastmere (two days on foot)",
+          "effects": [
+            "journey:eastmere_road"
+          ]
+        },
+        {
+          "label": "Not yet",
+          "effects": [
+            "travel:place:skelmed_north"
+          ],
+          "go": "travel"
+        }
+      ]
+    }
+  ]
+}

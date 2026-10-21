@@ -1427,6 +1427,16 @@
           "y0": 1,
           "x1": 13,
           "y1": 1,
+          "scene": "north_road",
+          "when": [
+            "flag:left_skelmed"
+          ]
+        },
+        {
+          "x0": 12,
+          "y0": 1,
+          "x1": 13,
+          "y1": 1,
           "scene": "north_gate",
           "when": [
             "flag:rook_escort"
@@ -2884,6 +2894,105 @@
       "down": "Thirst drains 20% faster",
       "weather": 0.7,
       "thirst": 1.2
+    }
+  ],
+  "journeys": [
+    {
+      "id": "eastmere_road",
+      "name": "The Eastmere road",
+      "from": "Skelmed",
+      "to": "Eastmere",
+      "fromSpot": "skelmed_north",
+      "toSpot": "",
+      "arrive": "eastmere_end",
+      "miles": 50,
+      "climate": "coast",
+      "eventChance": 15,
+      "fightChance": 6,
+      "legs": [
+        {
+          "mile": 0,
+          "name": "The Skelmed track",
+          "look": "heath"
+        },
+        {
+          "mile": 7,
+          "name": "The forest road",
+          "look": "forest"
+        },
+        {
+          "mile": 17,
+          "name": "Brannock water",
+          "look": "forest"
+        },
+        {
+          "mile": 22,
+          "name": "The Greyfell hills",
+          "look": "hills"
+        },
+        {
+          "mile": 34,
+          "name": "The Thornby farms",
+          "look": "farm"
+        },
+        {
+          "mile": 44,
+          "name": "The Eastmere road",
+          "look": "farm"
+        }
+      ],
+      "stops": [
+        {
+          "mile": 3,
+          "scene": "jr_lookback"
+        },
+        {
+          "mile": 18,
+          "scene": "jr_ford",
+          "every": true
+        },
+        {
+          "mile": 30,
+          "scene": "jr_farmstead"
+        },
+        {
+          "mile": 39,
+          "scene": "jr_hamlet",
+          "every": true
+        }
+      ],
+      "camps": [
+        {
+          "scene": "jr_camp_rook",
+          "when": [
+            "follower:rook"
+          ]
+        }
+      ],
+      "events": [
+        {
+          "kind": "meet",
+          "scene": "jr_peddler",
+          "once": true,
+          "weight": 2
+        },
+        {
+          "kind": "meet",
+          "scene": "jr_refugees",
+          "once": true,
+          "weight": 2
+        },
+        {
+          "kind": "find",
+          "scene": "jr_hare",
+          "weight": 1
+        },
+        {
+          "kind": "fight",
+          "enemy": "boar",
+          "weight": 1
+        }
+      ]
     }
   ]
 }

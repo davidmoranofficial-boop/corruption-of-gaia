@@ -234,10 +234,7 @@ namespace Loran.Core
             S.stepsSinceFight++;
             S.energy -= run ? 0.02f : 0.01f;   // walking tires you a little more than the time alone
             if (run) Rules.Train(S, Stat.End, 0.01f, "running");
-            // Time: a step takes seconds; whole minutes pass as they add up
-            S.secondsCarry += StepSeconds(run);
-            int mins = (int)(S.secondsCarry / 60);
-            if (mins > 0) { S.secondsCarry -= mins * 60; Rules.Advance(S, data, mins, run); }
+            // Time isn't counted by steps any more: the clock runs on its own out here (Tick)
 
             // Walking into somewhere
             foreach (var z in a.zones)
