@@ -65,6 +65,9 @@ namespace Loran.UnityLayer
             cutCue = 0;
             cutEnding = false;
 
+            // no painted backdrop behind it (the creation screen's beach was showing through), no padding round it
+            screenBox.style.backgroundImage = new StyleBackground();
+            screenBox.AddToClassList("front");
             cutPage = Add(screen, new VisualElement(), "cut-page");
             FillScreen(cutPage);
             cutView = Add(cutPage, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-view");
@@ -129,6 +132,7 @@ namespace Loran.UnityLayer
         {
             if (cutPage == null) return;
             float W = cutPage.layout.width, H = cutPage.layout.height;
+            if (float.IsNaN(W) || W < 10) { W = screenBox.layout.width; H = screenBox.layout.height; }
             if (float.IsNaN(W) || W < 10) { W = 1920; H = 1080; }
             int k = Mathf.Max(1, Mathf.FloorToInt(Mathf.Min(W / CutW, H / CutH)));
             cutK = k;

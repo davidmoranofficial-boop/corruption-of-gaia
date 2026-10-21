@@ -2577,7 +2577,7 @@
 
 
 /* ---------- the opening cutscene ---------- */
-.cut-page { flex-grow: 1; background-color: #000000; position: relative; overflow: hidden; }
+.cut-page { flex-grow: 1; align-self: stretch; width: 100%; background-color: #000000; position: relative; overflow: hidden; }
 .cut-view { position: absolute; overflow: hidden; background-color: #000000; }
 .cut-layer { position: absolute; -unity-background-scale-mode: stretch-to-fill; }
 .cut-rain { position: absolute; left: 0; top: 0; }
