@@ -128,10 +128,16 @@ namespace Loran.UnityLayer
         // name on it, the words typed out, one short page at a time. Space finishes the page, then turns to the next;
         // the choices come up on the last page. Narration (nobody talking) has no portrait.
         const float TypeCharsPerSecond = 60f;
-        const int PageChars = 230;
+        const int PageChars = 150;   // short boxes read better than walls of text (dialogue research, 21 Oct)
         string dlgKey = "";
         int dlgPage, dlgTypedPage = -1;
         List<string> dlgPages = new List<string>();
+        List<string> dlgMarks = new List<string>();   // per page: "" or "voice:Strength" or "mood:happy"
+        string dlgWho;
+        VisualElement dlgBoxEl, dlgPortrait;
+        Label dlgSpeaker, dlgBond, dlgMood;
+        float[] dlgTimes;     // when each letter of the page appears (pauses after full stops and commas)
+        int dlgShown;         // letters typed so far, for the voice blips
         Label dlgText;
         VisualElement dlgChoices;
         Label dlgMore;
@@ -142,12 +148,22 @@ namespace Loran.UnityLayer
         bool dlgDirector;   // a line in an in-world cutscene: Space moves the cutscene on
 
         /// <summary>Splits text into short pages, at sentence ends where it can.</summary>
-        static List<string> Pages(IEnumerable<string> parts)
+        static List<string> Pages(IEnumerable<string> parts) => Pages(parts, new List<string>());
+
+        static readonly System.Text.RegularExpressions.Regex MarkRx = new System.Text.RegularExpressions.Regex(@"^\[\[(\w+:[^\]]+)\]\]");
+
+        /// <summary>Splits text into short pages, at sentence ends where it can; marks says each page's mood or inner voice.</summary>
+        static List<string> Pages(IEnumerable<string> parts, List<string> marks)
         {
             var pages = new List<string>();
-            foreach (var raw in parts)
+            marks.Clear();
+            foreach (var raw0 in parts)
             {
-                if (string.IsNullOrWhiteSpace(raw)) continue;
+                if (string.IsNullOrWhiteSpace(raw0)) continue;
+                string raw = raw0.Trim(), mark = "";
+                var m = MarkRx.Match(raw);
+                if (m.Success) { mark = m.Groups[1].Value; raw = raw.Substring(m.Length); }
+                int before = pages.Count;
                 string t = raw.Trim();
                 while (t.Length > PageChars)
                 {
@@ -160,6 +176,7 @@ namespace Loran.UnityLayer
                     t = t.Substring(cut).Trim();
                 }
                 pages.Add(t);
+                while (marks.Count < pages.Count) marks.Add(mark);
             }
             return pages;
         }
@@ -172,26 +189,45 @@ namespace Loran.UnityLayer
             dlgTick = null;
             dlgMessage = message;
             var parts = new List<string>();
-            if (!string.IsNullOrEmpty(result)) parts.Add(result);
+            if (!string.IsNullOrEmpty(result)) parts.AddRange(result.Split(new[] { "\n\n" }, System.StringSplitOptions.RemoveEmptyEntries));   // a blank line starts a new box (a new mood, or an inner voice)
             if (paras != null) parts.AddRange(paras);
-            var pages = Pages(parts);
+            var marks = new List<string>();
+            var pages = Pages(parts, marks);
             string key = engine.S.scene + "|" + string.Join("§", pages) + "|" + (choices?.Count ?? 0) + "|" + message;
             if (key != dlgKey) { dlgKey = key; dlgPage = 0; dlgTypedPage = -1; }
             dlgPages = pages;
+            dlgMarks = marks;
             if (dlgPage >= pages.Count) dlgPage = Mathf.Max(0, pages.Count - 1);
 
             string who = string.IsNullOrEmpty(speaker) ? null : engine.Fill(speaker);
+            dlgWho = who;
             var box = Add(worldView, new VisualElement(), "dialogue");
+            dlgBoxEl = box;
             box.AddToClassList(who != null ? "dialogue-talk" : "dialogue-narrate");
             var row = Add(box, new VisualElement(), "dialogue-row");
-            if (who != null) Portrait(row, who);
+            dlgPortrait = null;
+            dlgMood = null;
+            if (who != null)
+            {
+                Portrait(row, who);
+                dlgPortrait = row.Q(className: "portrait-frame");
+                dlgMood = Add(dlgPortrait, new Label(""), "portrait-mood");
+            }
             var bubble = Add(row, new VisualElement(), "dialogue-bubble");
+            var head = Add(bubble, new VisualElement(), "dialogue-head");
+            dlgSpeaker = Add(head, new Label(who ?? ""), "dialogue-speaker");
+            dlgBond = Add(head, new Label(""), "dialogue-bond");
             if (who != null)
             {
                 Add(bubble, new VisualElement(), "dialogue-tail");
-                Add(bubble, new Label(who), "dialogue-speaker");
+                var bond = engine.Bond(who);
+                if (bond.name != null) dlgBond.text = bond.name;
             }
-            else if (!string.IsNullOrEmpty(title) && !message) Add(bubble, new Label(engine.Fill(title)), "dialogue-title");
+            else
+            {
+                Show(head, false);
+                if (!string.IsNullOrEmpty(title) && !message) Add(bubble, new Label(engine.Fill(title)), "dialogue-title");
+            }
             var scroll = Add(bubble, new ScrollView(ScrollViewMode.Vertical), "dialogue-scroll");
             dlgText = Add(scroll, new Label(""), "dialogue-text");
             dlgMore = Add(bubble, new Label(""), "dialogue-more");
@@ -203,20 +239,88 @@ namespace Loran.UnityLayer
             if (choices != null) BuildChoices(choices, actions);
 
             if (pages.Count == 0) { dlgText.style.display = DisplayStyle.None; ShowChoices(); return; }
+            PageStyle();
             if (dlgTypedPage >= dlgPage) { dlgText.text = pages[dlgPage]; PageDone(); return; }
-            // type the page out
+            StartTyping();
+        }
+
+        /// <summary>Starts typing the current page out: letter by letter, stopping a beat at full stops and commas.</summary>
+        void StartTyping()
+        {
             dlgText.text = "";
             Show(dlgChoices, false);
             dlgMore.text = "";
+            string page = dlgPages[dlgPage];
+            dlgTimes = new float[page.Length + 1];
+            float t = 0;
+            for (int i = 0; i < page.Length; i++)
+            {
+                dlgTimes[i] = t;
+                char c = page[i];
+                bool end = i + 1 >= page.Length || page[i + 1] == ' ' || page[i + 1] == '"';
+                t += 1f / TypeCharsPerSecond;
+                if (end && (c == '.' || c == '!' || c == '?')) t += 0.22f;
+                else if (end && (c == ',' || c == ';' || c == ':')) t += 0.08f;
+            }
+            dlgTimes[page.Length] = t;
+            dlgShown = 0;
             dlgStart = Time.realtimeSinceStartup;
             dlgTick = dlgText.schedule.Execute(TypeTick).Every(16);
+        }
+
+        /// <summary>The page's look: who's speaking (or which inner voice), and their mood.</summary>
+        void PageStyle()
+        {
+            if (dlgBoxEl == null || dlgPage >= dlgMarks.Count) return;
+            string mark = dlgMarks[dlgPage];
+            bool voice = mark.StartsWith("voice:");
+            string mood = mark.StartsWith("mood:") ? mark.Substring(5) : "";
+            dlgBoxEl.EnableInClassList("dialogue-voice", voice);
+            if (voice)
+            {
+                string v = mark.Substring(6);
+                dlgSpeaker.text = v.ToUpperInvariant();
+                dlgBond.text = "";
+                Show(dlgSpeaker.parent, true);
+                dlgBoxEl.EnableInClassList("dialogue-rot", v == "The Rot");
+            }
+            else
+            {
+                dlgBoxEl.RemoveFromClassList("dialogue-rot");
+                dlgSpeaker.text = dlgWho ?? "";
+                Show(dlgSpeaker.parent, dlgWho != null);
+                var bond = dlgWho != null ? engine.Bond(dlgWho) : (0, null);
+                dlgBond.text = bond.name ?? "";
+            }
+            if (dlgPortrait != null) Show(dlgPortrait, !voice);
+            if (dlgMood != null)
+            {
+                dlgMood.text = mood == "happy" ? "~" : mood == "angry" ? "!" : mood == "sad" ? "..." : mood == "worried" ? "?" : mood == "surprised" ? "!?" : "";
+                Show(dlgMood, dlgMood.text != "");
+                foreach (var m in new[] { "happy", "angry", "sad", "worried", "surprised" }) dlgBoxEl.EnableInClassList("mood-" + m, m == mood);
+            }
+        }
+
+        /// <summary>The little sound of each letter: pitched to whoever's talking, lower and slower for an inner voice.</summary>
+        void Blip(int letter)
+        {
+            string mark = dlgPage < dlgMarks.Count ? dlgMarks[dlgPage] : "";
+            if (dlgWho == null && !mark.StartsWith("voice:")) return;   // narration types in silence
+            if (letter % 2 != 0) return;
+            float pitch = mark.StartsWith("voice:") ? 0.62f : engine.data.Npc(dlgWho)?.pitch ?? 1f;
+            GameAudio.Blip(pitch);
         }
 
         void TypeTick()
         {
             if (dlgText == null || dlgText.panel == null) { dlgTick?.Pause(); dlgTick = null; return; }
             string page = dlgPages[dlgPage];
-            int n = Mathf.Min(page.Length, Mathf.FloorToInt((Time.realtimeSinceStartup - dlgStart) * TypeCharsPerSecond));
+            float el = Time.realtimeSinceStartup - dlgStart;
+            int n = 0;
+            if (dlgTimes != null && dlgTimes.Length == page.Length + 1) { while (n < page.Length && dlgTimes[n] <= el) n++; }
+            else n = Mathf.Min(page.Length, Mathf.FloorToInt(el * TypeCharsPerSecond));
+            for (int i = dlgShown; i < n; i++) if (char.IsLetterOrDigit(page[i])) Blip(i);
+            dlgShown = n;
             dlgText.text = page.Substring(0, n);
             if (n >= page.Length) FinishTyping();
         }
@@ -254,11 +358,8 @@ namespace Loran.UnityLayer
             {
                 dlgPage++;
                 GameAudio.Play("ui_tick", 0.5f);
-                dlgText.text = "";
-                Show(dlgChoices, false);
-                dlgMore.text = "";
-                dlgStart = Time.realtimeSinceStartup;
-                dlgTick = dlgText.schedule.Execute(TypeTick).Every(16);
+                PageStyle();
+                StartTyping();
                 return true;
             }
             if (dlgMessage) { DismissMessage(); return true; }
@@ -275,7 +376,11 @@ namespace Loran.UnityLayer
                 b.SetEnabled(c.enabled);
                 Add(b, new Label(i < 9 ? (i + 1).ToString() : ""), "choice-num");
                 var text = Add(b, new VisualElement(), "choice-text");
-                Add(text, new Label(engine.Fill(c.def.label)), "choice-label");
+                var line = Add(text, new VisualElement(), "choice-line");
+                if (!string.IsNullOrEmpty(c.def.tone)) Add(line, new Label(c.def.tone.ToUpperInvariant()), "choice-tone").AddToClassList("tone-" + c.def.tone);
+                if (!string.IsNullOrEmpty(c.check)) Add(line, new Label(c.check), "choice-check").AddToClassList(c.checkOk ? "check-ok" : "check-bad");
+                Add(line, new Label(engine.Fill(c.def.label)), "choice-label");
+                if (c.read) { b.AddToClassList("choice-read"); Add(line, new Label("asked"), "choice-asked"); }
                 if (!c.enabled && !string.IsNullOrEmpty(c.reason)) Add(text, new Label(c.reason), "choice-reason");
                 else if (!string.IsNullOrEmpty(c.cost)) Add(text, new Label(c.cost), "choice-meta");
                 dlgChoices.Add(b);

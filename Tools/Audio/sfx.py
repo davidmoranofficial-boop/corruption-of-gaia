@@ -162,6 +162,15 @@ def ui_tick():
     return mix(karplus(mtof(88), 0.12, seed=7, bright=0.5, decay=0.12, pick=0.2), 0.3 * wood(2400, 0.03, 8, 0.004, 0))
 
 
+def blip():
+    """One letter of someone talking: a soft, rounded little tone. The game pitches it per speaker (voice blips)."""
+    t = np.arange(ns(0.06)) / SR
+    f = 330.0
+    w = 0.55 * np.sin(2 * np.pi * f * t) + 0.3 * np.sign(np.sin(2 * np.pi * f * t)) + 0.15 * np.sin(4 * np.pi * f * t)
+    env = np.minimum(1.0, t / 0.004) * np.exp(-t / 0.022)
+    return lp(w * env, 2200)
+
+
 def ui_confirm():
     out = np.zeros(ns(0.6))
     place(out, harp(midi('A5'), 0.5, 0.7, 9), 0)
@@ -815,7 +824,7 @@ def forge_done():
 
 UI, FX, STEP = -9.0, -3.0, -12.0
 SFX = {
-    'ui_click': (ui_click, UI), 'ui_open': (ui_open, UI), 'ui_close': (ui_close, UI), 'ui_tick': (ui_tick, UI),
+    'ui_click': (ui_click, UI), 'ui_open': (ui_open, UI), 'ui_close': (ui_close, UI), 'ui_tick': (ui_tick, UI), 'blip': (blip, UI),
     'ui_confirm': (ui_confirm, UI), 'ui_deny': (ui_deny, UI), 'toast': (toast, UI), 'page': (page, UI),
     'quest_new': (quest_new, FX), 'quest_done': (quest_done, FX), 'levelup': (levelup, FX), 'skill_up': (skill_up, FX),
     'coin': (coin, -5.0), 'pickup': (pickup, -6.0), 'eat': (eat, -5.0), 'drink': (drink, -5.0), 'door': (door, FX),

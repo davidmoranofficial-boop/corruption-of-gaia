@@ -2636,3 +2636,43 @@
 .cut-caption-centre { bottom: 46%; background-color: rgba(0, 0, 0, 0); }
 .cut-wake { position: absolute; left: 0; right: 0; top: 0; bottom: 0; align-items: center; justify-content: center; }
 .cut-hint { position: absolute; right: 24px; top: 18px; font-size: 14px; letter-spacing: 3px; color: rgba(232, 220, 194, 0.45); }
+
+/* ---------- dialogue: inner voices, moods, bonds, tones and checks (21 Oct) ---------- */
+.dialogue-head { position: absolute; top: -24px; left: 24px; flex-direction: row; align-items: center; }
+.dialogue-head .dialogue-speaker { position: relative; top: 0; left: 0; }
+.dialogue-bond {
+    margin-left: 10px; padding: 2px 10px; font-size: 15px; color: #e8a0a8;
+    background-color: rgba(13, 23, 27, 0.95); border-radius: 8px; -unity-font-style: italic;
+}
+.portrait-mood {
+    position: absolute; top: 4px; right: 4px; padding: 0 7px; font-size: 22px; -unity-font-style: bold;
+    color: rgb(40, 28, 20); background-color: rgb(250, 244, 228); border-radius: 8px;
+    border-width: 2px; border-color: rgb(40, 28, 20);
+}
+.mood-angry .portrait-frame { border-color: var(--blood); }
+.mood-angry .portrait-mood { background-color: #f3c0b4; }
+.mood-happy .portrait-frame { border-color: var(--lantern); }
+.mood-sad .portrait-frame, .mood-worried .portrait-frame { border-color: #7d95b0; }
+/* an inner voice: no portrait, a cooler box, the name of the voice on the tab */
+.dialogue-voice .dialogue-bubble { border-color: #8fb3c9; background-color: rgba(10, 18, 30, 0.97); }
+.dialogue-voice .dialogue-text { color: #c4d6e2; -unity-font-style: italic; }
+.dialogue-voice .dialogue-speaker { color: #8fb3c9; border-color: #8fb3c9; }
+.dialogue-voice .dialogue-tail { display: none; }
+.dialogue-rot .dialogue-bubble { border-color: #a6a03a; background-color: rgba(20, 20, 8, 0.97); }
+.dialogue-rot .dialogue-text { color: #d9d27a; }
+.dialogue-rot .dialogue-speaker { color: var(--taint); border-color: var(--taint); }
+/* choices: how you say it, what it tests, what you've asked already */
+.choice-line { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.choice-tone, .choice-check {
+    font-size: 13px; padding: 1px 7px; margin-right: 8px; border-radius: 5px; -unity-font-style: bold;
+    color: var(--sea); background-color: var(--muted);
+}
+.tone-warm { background-color: #e3a64e; }
+.tone-blunt { background-color: #c8573f; }
+.tone-wry { background-color: #4f9b97; }
+.tone-sly { background-color: #9c7ac8; }
+.tone-kind { background-color: #9fc06a; }
+.check-ok { background-color: #9fc06a; }
+.check-bad { background-color: #6f5a52; color: var(--text); }
+.choice-read .choice-label { color: var(--muted); }
+.choice-asked { font-size: 13px; color: var(--muted); margin-left: 8px; -unity-font-style: italic; }

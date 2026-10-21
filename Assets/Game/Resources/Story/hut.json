@@ -33,52 +33,26 @@
       "title": "Yenson",
       "safe": true,
       "text": [],
-      "extra": [
-        {
-          "when": [
-            "!flag:y_met"
-          ],
-          "text": "\"Easy. The sea nearly kept you. Name's Yenson.\""
-        },
-        {
-          "when": [
-            "flag:y_met",
-            "!flag:y_road"
-          ],
-          "text": "\"Feeling more yourself?\""
-        },
-        {
-          "when": [
-            "flag:y_road"
-          ],
-          "text": "\"Road's north, past the headland. Skelmed's at the end of it. Mind yourself out there.\""
-        }
-      ],
-      "onEnter": [
-        "flag:y_met"
-      ],
       "choices": [
         {
           "label": "\"What happened to me?\"",
-          "when": [
-            "!flag:y_what"
-          ],
+          "topic": "what",
+          "time": 5,
           "effects": [
+            "flag:y_met",
             "flag:y_what"
           ],
-          "time": 5,
-          "result": "\"Found you at the tide line this morning, tangled round a barrel. A trade boat went down off the point in the storm. You're the only one the sea gave back.\" He looks at you a moment longer. \"Lucky. Or something.\""
+          "result": "[[mood:sad]]\"Found you at the tide line this morning, tangled round a barrel. A trade boat went down off the point in the storm.\" He picks at the net. \"You're the only one the sea gave back.\"\n\n[[voice:Intellect]]The only one. He says it carefully, like a man who has counted the bodies on that beach before."
         },
         {
           "label": "\"Where am I?\"",
-          "when": [
-            "!flag:y_where"
-          ],
+          "topic": "where",
+          "time": 5,
           "effects": [
+            "flag:y_met",
             "flag:y_where"
           ],
-          "time": 5,
-          "result": "\"Loran, the west coast. That light up the hill is Skelmed: the nearest village, and the only one for a day's walk.\""
+          "result": "\"Loran. The west coast of it, the bit nobody wants.\" He nods at the window. \"That light up the hill is Skelmed. Nearest village, and the only one for a day's walk.\""
         },
         {
           "label": "Eat the stew he offers",
@@ -86,13 +60,15 @@
             "!flag:y_stew"
           ],
           "effects": [
+            "flag:y_met",
             "flag:y_stew",
             "hunger+40",
             "thirst+15",
-            "energy+10"
+            "energy+10",
+            "bond:yenson+2"
           ],
           "time": 20,
-          "result": "Fish stew, mostly water and bones, and the best thing you've ever eaten."
+          "result": "Fish stew, mostly water and bones, and the best thing you've ever eaten. Yenson watches you scrape the bowl and looks quietly pleased with himself."
         },
         {
           "label": "\"What should I do now?\"",
@@ -101,26 +77,155 @@
           ],
           "time": 5,
           "effects": [
+            "flag:y_met",
             "flag:y_road",
             "water=4"
           ],
-          "result": "Yenson scratches his beard. \"Get yourself to Skelmed. Up the coast road, north, past the headland. They're good folk, what's left of them, and they might be able to help you more than an old man in a shack can.\" He fills your waterskin from his own jug and pushes it back into your hands. \"And before you go: half your boat came ashore on the beach just north of here, when the tide went out. Have a look through it. Whatever's there is yours more than anyone's.\""
+          "result": "Yenson scratches his beard. \"Get yourself to Skelmed. Up the coast road, north, past the headland. Good folk, what's left of them.\" He fills your waterskin from his own jug.\n\n[[mood:worried]]\"And before you go: half your boat came ashore on the beach just north of here. Have a look through it. Whatever's there is yours more than anyone's.\""
         },
         {
-          "label": "\"Thank you, Yenson.\"",
+          "label": "\"Thank you, Yenson. I owe you my life.\"",
+          "tone": "warm",
           "when": [
-            "flag:y_road",
+            "flag:y_what",
             "!flag:y_thanks"
           ],
           "time": 2,
           "effects": [
-            "flag:y_thanks"
+            "flag:y_met",
+            "flag:y_thanks",
+            "bond:yenson+5"
           ],
-          "result": "He waves it away. \"Sea gives, sea takes. Today it gave. Go on with you.\""
+          "result": "[[mood:happy]]He waves it off, but he's smiling into his beard. \"Sea gives, sea takes. Today it gave.\" A pause. \"Bring me a fish some day. We'll call it square.\""
+        },
+        {
+          "label": "\"Next time, throw me back.\"",
+          "tone": "wry",
+          "when": [
+            "flag:y_what",
+            "!flag:y_thanks"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:y_met",
+            "flag:y_thanks",
+            "bond:yenson+3"
+          ],
+          "result": "[[mood:happy]]He barks a laugh, the first you've heard from him. \"The sea'd only spit you out again. Too stubborn by half, you are. I can tell.\""
+        },
+        {
+          "label": "\"Why did you help me?\"",
+          "tone": "blunt",
+          "when": [
+            "flag:y_what",
+            "!flag:y_thanks"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:y_met",
+            "flag:y_thanks",
+            "flag:y_son",
+            "bond:yenson+1"
+          ],
+          "result": "He's quiet so long you think he hasn't heard.\n\n[[mood:sad]]\"Because nobody pulled my boy out. The night the Merrow went down.\" He picks up his net again, and that's all you'll get."
+        },
+        {
+          "label": "\"Those nets are rigged for deep water. You weren't always a beach fisher.\"",
+          "check": "stat:int>=5",
+          "when": [
+            "!flag:y_past_tried"
+          ],
+          "time": 3,
+          "effects": [
+            "flag:y_met",
+            "flag:y_past_tried",
+            "flag:y_past",
+            "bond:yenson+5"
+          ],
+          "result": "[[mood:surprised]]He looks at you properly for the first time.\n\n\"Thirty years on the Merrow. Best boat on this coast. Then the levy came, and the crown wanted half of every catch, and the owner sold her to pay it.\" He ties off a knot, hard. \"Now I fish off the rocks, like a boy.\"",
+          "failEffects": [
+            "flag:y_past_tried"
+          ],
+          "failResult": "\"Nets are nets,\" he says, and goes back to mending his. You feel you've missed something."
+        },
+        {
+          "label": "Help him mend the net a while",
+          "when": [
+            "flag:y_what",
+            "!flag:y_net"
+          ],
+          "time": 30,
+          "train": [
+            "agi+1"
+          ],
+          "why": "mending nets",
+          "effects": [
+            "flag:y_met",
+            "flag:y_net",
+            "bond:yenson+5"
+          ],
+          "result": "He shows you the knot, a sheet bend, and how to pull it tight with your teeth when your hands are cold. You work in a comfortable quiet.\n\n[[voice:Agility]]Over, under, through. Your fingers learn it before you do."
+        },
+        {
+          "label": "\"Anything I could take for the road?\"",
+          "when": [
+            "bond:yenson>=10",
+            "!flag:y_gift"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:y_met",
+            "flag:y_gift",
+            "item:fish+2",
+            "bond:yenson+2"
+          ],
+          "result": "[[mood:happy]]He wraps two smoked fish in a cloth and won't hear a word about it. \"For the road. And come back, mind. Not many come back.\""
         },
         {
           "label": "\"Goodbye.\"",
-          "go": "travel"
+          "go": "travel",
+          "effects": [
+            "flag:y_met"
+          ]
+        }
+      ],
+      "greet": [
+        {
+          "when": [
+            "!flag:y_met"
+          ],
+          "mood": "worried",
+          "text": "\"Easy. Easy, now. The sea nearly kept you.\" He sets his net down. \"Yenson. This is my shack, that's my fire, and you're welcome to both.\""
+        },
+        {
+          "when": [
+            "untreated:bite"
+          ],
+          "mood": "worried",
+          "text": "\"That's a bite.\" He's on his feet faster than you'd think he could be. \"Wolf? On my road? Get up to Bess and have it cleaned, before it turns.\""
+        },
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "mood": "happy",
+          "text": "\"Ida's boy, is it? Hello, Rook. Your mother still owe me for that net?\" Rook mumbles something about the weather."
+        },
+        {
+          "when": [
+            "night"
+          ],
+          "text": "\"Late to be wandering. Sit by the fire a while. Nothing good walks that road at night.\""
+        },
+        {
+          "when": [
+            "flag:y_road"
+          ],
+          "text": "\"Back again? Skelmed's north, past the headland. Can't miss it, it's the only thing there.\""
+        },
+        {
+          "when": [],
+          "text": "\"Feeling more yourself?\""
         }
       ]
     },

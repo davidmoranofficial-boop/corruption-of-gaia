@@ -41,71 +41,66 @@
       "onEnter": [
         "flag:ida_met"
       ],
-      "extra": [
-        {
-          "when": [
-            "untreated:bite"
-          ],
-          "text": "\"Bite first. Bess is down by the gate. Go on.\""
-        },
-        {
-          "when": [
-            "!untreated:bite",
-            "!quest:hunt",
-            "!done:hunt"
-          ],
-          "text": "Ida looks up from the arrow she's fletching. \"Bess has seen to you? Good. You'll live, then.\""
-        },
-        {
-          "when": [
-            "quest:hunt",
-            "!ready:hunt"
-          ],
-          "text": "\"Deadwood and that boar. Rook knows where. Go on, the pair of you.\""
-        },
-        {
-          "when": [
-            "done:hunt",
-            "!flag:rook_escort"
-          ],
-          "text": "\"Well?\""
-        },
-        {
-          "when": [
-            "flag:rook_escort"
-          ],
-          "text": "\"Look after him. And yourself.\" She doesn't look up from the arrow, but her hands have gone still."
-        },
-        {
-          "when": [
-            "flag:ida_alone"
-          ],
-          "text": "Ida doesn't quite look at you. There's a bow hung over the lodge door that wasn't there before."
-        }
-      ],
+      "extra": [],
       "choices": [
         {
           "label": "\"Thank you, for the road.\"",
+          "tone": "warm",
           "when": [
             "!flag:ida_thanks"
           ],
           "time": 2,
           "effects": [
             "flag:ida_thanks",
+            "bond:ida+3",
             "rep:skelmed+2"
           ],
-          "result": "\"Don't. I was after that wolf anyway.\" She frowns. \"You were lucky I was.\""
+          "result": "[[mood:happy]]\"Don't. I was after that wolf anyway.\" But she nods, once, the way people do when they mean it. \"You were lucky I was.\""
+        },
+        {
+          "label": "\"I had it handled.\"",
+          "tone": "wry",
+          "when": [
+            "!flag:ida_thanks"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:ida_thanks",
+            "bond:ida+1"
+          ],
+          "result": "[[mood:happy]]Ida snorts. \"You were flat on your back with its teeth in your arm.\" She tests the fletching with her thumb. \"Next time I'll let you handle it, then.\""
         },
         {
           "label": "\"What happened to Skelmed?\"",
-          "when": [
-            "!flag:ida_why"
-          ],
+          "topic": "why",
           "time": 5,
           "effects": [
             "flag:ida_why"
           ],
-          "result": "\"The levy happened. Half of every catch to the crown, and the collector takes his own bite on top. The young ones went inland. The merchants stopped coming when the roads went bad.\" She spits. \"And now wolves on the coast road. Wolves, with eyes like that. In my grandmother's day you'd never see one this side of the hills.\""
+          "result": "[[mood:angry]]\"The levy happened. Half of every catch to the crown, and the collector takes his own bite on top.\"\n\n\"The young ones went inland. The merchants stopped coming when the roads went bad. There's a dozen of us left.\" She spits. \"And now wolves on the coast road.\""
+        },
+        {
+          "label": "\"That wolf's eyes. What was wrong with it?\"",
+          "topic": "eyes",
+          "time": 5,
+          "result": "[[mood:worried]]Ida stops fletching. \"Yellow. Like old pus. Third one this month.\"\n\n\"They don't run from fire. They don't stop when they're hurt. In my grandmother's day you'd never see a wolf this side of the hills.\"\n\n[[voice:Intellect]]Sick animals hide. They don't hunt. Whatever is in them, it isn't any sickness she has a name for."
+        },
+        {
+          "label": "\"It was starving, but it went for me, not the easy meat. Wolves don't do that.\"",
+          "check": "background:hunter",
+          "when": [
+            "!flag:ida_hunter_tried"
+          ],
+          "time": 3,
+          "effects": [
+            "flag:ida_hunter_tried",
+            "bond:ida+5"
+          ],
+          "result": "[[mood:surprised]]Ida looks at you sharply. \"You've hunted.\"\n\n\"No. They don't. They take the lame deer and the lost lamb. These ones go for people.\" She looks at you differently now, like a tool she's weighing. \"Good. I could use someone who knows the woods.\"",
+          "failEffects": [
+            "flag:ida_hunter_tried"
+          ],
+          "failResult": "\"Wolves bite people,\" says Ida. \"That's mostly what they're for.\""
         },
         {
           "label": "\"How can I help?\"",
@@ -142,8 +137,68 @@
           "result": "Ida doesn't say anything for a long time. \"He was nineteen,\" she says at last. She goes into the lodge and comes back with his old jerkin and boots, and a dagger, and puts them in your arms. \"Take them. He'd want them used.\" Then, quieter: \"Things are getting worse around here. If we don't get help soon, this village is done for. He was going to go to Eastmere for us.\" She looks at you. \"Somebody still has to.\""
         },
         {
+          "label": "\"Ida... about Rook.\"",
+          "when": [
+            "flag:rook_escort",
+            "!flag:ida_rook_talk"
+          ],
+          "time": 5,
+          "effects": [
+            "flag:ida_rook_talk",
+            "bond:ida+3"
+          ],
+          "result": "[[mood:sad]]She's quiet for a long time.\n\n\"His father went inland to find work, the year the levy doubled. Never came back. Rook was six.\" She tests the point of the arrow on her thumb. \"Bring him home. That's all I'm asking.\""
+        },
+        {
           "label": "\"Goodbye.\"",
           "go": "travel"
+        }
+      ],
+      "greet": [
+        {
+          "when": [
+            "untreated:bite"
+          ],
+          "mood": "angry",
+          "text": "\"Bite first. Bess is down by the gate. Go on, before it turns.\""
+        },
+        {
+          "when": [
+            "flag:ida_alone"
+          ],
+          "mood": "sad",
+          "text": "Ida doesn't quite look at you. There's a bow hung over the lodge door that wasn't there before."
+        },
+        {
+          "when": [
+            "flag:rook_escort"
+          ],
+          "mood": "worried",
+          "text": "\"Look after him. And yourself.\" She doesn't look up from the arrow, but her hands have gone still."
+        },
+        {
+          "when": [
+            "quest:hunt",
+            "!ready:hunt"
+          ],
+          "text": "\"Deadwood and that boar. Rook knows where. Go on, the pair of you.\""
+        },
+        {
+          "when": [
+            "ready:hunt"
+          ],
+          "mood": "surprised",
+          "text": "Ida looks at the bundle of wood, then the boar slung between you, and her eyebrows go up. \"Well?\""
+        },
+        {
+          "when": [
+            "night"
+          ],
+          "text": "Ida is sitting on the lodge step in the dark, bow across her knees, watching the north gate. \"Can't sleep. Wolves can't either, these nights.\""
+        },
+        {
+          "when": [],
+          "text": "Ida looks up from the arrow she's fletching. \"Bess has seen to you? Good. You'll live, then.\""
         }
       ]
     },
@@ -153,24 +208,6 @@
       "title": "Bess",
       "safe": true,
       "text": [],
-      "extra": [
-        {
-          "when": [
-            "!flag:fire_out"
-          ],
-          "text": "\"Bed, bread or bandages? I've all three, and potions for the bad days.\""
-        },
-        {
-          "when": [
-            "flag:fire_out"
-          ],
-          "text": "\"Saw what you did at the net shed. Most anyone's done for this village in a year. What can I get you?\""
-        },
-        {
-          "when": [],
-          "text": "Beds are thirty coppers. Sleeping saves your game."
-        }
-      ],
       "choices": [
         {
           "label": "Rent a bed for the night (30 coppers)",
@@ -180,6 +217,25 @@
           "needText": "A bed's 30 coppers, and you haven't got them.",
           "effects": [
             "coins-30",
+            "sleep:safe"
+          ],
+          "go": "travel",
+          "when": [
+            "bond:bess<10"
+          ],
+          "result": "\"Top of the stairs, second door. Sleep well, love.\""
+        },
+        {
+          "label": "Rent a bed for the night (20 coppers, a friend's price)",
+          "when": [
+            "bond:bess>=10"
+          ],
+          "need": [
+            "coins>=20"
+          ],
+          "needText": "Even a friend's price is 20 coppers.",
+          "effects": [
+            "coins-20",
             "sleep:safe"
           ],
           "go": "travel"
@@ -260,23 +316,198 @@
           ]
         },
         {
+          "label": "\"How's business?\"",
+          "topic": "business",
+          "time": 5,
+          "result": "[[mood:sad]]\"Business?\" She laughs, not happily. \"Ten years ago this room was full every night. Sailors, merchants, the lot.\"\n\n\"Now it's Tam, Ida when she's thirsty, and whoever the sea coughs up.\" She winks at you. \"Present company.\""
+        },
+        {
+          "label": "\"Yenson told me about his son.\"",
+          "when": [
+            "flag:y_son"
+          ],
+          "topic": "son",
+          "time": 5,
+          "effects": [
+            "flag:b_son",
+            "bond:bess+3"
+          ],
+          "result": "[[mood:sad]]\"The Merrow went down in a squall, six winters gone. Yenson was ashore with a fever. His boy took her out without him.\"\n\n\"He's not said the lad's name since. You be kind to that old man.\""
+        },
+        {
+          "label": "\"Your willow bark's gone stale. You can smell it.\"",
+          "check": "background:herbalist",
+          "when": [
+            "!flag:b_herb_tried"
+          ],
+          "time": 3,
+          "effects": [
+            "flag:b_herb_tried",
+            "flag:b_herb",
+            "bond:bess+5"
+          ],
+          "result": "[[mood:surprised]]Bess sniffs the jar and pulls a face.\n\n\"So it has. You've a nose for it.\" She tips it in the fire. \"Pick me fresh up by the hill stream and I'll pay you for it. And potions are thirty to you, herb-wife.\"",
+          "failEffects": [
+            "flag:b_herb_tried"
+          ],
+          "failResult": "You sniff the jar of willow bark knowingly. It smells of bark. Bess watches you do it with great interest."
+        },
+        {
+          "label": "Buy a health potion (30 coppers, herbalist's price)",
+          "when": [
+            "flag:b_herb"
+          ],
+          "need": [
+            "coins>=30"
+          ],
+          "needText": "You haven't the coin.",
+          "effects": [
+            "coins-30",
+            "item:health_potion+1"
+          ],
+          "result": "\"Thirty, for you. Don't tell Tam.\""
+        },
+        {
+          "label": "\"You run this place on your own?\"",
+          "tone": "warm",
+          "topic": "alone",
+          "time": 5,
+          "effects": [
+            "bond:bess+3"
+          ],
+          "result": "[[mood:happy]]\"Since my Harl passed, God rest him. He did the cooking. I do the cooking now, and you'll notice I'm still standing.\"\n\n[[voice:Charisma]]She talks to everyone like this. Very few people talk back. She likes that you did."
+        },
+        {
           "label": "\"Goodbye.\"",
           "go": "travel"
+        }
+      ],
+      "greet": [
+        {
+          "when": [
+            "flag:rook_escort"
+          ],
+          "mood": "sad",
+          "text": "\"Eastmere, is it.\" She wipes the same spot on the bar three times. \"Keep that boy fed. He forgets.\""
+        },
+        {
+          "when": [
+            "ready:hunt"
+          ],
+          "mood": "happy",
+          "text": "\"Is that boar? Real meat? Get it up to Ida before I steal it.\""
+        },
+        {
+          "when": [
+            "quest:hunt"
+          ],
+          "text": "\"Off hunting with Rook? Bring back something that isn't fish and I'll kiss you both.\""
+        },
+        {
+          "when": [
+            "flag:y_son",
+            "!flag:b_son"
+          ],
+          "mood": "surprised",
+          "text": "\"Yenson told you about his boy?\" Bess stops pouring. \"He doesn't tell anybody about his boy.\" She looks at you as if you've grown a size."
+        },
+        {
+          "when": [
+            "night"
+          ],
+          "mood": "happy",
+          "text": "\"Evening, love. Fire's lit and the beds are aired. Bread, bed or bandages?\""
+        },
+        {
+          "when": [],
+          "text": "\"Bed, bread or bandages? I've all three, and potions for the bad days.\""
         }
       ]
     },
     {
       "id": "dockhand",
-      "speaker": "Dockhand",
-      "title": "A dockhand",
+      "speaker": "Tam",
+      "title": "Tam",
       "safe": true,
-      "text": [
-        "\"Crabs come up on the sand south of the pier. Mind the claws, but the meat's worth it, if you've a knife.\""
-      ],
+      "text": [],
       "choices": [
         {
+          "label": "\"Do the boats still go out?\"",
+          "topic": "boats",
+          "time": 5,
+          "result": "[[mood:angry]]\"Two of 'em. Used to be forty.\" He jerks his chin at the empty moorings. \"Collector's man counts every fish we land. Half to the crown.\"\n\n\"Can't feed a family on half a boat.\"",
+          "effects": [
+            "flag:tam_met"
+          ]
+        },
+        {
+          "label": "(Eye the purse on his belt.)",
+          "check": "background:thief",
+          "when": [
+            "!flag:tam_tried"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:tam_met",
+            "flag:tam_tried",
+            "flag:tam_tip",
+            "bond:tam+3"
+          ],
+          "result": "You could lift it. You don't. But he sees you see it, and laughs.\n\n[[mood:happy]]\"Thief's eyes. Takes one to know one.\" He taps his nose. \"The collector's man comes through on the first of the month. Wears his purse on the left, and he drinks.\"",
+          "failEffects": [
+            "flag:tam_tried"
+          ],
+          "failResult": "[[mood:worried]]Tam catches you looking at his belt and, without a word, moves his purse round to the front."
+        },
+        {
+          "label": "\"Need a hand with that rope?\"",
+          "tone": "kind",
+          "when": [
+            "!flag:tam_rope"
+          ],
+          "time": 20,
+          "stamina": 5,
+          "train": [
+            "str+1"
+          ],
+          "why": "hauling rope",
+          "effects": [
+            "flag:tam_met",
+            "flag:tam_rope",
+            "bond:tam+5"
+          ],
+          "result": "You haul the wet rope between you and coil it on the pier. Tam doesn't say thank you, but he does say, \"You'll do,\" which you suspect is the same thing."
+        },
+        {
           "label": "\"Goodbye.\"",
-          "go": "travel"
+          "go": "travel",
+          "effects": [
+            "flag:tam_met"
+          ]
+        }
+      ],
+      "greet": [
+        {
+          "when": [
+            "!flag:tam_met"
+          ],
+          "text": "A sun-dried man coiling rope on the pier gives you a long look. \"Tam. You're the one off the wreck.\" Not a question."
+        },
+        {
+          "when": [
+            "night"
+          ],
+          "text": "\"Tide's out. Crabs'll be up on the sand tonight, south of the pier. Mind the claws.\""
+        },
+        {
+          "when": [
+            "flag:rook_escort"
+          ],
+          "text": "\"Heard you're walking inland with Ida's lad. Eastmere.\" He spits in the sea. \"Ask them where our harbour went.\""
+        },
+        {
+          "when": [],
+          "text": "\"Crabs come up on the sand south of the pier. Mind the claws, but the meat's worth it, if you've a knife.\""
         }
       ]
     },
@@ -287,9 +518,12 @@
       "safe": true,
       "text": [
         "A broad woman in an apron is haggling with a carter over a basket of fish, just inside the gate. She takes one look at the blood on you and forgets the fish.",
-        "\"You'll be Ida's stray. She ran past shouting about a wolf.\" She's back in a moment with a flask, a roll of linen and two little red bottles. \"Sit down before you fall down. Bites go bad if you leave them. Clean it first, then bind it. Spirits for the cleaning, mind, not for drinking.\"",
-        "\"The red ones are health potions. Drink one when you're badly hurt, or give one to a friend. They heal, they don't raise the dead, so don't wait too long. I sell them, when you've the coin.\"",
-        "\"Go on, you do it. You'll be doing it yourself on the road, with no one to help.\""
+        "[[mood:worried]]\"You'll be Ida's stray. She ran past shouting about a wolf.\"",
+        "She's back in a moment with a flask, a roll of linen and two little red bottles.",
+        "\"Sit down before you fall down. Bites go bad if you leave them. Clean it first, then bind it.\"",
+        "[[mood:happy]]\"Spirits are for the cleaning, mind. Not for drinking.\"",
+        "\"The red ones are health potions. They heal, but they don't raise the dead, so don't wait too long.\"",
+        "\"Go on, you do it. You'll be doing it yourself on the road.\""
       ],
       "choices": [
         {

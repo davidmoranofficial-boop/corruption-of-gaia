@@ -86,6 +86,21 @@ namespace Loran.UnityLayer
         }
 
         /// <summary>Plays one of id_1, id_2, id_3 at random (footsteps, hammer blows).</summary>
+        /// <summary>A voice blip at an exact pitch (each speaker has their own), quiet, a touch of variation.</summary>
+        public static void Blip(float pitch)
+        {
+            if (I == null) return;
+            var clip = I.Clip("Sfx", "blip");
+            if (clip == null) return;
+            AudioSource src = null;
+            foreach (var s in I.pool) if (!s.isPlaying) { src = s; break; }
+            if (src == null) return;   // never cut off a real sound for a blip
+            src.clip = clip;
+            src.volume = Mathf.Clamp01(0.35f * Effects * Master);
+            src.pitch = pitch * (1f + Random.Range(-0.05f, 0.05f));
+            src.Play();
+        }
+
         public static void PlayVariant(string id, int variants = 3, float volume = 1f, float pitchVary = 0.06f)
         {
             Play(id + "_" + Random.Range(1, variants + 1), volume, pitchVary);

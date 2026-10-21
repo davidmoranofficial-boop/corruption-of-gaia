@@ -44,6 +44,7 @@ static class Program
         Test("weather: rain, cold, hypothermia, a chill", Weather);
         Test("companions can die, for good", CompanionDeath);
         Test("mana: spells use it, time and sleep bring it back", Mana);
+        Test("dialogue: greetings that notice, questions marked as asked, checks that can fail, tones and bonds", Dialogue);
         Test("money: copper, silver, gold, platinum", () =>
         {
             Assert(Rules.Money(5) == "5 copper" && Rules.Money(100) == "1 silver" && Rules.Money(12345) == "1 gold 23 silver 45 copper", Rules.Money(12345));
@@ -1462,6 +1463,45 @@ static class Program
             return;
         }
         WalkUntil(e, (5, 7), () => e.Area.id == "coast_road");
+    }
+
+    static void Dialogue()
+    {
+        var e = NewEngine();
+        e.DevStart("hut");
+        Pick(e, "Sit up");
+        Assert(e.Paragraphs().Any(p => p.StartsWith("[[mood:worried]]") && p.Contains("Yenson")), "Yenson's first greeting, worried");
+        Pick(e, "What happened to me");
+        var parts = e.S.result.Split(new[] { "\n\n" }, StringSplitOptions.None);
+        Assert(parts.Length == 2 && parts[1].StartsWith("[[voice:Intellect]]"), "the answer, then an inner voice in its own box");
+        var asked = e.Choices().First(c => c.def.topic == "what");
+        Assert(asked.read && asked.enabled, "the question stays, marked as asked");
+        Pick(e, "What happened to me");
+        Assert(e.S.result.Contains("tide line"), "asking again repeats the answer");
+        Assert(e.Paragraphs().All(p => !p.Contains("The sea nearly kept you")), "no second greeting in the same talk");
+        // a check you fail still says something, and can't be tried again
+        e.S.stats[Stat.Int] = 2;
+        var chk = e.Choices().First(c => c.def.check != null);
+        Assert(chk.check == "Intellect 5" && !chk.checkOk, "the check shows on the button and that you'd fail it");
+        e.Choose(chk.def);
+        Assert(e.S.result.Contains("missed something") && e.Check("flag:y_past_tried") && !e.Check("flag:y_past"), "failing gets its own line");
+        Assert(e.Choices().All(c => c.def.check == null), "and it's gone");
+        // a tone, and the bond it builds
+        Pick(e, "I owe you my life");
+        Assert(e.Bond("Yenson").value == 5 && e.Bond("Yenson").name == "Stranger", "a kind word counts");
+        Pick(e, "mend the net");
+        Assert(e.Bond("Yenson").value == 10 && e.Bond("Yenson").name == "Friendly" && e.S.Toasts.Any(t => t.Contains("friendly")), "Yenson warms to you");
+        Assert(e.Choices().Any(c => c.def.label.Contains("for the road")), "a friend's gift opens up");
+        // a pass
+        var p2 = NewEngine();
+        p2.DevStart("village");
+        p2.S.background = "hunter";
+        p2.S.flags.Add("ida_met");
+        Keep(p2); UseThing(p2, "ida");
+        var hunter = p2.Choices().First(c => c.def.check == "background:hunter");
+        Assert(hunter.checkOk && hunter.check == "Hunter", "a hunter can read the wolf");
+        p2.Choose(hunter.def);
+        Assert(p2.S.result.Contains("You've hunted") && p2.Bond("Ida").value == 5, "Ida takes note");
     }
 
     static void Walk(Engine e, params string[] labels)

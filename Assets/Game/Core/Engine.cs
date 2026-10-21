@@ -10,6 +10,9 @@ namespace Loran.Core
     {
         public ChoiceDef def;
         public bool enabled;
+        public bool read;       // a question you've asked before
+        public string check;    // "Charisma 4", if it's a check
+        public bool checkOk;    // and whether you'd pass it
         public string reason;   // why it's disabled
         public string cost;     // e.g. "1 h 30 min · -30 stamina"
     }
@@ -212,9 +215,48 @@ namespace Loran.Core
             var list = new List<string>();
             if (!S.repeat || S.inCombat || S.scene == TravelId)
                 foreach (var p in sc.text) list.Add(Fill(p));
+            if (!S.repeat)
+            {
+                var hello = sc.greet.FirstOrDefault(x => All(x.when));
+                if (hello != null) list.Add(Line(hello));
+            }
             foreach (var x in sc.extra)
-                if (All(x.when)) list.Add(Fill(x.text));
+                if (All(x.when)) list.Add(Line(x));
             return list;
+        }
+
+        /// <summary>A line with its mood or inner voice marked for the dialogue box: [[mood:happy]]... or [[voice:Strength]]...</summary>
+        string Line(CondText x) =>
+            (!string.IsNullOrEmpty(x.voice) ? "[[voice:" + x.voice + "]]" : !string.IsNullOrEmpty(x.mood) ? "[[mood:" + x.mood + "]]" : "") + Fill(x.text);
+
+        /// <summary>What a check on a button says: "Charisma 4", "Hunter".</summary>
+        public static string CheckName(ChoiceDef c)
+        {
+            if (!string.IsNullOrEmpty(c.checkText)) return c.checkText;
+            var t = c.check ?? "";
+            if (t.StartsWith("stat:"))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(t.Substring(5), @"^(\w+)\s*>=\s*(\d+)$");
+                if (m.Success) return Stat.Names[Stat.Parse(m.Groups[1].Value)] + " " + m.Groups[2].Value;
+            }
+            if (t.StartsWith("background:")) { var b = t.Substring(11); return char.ToUpper(b[0]) + b.Substring(1); }
+            if (t.StartsWith("skill:"))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(t.Substring(6), @"^(\w+)\s*>=\s*(\d+)$");
+                if (m.Success) return char.ToUpper(m.Groups[1].Value[0]) + m.Groups[1].Value.Substring(1) + " " + m.Groups[2].Value;
+            }
+            return t;
+        }
+
+        /// <summary>How well someone knows you: their bond (0 to 100) and what that makes them, e.g. "Friend".</summary>
+        public (int value, string name) Bond(string npc)
+        {
+            var d = data.Npc(npc);
+            if (d == null) return (0, null);
+            int v = S.Rep("bond:" + d.id);
+            int step = v >= 50 ? 3 : v >= 25 ? 2 : v >= 10 ? 1 : 0;
+            string n = d.bondNames.Count == 0 ? null : d.bondNames[Math.Min(step, d.bondNames.Count - 1)];
+            return (v, n);
         }
 
         public string Fill(string t)
@@ -233,7 +275,10 @@ namespace Loran.Core
             foreach (var c in Current.choices)
             {
                 if (!All(c.when)) continue;
-                list.Add(new ChoiceView { def = c, enabled = Allowed(c, out var why), reason = why, cost = Cost(c) });
+                var v = new ChoiceView { def = c, enabled = Allowed(c, out var why), reason = why, cost = Cost(c) };
+                if (!string.IsNullOrEmpty(c.topic)) v.read = S.Has(TopicFlag(c));
+                if (!string.IsNullOrEmpty(c.check)) { v.check = CheckName(c); v.checkOk = Check(c.check); }
+                list.Add(v);
             }
             return list;
         }
@@ -313,12 +358,21 @@ namespace Loran.Core
 
             var notes = new StringBuilder();
             string redirect = null;
-            choosingGo = c.go;
-            foreach (var e in c.effects) Apply(e, notes, ref redirect);
+            // a check can fail: then its own line, effects and scene instead (never a dead end)
+            bool failed = !string.IsNullOrEmpty(c.check) && !Check(c.check);
+            var effects = failed ? c.failEffects : c.effects;
+            string go = failed ? (string.IsNullOrEmpty(c.failGo) ? c.go : c.failGo) : c.go;
+            string said = failed ? c.failResult : c.result;
+            // a question asked again: the same answer, nothing given twice
+            bool again = !string.IsNullOrEmpty(c.topic) && S.Has(TopicFlag(c));
+            if (!string.IsNullOrEmpty(c.topic) && !again) S.flags.Add(TopicFlag(c));
+            if (!string.IsNullOrEmpty(c.check)) S.Toasts.Add((failed ? "Failed: " : "Passed: ") + CheckName(c));
+            choosingGo = go;
+            if (!again) foreach (var e in effects) Apply(e, notes, ref redirect);
             choosingGo = null;
             Rules.Clamp(S, data);
 
-            string result = Join(Fill(c.result), notes.ToString());
+            string result = Join(Fill(said), notes.ToString());
             if (quickPick)
             {
                 // no page of text for picking things up, just the toasts (+1 Firewood)
@@ -327,8 +381,10 @@ namespace Loran.Core
             }
             S.result = result;
 
-            GoTo(redirect ?? (string.IsNullOrEmpty(c.go) ? S.scene : c.go));
+            GoTo(redirect ?? (string.IsNullOrEmpty(go) ? S.scene : go));
         }
+
+        string TopicFlag(ChoiceDef c) => "asked:" + S.scene + ":" + c.topic;
 
         public void GoTo(string id)
         {
@@ -568,6 +624,7 @@ namespace Loran.Core
         float Value(string key)
         {
             if (key.StartsWith("rep:")) return S.Rep(key.Substring(4));
+            if (key.StartsWith("bond:")) return S.Rep(key);
             if (key.StartsWith("item:")) return S.Count(key.Substring(5));
             // flags:felled_tree counts the flags that start with that (felled_tree1, felled_tree2 ...)
             if (key.StartsWith("flags:")) { var pre = key.Substring(6); return S.flags.Count(f => f.StartsWith(pre, StringComparison.Ordinal)); }
@@ -757,6 +814,19 @@ namespace Loran.Core
                 S.Toasts.Add((n > 0 ? "+" : "") + n + " " + data.Item(id).name);
                 return;
             }
+            if (key.StartsWith("bond:"))
+            {
+                // how someone feels about you (data npcs); a quiet heart toast, never a number
+                var who = data.Npc(key.Substring(5)) ?? throw new Exception("No npc '" + key.Substring(5) + "'");
+                int n = (int)(op == "-" ? -num : num);
+                var before = Bond(who.id).name;
+                S.AddRep("bond:" + who.id, n);
+                var after = Bond(who.id).name;
+                if (after != before && n > 0 && after != null) S.Toasts.Add(who.name + " now counts you a " + after.ToLowerInvariant() + ".");
+                else if (n > 0) S.Toasts.Add(who.name + " liked that.");
+                else if (n < 0) S.Toasts.Add(who.name + " won't forget that.");
+                return;
+            }
             if (key.StartsWith("rep:"))
             {
                 int n = (int)(op == "-" ? -num : num);
@@ -929,6 +999,12 @@ namespace Loran.Core
                         if ((parts[0] == "at" || parts[0] == "place") && data.Spot(parts[1]).spot == null) problems.Add(where + ": no spot '" + parts[1] + "'");
                         return;
                 }
+                if (e.StartsWith("bond:"))
+                {
+                    try { var (key, _, _) = Split(e); if (data.Npc(key.Substring(5)) == null) problems.Add(where + ": no npc '" + key.Substring(5) + "'"); }
+                    catch (Exception ex) { problems.Add(where + ": " + ex.Message); }
+                    return;
+                }
                 if (e.StartsWith("item:"))
                 {
                     try
@@ -945,6 +1021,7 @@ namespace Loran.Core
             foreach (var sc in scenes.Values)
             {
                 foreach (var x in sc.extra) foreach (var c in x.when) Cond(sc.id + " (extra text)", c);
+                foreach (var x in sc.greet) foreach (var c in x.when) Cond(sc.id + " (greeting)", c);
                 foreach (var e in sc.onEnter) Effect(sc.id + " (on enter)", e);
                 foreach (var step in sc.script)
                 {
@@ -972,6 +1049,13 @@ namespace Loran.Core
                     foreach (var c in ch.when) Cond(where, c);
                     foreach (var c in ch.need) Cond(where, c);
                     foreach (var e in ch.effects) Effect(where, e);
+                    if (!string.IsNullOrEmpty(ch.check))
+                    {
+                        Cond(where + " (check)", ch.check);
+                        Scene(where, ch.failGo);
+                        foreach (var e in ch.failEffects) Effect(where + " (failed)", e);
+                        if (string.IsNullOrEmpty(ch.failResult)) problems.Add(where + ": a check needs a failResult, so failing it says something");
+                    }
                     foreach (var t in ch.train)
                     {
                         try { var k = Split(t).key; if (data.Skill(k) == null) Stat.Parse(k); } catch (Exception ex) { problems.Add(where + ": " + ex.Message); }

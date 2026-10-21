@@ -2664,5 +2664,62 @@
       "dry": 30,
       "overlay": "heat"
     }
+  ],
+  "npcs": [
+    {
+      "id": "yenson",
+      "name": "Yenson",
+      "pitch": 0.78,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "ida",
+      "name": "Ida",
+      "pitch": 0.95,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "bess",
+      "name": "Bess",
+      "pitch": 1.18,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "rook",
+      "name": "Rook",
+      "pitch": 1.06,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "tam",
+      "name": "Tam",
+      "pitch": 0.86,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    }
   ]
 }

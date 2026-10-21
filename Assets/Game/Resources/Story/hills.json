@@ -5,18 +5,73 @@
       "speaker": "Rook",
       "title": "Rook",
       "text": [],
-      "extra": [
-        {
-          "when": [
-            "!done:hunt"
-          ],
-          "text": "A wiry lad with Ida's red hair, restringing a bow on the lodge step. \"Rook. Ma's told me about you. Wolf got you, eh? Got me too, once.\" He shows you a white crescent of scars on his wrist."
-        }
-      ],
       "choices": [
         {
+          "label": "\"Ida's your mother?\"",
+          "topic": "ma",
+          "time": 3,
+          "result": "[[mood:happy]]\"Don't let the bow fool you. She's soft as butter underneath.\"\n\nHe thinks about it.\n\n\"No. No, she isn't.\"",
+          "effects": [
+            "flag:rook_met"
+          ]
+        },
+        {
+          "label": "\"Nice scars.\"",
+          "tone": "wry",
+          "when": [
+            "!flag:rook_scars"
+          ],
+          "time": 2,
+          "effects": [
+            "flag:rook_met",
+            "flag:rook_scars",
+            "bond:rook+3"
+          ],
+          "result": "[[mood:happy]]\"Ta. Got another on my backside, but I don't show that one on a first meeting.\""
+        },
+        {
+          "label": "(Snatch the arrow as it slips from his fingers.)",
+          "check": "stat:agi>=5",
+          "when": [
+            "!flag:rook_catch"
+          ],
+          "time": 1,
+          "effects": [
+            "flag:rook_met",
+            "flag:rook_catch",
+            "bond:rook+5"
+          ],
+          "result": "It slips. You snatch it out of the air a hand's width above the step.\n\n[[mood:surprised]]Rook stares at you, then at the arrow. \"...Ma's going to like you.\"",
+          "failEffects": [
+            "flag:rook_catch"
+          ],
+          "failResult": "[[mood:happy]]It slips. You grab for it and miss by a hand's width. Rook catches it on the bounce without looking. \"Close,\" he says kindly."
+        },
+        {
           "label": "\"Goodbye.\"",
-          "go": "travel"
+          "go": "travel",
+          "effects": [
+            "flag:rook_met"
+          ]
+        }
+      ],
+      "greet": [
+        {
+          "when": [
+            "!flag:rook_met"
+          ],
+          "text": "A wiry lad with Ida's red hair, restringing a bow on the lodge step. \"Rook. Ma's told me about you. Wolf got you, eh? Got me too, once.\" He shows you a white crescent of scars on his wrist."
+        },
+        {
+          "when": [
+            "done:hunt"
+          ],
+          "mood": "happy",
+          "text": "\"Still can't believe we got that boar. Don't tell Ma I said that.\""
+        },
+        {
+          "when": [],
+          "text": "Rook is twirling an arrow between his fingers, the way people do when they've been told to sit still."
         }
       ]
     },

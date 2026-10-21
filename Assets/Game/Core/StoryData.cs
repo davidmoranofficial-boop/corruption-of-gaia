@@ -23,6 +23,7 @@ namespace Loran.Core
         public bool quick;                     // picking something up: used from the world, its first choice is taken at once and you just see "+1 Firewood" (David, 21 Oct)
         public string cutscene;                // played as a cutscene (GameUI.Cutscene.cs); text = its captions
         public List<string> text = new List<string>();      // paragraphs; {name} etc. are filled in
+        public List<CondText> greet = new List<CondText>(); // how they greet you: the FIRST whose conditions hold is said (put the most specific first)
         public List<CondText> extra = new List<CondText>(); // paragraphs shown only when their conditions hold
         public List<string> onEnter = new List<string>();   // effects run when the player arrives
         public List<string> script = new List<string>();    // an in-world cutscene (GameUI.Director.cs), played before the choices
@@ -34,6 +35,17 @@ namespace Loran.Core
     {
         public List<string> when = new List<string>();
         public string text;
+        public string mood;      // the speaker's face for this line: happy, angry, sad, worried (default: as they are)
+        public string voice;     // an inner voice instead of the speaker: Strength, Instinct... ("The Rot" for the corruption)
+    }
+
+    /// <summary>Someone you can get to know (David, 21 Oct: dialogue that's engaging): their voice and how they feel about you.</summary>
+    [Serializable]
+    public class NpcDef
+    {
+        public string id, name;
+        public float pitch = 1f;                         // their voice blips
+        public List<string> bondNames = new List<string>();   // what they are to you as the bond grows (0, 10, 25, 50)
     }
 
     [Serializable]
@@ -52,6 +64,13 @@ namespace Loran.Core
         public List<string> effects = new List<string>();
         public string result;                               // shown at the top of the next scene
         public string go;                                   // next scene; empty = stay
+        public string tone;                                 // how you say it: warm, blunt, wry, sly... shown on the button
+        public string topic;                                // a question: once asked it stays, marked as read, and asking again just repeats the answer
+        public string check;                                // a condition tested when you pick it (stat:cha>=4, background:hunter): it can fail
+        public string checkText;                            // shown on the button, e.g. "Charisma 4" (made from check if empty)
+        public string failResult;                           // what happens if the check fails
+        public List<string> failEffects = new List<string>();
+        public string failGo;
     }
 
     [Serializable]
@@ -80,6 +99,7 @@ namespace Loran.Core
         public List<TreatmentDef> treatments = new List<TreatmentDef>();
         public List<ClimateDef> climates = new List<ClimateDef>();
         public List<WeatherDef> weathers = new List<WeatherDef>();
+        public List<NpcDef> npcs = new List<NpcDef>();
     }
 
     /// <summary>
@@ -440,6 +460,7 @@ namespace Loran.Core
         public SkillDef Skill(string id) => Find(file.skills, x => x.id, id);
         public MoveDef Move(string id) => Find(file.moves, x => x.id, id);
         public FollowerDef Follower(string id) => Find(file.followers, x => x.id, id);
+        public NpcDef Npc(string nameOrId) => string.IsNullOrEmpty(nameOrId) ? null : file.npcs.Find(x => x.id == nameOrId || x.name == nameOrId);
         public BackgroundDef Background(string id) => Find(file.backgrounds, x => x.id, id);
         public GearDef Gear(string id) => Find(file.gear, x => x.id, id);
         public TraitDef Trait(string id) => Find(file.traits, x => x.id, id);
