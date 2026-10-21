@@ -107,7 +107,7 @@ namespace Loran.Core
         static void Expose(GameState s, GameData d, Body b, float warmth, float h, float bonus, int at)
         {
             var w = WeatherAt(s, d, at);
-            float hardy = b == s.body && HasPerk(s, d, "hardy") ? HardyWeather : 1f;   // Hardy: used to all weathers
+            float hardy = b == s.body ? WeatherRate(s, d) : 1f;   // Hardy: used to all weathers
             if (Sheltered(s, d)) b.wet -= 40 * h;
             else if (w != null && w.wet > 0) b.wet += w.wet * h * hardy;
             else b.wet -= (w?.dry ?? 10) * h;

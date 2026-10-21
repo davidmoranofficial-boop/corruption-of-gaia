@@ -36,6 +36,8 @@ namespace Loran.UnityLayer
         string cName = "";
         string cGender = "";
         string cBuild, cHair, cHairStyle, cBeard, cBackground, cSkin, cFigure = "male";
+        string cOrigin;                                     // where you grew up
+        readonly List<string> cQuirks = new List<string>(); // up to two, each a trade
         readonly int[] alloc = new int[Stat.Count];
         string createError;
 
@@ -1081,6 +1083,8 @@ namespace Loran.UnityLayer
             cName = "";
             cGender = "";
             cBackground = null;
+            cOrigin = null;
+            cQuirks.Clear();
             Array.Clear(alloc, 0, alloc.Length);
             createError = null;
             cStep = 0;

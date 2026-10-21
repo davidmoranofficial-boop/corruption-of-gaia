@@ -140,8 +140,14 @@ namespace Loran.Core
 
         /// <summary>Applies the character creation form. alloc is the bonus points spread over the stats.</summary>
         public string CreateCharacter(string name, string gender, string build, string hair, string backgroundId, int[] alloc,
-                                      string skin = null, string figure = null, string hairStyle = null, string beard = null)
+                                      string skin = null, string figure = null, string hairStyle = null, string beard = null,
+                                      string originId = null, IEnumerable<string> quirks = null)
         {
+            var qs = (quirks ?? Enumerable.Empty<string>()).Distinct().ToList();
+            if (qs.Count > Rules.MaxQuirks) return "Pick at most " + Rules.MaxQuirks + " quirks.";
+            if (qs.Any(q => data.Quirk(q) == null)) return "Unknown quirk.";
+            var origin = data.Origin(originId);
+            if (data.file.origins.Count > 0 && origin == null && originId != null) return "Pick where you're from.";
             name = (name ?? "").Trim();
             if (name.Length == 0) return "Give your character a name.";
             if (name.Length > 20) return "Keep the name under 20 letters.";
@@ -160,14 +166,48 @@ namespace Loran.Core
             S.skin = string.IsNullOrEmpty(skin) ? (data.file.skins.Count > 1 ? data.file.skins[1] : "") : skin;
             S.figure = figure == "male" || figure == "female" ? figure : gender == "female" ? "female" : "male";
             S.background = bg.id;
-            for (int i = 0; i < Stat.Count; i++) S.stats[i] = 3 + alloc[i];
-            if (!string.IsNullOrEmpty(bg.stat)) S.stats[Stat.Parse(bg.stat)] += 1;
+            // stats, where you're from and your quirks: the same sums the creation screen showed
+            var made = PreviewCharacter(bg.id, alloc, origin?.id, qs);
+            S.stats = made.stats;
+            S.origin = made.origin;
+            S.quirks = made.quirks;
+            S.hpBonus = made.hpBonus;
+            if (origin != null)
+            {
+                foreach (var sk in origin.skills.Where(k => data.Skill(k) != null)) for (int g = 0; g < 400 && SkillLevel(sk) < 1; g++) TrainSkill(sk, 5, null);
+                string redirect = null;
+                var notes = new StringBuilder();
+                if (origin.bonds != 0) foreach (var npc in data.file.npcs) S.AddRep("bond:" + npc.id, origin.bonds);
+                foreach (var e in origin.effects) Apply(e, notes, ref redirect);
+                S.Toasts.Clear();
+            }
             if (!S.Has("created")) S.flags.Add("created");
             GiveClothes();
             return null;
         }
 
         public const int CreationPoints = 5;
+
+        /// <summary>The character as creation stands so far, on a scratch state, for the live numbers. Nothing in S changes.</summary>
+        public GameState PreviewCharacter(string backgroundId, int[] alloc, string originId, IEnumerable<string> quirks)
+        {
+            var p = new GameState();
+            var bg = data.Background(backgroundId);
+            p.background = bg?.id ?? "";
+            for (int i = 0; i < Stat.Count; i++) p.stats[i] = 3 + (alloc != null && i < alloc.Length ? alloc[i] : 0);
+            if (bg != null && !string.IsNullOrEmpty(bg.stat)) p.stats[Stat.Parse(bg.stat)] += 1;
+            var origin = data.Origin(originId);
+            p.origin = origin?.id ?? "";
+            p.quirks = (quirks ?? Enumerable.Empty<string>()).Where(q => data.Quirk(q) != null).Distinct().ToList();
+            p.hpBonus = p.quirks.Sum(q => data.Quirk(q).hp);
+            foreach (var t in (origin?.stats ?? new List<string>()).Concat(p.quirks.SelectMany(q => data.Quirk(q).stats)))
+            {
+                var (k, op, n) = Split(t);
+                int i = Stat.Parse(k);
+                p.stats[i] = Math.Max(1, p.stats[i] + (op == "-" ? -(int)n : (int)n));
+            }
+            return p;
+        }
 
         /// <summary>What a spell costs you, after your perks.</summary>
         public int ManaCost(int mana) => Rules.ManaCost(S, data, mana);
@@ -259,9 +299,14 @@ namespace Loran.Core
             return (v, n);
         }
 
+        static readonly System.Text.RegularExpressions.Regex PriceRx = new System.Text.RegularExpressions.Regex(@"\{price:(\d+)\}");
+
         public string Fill(string t)
         {
             if (string.IsNullOrEmpty(t)) return "";
+            // {price:30}: what a shop asks of you, after Charisma (and where you're from)
+            if (t.IndexOf("{price:", StringComparison.Ordinal) >= 0)
+                t = PriceRx.Replace(t, m => Rules.Money(Rules.Price(S, data, int.Parse(m.Groups[1].Value))));
             bool m = S.gender == "male", f = S.gender == "female";
             return t.Replace("{they}", m ? "he" : f ? "she" : "they")
                     .Replace("{them}", m ? "him" : f ? "her" : "them")
@@ -609,6 +654,9 @@ namespace Loran.Core
                 case "gear": return arg == "" ? S.gearItems.Count > 0 : S.gearItems.Any(g => g.id == arg);
                 case "mode": return S.deathMode == arg;
                 case "background": return S.background == arg;
+                case "origin": return S.origin == arg;
+                case "quirk": return S.quirks.Contains(arg);
+                case "afford": return S.coins >= Rules.Price(S, data, int.Parse(arg));   // afford:30, after Charisma
                 case "gender": return S.gender == arg;
                 case "night": return S.Hour >= 20 || S.Hour < 5;
                 // wound = any wound or ailment at all; wound:bite = that one; untreated:bite = it still needs seeing to
@@ -662,6 +710,7 @@ namespace Loran.Core
             switch (head)
             {
                 case "flag": if (!S.Has(arg)) S.flags.Add(arg); return;
+                case "pay": S.coins = Math.Max(0, S.coins - Rules.Price(S, data, int.Parse(arg))); return;   // a shop price, after Charisma
                 case "unflag": S.flags.Remove(arg); return;
                 // wound:bite, or wound:bite:the wolf to say what did it outside a fight
                 case "wound": Rules.Afflict(S, data, S.body, parts[0], null, null, parts.Length > 1 ? parts[1] : WoundedBy()); return;
@@ -987,6 +1036,7 @@ namespace Loran.Core
                         return;
                     case "wound": if (data.Affliction(arg.Split(':')[0]) == null) problems.Add(where + ": no affliction '" + arg + "'"); return;
                     case "menu": return;
+                    case "pay": if (!int.TryParse(arg, out _)) problems.Add(where + ": pay needs a price in coppers"); return;
                     case "flag": case "unflag": case "hud": case "save": case "clock": case "sleep":
                     case "fight": case "collapse": case "revive": case "restart": case "resume": return;
                     case "forge":

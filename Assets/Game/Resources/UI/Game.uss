@@ -2676,3 +2676,16 @@
 .check-bad { background-color: #6f5a52; color: var(--text); }
 .choice-read .choice-label { color: var(--muted); }
 .choice-asked { font-size: 13px; color: var(--muted); margin-left: 8px; -unity-font-style: italic; }
+
+/* creation: origins, quirks and the live numbers (21 Oct) */
+.create-sum-scroll { flex-grow: 1; flex-shrink: 1; }
+.create-opt-scroll { flex-grow: 1; flex-shrink: 1; }
+.create-options .quirk-line { padding: 8px 14px; margin-bottom: 6px; }
+.quirk-trade { flex-direction: row; flex-wrap: wrap; margin-top: 2px; }
+.quirk-up { font-size: 14px; color: var(--moss); margin-right: 16px; white-space: normal; }
+.quirk-down { font-size: 14px; color: var(--blood); white-space: normal; }
+.quirk-card { border-left-color: var(--ember); }
+.quirk-card .perk-name { color: var(--ember); }
+.alloc-now { font-size: 14px; color: var(--lantern); white-space: normal; margin-top: 2px; }
+.sheet-value.sheet-good { color: var(--moss); }
+.sheet-value.sheet-bad { color: var(--blood); }

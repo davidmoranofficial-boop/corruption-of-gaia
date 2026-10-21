@@ -164,7 +164,9 @@ namespace Loran.Core
                 if (sk != null && sk.kind == "life") best = Math.Max(best, SkillLevel(sk.id));
             }
             float cut = Math.Min(0.4f, best * 0.06f);
-            return (int)Math.Round(c.stamina * (1 - cut));
+            // Strength makes hard work lighter (not walking, not fighting)
+            float str = c.train.Count > 0 && !S.inCombat ? Rules.WorkRate(S) : 1f;
+            return Math.Max(1, (int)Math.Round(c.stamina * (1 - cut) * str));
         }
 
         // ------------------------------------------------------------------ party

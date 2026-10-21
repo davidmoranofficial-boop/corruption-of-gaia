@@ -222,6 +222,15 @@
       "name": "Ash stave",
       "desc": "A straight length of young ash, split and shaved. The makings of a bow.",
       "kind": "material"
+    },
+    {
+      "id": "gull_egg",
+      "name": "Gull egg",
+      "desc": "Small, speckled and still warm. Raw, but it's food.",
+      "food": true,
+      "hunger": 10,
+      "thirst": 6,
+      "energy": 3
     }
   ],
   "enemies": [
@@ -960,6 +969,37 @@
           "x": 24,
           "y": 31,
           "scene": "lookout_climb"
+        },
+        {
+          "id": "runestone",
+          "kind": "item",
+          "sprite": "obj_runestone",
+          "x": 23,
+          "y": 35,
+          "scene": "runestone"
+        },
+        {
+          "id": "trunk",
+          "kind": "item",
+          "sprite": "obj_trunk",
+          "x": 10,
+          "y": 101,
+          "scene": "trunk",
+          "when": [
+            "!flag:trunk_moved"
+          ]
+        },
+        {
+          "id": "cache",
+          "kind": "item",
+          "sprite": "obj_crate",
+          "x": 10,
+          "y": 101,
+          "scene": "cache",
+          "when": [
+            "flag:trunk_moved"
+          ],
+          "once": true
         },
         {
           "id": "wolf",
@@ -2720,6 +2760,130 @@
         "Friend",
         "Close friend"
       ]
+    }
+  ],
+  "origins": [
+    {
+      "id": "coast",
+      "name": "The Loran coast",
+      "desc": "You grew up in a fishing village a few days down this same coast, mending nets and gutting herring. The sea's in your blood, whatever it did to your boat.",
+      "perkName": "One of us",
+      "perkDesc": "Coast folk know their own: Yenson and Tam start out as friends, and you can talk boats and weather with them.",
+      "effects": [
+        "bond:yenson+10",
+        "bond:tam+10"
+      ]
+    },
+    {
+      "id": "woods",
+      "name": "The northern woods",
+      "desc": "You were raised in a charcoal-burners' camp deep in the forests of northern Loran, where the nearest neighbour was a day's walk and the wolves were closer.",
+      "perkName": "Woodland-born",
+      "perkDesc": "You start with Hunting at level 1, and Ida and Rook take you for one of their own sooner.",
+      "skills": [
+        "hunting"
+      ],
+      "effects": [
+        "bond:ida+5",
+        "bond:rook+5"
+      ]
+    },
+    {
+      "id": "zaron",
+      "name": "Zaron, the capital",
+      "desc": "You grew up in the crowded streets under King Melvin's palace, when Melvin was still a king people cheered for.",
+      "perkName": "City-bred",
+      "perkDesc": "No market trader has ever fleeced you: shop prices are 10% better. Some country folk don't care for a Zaron accent.",
+      "prices": 0.9,
+      "effects": [
+        "bond:tam-3"
+      ]
+    },
+    {
+      "id": "abroad",
+      "name": "Laurasia, over the sea",
+      "desc": "You're not from Loran at all. You came from the continent of Laurasia, on the boat that sank, to find work or to get away from something.",
+      "perkName": "Far-travelled",
+      "perkDesc": "+1 Intellect from seeing the world, but everyone in Loran starts out a little warier of a foreigner.",
+      "stats": [
+        "int+1"
+      ],
+      "bonds": -3
+    }
+  ],
+  "quirks": [
+    {
+      "id": "big_appetite",
+      "name": "Big appetite",
+      "up": "+1 Strength",
+      "down": "Hunger drains 30% faster",
+      "stats": [
+        "str+1"
+      ],
+      "hunger": 1.3
+    },
+    {
+      "id": "light_eater",
+      "name": "Light eater",
+      "up": "Hunger and thirst drain 25% slower",
+      "down": "10 less stamina",
+      "hunger": 0.75,
+      "thirst": 0.75,
+      "stamina": -10
+    },
+    {
+      "id": "wiry",
+      "name": "Wiry",
+      "up": "+1 Agility",
+      "down": "10 less health",
+      "stats": [
+        "agi+1"
+      ],
+      "hp": -10
+    },
+    {
+      "id": "bookish",
+      "name": "Bookish",
+      "up": "+1 Intellect",
+      "down": "-1 Strength",
+      "stats": [
+        "int+1",
+        "str-1"
+      ]
+    },
+    {
+      "id": "silver_tongue",
+      "name": "Silver tongue",
+      "up": "+1 Charisma",
+      "down": "-1 Endurance",
+      "stats": [
+        "cha+1",
+        "end-1"
+      ]
+    },
+    {
+      "id": "hot_headed",
+      "name": "Hot-headed",
+      "up": "Your blows land 15% harder",
+      "down": "You take 10% more harm",
+      "dealt": 1.15,
+      "taken": 1.1
+    },
+    {
+      "id": "cautious",
+      "name": "Cautious",
+      "up": "You take 10% less harm",
+      "down": "Your blows land 10% softer",
+      "dealt": 0.9,
+      "taken": 0.9
+    },
+    {
+      "id": "thick_blooded",
+      "name": "Thick-blooded",
+      "up": "Cold and rain get to you 30% slower",
+      "down": "Thirst drains 20% faster",
+      "weather": 0.7,
+      "thirst": 1.2
     }
   ]
 }

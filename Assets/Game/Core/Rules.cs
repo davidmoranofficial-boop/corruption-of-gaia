@@ -46,7 +46,7 @@ namespace Loran.Core
         public const int DrawWaterMana = 10;
         public const int CollapseMinutes = 6 * 60;
 
-        public static int MaxHp(GameState s) => 80 + s.stats[Stat.End] * 5 + (s.level - 1) * HpPerLevel;
+        public static int MaxHp(GameState s) => 80 + s.stats[Stat.End] * 5 + (s.level - 1) * HpPerLevel + s.hpBonus;
 
         // Levels: experience from fights and finished jobs. Each level adds health and stamina.
         public const int HpPerLevel = 8, StaminaPerLevel = 4;
@@ -59,6 +59,40 @@ namespace Loran.Core
         // Mana: what spells run on. Grows with Intellect and levels; comes back slowly with time and fully with sleep.
         public const int ManaPerLevel = 3;
         public const float ManaRegenPerHour = 6f;
+        // ---- what the stats do out in the world (David, 21 Oct): every point of every stat should be felt
+        public const float NeedsPerEnd = 0.03f, WorkPerStr = 0.04f, LearnPerInt = 0.04f, PricePerCha = 0.04f;
+        public const int MaxQuirks = 2;
+
+        /// <summary>Your quirks, multiplied together (hunger, thirst, weather, dealt, taken) or added (hp, stamina).</summary>
+        public static float QuirkMul(GameState s, GameData d, Func<QuirkDef, float> pick)
+        {
+            float m = 1f;
+            foreach (var q in s.quirks) { var def = d.Quirk(q); if (def != null) m *= pick(def); }
+            return m;
+        }
+        public static int QuirkAdd(GameState s, GameData d, Func<QuirkDef, int> pick)
+        {
+            int n = 0;
+            foreach (var q in s.quirks) { var def = d.Quirk(q); if (def != null) n += pick(def); }
+            return n;
+        }
+
+        /// <summary>Endurance: hunger and thirst drain 3% slower per point over 3 (and faster below).</summary>
+        public static float NeedsRate(GameState s) => Math.Clamp(1f - (s.stats[Stat.End] - 3) * NeedsPerEnd, 0.7f, 1.15f);
+        /// <summary>Strength: hard work (chopping, hauling, climbing) takes 4% less stamina per point over 3.</summary>
+        public static float WorkRate(GameState s) => Math.Clamp(1f - (s.stats[Stat.Str] - 3) * WorkPerStr, 0.6f, 1.15f);
+        /// <summary>Charisma (and where you're from): what shops charge you.</summary>
+        public static float PriceRate(GameState s, GameData d) =>
+            Math.Clamp(1f - (s.stats[Stat.Cha] - 3) * PricePerCha, 0.7f, 1.2f) * (d.Origin(s.origin)?.prices ?? 1f);
+        /// <summary>Everything that speeds or slows your hunger and thirst, together (1 = normal).</summary>
+        public static float HungerRate(GameState s, GameData d) => (HasPerk(s, d, "hardy") ? HardyNeeds : 1f) * NeedsRate(s) * QuirkMul(s, d, q => q.hunger);
+        public static float ThirstRate(GameState s, GameData d) => (HasPerk(s, d, "hardy") ? HardyNeeds : 1f) * NeedsRate(s) * QuirkMul(s, d, q => q.thirst);
+        /// <summary>How hard rain and cold bite you (1 = normal).</summary>
+        public static float WeatherRate(GameState s, GameData d) => (HasPerk(s, d, "hardy") ? HardyWeather : 1f) * QuirkMul(s, d, q => q.weather);
+        /// <summary>The attack number on the character sheet: Strength, the weapon and its skill.</summary>
+        public static float Attack(GameState s, GameData d, int weaponSkill) => 4 + s.stats[Stat.Str] * 1.5f + GearDamage(s) + weaponSkill * 0.8f;
+        public static int Price(GameState s, GameData d, int coppers) => Math.Max(1, (int)Math.Round(coppers * PriceRate(s, d)));
+
         public static int MaxMana(GameState s) => 30 + s.stats[Stat.Int] * 5 + (s.level - 1) * ManaPerLevel;
 
         public static int MaxStamina(GameState s, GameData d)
@@ -66,6 +100,7 @@ namespace Loran.Core
             int bonus = (s.level - 1) * StaminaPerLevel;
             foreach (var g in s.Equipped) bonus += g.stamina;
             bonus += (int)TraitSum(s, d, t => t.stamina);
+            bonus += QuirkAdd(s, d, q => q.stamina);
             return (int)Math.Round((70 + s.stats[Stat.End] * 6 + bonus) * StaminaPower(s.body, d));
         }
 
@@ -90,7 +125,8 @@ namespace Loran.Core
         public static int ManaCost(GameState s, GameData d, int mana) => Math.Max(0, mana);
 
         /// <summary>Studious is the scholar's perk; training has no GameData to hand, so it goes by the background's id.</summary>
-        public static float LearnRate(GameState s) => s.background == "scholar" ? StudiousRate : 1f;
+        /// <summary>Intellect: you learn 4% faster per point over 3 (Studious on top).</summary>
+        public static float LearnRate(GameState s) => (s.background == "scholar" ? StudiousRate : 1f) * Math.Clamp(1f + (s.stats[Stat.Int] - 3) * LearnPerInt, 0.85f, 1.4f);
 
         /// <summary>Time passes. Time never stops, whatever the player is doing.</summary>
         public static void Advance(GameState s, GameData d, int minutes, bool exerting)
@@ -100,9 +136,8 @@ namespace Loran.Core
             s.minutes += minutes;
             if (!s.hud) return;  // the needs and the meter only run once the player is in Loran
 
-            float stomach = HasPerk(s, d, "hardy") ? HardyNeeds : 1f;
-            s.hunger -= HungerPerHour * h * stomach;
-            s.thirst -= ThirstPerHour * h * stomach;
+            s.hunger -= HungerPerHour * h * HungerRate(s, d);
+            s.thirst -= ThirstPerHour * h * ThirstRate(s, d);
             s.energy -= EnergyPerHour * h;
             s.mana += ManaRegenPerHour * h;
             if (!exerting) s.stamina += StaminaRegenPerHour * h * (s.body.cold >= ColdAt ? 0.5f : 1f);

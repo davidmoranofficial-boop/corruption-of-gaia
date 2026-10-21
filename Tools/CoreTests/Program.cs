@@ -45,6 +45,7 @@ static class Program
         Test("companions can die, for good", CompanionDeath);
         Test("mana: spells use it, time and sleep bring it back", Mana);
         Test("dialogue: greetings that notice, questions marked as asked, checks that can fail, tones and bonds", Dialogue);
+        Test("creation: origins, quirks, and stats that matter out in the world", Creation);
         Test("money: copper, silver, gold, platinum", () =>
         {
             Assert(Rules.Money(5) == "5 copper" && Rules.Money(100) == "1 silver" && Rules.Money(12345) == "1 gold 23 silver 45 copper", Rules.Money(12345));
@@ -1502,6 +1503,81 @@ static class Program
         Assert(hunter.checkOk && hunter.check == "Hunter", "a hunter can read the wolf");
         p2.Choose(hunter.def);
         Assert(p2.S.result.Contains("You've hunted") && p2.Bond("Ida").value == 5, "Ida takes note");
+    }
+
+    static void Creation()
+    {
+        var e = NewEngine();
+        e.NewGame("basic");
+        Assert(e.data.file.origins.Count >= 4 && e.data.file.quirks.Count >= 6, "origins and quirks to pick from");
+        Assert(e.CreateCharacter("Ash", "male", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }, quirks: new[] { "wiry", "bookish", "cautious" }) != null, "at most two quirks");
+        Assert(e.CreateCharacter("Ash", "male", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }, originId: "nowhere") != null, "unknown origin refused");
+        // what the creation screen shows is what you get
+        var pv = e.PreviewCharacter("farmer", new[] { 0, 0, 2, 3, 0 }, "abroad", new[] { "wiry", "bookish" });
+        Assert(e.CreateCharacter("Ash", "male", "Lean", "Red", "farmer", new[] { 0, 0, 2, 3, 0 }, originId: "abroad", quirks: new[] { "wiry", "bookish" }) == null, "valid character refused");
+        Assert(e.S.stats.SequenceEqual(pv.stats) && Rules.MaxHp(e.S) == Rules.MaxHp(pv), "the preview matches the character");
+        Assert(e.S.stats[Stat.Int] == 8 && e.S.stats[Stat.Agi] == 6 && e.S.stats[Stat.Str] == 2, "abroad +1 Int, wiry +1 Agi, bookish +1 Int -1 Str");
+        Assert(Rules.MaxHp(e.S) == Rules.MaxHp(new GameState { stats = e.S.stats }) - 10, "wiry costs 10 health");
+        Assert(e.Bond("Yenson").value == -3, "a foreigner starts a little behind");
+        Assert(e.Check("origin:abroad") && e.Check("quirk:wiry") && !e.Check("quirk:cautious"), "origin and quirk conditions");
+        var back = JsonConvert.DeserializeObject<GameState>(JsonConvert.SerializeObject(e.S));
+        Assert(back.origin == "abroad" && back.quirks.Count == 2 && back.hpBonus == -10, "origin and quirks survive a save");
+
+        var coast = NewEngine();
+        coast.NewGame("basic");
+        coast.CreateCharacter("Ash", "male", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }, originId: "coast");
+        Assert(coast.Bond("Yenson").value == 10 && coast.Bond("Tam").value == 10, "coast folk start as friends");
+        var woods = NewEngine();
+        woods.NewGame("basic");
+        woods.CreateCharacter("Ash", "male", "Lean", "Red", "farmer", new[] { 1, 1, 1, 1, 1 }, originId: "woods");
+        Assert(woods.SkillLevel("hunting") >= 1 && woods.S.Toasts.Count == 0, "woodland-born start at Hunting 1, quietly");
+
+        // each stat is felt in the world
+        var lo = new GameState(); var hi = new GameState();
+        lo.stats = new[] { 1, 1, 1, 1, 1 }; hi.stats = new[] { 8, 8, 8, 8, 8 };
+        Assert(Rules.WorkRate(hi) < 1f && Rules.WorkRate(lo) > 1f, "Strength eases hard work");
+        Assert(Rules.HungerRate(hi, e.data) < Rules.HungerRate(lo, e.data), "Endurance slows hunger");
+        Assert(Rules.LearnRate(hi) > Rules.LearnRate(lo), "Intellect speeds learning");
+        Assert(Rules.Price(hi, e.data, 100) < 100 && Rules.Price(lo, e.data, 100) > 100, "Charisma for prices");
+        hi.origin = "zaron";
+        Assert(Rules.Price(hi, e.data, 100) < Rules.Price(new GameState { stats = hi.stats }, e.data, 100), "city-bred haggle better");
+        var big = new GameState { quirks = new List<string> { "big_appetite" } };
+        Assert(Math.Abs(Rules.HungerRate(big, e.data) - 1.3f) < 0.01f, "big appetite eats more");
+
+        // prices in a shop: the label, what you pay, and not being able to pay
+        var v = NewEngine();
+        v.DevStart("village");
+        v.S.stats[Stat.Cha] = 8;
+        int bread = Rules.Price(v.S, v.data, 6);
+        v.GoTo("bess");
+        var loaf = v.Choices().FirstOrDefault(c => c.def.label.Contains("loaf"));
+        Assert(loaf != null, "bread at Bess's: " + v.S.scene + " / " + string.Join(" | ", v.Choices().Select(c => c.def.label)));
+        Assert(v.Fill(loaf.def.label).Contains(Rules.Money(bread)), "the label shows your price: " + v.Fill(loaf.def.label));
+        long before = v.S.coins;
+        v.Choose(loaf.def);
+        Assert(v.S.coins == before - bread, "you pay your price");
+        v.GoTo("bess");
+        v.S.coins = 0;
+        Assert(!v.Choices().First(c => c.def.label.Contains("loaf")).enabled, "no money, no bread");
+
+        // the world checks: a carving to read, a trunk to heave, a cairn to climb
+        var w = NewEngine();
+        w.DevStart("village");
+        w.S.stats[Stat.Int] = 5; w.S.stats[Stat.Str] = 5; w.S.stats[Stat.Agi] = 2;
+        w.GoTo("runestone");
+        int exp = w.S.exp, lvl = w.S.level;
+        Pick(w, "Make out the carving");
+        Assert(w.S.exp > exp || w.S.level > lvl, "reading the stone teaches you something");
+        w.GoTo("trunk");
+        Pick(w, "Heave it aside");
+        Assert(w.Check("flag:trunk_moved"), "strong enough to move the trunk");
+        long c0 = w.S.coins;
+        w.GoTo("cache");   // a quick scene: opened at once
+        Assert(w.S.coins == c0 + 60, "under the trunk, a cache");
+        w.GoTo("lookout_climb");
+        float hp = w.S.hp;
+        Pick(w, "sheer face");
+        Assert(!w.Check("flag:cairn_top") && w.S.hp < hp, "too clumsy to climb the cairn, and it hurts");
     }
 
     static void Walk(Engine e, params string[] labels)

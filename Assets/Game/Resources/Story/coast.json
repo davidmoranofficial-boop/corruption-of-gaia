@@ -338,6 +338,28 @@
           "go": "lookout"
         },
         {
+          "label": "Climb the sheer face of the cairn, to the very top",
+          "check": "stat:agi>=5",
+          "when": [
+            "!flag:cairn_top"
+          ],
+          "time": 10,
+          "stamina": 10,
+          "train": [
+            "agi+2"
+          ],
+          "why": "climbing the cairn",
+          "effects": [
+            "flag:cairn_top",
+            "item:gull_egg+2"
+          ],
+          "result": "Fingers in the cracks, toes on nothing. You haul yourself onto the capstone. There's a gulls' nest up here, two speckled eggs in it, and the whole coast below you.\n\n[[voice:Agility]]Light, quick, sure. You could get used to high places.",
+          "failEffects": [
+            "hp-4"
+          ],
+          "failResult": "Halfway up a stone turns under your foot and you come down hard on your backside, with skinned palms and a new respect for cairns.\n\n[[voice:Agility]]Too slow on the shift of weight. Next time."
+        },
+        {
           "label": "Look out over the land again",
           "when": [
             "flag:lookout"
@@ -570,6 +592,79 @@
         {
           "label": "Leave it",
           "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "runestone",
+      "title": "The old stone",
+      "text": [
+        "A standing stone on the top of the headland, taller than you, crusted with yellow lichen. Someone carved it, a long time ago: rows of angular letters, worn almost smooth."
+      ],
+      "choices": [
+        {
+          "label": "Make out the carving",
+          "check": "stat:int>=5",
+          "topic": "read",
+          "time": 15,
+          "effects": [
+            "exp:15"
+          ],
+          "result": "Old Loranic. Your tutor would be proud. Slowly, letter by letter:\n\n\"HERE ZARON AND LORAN SET THE FIRST STONE OF THE KINGDOM, AND SWORE ON THE SEA: AS LONG AS THE CROWN KEEPS FAITH WITH THE LAND, THE LAND KEEPS FAITH WITH THE CROWN.\"\n\n[[voice:Intellect]]The first king and queen, here, on this nothing headland. And underneath, someone has cut a newer line, rougher: AND WHEN IT DOES NOT?",
+          "failResult": "Old letters, angular and worn. You trace them with a finger and can't make out a word.\n\n[[voice:Intellect]]There's a pattern there. If you were sharper, or had a book, it would come."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "trunk",
+      "title": "A fallen trunk",
+      "text": [
+        "A dead oak has come down across a hollow by the path, roots and all. Underneath it, in the shadow, you catch the corner of something square and man-made."
+      ],
+      "choices": [
+        {
+          "label": "Heave it aside",
+          "check": "stat:str>=5",
+          "time": 10,
+          "stamina": 15,
+          "train": [
+            "str+2"
+          ],
+          "why": "heaving a dead oak",
+          "effects": [
+            "flag:trunk_moved"
+          ],
+          "go": "travel",
+          "result": "You get your shoulder under it, set your feet and push until something in your back pops. The trunk rolls, slowly, and thumps down the bank.\n\n[[voice:Strength]]Good. Again, some day, with something heavier.",
+          "failResult": "You get your shoulder under it and push until your vision swims. It rocks. It settles back. It's not going anywhere, not for you, not yet.\n\n[[voice:Strength]]Not yet. Haul, chop, fight. Come back stronger."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "title": "A smuggler's box",
+      "quick": true,
+      "text": [
+        "A tarred box, hidden under the oak."
+      ],
+      "choices": [
+        {
+          "label": "Open it",
+          "effects": [
+            "coins+60",
+            "item:bandage+1",
+            "item:spirits+1"
+          ],
+          "go": "travel",
+          "result": "Coins, linen and a flask: somebody's emergency kit. They won't be back for it."
         }
       ]
     }

@@ -426,6 +426,23 @@ namespace Loran.UnityLayer
                 Add(perk, new Label("PERK  ·  " + bg.perkName.ToUpperInvariant()), "perk-name");
                 Add(perk, new Label(bg.perkDesc), "perk-desc");
             }
+            var org = d.Origin(s.origin);
+            if (org != null)
+            {
+                var card = Add(who, new VisualElement(), "perk-card");
+                Add(card, new Label("FROM " + org.name.ToUpperInvariant() + "  ·  " + org.perkName.ToUpperInvariant()), "perk-name");
+                Add(card, new Label(org.perkDesc), "perk-desc");
+            }
+            foreach (var qid in s.quirks)
+            {
+                var q = d.Quirk(qid);
+                if (q == null) continue;
+                var card = Add(who, new VisualElement(), "perk-card");
+                card.AddToClassList("quirk-card");
+                Add(card, new Label("QUIRK  ·  " + q.name.ToUpperInvariant()), "perk-name");
+                Add(card, new Label("+ " + q.up), "quirk-up");
+                Add(card, new Label("− " + q.down), "quirk-down");
+            }
 
             var mid = Add(row, new VisualElement(), "inv-col");
             mid.AddToClassList("char-col");
@@ -461,6 +478,9 @@ namespace Loran.UnityLayer
             var road = Section(right, "ON THE ROAD");
             Sheet(road, "Warmth from clothes", "+" + Mathf.RoundToInt(Rules.Warmth(s, d)) + "°");
             Sheet(road, "Death mode", s.deathMode == "perma" ? "Permadeath" : "Basic");
+            var world = Section(right, "IN THE WORLD");
+            YouSheet(world, s, false);
+            Add(world, new Label("Against normal. Strength eases hard work, Endurance your hunger and thirst, Intellect your learning, Charisma your prices."), "line-muted");
         }
 
         static void Sheet(VisualElement parent, string name, string value)

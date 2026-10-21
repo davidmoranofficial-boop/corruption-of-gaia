@@ -210,13 +210,13 @@
       "text": [],
       "choices": [
         {
-          "label": "Rent a bed for the night (30 coppers)",
+          "label": "Rent a bed for the night ({price:30})",
           "need": [
-            "coins>=30"
+            "afford:30"
           ],
-          "needText": "A bed's 30 coppers, and you haven't got them.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-30",
+            "pay:30",
             "sleep:safe"
           ],
           "go": "travel",
@@ -226,88 +226,88 @@
           "result": "\"Top of the stairs, second door. Sleep well, love.\""
         },
         {
-          "label": "Rent a bed for the night (20 coppers, a friend's price)",
+          "label": "Rent a bed for the night ({price:20}, a friend's price)",
           "when": [
             "bond:bess>=10"
           ],
           "need": [
-            "coins>=20"
+            "afford:20"
           ],
-          "needText": "Even a friend's price is 20 coppers.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-20",
+            "pay:20",
             "sleep:safe"
           ],
           "go": "travel"
         },
         {
-          "label": "Buy a loaf of bread (6 coppers)",
+          "label": "Buy a loaf of bread ({price:6})",
           "need": [
-            "coins>=6"
+            "afford:6"
           ],
-          "needText": "You haven't six coppers to your name.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-6",
+            "pay:6",
             "item:bread+1"
           ],
           "result": "Bess wraps a loaf in a cloth. \"Yesterday's. Still good.\""
         },
         {
-          "label": "Buy a bandage (15 coppers)",
+          "label": "Buy a bandage ({price:15})",
           "need": [
-            "coins>=15"
+            "afford:15"
           ],
-          "needText": "You haven't the coin.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-15",
+            "pay:15",
             "item:bandage+1"
           ],
           "result": "Bess fetches a roll of clean linen from a chest. \"For the cuts. There's always cuts.\""
         },
         {
-          "label": "Buy a flask of spirits (30 coppers)",
+          "label": "Buy a flask of spirits ({price:30})",
           "need": [
-            "coins>=30"
+            "afford:30"
           ],
-          "needText": "You haven't the coin.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-30",
+            "pay:30",
             "item:spirits+1"
           ],
           "result": "\"Don't drink it all at once. Or at all, really. It's for wounds.\""
         },
         {
-          "label": "Buy willow bark (10 coppers)",
+          "label": "Buy willow bark ({price:10})",
           "need": [
-            "coins>=10"
+            "afford:10"
           ],
-          "needText": "You haven't the coin.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-10",
+            "pay:10",
             "item:willow_bark+1"
           ],
           "result": "\"For fevers. Brew it, it's foul. Or there's a willow up by the hill stream, if you'd rather pick your own.\""
         },
         {
-          "label": "Buy a health potion (40 coppers)",
+          "label": "Buy a health potion ({price:40})",
           "need": [
-            "coins>=40"
+            "afford:40"
           ],
-          "needText": "You haven't the coin.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-40",
+            "pay:40",
             "item:health_potion+1"
           ],
           "result": "\"Old Maud up the coast brews them. Tastes like rust, works like a charm. Keep one back for the bad days.\""
         },
         {
-          "label": "Buy a sewing kit (80 coppers)",
+          "label": "Buy a sewing kit ({price:80})",
           "need": [
-            "coins>=80"
+            "afford:80"
           ],
-          "needText": "You haven't the coin.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-80",
+            "pay:80",
             "item:sewing_kit+1"
           ],
           "result": "\"Needle and good thread. Stitched up my husband with that, twice.\"",
@@ -353,16 +353,16 @@
           "failResult": "You sniff the jar of willow bark knowingly. It smells of bark. Bess watches you do it with great interest."
         },
         {
-          "label": "Buy a health potion (30 coppers, herbalist's price)",
+          "label": "Buy a health potion ({price:30}, herbalist's price)",
           "when": [
             "flag:b_herb"
           ],
           "need": [
-            "coins>=30"
+            "afford:30"
           ],
-          "needText": "You haven't the coin.",
+          "needText": "You can't afford it.",
           "effects": [
-            "coins-30",
+            "pay:30",
             "item:health_potion+1"
           ],
           "result": "\"Thirty, for you. Don't tell Tam.\""

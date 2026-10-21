@@ -39,6 +39,28 @@ namespace Loran.Core
         public string voice;     // an inner voice instead of the speaker: Strength, Instinct... ("The Rot" for the corruption)
     }
 
+    /// <summary>Where you're from (David, 21 Oct: flesh out creation). People react to it; it opens dialogue; one small edge.</summary>
+    [Serializable]
+    public class OriginDef
+    {
+        public string id, name, desc, perkName, perkDesc;
+        public float prices = 1f;                        // what shops charge you
+        public List<string> stats = new List<string>();  // "int+1"
+        public List<string> skills = new List<string>(); // start at level 1
+        public List<string> effects = new List<string>();// at creation: "bond:yenson+10"
+        public int bonds;                                // added to everyone's opinion of you (a foreigner starts lower)
+    }
+
+    /// <summary>A quirk: a gift with a flaw that comes with it, Fallout-trait style. Pick up to two.</summary>
+    [Serializable]
+    public class QuirkDef
+    {
+        public string id, name, up, down;
+        public List<string> stats = new List<string>();  // "str+1", "agi-1"
+        public float hunger = 1f, thirst = 1f, weather = 1f, dealt = 1f, taken = 1f;
+        public int hp, stamina;
+    }
+
     /// <summary>Someone you can get to know (David, 21 Oct: dialogue that's engaging): their voice and how they feel about you.</summary>
     [Serializable]
     public class NpcDef
@@ -100,6 +122,8 @@ namespace Loran.Core
         public List<ClimateDef> climates = new List<ClimateDef>();
         public List<WeatherDef> weathers = new List<WeatherDef>();
         public List<NpcDef> npcs = new List<NpcDef>();
+        public List<OriginDef> origins = new List<OriginDef>();
+        public List<QuirkDef> quirks = new List<QuirkDef>();
     }
 
     /// <summary>
@@ -460,6 +484,8 @@ namespace Loran.Core
         public SkillDef Skill(string id) => Find(file.skills, x => x.id, id);
         public MoveDef Move(string id) => Find(file.moves, x => x.id, id);
         public FollowerDef Follower(string id) => Find(file.followers, x => x.id, id);
+        public OriginDef Origin(string id) => string.IsNullOrEmpty(id) ? null : file.origins.Find(x => x.id == id);
+        public QuirkDef Quirk(string id) => string.IsNullOrEmpty(id) ? null : file.quirks.Find(x => x.id == id);
         public NpcDef Npc(string nameOrId) => string.IsNullOrEmpty(nameOrId) ? null : file.npcs.Find(x => x.id == nameOrId || x.name == nameOrId);
         public BackgroundDef Background(string id) => Find(file.backgrounds, x => x.id, id);
         public GearDef Gear(string id) => Find(file.gear, x => x.id, id);

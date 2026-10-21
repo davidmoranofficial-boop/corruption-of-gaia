@@ -330,7 +330,7 @@ namespace Loran.Core
         }
 
         /// <summary>Your usual blow with what's in your hand, before luck: shown on the character sheet.</summary>
-        public float AttackPower() => 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + SkillLevel(WeaponSkill()) * 0.8f;
+        public float AttackPower() => Rules.Attack(S, data, SkillLevel(WeaponSkill()));
 
         /// <summary>A hit with what's in your hand: Strength, the weapon, and how well you know it.</summary>
         float WeaponHit() => 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + SkillLevel(WeaponSkill()) * 0.8f + Roll(-1, 2);
@@ -370,6 +370,7 @@ namespace Loran.Core
             else if (how == "glance") dmg *= Rules.GlanceMultiplier;
             dmg += Rules.TraitSum(S, data, t => t.fire);
             dmg *= Rules.FightPower(S.body, data);
+            dmg *= Rules.QuirkMul(S, data, q => q.dealt);   // Hot-headed, Cautious
             if (Berserk) dmg *= Rules.BerserkDamage;
             if (move != null && move.KindOf() == "guard") { dmg *= 0.5f; struckGuard = true; }
             int dealt = Math.Max(1, (int)Math.Round(dmg));
@@ -397,7 +398,7 @@ namespace Loran.Core
                     // it was waiting for that
                     float back = Roll(e.atkMin, e.atkMax) * Rules.GuardCounter * Rage();
                     if (Rules.Winded(S, data)) back *= Rules.WindedTaken;
-                    back *= 1f - Rules.GearGuard(S, data);
+                    back *= (1f - Rules.GearGuard(S, data)) * Rules.QuirkMul(S, data, q => q.taken);
                     int t = Math.Max(1, (int)Math.Round(back));
                     S.hp -= t;
                     lines.Add(foe + " was waiting for that, and snaps back at you for " + t + ".");
@@ -492,6 +493,7 @@ namespace Loran.Core
                 lines.Add("You're out of breath and slow to cover.");
             }
             hit *= 1f - Rules.GearGuard(S, data);
+            hit *= Rules.QuirkMul(S, data, q => q.taken);
             int taken = Math.Max(0, (int)Math.Round(hit));
             S.hp -= taken;
             lines.Add(foe + " " + move.name + " for " + taken + ".");

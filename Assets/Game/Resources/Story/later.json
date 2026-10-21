@@ -15,14 +15,14 @@
       "onEnter": [],
       "choices": [
         {
-          "label": "An iron knife (60 coppers)",
+          "label": "An iron knife ({price:60})",
           "when": [],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "forge:knife:D"
           ],
           "go": "travel",
@@ -35,14 +35,14 @@
           "why": "working the forge"
         },
         {
-          "label": "An iron cap (60 coppers)",
+          "label": "An iron cap ({price:60})",
           "when": [],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "forge:iron_cap:D"
           ],
           "go": "travel",
@@ -55,14 +55,14 @@
           "why": "working the forge"
         },
         {
-          "label": "A hide buckler (60 coppers)",
+          "label": "A hide buckler ({price:60})",
           "when": [],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "forge:buckler:D"
           ],
           "go": "travel",
@@ -75,14 +75,14 @@
           "why": "working the forge"
         },
         {
-          "label": "Reinforced work gloves (60 coppers)",
+          "label": "Reinforced work gloves ({price:60})",
           "when": [],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "forge:gloves:D"
           ],
           "go": "travel",
@@ -95,16 +95,16 @@
           "why": "working the forge"
         },
         {
-          "label": "An iron knife, with your green gem (60 coppers)",
+          "label": "An iron knife, with your green gem ({price:60})",
           "when": [
             "item:gem"
           ],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "item:gem-1",
             "forge:knife:C:green_gem"
           ],
@@ -118,16 +118,16 @@
           "why": "working the forge"
         },
         {
-          "label": "A hide buckler, with your green gem (60 coppers)",
+          "label": "A hide buckler, with your green gem ({price:60})",
           "when": [
             "item:gem"
           ],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "item:gem-1",
             "forge:buckler:C:green_gem"
           ],
@@ -141,16 +141,16 @@
           "why": "working the forge"
         },
         {
-          "label": "Reinforced work gloves, with your green gem (60 coppers)",
+          "label": "Reinforced work gloves, with your green gem ({price:60})",
           "when": [
             "item:gem"
           ],
           "need": [
-            "coins>=60"
+            "afford:60"
           ],
           "needText": "Iron costs 60 coppers, and you haven't got them.",
           "effects": [
-            "coins-60",
+            "pay:60",
             "item:gem-1",
             "forge:gloves:C:green_gem"
           ],

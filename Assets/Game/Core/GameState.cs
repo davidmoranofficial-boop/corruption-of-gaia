@@ -113,6 +113,9 @@ namespace Loran.Core
         public string skin = "";               // skin tone, from data.json "skins"
         public string figure = "";             // which body the sprites use: "male" or "female"
         public string background = "";
+        public string origin = "";
+        public int hpBonus;                    // from quirks (Wiry: -10)
+        public List<string> quirks = new List<string>();
         public int[] stats = { 3, 3, 3, 3, 3 };
         public float[] xp = { 0, 0, 0, 0, 0 };
 

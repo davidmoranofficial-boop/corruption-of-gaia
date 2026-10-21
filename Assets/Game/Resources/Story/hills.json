@@ -48,6 +48,22 @@
           "failResult": "[[mood:happy]]It slips. You grab for it and miss by a hand's width. Rook catches it on the bounce without looking. \"Close,\" he says kindly."
         },
         {
+          "label": "\"That's a northern string knot. Who taught you that?\"",
+          "when": [
+            "origin:woods"
+          ],
+          "check": "origin:woods",
+          "checkText": "Woodland-born",
+          "topic": "knot",
+          "time": 3,
+          "effects": [
+            "flag:rook_met",
+            "bond:rook+5"
+          ],
+          "result": "[[mood:surprised]]\"My da.\" Rook looks at you properly. \"He was from up north, before he came here.\"\n\n[[mood:sad]]\"He went back inland, the year the levy doubled. Said he'd send for us.\" He pulls the knot tight. \"He's still sending, I suppose.\"",
+          "failResult": "Rook shrugs."
+        },
+        {
           "label": "\"Goodbye.\"",
           "go": "travel",
           "effects": [

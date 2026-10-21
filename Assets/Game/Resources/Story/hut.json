@@ -182,6 +182,23 @@
           "result": "[[mood:happy]]He wraps two smoked fish in a cloth and won't hear a word about it. \"For the road. And come back, mind. Not many come back.\""
         },
         {
+          "label": "\"The Merrow? I knew her. Blue hull, a white eye painted on the prow.\"",
+          "when": [
+            "origin:coast",
+            "flag:y_son"
+          ],
+          "check": "origin:coast",
+          "checkText": "Coast-born",
+          "topic": "merrow",
+          "time": 5,
+          "effects": [
+            "flag:y_met",
+            "bond:yenson+5"
+          ],
+          "result": "[[mood:sad]]Yenson goes very still. \"You knew her.\"\n\n\"His name was Denn. My boy. He painted that eye himself, so she'd see the rocks.\" He wipes his face with the back of a scarred hand. \"Thank you. Nobody here remembers her.\"",
+          "failResult": "Yenson doesn't answer."
+        },
+        {
           "label": "\"Goodbye.\"",
           "go": "travel",
           "effects": [

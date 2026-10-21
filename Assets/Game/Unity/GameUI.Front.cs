@@ -19,15 +19,15 @@ namespace Loran.UnityLayer
         int titleSel;                 // the highlighted line of the title menu
         int cStep;                    // which step of character creation
 
-        static readonly string[] CreationSteps = { "Looks", "Background", "Stats", "Name" };
+        static readonly string[] CreationSteps = { "Looks", "Origin", "Background", "Quirks", "Stats", "Name" };
 
         static readonly string[] StatHelp =
         {
-            "Hits harder. Grows when you fight and haul.",
-            "More health and stamina. Grows when you run and take hits.",
-            "Quicker, more critical hits, an easier dodge. Grows with fighting light.",
-            "More mana, stronger spells. Grows when you cast.",
-            "People open up to you more. Grows when you talk your way through things.",
+            "Hits harder, and hard work (chopping, hauling, climbing) costs less stamina. Heave things others can't.",
+            "More health and stamina, and hunger and thirst drain slower. Grows when you run and take hits.",
+            "More critical hits, an easier dodge, and you act first. Climb and slip past what others can't.",
+            "More mana, and every stat and skill grows faster. Read old writing and notice what others miss.",
+            "Better prices in every shop, and people open up to you. Talk your way through things.",
         };
 
         List<(string name, Action act)> TitleMenu()
@@ -135,7 +135,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 21 OCT, NEW DIALOGUE"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 21 OCT, ORIGINS, QUIRKS AND STATS"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
@@ -196,8 +196,10 @@ namespace Loran.UnityLayer
             switch (cStep)
             {
                 case 0: CreateLooks(left); break;
-                case 1: CreateBackground(left); break;
-                case 2: CreateStats(left); break;
+                case 1: CreateOrigin(left); break;
+                case 2: CreateBackground(left); break;
+                case 3: CreateQuirks(left); break;
+                case 4: CreateStats(left); break;
                 default: CreateName(left); break;
             }
 
@@ -217,18 +219,26 @@ namespace Loran.UnityLayer
             string beardNote = BeardKey(cBeard) == null ? "" : "  ·  " + cBeard.ToLowerInvariant();
             Add(sum, new Label(sex + "  ·  " + cBuild + "  ·  " + cSkin + " skin  ·  " + cHair.ToLowerInvariant() + " hair, "
                                 + CreationHairStyle().ToLowerInvariant() + beardNote), "create-sum-sub");
+            var you = engine.PreviewCharacter(cBackground, alloc, cOrigin, cQuirks);
+            var scroll = Add(sum, new ScrollView(ScrollViewMode.Vertical), "create-sum-scroll");
+            var orDef = engine.data.Origin(cOrigin);
             var bgDef = engine.data.Background(cBackground);
-            Add(sum, new Label("BACKGROUND"), "section-head");
-            Add(sum, new Label(bgDef != null ? bgDef.name : "Not chosen"), bgDef != null ? "create-sum-line" : "create-sum-missing");
-            if (bgDef != null) Add(sum, new Label(bgDef.perkName + ": " + bgDef.perkDesc), "perk-desc");
-            Add(sum, new Label("STATS"), "section-head");
-            for (int i = 0; i < Stat.Count; i++)
+            Add(scroll, new Label("FROM"), "section-head");
+            Add(scroll, new Label(orDef != null ? orDef.name + "  ·  " + orDef.perkName : "Not chosen"), orDef != null ? "create-sum-line" : "create-sum-missing");
+            Add(scroll, new Label("BACKGROUND"), "section-head");
+            Add(scroll, new Label(bgDef != null ? bgDef.name + "  ·  " + bgDef.perkName : "Not chosen"), bgDef != null ? "create-sum-line" : "create-sum-missing");
+            if (cQuirks.Count > 0)
             {
-                Sheet(sum, Stat.Names[i], (3 + alloc[i]).ToString());
+                Add(scroll, new Label("QUIRKS"), "section-head");
+                Add(scroll, new Label(string.Join(", ", cQuirks.Select(q => engine.data.Quirk(q)?.name))), "create-sum-line");
             }
+            Add(scroll, new Label("STATS"), "section-head");
+            for (int i = 0; i < Stat.Count; i++) Sheet(scroll, Stat.Names[i], you.stats[i].ToString());
             int spare = Engine.CreationPoints - alloc.Sum();
-            if (spare > 0) Add(sum, new Label(spare + " point" + (spare == 1 ? "" : "s") + " still to spend"), "create-sum-missing");
-            Add(sum, new Label("Everything else you'll earn by doing it: skills grow with use, and there are no classes."), "line-muted");
+            if (spare > 0) Add(scroll, new Label(spare + " point" + (spare == 1 ? "" : "s") + " still to spend"), "create-sum-missing");
+            Add(scroll, new Label("WHAT THAT MAKES YOU"), "section-head");
+            YouSheet(scroll, you, true);
+            Add(scroll, new Label("Everything else you'll earn by doing it: skills grow with use, and there are no classes."), "line-muted");
 
             // Along the bottom: back, next, and the problem if there is one
             var foot = Add(page, new VisualElement(), "create-foot");
@@ -251,16 +261,19 @@ namespace Loran.UnityLayer
             switch (i)
             {
                 case 0: return cGender != "";
-                case 1: return cBackground != null;
-                case 2: return alloc.Sum() == Engine.CreationPoints;
+                case 1: return cOrigin != null || engine.data.file.origins.Count == 0;
+                case 2: return cBackground != null;
+                case 3: return true;   // quirks are optional
+                case 4: return alloc.Sum() == Engine.CreationPoints;
                 default: return !string.IsNullOrWhiteSpace(cName);
             }
         }
 
         void FinishCreation()
         {
-            createError = engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone(), cSkin, cFigure,
-                                                 CreationHairStyle(), cBeard);
+            createError = engine.data.file.origins.Count > 0 && cOrigin == null ? "Pick where you're from."
+                : engine.CreateCharacter(cName, cGender, cBuild, cHair, cBackground, (int[])alloc.Clone(), cSkin, cFigure,
+                                         CreationHairStyle(), cBeard, cOrigin, cQuirks.ToList());
             if (createError == null)
             {
                 cStep = 0;
@@ -370,9 +383,55 @@ namespace Loran.UnityLayer
             }
         }
 
+        void CreateOrigin(VisualElement p)
+        {
+            Add(p, new Label("WHERE YOU GREW UP"), "field-label");
+            Add(p, new Label("Where you're from changes how people in Loran see you, and what you can talk to them about."), "line-muted");
+            foreach (var o in engine.data.file.origins)
+            {
+                var v = o;
+                var line = Add(p, new Button(() => { cOrigin = v.id; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "option");
+                line.AddToClassList("option-line");
+                if (cOrigin == v.id) line.AddToClassList("selected");
+                var top = Add(line, new VisualElement(), "skill-tab-top");
+                Add(top, new Label(v.name), "option-line-name");
+                Add(top, new Label(v.perkName.ToUpperInvariant()), "option-line-bonus");
+                Add(line, new Label(v.desc), "option-line-desc");
+                Add(line, new Label(v.perkDesc), "perk-desc");
+            }
+        }
+
+        void CreateQuirks(VisualElement p)
+        {
+            Add(p, new Label("QUIRKS  ·  " + cQuirks.Count + " OF " + Rules.MaxQuirks), "field-label");
+            Add(p, new Label("Optional. Each quirk is a trade: something you're good at, and the price you pay for it."), "line-muted");
+            var scroll = Add(p, new ScrollView(ScrollViewMode.Vertical), "create-opt-scroll");
+            foreach (var q in engine.data.file.quirks)
+            {
+                var v = q;
+                bool on = cQuirks.Contains(v.id);
+                var line = Add(scroll, new Button(() =>
+                {
+                    if (cQuirks.Contains(v.id)) cQuirks.Remove(v.id);
+                    else if (cQuirks.Count < Rules.MaxQuirks) cQuirks.Add(v.id);
+                    else { GameAudio.Play("ui_deny"); return; }
+                    GameAudio.Play("ui_tick");
+                    Render();
+                }) { focusable = false }, "option");
+                line.AddToClassList("option-line");
+                line.AddToClassList("quirk-line");
+                if (on) line.AddToClassList("selected");
+                Add(line, new Label((on ? "✓  " : "") + v.name), "option-line-name");
+                var trade = Add(line, new VisualElement(), "quirk-trade");
+                Add(trade, new Label("+ " + v.up), "quirk-up");
+                Add(trade, new Label("− " + v.down), "quirk-down");
+            }
+        }
+
         void CreateStats(VisualElement p)
         {
             int left = Engine.CreationPoints - alloc.Sum();
+            var you = engine.PreviewCharacter(cBackground, alloc, cOrigin, cQuirks);
             Add(p, new Label("STATS  ·  " + left + " POINT" + (left == 1 ? "" : "S") + " TO SPEND"), "field-label");
             Add(p, new Label("Everyone starts at 3. These are only where you begin: every stat grows as you use it."), "line-muted");
             for (int i = 0; i < Stat.Count; i++)
@@ -381,13 +440,71 @@ namespace Loran.UnityLayer
                 var box = Add(p, new VisualElement(), "alloc-box");
                 var r = Add(box, new VisualElement(), "alloc-row");
                 Add(r, new Label(Stat.Names[i]), "alloc-name");
+                int extra = you.stats[i] - (3 + alloc[i]);
+                if (extra != 0) Add(r, new Label((extra > 0 ? "+" : "") + extra + " from origin/quirks"), "alloc-bonus");
                 var minus = Add(r, new Button(() => { if (alloc[idx] > 0) { alloc[idx]--; GameAudio.Play("ui_tick"); Render(); } }) { text = "−", focusable = false }, "small-btn");
                 minus.SetEnabled(alloc[idx] > 0);
-                Add(r, new Label((3 + alloc[i]).ToString()), "alloc-value");
+                Add(r, new Label(you.stats[i].ToString()), "alloc-value");
                 var plus = Add(r, new Button(() => { if (alloc.Sum() < Engine.CreationPoints) { alloc[idx]++; GameAudio.Play("ui_tick"); Render(); } }) { text = "+", focusable = false }, "small-btn");
                 plus.SetEnabled(left > 0);
                 Add(box, new Label(StatHelp[i]), "alloc-help");
+                Add(box, new Label(StatNow(you, i)), "alloc-now");
             }
+        }
+
+        /// <summary>What one stat gives you right now, in numbers.</summary>
+        string StatNow(GameState s, int stat)
+        {
+            var d = engine.data;
+            switch (stat)
+            {
+                case Stat.Str: return "Attack " + Mathf.RoundToInt(Rules.Attack(s, d, 0)) + "  ·  hard work " + Signed(Rules.WorkRate(s)) + " stamina";
+                case Stat.End: return "Health " + Rules.MaxHp(s) + "  ·  stamina " + Rules.MaxStamina(s, d) + "  ·  hunger and thirst " + Signed(Rules.NeedsRate(s));
+                case Stat.Agi: return "Critical hits " + Rules.CritChance(s, d) + "%  ·  speed " + Rules.Speed(s, d);
+                case Stat.Int: return "Mana " + Rules.MaxMana(s) + "  ·  learning " + Signed(Rules.LearnRate(s));
+                default: return "Shop prices " + Signed(Rules.PriceRate(s, d));
+            }
+        }
+
+        /// <summary>A rate as a change from normal: "normal", "-12%", "+8%".</summary>
+        static string Signed(float rate)
+        {
+            int pct = Mathf.RoundToInt((rate - 1f) * 100f);
+            return pct == 0 ? "normal" : (pct > 0 ? "+" : "−") + Mathf.Abs(pct) + "%";
+        }
+
+        /// <summary>The numbers your stats, background, origin and quirks add up to. Used in creation and on the character sheet.</summary>
+        void YouSheet(VisualElement parent, GameState s, bool creating)
+        {
+            var d = engine.data;
+            if (creating)
+            {
+                Sheet(parent, "Health", Rules.MaxHp(s).ToString());
+                Sheet(parent, "Stamina", Rules.MaxStamina(s, d).ToString());
+                Sheet(parent, "Mana", Rules.MaxMana(s).ToString());
+                Sheet(parent, "Attack (fists)", Mathf.RoundToInt(Rules.Attack(s, d, 0)).ToString());
+                Sheet(parent, "Critical hits", Rules.CritChance(s, d) + "%");
+                Sheet(parent, "Speed", Rules.Speed(s, d).ToString());
+            }
+            float dealt = Rules.QuirkMul(s, d, q => q.dealt), taken = Rules.QuirkMul(s, d, q => q.taken);
+            if (dealt != 1f) Rate(parent, "Your blows", dealt, true);
+            if (taken != 1f) Rate(parent, "Harm you take", taken, false);
+            Rate(parent, "Shop prices", Rules.PriceRate(s, d), false);
+            Rate(parent, "Hunger", Rules.HungerRate(s, d), false);
+            Rate(parent, "Thirst", Rules.ThirstRate(s, d), false);
+            Rate(parent, "Cold and rain", Rules.WeatherRate(s, d), false);
+            Rate(parent, "Hard work", Rules.WorkRate(s), false);
+            Rate(parent, "Learning", Rules.LearnRate(s), true);
+        }
+
+        /// <summary>One rate on a sheet, green when it's in your favour and red when it isn't.</summary>
+        static void Rate(VisualElement parent, string name, float rate, bool upIsGood)
+        {
+            var r = Add(parent, new VisualElement(), "sheet-row");
+            Add(r, new Label(name), "sheet-name");
+            string text = Signed(rate);
+            var v = Add(r, new Label(text), "sheet-value");
+            if (text != "normal") v.AddToClassList((rate > 1f) == upIsGood ? "sheet-good" : "sheet-bad");
         }
 
         void CreateName(VisualElement p)
