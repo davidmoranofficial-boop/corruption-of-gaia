@@ -23,7 +23,7 @@ namespace Loran.UnityLayer
         string cutId;
         float cutStart;
         int cutK = 4, cutCue;
-        bool cutEnding;
+        bool cutEnding, cutWaiting;   // waiting: the cutscene's over, black, with Wake up in the middle
         readonly Dictionary<string, VisualElement> cutEls = new Dictionary<string, VisualElement>();
         (VisualElement box, VisualElement sheet) cutYou, cutYenson;
         readonly Dictionary<string, float> cutAmb = new Dictionary<string, float>();
@@ -64,6 +64,7 @@ namespace Loran.UnityLayer
             cutStart = Time.realtimeSinceStartup;
             cutCue = 0;
             cutEnding = false;
+            cutWaiting = false;
 
             // no painted backdrop behind it (the creation screen's beach was showing through), no padding round it
             screenBox.style.backgroundImage = new StyleBackground();
@@ -199,9 +200,9 @@ namespace Loran.UnityLayer
 
         void CutFrame()
         {
-            if (cutPage == null || cutPage.panel == null || cutEnding) return;
+            if (cutPage == null || cutPage.panel == null || cutEnding || cutWaiting) return;
             float t = Time.realtimeSinceStartup - cutStart;
-            if (t >= CutEnd) { CutFinish(); return; }
+            if (t >= CutEnd) { CutWake(); return; }
 
             while (cutCue < CutSounds.Length && t >= CutSounds[cutCue].at)
             {
@@ -328,11 +329,30 @@ namespace Loran.UnityLayer
             GameAudio.SetAmbience(cutAmb);
         }
 
+        /// <summary>Enter or a click: skips to the end of the cutscene, or, once it's over, wakes you.</summary>
         void CutSkip()
         {
             if (cutEnding) return;
             GameAudio.Play("ui_confirm");
-            CutFinish();
+            if (cutWaiting) CutFinish();
+            else CutWake();
+        }
+
+        /// <summary>The end: everything black and quiet but the sea, and Wake up in the middle. The game starts when you press it.</summary>
+        void CutWake()
+        {
+            if (cutWaiting || cutPage == null) return;
+            cutWaiting = true;
+            foreach (var e in cutView.Children()) if (e != cutFade) e.style.display = DisplayStyle.None;
+            cutFade.style.display = DisplayStyle.Flex;
+            cutFade.style.opacity = 1;
+            cutCaption.style.display = DisplayStyle.None;
+            cutHint.style.display = DisplayStyle.None;
+            cutAmb.Clear();
+            cutAmb["amb_sea"] = 0.25f;
+            GameAudio.SetAmbience(cutAmb);
+            var wake = Add(cutPage, new VisualElement(), "cut-wake");
+            Add(wake, new Button(CutSkip) { text = "Wake up", focusable = false }, "front-btn-main");
         }
 
         void CutFinish()

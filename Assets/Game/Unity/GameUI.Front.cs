@@ -135,7 +135,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 21 OCT, CUTSCENE FIX 2"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 21 OCT, WAKE UP AFTER CUTSCENE"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
@@ -243,7 +243,7 @@ namespace Loran.UnityLayer
             if (cStep < CreationSteps.Length - 1)
                 Add(foot, new Button(() => { cStep++; createError = null; GameAudio.Play("ui_tick"); Render(); }) { text = "Next  ▸", focusable = false }, "front-btn-main");
             else
-                Add(foot, new Button(FinishCreation) { text = "Wake up", focusable = false }, "front-btn-main");
+                Add(foot, new Button(FinishCreation) { text = "Create character", focusable = false }, "front-btn-main");
         }
 
         bool StepDone(int i)

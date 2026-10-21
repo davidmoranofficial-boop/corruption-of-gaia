@@ -2589,4 +2589,5 @@
     background-color: rgba(0, 0, 0, 0.6); border-radius: 6px; text-shadow: 0 2px 0 #000000;
 }
 .cut-caption-centre { bottom: 46%; background-color: rgba(0, 0, 0, 0); }
+.cut-wake { position: absolute; left: 0; right: 0; top: 0; bottom: 0; align-items: center; justify-content: center; }
 .cut-hint { position: absolute; right: 24px; top: 18px; font-size: 14px; letter-spacing: 3px; color: rgba(232, 220, 194, 0.45); }
