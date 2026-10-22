@@ -253,6 +253,33 @@
           "result": "Bess wraps a loaf in a cloth. \"Yesterday's. Still good.\""
         },
         {
+          "label": "Buy a mending kit ({price:25})",
+          "need": [
+            "afford:25"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:25",
+            "item:mending_kit+1"
+          ],
+          "result": "\"Patches and rivets. Folk round here are forever tearing something, so I keep a box of them.\""
+        },
+        {
+          "label": "Buy a whetstone ({price:40})",
+          "need": [
+            "afford:40"
+          ],
+          "needText": "You can't afford it.",
+          "when": [
+            "item:whetstone<1"
+          ],
+          "effects": [
+            "pay:40",
+            "item:whetstone+1"
+          ],
+          "result": "\"Garran's old stone, from before the forge went cold. He won't be wanting it.\""
+        },
+        {
           "label": "Buy a bandage ({price:15})",
           "need": [
             "afford:15"
@@ -626,6 +653,7 @@
         "face:ida:down",
         "say:Ida:She hands you an armful of leather and a dagger in a worn sheath. \"Rook's old jerkin and boots. He's grown out of them, he just won't say so.\"",
         "say:Ida:\"And a proper blade. That fish knife won't stop anything bigger than a crab.\"",
+        "say:Ida:She drops a flat grey stone in your palm. \"And keep it sharp. A dull blade's worse than none: it makes you think you're armed.\"",
         "face:rook:right",
         "say:Rook:\"I've not grown out of them.\" A pause. \"...They pinch.\"",
         "emote:ida:...",
@@ -651,6 +679,7 @@
             "give:leather_jerkin",
             "give:leather_boots",
             "give:hunting_dagger",
+            "item:whetstone+1",
             "flag:rook_escort",
             "quest:eastmere"
           ],

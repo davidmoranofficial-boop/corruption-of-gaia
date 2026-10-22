@@ -91,6 +91,7 @@ namespace Loran.Core
         public int stamina;
         public List<string> traits = new List<string>();
         public bool equipped;
+        public float condition = 100;          // upkeep: a blade's edge, or how sound armour is (100 = good as new)
     }
 
     /// <summary>

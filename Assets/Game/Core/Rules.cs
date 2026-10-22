@@ -333,15 +333,37 @@ namespace Loran.Core
         public static float GearDamage(GameState s)
         {
             float sum = 0;
-            foreach (var g in s.Equipped) sum += g.damage;
+            foreach (var g in s.Equipped) sum += g.damage * Edge(g);
             return sum;
+        }
+
+        // ------------------------------------------------------------------ upkeep (David, 22 Oct)
+        // Blades dull with every blow and armour wears with every hit it takes. A whetstone or a mending kit
+        // fixes them up in the field, but only so far; the rest needs a grindstone or a smith.
+        public const float BladeWear = 0.8f, GuardBladeWear = 2.5f, ArmourWear = 1.5f;
+        public const float FieldSharpen = 75f, FieldMend = 70f;
+
+        /// <summary>Gear that needs upkeep: weapons with an edge, and anything that blocks blows.</summary>
+        public static bool Wears(GearItem g) => g.damage > 0 || g.guard > 0;
+        public static bool IsBlade(GearItem g) => g.damage > 0;
+
+        /// <summary>How much of a weapon's damage its edge gives: all of it down to 70, then less, to 45% when blunt.</summary>
+        public static float Edge(GearItem g) => g.condition >= 70 ? 1f : 0.45f + 0.55f * Math.Max(0, g.condition) / 70f;
+        /// <summary>How much of armour's guard is left: all of it down to 60, then less, to a quarter when falling apart.</summary>
+        public static float Soundness(GearItem g) => g.condition >= 60 ? 1f : 0.25f + 0.75f * Math.Max(0, g.condition) / 60f;
+
+        public static string ConditionName(GearItem g)
+        {
+            float c = g.condition;
+            if (IsBlade(g)) return c >= 85 ? "Keen" : c >= 60 ? "Sharp" : c >= 30 ? "Dull" : "Blunt";
+            return c >= 85 ? "Sound" : c >= 60 ? "Worn" : c >= 25 ? "Damaged" : "Falling apart";
         }
 
         /// <summary>Share of each hit that gear blocks. Pieces stack, but never past 80%.</summary>
         public static float GearGuard(GameState s, GameData d)
         {
             float through = 1f;
-            foreach (var g in s.Equipped) through *= 1f - g.guard;
+            foreach (var g in s.Equipped) through *= 1f - g.guard * Soundness(g);
             float guard = 1f - through + TraitSum(s, d, t => t.guard);
             return Math.Clamp(guard, 0f, 0.8f);
         }

@@ -61,6 +61,45 @@ static class Program
             Assert(e.S.minutes == t1, "reading stops the clock");
             Assert(24 * 60 * 60 / Rules.ClockRate / 60f >= 60, "a day lasts an hour of play or more");
         });
+        Test("upkeep: blades dull, armour wears, whetstones and mending kits fix them so far", () =>
+        {
+            var e = AtDog(3);
+            var blade = e.MakeGear("hunting_dagger", null, null);
+            var coat = e.MakeGear("leather_jerkin", null, null);
+            Assert(blade.condition == 100 && coat.condition == 100, "new gear is in good shape");
+            bool struck = false;
+            for (int i = 0; i < 8 && e.S.inCombat && e.S.hp > 0; i++)
+            {
+                e.Act(e.Choices().First(c => c.def.label == "Attack").def, Engine.TimingMiss);
+                struck |= e.Events.Any(x => x.target == "player" && x.from == "enemy" && x.amount > 0);
+            }
+            Assert(blade.condition < 100, "fighting dulls the blade: " + blade.condition);
+            Assert(!struck || e.S.Equipped.Any(g => g.guard > 0 && g.condition < 100), "taking hits wears what you're wearing");
+            var v = NewEngine();
+            v.DevStart("village");
+            v.S.result = "";
+            var d = v.MakeGear("hunting_dagger", null, null);
+            float sharp = v.AttackPower();
+            d.condition = 10;
+            Assert(v.AttackPower() < sharp, "a blunt blade hits softer");
+            v.S.items.RemoveAll(x => x.id == "whetstone");
+            Assert(v.UpkeepBlocked(d) != null && !v.Upkeep(d.uid), "no whetstone, no sharpening");
+            v.S.AddItem("whetstone", 1);
+            int t0 = v.S.minutes;
+            Assert(v.Upkeep(d.uid) && d.condition == Rules.FieldSharpen && v.S.minutes > t0 && v.S.Count("whetstone") == 1, "sharpened, as far as a whetstone goes, and it's kept");
+            Assert(v.UpkeepBlocked(d) != null, "past that needs a grindstone");
+            var j = v.MakeGear("leather_jerkin", null, null);
+            j.condition = 20;
+            float guard = Rules.GearGuard(v.S, v.data);
+            v.S.result = "";
+            v.S.AddItem("mending_kit", 1);
+            Assert(v.Upkeep(j.uid) && j.condition == Rules.FieldMend && v.S.Count("mending_kit") == 0, "a mending kit is used up");
+            Assert(Rules.GearGuard(v.S, v.data) > guard, "mended armour blocks more");
+            var back = JsonConvert.DeserializeObject<GameState>(JsonConvert.SerializeObject(v.S));
+            Assert(back.gearItems.First(x => x.uid == j.uid).condition == Rules.FieldMend, "condition survives a save");
+            var old = JsonConvert.DeserializeObject<GearItem>("{\"id\":\"knife\",\"damage\":2}");
+            Assert(old.condition == 100, "old saves' gear starts in good shape");
+        });
         Test("money: copper, silver, gold, platinum", () =>
         {
             Assert(Rules.Money(5) == "5 copper" && Rules.Money(100) == "1 silver" && Rules.Money(12345) == "1 gold 23 silver 45 copper", Rules.Money(12345));

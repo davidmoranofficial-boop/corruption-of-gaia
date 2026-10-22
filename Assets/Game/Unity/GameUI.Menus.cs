@@ -301,9 +301,39 @@ namespace Loran.UnityLayer
                 }
                 if (!string.IsNullOrEmpty(g.desc)) Add(parent, new Label(g.desc), "det-desc");
 
+                // Upkeep: how sharp, or how sound, and keeping it that way
+                string blocked = null;
+                if (Rules.Wears(g))
+                {
+                    bool blade = Rules.IsBlade(g);
+                    var cond = Add(parent, new VisualElement(), "upkeep");
+                    var head = Add(cond, new VisualElement(), "upkeep-head");
+                    Add(head, new Label(blade ? "EDGE" : "CONDITION"), "upkeep-name");
+                    var state = Add(head, new Label(Rules.ConditionName(g) + "  ·  " + Mathf.RoundToInt(g.condition) + "%"), "upkeep-state");
+                    var track = Add(cond, new VisualElement(), "upkeep-track");
+                    var fill = Add(track, new VisualElement(), "upkeep-fill");
+                    fill.style.width = Length.Percent(g.condition);
+                    string band = g.condition >= 60 ? "upkeep-good" : g.condition >= 30 ? "upkeep-fair" : "upkeep-bad";
+                    fill.AddToClassList(band);
+                    state.AddToClassList(band);
+                    float share = blade ? Rules.Edge(g) : Rules.Soundness(g);
+                    Add(cond, new Label(share >= 0.999f
+                        ? (blade ? "Every blow dulls it a little. Keep it above 70% for full damage." : "Every hit it takes wears it a little. Keep it above 60% to block fully.")
+                        : (blade ? "Hitting for " : "Blocking ") + Mathf.RoundToInt(share * 100) + "% of what it should. " + (blade ? "Sharpen it." : "Mend it.")), "upkeep-note");
+                    blocked = engine.UpkeepBlocked(g);
+                }
+
                 var acts = Add(parent, new VisualElement(), "det-actions");
                 var b = Add(acts, new Button(() => InventoryUse()) { text = g.equipped ? "Take off" : "Wear", focusable = false }, "det-btn");
                 b.SetEnabled(free);
+                if (Rules.Wears(g))
+                {
+                    int guid = g.uid;
+                    var fix = Add(acts, new Button(() => { if (engine.Upkeep(guid)) GameAudio.Play("pickup"); AfterAction(); })
+                        { text = Rules.IsBlade(g) ? "Sharpen" : "Mend", focusable = false }, "det-btn");
+                    fix.SetEnabled(blocked == null);
+                    if (blocked != null) Add(parent, new Label(blocked), "det-compare");
+                }
                 return;
             }
 

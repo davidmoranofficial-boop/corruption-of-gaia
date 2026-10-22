@@ -202,6 +202,18 @@
           "result": "\"Clean linen. Boiled, even.\""
         },
         {
+          "label": "Buy a mending kit ({price:30})",
+          "need": [
+            "afford:30"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:30",
+            "item:mending_kit+1"
+          ],
+          "result": "\"Mend and make do, as my mother said. She said it about my father, mostly.\""
+        },
+        {
           "label": "\"What's the road like ahead?\"",
           "topic": "road",
           "result": "[[mood:worried]]\"Quiet. Too quiet. Used to be you'd pass ten carts a day. Now it's me and the crows, and the crows look at you funny.\""

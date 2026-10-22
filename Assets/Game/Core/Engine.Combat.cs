@@ -373,6 +373,8 @@ namespace Loran.Core
             dmg *= Rules.QuirkMul(S, data, q => q.dealt);   // Hot-headed, Cautious
             if (Berserk) dmg *= Rules.BerserkDamage;
             if (move != null && move.KindOf() == "guard") { dmg *= 0.5f; struckGuard = true; }
+            var blade = S.InSlot("weapon");
+            if (blade != null && Rules.IsBlade(blade)) WearDown(blade, struckGuard ? Rules.GuardBladeWear : Rules.BladeWear);
             int dealt = Math.Max(1, (int)Math.Round(dmg));
             S.enemyHp -= dealt;
             youHurtIt = true;
@@ -401,6 +403,7 @@ namespace Loran.Core
                     back *= (1f - Rules.GearGuard(S, data)) * Rules.QuirkMul(S, data, q => q.taken);
                     int t = Math.Max(1, (int)Math.Round(back));
                     S.hp -= t;
+                    WearArmour(1f);
                     lines.Add(foe + " was waiting for that, and snaps back at you for " + t + ".");
                     Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "hit", amount = t, text = t.ToString() });
                     if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
@@ -496,6 +499,7 @@ namespace Loran.Core
             hit *= Rules.QuirkMul(S, data, q => q.taken);
             int taken = Math.Max(0, (int)Math.Round(hit));
             S.hp -= taken;
+            if (taken > 0) WearArmour(kind == "heavy" ? 2f : 1f);
             lines.Add(foe + " " + move.name + " for " + taken + ".");
             Events.Add(new BattleEvent { from = "enemy", target = "player", kind = kind == "heavy" && !covered ? "crit" : "hit", amount = taken, text = taken.ToString() });
             if (S.defending) Rules.Train(S, Stat.End, 0.5f, "taking hits");

@@ -2715,3 +2715,18 @@
 }
 .journey-when { font-size: 13px; letter-spacing: 2px; color: var(--lantern); margin-top: 10px; }
 .journey-where { font-size: 16px; color: var(--text); margin-top: 2px; }
+
+/* upkeep: a blade's edge, armour's condition (22 Oct) */
+.upkeep { margin: 4px 0 10px 0; padding: 8px 10px; background-color: var(--sea); border-radius: 4px; }
+.upkeep-head { flex-direction: row; justify-content: space-between; margin-bottom: 4px; }
+.upkeep-name { font-size: 12px; letter-spacing: 2px; color: var(--muted); }
+.upkeep-state { font-size: 14px; -unity-font-style: bold; }
+.upkeep-track { height: 6px; background-color: var(--hull); border-radius: 3px; overflow: hidden; }
+.upkeep-fill { height: 100%; }
+.upkeep-note { font-size: 13px; color: var(--muted); white-space: normal; margin-top: 4px; }
+.upkeep-fill.upkeep-good { background-color: var(--moss); }
+.upkeep-fill.upkeep-fair { background-color: var(--ember); }
+.upkeep-fill.upkeep-bad { background-color: var(--blood); }
+.upkeep-state.upkeep-good { color: var(--moss); }
+.upkeep-state.upkeep-fair { color: var(--ember); }
+.upkeep-state.upkeep-bad { color: var(--blood); }

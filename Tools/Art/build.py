@@ -385,6 +385,16 @@ ICON_ONLY = {
         "...ooooooo......", "..obDbDDbbooo...", "..oDbbDbDbbDbo..", "...oobDbbDbDbDo.",
         ".....oooDbbDbo..", "........ooooo...",
     ],
+    'whetstone': [
+        "................", "................", "................", "................",
+        "................", "....oooooooo....", "...oWYYYYYYyo...", "..oYYyYYYyYYyo..",
+        "..oyYYYyYYYYGo..", "...oyyGyyyGGo...", "....oooooooo....",
+    ],
+    'mending_kit': [
+        "................", "................", "....oooooooo....", "...odddddddDo...",
+        "..odjjjjjjjjDo..", "..odjbbjjbbjDo..", "..odjbbjjbbjDo.o", "..odjjjjjjjjDoWo",
+        "..oDDDDDDDDDDooo", "...oooooooooo.o.", "..............o.",
+    ],
     'sewing_kit': [
         "................", "................", "................", "...ooooooooo....",
         "..obbbbbbbbbo...", "..obBBBBBBBbo...", "..obBaaaaaBbo.o.", "..obBBBBBBBbooWo",

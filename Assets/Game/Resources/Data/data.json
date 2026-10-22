@@ -231,6 +231,18 @@
       "hunger": 10,
       "thirst": 6,
       "energy": 3
+    },
+    {
+      "id": "whetstone",
+      "name": "Whetstone",
+      "desc": "A flat grey stone for putting an edge back on a blade. It isn't used up, but it only gets a blade so sharp: for a true edge you need a grindstone.",
+      "kind": "tool"
+    },
+    {
+      "id": "mending_kit",
+      "name": "Mending kit",
+      "desc": "Leather patches, rivets and stout thread, enough to patch up one piece of armour. A patch only does so much: badly damaged armour needs a proper repair.",
+      "kind": "tool"
     }
   ],
   "enemies": [

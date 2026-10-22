@@ -140,5 +140,56 @@ namespace Loran.Core
             else if (data.Gear(id) != null)
                 MakeGear(id, null, null);
         }
+
+        // ------------------------------------------------------------------ upkeep (David, 22 Oct)
+
+        /// <summary>Wears a piece of gear down, with a word when it crosses into worse shape.</summary>
+        void WearDown(GearItem g, float amount)
+        {
+            string before = Rules.ConditionName(g);
+            g.condition = Math.Max(0, g.condition - amount);
+            string after = Rules.ConditionName(g);
+            if (after != before)
+                S.Toasts.Add(Rules.IsBlade(g) ? "Your " + g.name.ToLowerInvariant() + " is " + after.ToLowerInvariant() + ". Sharpen it."
+                                              : "Your " + g.name.ToLowerInvariant() + " is " + after.ToLowerInvariant() + ". Mend it.");
+        }
+
+        /// <summary>A blow that got through: one piece of what you're wearing takes the brunt.</summary>
+        void WearArmour(float scale)
+        {
+            var worn = S.Equipped.Where(g => g.guard > 0).ToList();
+            if (worn.Count == 0) return;
+            WearDown(worn[Roll(0, worn.Count - 1)], Rules.ArmourWear * scale);
+        }
+
+        /// <summary>What you'd use to keep this piece up in the field, or null if nothing will help it.</summary>
+        public string UpkeepTool(GearItem g) => g == null || !Rules.Wears(g) ? null : Rules.IsBlade(g) ? "whetstone" : "mending_kit";
+        public float UpkeepLimit(GearItem g) => Rules.IsBlade(g) ? Rules.FieldSharpen : Rules.FieldMend;
+
+        /// <summary>Why you can't sharpen or mend this now, or null if you can.</summary>
+        public string UpkeepBlocked(GearItem g)
+        {
+            string tool = UpkeepTool(g);
+            if (tool == null) return "Nothing to keep up.";
+            if (!FreeToAct) return "Not now.";
+            if (S.Count(tool) <= 0) return Rules.IsBlade(g) ? "You need a whetstone." : "You need a mending kit.";
+            if (g.condition >= UpkeepLimit(g)) return Rules.IsBlade(g) ? "As sharp as a whetstone will get it. It needs a grindstone." : "As good as a patch will get it. It needs a proper repair.";
+            return null;
+        }
+
+        /// <summary>Sharpens a blade with your whetstone (kept), or patches armour with a mending kit (used up). Takes a while.</summary>
+        public bool Upkeep(int uid)
+        {
+            var g = S.gearItems.FirstOrDefault(x => x.uid == uid);
+            if (g == null || UpkeepBlocked(g) != null) return false;
+            bool blade = Rules.IsBlade(g);
+            Rules.Advance(S, data, blade ? 20 : 30, false);
+            if (!blade) S.AddItem("mending_kit", -1);
+            g.condition = UpkeepLimit(g);
+            S.result = blade ? "You sit and work the whetstone along the edge until it bites your thumbnail again. Good enough, for now."
+                             : "You stitch the splits and patch the worst of it. It'll hold, for now.";
+            GoTo(S.scene);
+            return true;
+        }
     }
 }
