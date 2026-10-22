@@ -714,6 +714,13 @@ namespace Loran.Core
                 case "unflag": S.flags.Remove(arg); return;
                 // wound:bite, or wound:bite:the wolf to say what did it outside a fight
                 case "wound": Rules.Afflict(S, data, S.body, parts[0], null, null, parts.Length > 1 ? parts[1] : WoundedBy()); return;
+                // hurt:rook:sprain[:what did it]  wounds someone in your party, out of a fight
+                case "hurt":
+                {
+                    var hm = Member(parts[0]);
+                    if (hm != null) Rules.Afflict(S, data, hm.body, parts[1], data.Follower(hm.id)?.name, null, parts.Length > 2 ? parts[2] : "the road");
+                    return;
+                }
                 case "menu": MenuRequest = arg; return;
                 case "spell":
                     if (!S.spells.Contains(arg))
@@ -1035,6 +1042,10 @@ namespace Loran.Core
                         if (data.Quest(parts[0]) == null) problems.Add(where + ": no quest '" + parts[0] + "'");
                         return;
                     case "wound": if (data.Affliction(arg.Split(':')[0]) == null) problems.Add(where + ": no affliction '" + arg + "'"); return;
+                    case "hurt":
+                        if (data.Follower(parts[0]) == null) problems.Add(where + ": no follower '" + parts[0] + "'");
+                        if (parts.Length < 2 || data.Affliction(parts[1]) == null) problems.Add(where + ": no affliction in '" + arg + "'");
+                        return;
                     case "menu": return;
                     case "pay": if (!int.TryParse(arg, out _)) problems.Add(where + ": pay needs a price in coppers"); return;
                     case "flag": case "unflag": case "hud": case "save": case "clock": case "sleep":

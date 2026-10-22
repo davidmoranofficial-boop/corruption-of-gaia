@@ -23,6 +23,7 @@ namespace Loran.Core
             ("hills", "The forest above Skelmed"),
             ("hunt", "The hunt with Rook"),
             ("home", "Back to Ida (reward and Eastmere)"),
+            ("eastroad", "The road to Eastmere, with Rook"),
             ("wolf", "The wolf on the road (cutscene)"),
             ("boss", "Boss: the pack leader, with Rook"),
             ("forge_iron", "Forge: buy iron"),
@@ -89,6 +90,13 @@ namespace Loran.Core
                     S.ax = 19; S.ay = 10; S.facing = "up";
                     Apply("follow:rook", new System.Text.StringBuilder(), ref devRedirect);
                     Jump("ida_home");
+                    break;
+                case "eastroad":
+                    foreach (var f in new[] { "quest_done:hunt", "quest:eastmere", "rook_escort", "left_skelmed" }) Flag(f);
+                    foreach (var g in new[] { "leather_jerkin", "leather_boots", "hunting_dagger" }) if (data.Gear(g) != null) MakeGear(g, null, null);
+                    Apply("follow:rook", new System.Text.StringBuilder(), ref devRedirect);
+                    MoveTo("fr_west");
+                    Jump(TravelId);
                     break;
                 case "wolf":
                     S.flags.RemoveAll(f => f == "dog_met" || f.StartsWith("ida_") || f.StartsWith("patch_"));

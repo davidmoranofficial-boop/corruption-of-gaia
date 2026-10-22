@@ -151,7 +151,10 @@ namespace Loran.UnityLayer
             string kind = "coast";
             if (a != null)
             {
-                if (a.id == "skelmed") kind = "village";
+                if (a.id == "skelmed" || a.id == "thornby") kind = "village";
+                else if (a.id == "forest_road" || a.id == "old_track") kind = "forest";
+                else if (a.id == "greyfell") kind = "hills";
+                else if (a.id == "brannock") kind = "road";
                 else if (a.id.Contains("hills")) kind = "hills";
                 else if (a.id == "coast_road")
                 {

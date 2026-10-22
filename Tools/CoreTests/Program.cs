@@ -34,6 +34,8 @@ static class Program
         Test("gear ranks, traits and slots", GearRanks);
         Test("equipment slots: clothes, rings, two hands", Slots);
         Test("walking the coast road", Travel);
+        Test("the road to Eastmere: Wren, Tobin, the deserters, the toll, Thornby", RoadToThornby);
+        Test("the road's hard choices: leaving Tobin, informing on Sorrel, the ford", RoadHardChoices);
         Test("forging: how well you play sets the rank", Forging);
         Test("dev mode quick starts and cheats", DevMode);
         Test("levels, skills, moves and followers", Progression);
@@ -284,15 +286,22 @@ static class Program
         Assert(e.data.file.areas.All(ar => ar.objects.All(o => o.id != "garran" && o.id != "orlen")), "no smith or mage in Skelmed");
         Console.WriteLine("    Skelmed took " + Engine.Duration(e.S.minutes - t1) + ", level " + e.S.level + ", rep " + e.S.Rep("skelmed"));
 
-        // The north gate ends the opening, for now
+        // The north gate: up the lane into the hills, and east onto the road
         Keep(e);
         WalkUntil(e, (12, 1), () => e.S.scene == "north_gate");
-        Assert(e.Check("flag:left_skelmed") && e.Current.script.Any(x => x.StartsWith("fade:out")), "the opening ends at the north gate");
-        Pick(e, "Back into Skelmed");
-        Assert(e.Travelling && e.Area.id == "skelmed" && AtSpot(e, "skelmed_north"), "back inside the gate");
+        Assert(e.Check("flag:left_skelmed") && e.Current.script.Any(x => x.StartsWith("fade:out")), "Rook and you set off at the north gate");
+        Assert(!e.Current.script.Any(x => x.Contains("ends for now")), "the opening doesn't end at the gate any more");
+        Pick(e, "Set off up the north lane");
+        Assert(e.Travelling && e.Area.id == "skelmed_hills" && AtSpot(e, "hills_gate"), "out into the hills");
         Assert(e.ActiveQuests.Count() == 1 && e.FinishedQuests.Count() == 1, "the hunt's done; Eastmere's ahead");
+        Assert(e.Objects().All(o => o.id != "east_trunk"), "the old track east is open once you've left");
+        Keep(e); ToArea(e, "fr_west");
+        Assert(e.Area.id == "forest_road" && e.Member("rook") != null, "Rook and you on the forest road");
 
-        // Out through the gate and back down the road
+        // and it's all walkable back the other way
+        Keep(e); ToArea(e, "hills_east");
+        Keep(e); ToArea(e, "skelmed_north");
+        Assert(e.Travelling && e.Area.id == "skelmed" && e.S.scene == "travel", "back through the north gate with no scene the second time");
         WalkUntil(e, (17, 27), () => e.Area.id == "coast_road");
         Assert(AtSpot(e, "skelmed"), "leaving should put you outside the gate");
         Assert(!e.SceneIds.Any(id => id == "village" || id == "bedroom" || id == "inn" || id == "guild" || id == "mira"), "the old text pages should be gone");
@@ -1113,6 +1122,231 @@ static class Program
         Assert(Json.Write(Json.Read<GameState>(json)) == json, "gear should survive a save and load");
     }
 
+    // ---------------------------------------------------------------------------------------- the road to Eastmere
+
+    static Engine OnTheRoad()
+    {
+        var e = NewEngine();
+        e.DevStart("eastroad");
+        e.S.stepsSinceFight = -100000;
+        e.S.coins = 300;
+        e.S.AddItem("bandage", 4);
+        Assert(e.Travelling && e.Area.id == "forest_road" && e.Member("rook") != null && e.Check("quest:eastmere"), "on the forest road with Rook");
+        return e;
+    }
+
+    /// <summary>Walks towards a tile, answering any scene the road springs on you on the way.</summary>
+    static void Through(Engine e, (int x, int y) goal, Func<bool> done, params (string scene, string label)[] answers)
+    {
+        for (int i = 0; i < 800 && !done(); i++)
+        {
+            Keep(e);
+            var a = answers.FirstOrDefault(x => x.scene == e.S.scene && !e.S.inCombat);
+            if (a.scene != null) { Pick(e, a.label); continue; }
+            if (e.S.inCombat) { e.DevWinFight(); continue; }
+            StepToward(e, goal);
+        }
+        if (!done()) throw new Exception("never got there; stuck in " + e.S.scene + " at " + e.Area.id + " " + e.S.ax + "," + e.S.ay);
+    }
+
+    static void ThroughTo(Engine e, string spot, params (string scene, string label)[] answers)
+    {
+        string target = e.data.Spot(spot).area.id;
+        Through(e, ZoneTile(e, spot), () => e.Area.id == target && e.Travelling, answers);
+    }
+
+    static (int x, int y) Beside(Engine e, string id)
+    {
+        var o = e.Area.objects.First(x => x.id == id);
+        foreach (var f in Engine.Facings)
+        {
+            var (dx, dy) = Engine.Dir(f);
+            int x = o.x - dx, y = o.y - dy;
+            if (Engine.InBounds(e.Area, x, y) && (!e.Blocked(x, y) || (e.S.ax == x && e.S.ay == y)) && e.PathTo(x, y) != null) return (x, y);
+        }
+        throw new Exception("can't get next to " + id);
+    }
+
+    static void RoadToThornby()
+    {
+        var e = OnTheRoad();
+        int rook0 = e.Bond("rook").value;
+
+        // Deadwood and a talk by the fire
+        UseThing(e, "fr_wood1"); UseThing(e, "fr_wood2");
+        Assert(e.S.Count("firewood") >= 2 && e.Travelling, "deadwood by the road, picked up at once");
+        UseThing(e, "fr_fire");
+        Assert(e.S.scene == "campfire", "the fire");
+        Pick(e, "Ask Rook about growing up");
+        Assert(!e.Choices().Any(c => c.def.label.StartsWith("Ask Rook about his father")), "one talk a night");
+        Pick(e, "Leave the fire");
+        Assert(e.Bond("rook").value > rook0, "Rook warms to you");
+
+        // The charcoal burner's son
+        UseThing(e, "hesta");
+        Pick(e, "What's wrong");
+        Pick(e, "Goodbye");
+        Assert(e.Check("quest:burners_son"), "Hesta's son is missing");
+
+        // The burnt cart, and Wren
+        var w = Beside(e, "wren");
+        Through(e, w, () => e.S.ax == w.x && e.S.ay == w.y && e.Travelling, ("cart_seen", "Go and see"));
+        Assert(e.Check("flag:cart_seen"), "you see the cart from the road");
+        UseThing(e, "wren");
+        Assert(e.S.scene == "wren_meet", "Wren by the cart");
+        Assert(!e.Choices().Any(c => c.def.label.Contains("We'll help")), "she has to trust you first");
+        Pick(e, "We're not with anyone");
+        Pick(e, "What happened here");
+        Pick(e, "We'll help you find him");
+        Assert(e.Member("wren") != null && e.Check("quest:wren_home") && e.S.party.Count == 2, "Wren walks with you now");
+
+        // Her father in the hollow
+        UseThing(e, "fr_tracks");
+        Pick(e, "Follow them");
+        UseThing(e, "tobin");
+        Assert(e.S.scene == "tobin" && e.Check("flag:tobin_found"), "Tobin, with a broken leg");
+        int wren0 = e.Bond("wren").value;
+        Pick(e, "Splint the leg");
+        Assert(e.Check("flag:tobin_carried") && e.Bond("wren").value > wren0 && e.Objects().All(o => o.id != "tobin"), "you carry him");
+
+        // The old track: Rook's fall, the deserters and the burner's boy
+        ThroughTo(e, "ot_west");
+        Through(e, (25, 12), () => e.S.scene == "deserters", ("rook_fall", "Stop and bind it properly"));
+        Assert(e.Check("flag:rook_fell") && e.Check("flag:col_found"), "Rook turned his ankle on the way; the deserters have Col");
+        Pick(e, "Let the boy go");
+        Pick(e, "Fight them");
+        Assert(e.S.inCombat && e.S.enemy == "deserter", "a fight with the deserters");
+        e.DevWinFight();
+        Assert(e.S.scene == "deserters_won" && e.Check("flag:col_freed"), "Col's free");
+        Pick(e, "Move on");
+
+        // Brannock bridge: the king's toll, for three
+        ThroughTo(e, "br_west_south");
+        int coins = e.S.coins;
+        Through(e, (14, 17), () => e.S.scene == "toll");
+        Pick(e, "Pay the toll for three");
+        Assert(e.Travelling && AtSpot(e, "br_bridge_east") && e.S.coins < coins && e.Check("flag:crossed_river"), "over the bridge, poorer");
+
+        // Thornby: Wren home
+        ThroughTo(e, "th_west");
+        Through(e, (17, 17), () => e.S.scene == "wren_arrives");
+        Pick(e, "Go on");
+        Assert(e.Member("wren") == null && e.Check("done:wren_home") && e.Check("flag:tobin_home") && e.Objects().Any(o => o.id == "tobin_home"), "Wren's home, and her father");
+        UseThing(e, "tobin_home");
+        Pick(e, "How's the leg");
+        Assert(e.S.gearItems.Any(g => g.id == "knife"), "Tobin's knife");
+        Pick(e, "Goodbye");
+
+        // The bad well
+        UseThing(e, "marda");
+        Pick(e, "something wrong with the well");
+        Pick(e, "Goodbye");
+        e.S.AddItem("firewood", 2);
+        UseThing(e, "carcass");
+        Pick(e, "Haul it out and burn it");
+        Pick(e, "Leave");
+        UseThing(e, "marda");
+        Pick(e, "We burned it");
+        Assert(e.Check("done:thornby_well") && e.S.Rep("thornby") > 0, "the well's clean");
+        Pick(e, "Goodbye");
+
+        // The road ends east of Thornby, for now
+        Through(e, (35, 15), () => e.S.scene == "eastmere_end");
+        Pick(e, "Turn back");
+        Assert(e.Travelling && e.Area.id == "thornby", "back into Thornby");
+        Console.WriteLine("    reached Thornby on day " + e.S.Day + " at " + Rules.Clock(e.S) + ", coins " + e.S.coins + ", Rook bond " + e.Bond("rook").value + ", Wren " + e.Bond("wren").value);
+    }
+
+    static void RoadHardChoices()
+    {
+        var e = OnTheRoad();
+        var w = Beside(e, "wren");
+        Through(e, w, () => e.S.ax == w.x && e.S.ay == w.y && e.Travelling, ("cart_seen", "Go and see"));
+        UseThing(e, "wren");
+        Walk(e, "We're not with anyone", "What happened here", "We'll help you find him");
+        UseThing(e, "fr_tracks");
+        Pick(e, "Follow them");
+        UseThing(e, "tobin");
+        int rook0 = e.Bond("rook").value;
+        Pick(e, "nothing we can do");
+        Assert(e.Member("wren") == null && e.Check("flag:tobin_with_wren") && e.Bond("rook").value < rook0, "Wren stays with her father; Rook thinks less of you");
+        Assert(e.Objects().Any(o => o.id == "wren_left"), "she's still there in the hollow");
+
+        // Up to Greyfell, and the deserter at the shrine
+        ThroughTo(e, "gf_south");
+        UseThing(e, "sorrel");
+        Pick(e, "You're a deserter");
+        Pick(e, "Leave him");
+        Assert(e.Check("flag:sorrel_met") && !e.Check("flag:ford_known"), "Sorrel, unhelped");
+        ThroughTo(e, "br_west_north");
+
+        // Informing on him gets you over the bridge
+        int coins = e.S.coins;
+        Through(e, (14, 17), () => e.S.scene == "toll");
+        Pick(e, "wounded deserter sheltering");
+        Assert(e.Check("flag:informer") && e.Check("flag:sorrel_gone") && e.S.coins == coins + 20 && AtSpot(e, "br_bridge_east"), "twenty coins and the bridge");
+
+        // Thornby: telling Ness
+        ThroughTo(e, "th_west");
+        UseThing(e, "ness");
+        Pick(e, "We met them on the road");
+        Assert(e.Check("flag:tobin_rescued") && e.Check("flag:wren_home") && !e.Check("quest:wren_home"), "Thornby fetches them home");
+        Pick(e, "Goodbye");
+        Assert(e.Objects().Any(o => o.id == "wren_home") && e.Objects().Any(o => o.id == "tobin_home"), "both home");
+        UseThing(e, "wren_home");
+        Assert(e.Paragraphs().Any(p => p.Contains("doesn't say whether she agrees")), "Wren hasn't forgiven you");
+        Pick(e, "Goodbye");
+
+        // The ford: Sorrel's way over, or wading
+        var f = OnTheRoad();
+        f.S.flags.Add("ford_known");
+        var sp = f.data.Spot("br_west_north").spot;
+        f.S.area = "brannock"; f.S.ax = sp.x; f.S.ay = sp.y;
+        Through(f, (18, 4), () => f.S.scene == "ford");
+        Pick(f, "Cross on the flat stones");
+        Assert(f.Travelling && AtSpot(f, "br_ford_east") && f.Check("flag:crossed_river"), "over by the ford");
+        ThroughTo(f, "th_west");
+        Assert(f.Check("flag:toll_done") == false, "the ford skips the toll");
+    }
+
+    static void UseEverything(AreaDef area, WorldObj o)
+    {
+        var v = NewEngine();
+        bool east = RoadEast.Contains(area.id);
+        v.DevStart(area.id == "skelmed" ? "village" : area.id == "yenson_hut" ? "hut" : area.id == "skelmed_hills" ? "hills" : east ? "eastroad" : "road");
+        if (area.id == "yenson_hut") Walk(v, "Sit up", "Goodbye");
+        if (east)
+        {
+            var sp = area.spots[0]; v.S.area = area.id; v.S.ax = sp.x; v.S.ay = sp.y;
+            foreach (var f in new[] { "cart_seen", "rook_fell", "tower_seen", "toll_seen" }) v.S.flags.Add(f);
+        }
+        // whatever it needs to be there: its flags, quests and company (the first of any either/or)
+        foreach (var w in o.when.Where(w => !w.StartsWith("!")).Select(w => w.Split('|')[0]))
+        {
+            if (w.StartsWith("flag:")) v.S.flags.Add(w.Substring(5));
+            else if (w.StartsWith("quest:")) v.S.flags.Add(w);
+            else if (w.StartsWith("follower:")) v.Join(w.Substring(9));
+        }
+        if (o.id == "bess_gate") { Rules.Afflict(v.S, v.data, v.S.body, "bite", null); v.S.flags.Add("patch_lesson"); v.S.flags.Remove("patch_done"); }
+        if (!v.All(o.when)) throw new Exception(o.id + " isn't there to test");
+        v.S.coins = 2000;
+        v.S.flags.Add("dog_met");
+        v.S.stepsSinceFight = -1000;
+        if (o.id == "alpha") WalkUntil(v, (29, 5), () => v.S.scene == "den");   // the den's edge stops you first
+        else UseThing(v, o.id);
+        bool quick = v.Scene(o.scene ?? "")?.quick == true;
+        Assert(v.S.scene != "travel" || v.S.inCombat || quick, "using " + o.id + " should open its scene");
+        for (int i = 0; i < 30 && (v.S.scene != "travel" || v.S.inCombat) && v.S.scene != "death"; i++)
+        {
+            if (v.S.inCombat) { v.DevWinFight(); continue; }
+            if (v.S.scene == "forge") { v.FinishForge(1, 1, 1); continue; }
+            v.Choose(v.Choices().Where(c => c.enabled).Last().def);
+        }
+        Assert(v.S.scene == "travel" && v.Area.id == area.id, "after " + o.id + " you should be back where you were, was " + v.S.scene);
+    }
+
+    static readonly string[] RoadEast = { "forest_road", "old_track", "greyfell", "brannock", "thornby" };
+
     static void Travel()
     {
         var e = NewEngine();
@@ -1188,31 +1422,8 @@ static class Program
         foreach (var area in e.data.file.areas)
             foreach (var o in area.objects.Where(o => !string.IsNullOrEmpty(o.scene) && o.id != "wolf" && o.id != "boar"))
             {
-                var v = NewEngine();
-                v.DevStart(area.id == "skelmed" ? "village" : area.id == "yenson_hut" ? "hut" : area.id == "skelmed_hills" ? "hills" : "road");
-                if (area.id == "yenson_hut") Walk(v, "Sit up", "Goodbye");
-                // whatever it needs to be there: its flags and quests
-                foreach (var w in o.when.Where(w => !w.StartsWith("!") && !w.Contains("|")))
-                {
-                    if (w.StartsWith("flag:")) v.S.flags.Add(w.Substring(5));
-                    else if (w.StartsWith("quest:")) v.S.flags.Add(w);
-                }
-                if (o.id == "bess_gate") { Rules.Afflict(v.S, v.data, v.S.body, "bite", null); v.S.flags.Add("patch_lesson"); v.S.flags.Remove("patch_done"); }
-                if (!v.All(o.when)) throw new Exception(o.id + " isn't there to test");
-                v.S.coins = 2000;
-                v.S.flags.Add("dog_met");
-                v.S.stepsSinceFight = -1000;
-                if (o.id == "alpha") WalkUntil(v, (29, 5), () => v.S.scene == "den");   // the den's edge stops you first
-                else UseThing(v, o.id);
-                bool quick = v.Scene(o.scene ?? "")?.quick == true;
-                Assert(v.S.scene != "travel" || v.S.inCombat || quick, "using " + o.id + " should open its scene");
-                for (int i = 0; i < 30 && (v.S.scene != "travel" || v.S.inCombat) && v.S.scene != "death"; i++)
-                {
-                    if (v.S.inCombat) { v.DevWinFight(); continue; }
-                    if (v.S.scene == "forge") { v.FinishForge(1, 1, 1); continue; }
-                    v.Choose(v.Choices().Where(c => c.enabled).Last().def);
-                }
-                Assert(v.S.scene == "travel" && v.Area.id == area.id, "after " + o.id + " you should be back where you were, was " + v.S.scene);
+                try { UseEverything(area, o); }
+                catch (Exception ex) { throw new Exception(area.id + " / " + o.id + ": " + ex.Message, ex); }
             }
 
         // Fights come at random as you walk (only crabs now, down on the sand), never too close together; nothing else interrupts the walk
@@ -1278,7 +1489,7 @@ static class Program
         var expect = new Dictionary<string, string>
         {
             { "village", "travel" }, { "road", "travel" }, { "hut", "wake" }, { "forge_iron", "smith" },
-            { "hills", "travel" }, { "hunt", "travel" }, { "home", "ida_home" }, { "wolf", "wolf_rescue" }, { "boss", "travel" },
+            { "hills", "travel" }, { "hunt", "travel" }, { "home", "ida_home" }, { "wolf", "wolf_rescue" }, { "boss", "travel" }, { "eastroad", "travel" },
             { "dog", "travel" }, { "crab", "travel" },
         };
         foreach (var (id, _) in Engine.DevStarts)
@@ -1350,12 +1561,21 @@ static class Program
         e.Breathe(seconds, running);
     }
 
+    /// <summary>A tile you can walk onto in the zone that leads to a spot.</summary>
+    static (int x, int y) ZoneTile(Engine e, string spot)
+    {
+        var z = e.Area.zones.First(z => z.to == spot);
+        for (int y = z.y0; y <= z.y1; y++)
+            for (int x = z.x0; x <= z.x1; x++)
+                if (e.PathTo(x, y) != null) return (x, y);
+        throw new Exception("no way into the zone to " + spot);
+    }
+
     /// <summary>Walks to the zone that leads to a spot in another area, and through it.</summary>
     static void ToArea(Engine e, string spot)
     {
-        var z = e.Area.zones.First(z => z.to == spot);
         string target = e.data.Spot(spot).area.id;
-        WalkUntil(e, (z.x0, z.y0), () => e.Area.id == target && e.Travelling);
+        WalkUntil(e, ZoneTile(e, spot), () => e.Area.id == target && e.Travelling);
     }
 
     /// <summary>Walks up to the nearest tile of a kind (the stream, the rock face), faces it and uses it.</summary>
@@ -1411,7 +1631,7 @@ static class Program
         {
             var (dx, dy) = Engine.Dir(f);
             int x = o.x - dx, y = o.y - dy;
-            if (!e.Blocked(x, y) || (e.S.ax == x && e.S.ay == y)) { best = (x, y); break; }
+            if ((e.S.ax == x && e.S.ay == y) || (Engine.InBounds(e.Area, x, y) && !e.Blocked(x, y) && e.PathTo(x, y) != null)) { best = (x, y); break; }
         }
         if (best == null) throw new Exception("can't get next to " + id);
         var goal = best.Value;

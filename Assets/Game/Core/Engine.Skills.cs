@@ -353,6 +353,13 @@ namespace Loran.Core
                 var f = data.Follower(m.id);
                 if (f == null) continue;
                 var said = new List<string>();
+                // Forager (Wren): she comes back from the edge of camp with something to eat, before anyone's fed
+                if (f.trait == "forager" && m.hp > 0)
+                {
+                    string found = Roll(1, 3) == 1 ? "mushrooms" : "berries";
+                    S.AddItem(found, 1);
+                    said.Add("finds " + data.Item(found).name.ToLowerInvariant() + " round the camp");
+                }
                 if (m.hunger < 70)
                 {
                     var food = S.items.Where(x => data.Item(x.id)?.food == true && x.count > 0)

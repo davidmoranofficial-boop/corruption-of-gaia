@@ -84,6 +84,24 @@ namespace Loran.UnityLayer
             you.style.width = Length.Percent(100); you.style.height = Length.Percent(100);
             if (s.hp <= 0) { youActor.down = true; youActor.anim = "down"; }
 
+            // a person: a paper doll like yours, turned to face you
+            if (!string.IsNullOrEmpty(e.figure))
+            {
+                foeSheet = false;
+                foeFrameW = DollW;
+                foeFrameH = DollH;
+                foeActor = NewActor(stage, EnemyX, FeetY, DollW, DollH, 44);
+                foeActor.shadowX = EnemyX;
+                enemySheet = Add(foeActor.el, new VisualElement { pickingMode = PickingMode.Ignore }, "enemy-sprite");
+                enemySheet.style.position = Position.Absolute;
+                enemySheet.style.left = 0;
+                enemySheet.style.top = 0;
+                enemySheet.style.scale = new Scale(new Vector3(-1, 1, 1));
+                var foeDoll = Doll(enemySheet, 1, e.figure, e.skin, e.hair, e.worn.Select(g => (g, engine.data.Gear(g)?.slot ?? "body")), e.hairStyle, e.beard);
+                foeDoll.style.width = Length.Percent(100); foeDoll.style.height = Length.Percent(100);
+            }
+            else
+            {
             // the enemy: an animated sheet if it has one, else its single picture
             var tex = Sprite("Enemies/" + (string.IsNullOrEmpty(e.art) ? e.id : e.art));
             foeSheet = tex != null && tex.width >= tex.height * 4;
@@ -98,6 +116,7 @@ namespace Loran.UnityLayer
             enemySheet.style.position = Position.Absolute;
             if (tex != null) enemySheet.style.backgroundImage = new StyleBackground(tex);
             else Add(foeActor.el, new Label(e.name.Substring(0, 1)), "portrait-letter");
+            }
             if (s.enemyHp <= 0) { foeMode = "dead"; foeModeAt = StageNow - 5; }
             else if (foeMode == "dead" || foeMode == "attack" || foeMode == "hurt") foeMode = "idle";
 

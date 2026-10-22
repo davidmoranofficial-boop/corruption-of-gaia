@@ -699,22 +699,21 @@
         "face:you:up",
         "walk:rook:13:2",
         "face:rook:up",
-        "say:Rook:\"Eastmere's inland, east past the forest and over the hills. A few days, if the road's kind.\"",
+        "say:Rook:\"Eastmere's inland. Up through the hills, then east along Ida's old track into the forest. A few days, if the road's kind.\"",
         "face:rook:left",
-        "say:Rook:\"It won't be.\"",
+        "say:Rook:\"It won't be. Keep your eyes open and your water full.\"",
         "face:rook:up",
         "walk:you:12:0:nowait",
         "walk:rook:13:0",
         "fade:out:1.5",
         "narrate:And so you leave Skelmed behind you, with Rook at your side and the road to Eastmere ahead.",
-        "narrate:This is where the opening ends for now. Eastmere, and the road to it, are being built next.",
         "fade:in:1"
       ],
       "choices": [
         {
-          "label": "Back into Skelmed",
+          "label": "Set off up the north lane",
           "effects": [
-            "travel:place:skelmed_north"
+            "travel:place:hills_gate"
           ],
           "go": "travel"
         }
@@ -733,15 +732,14 @@
         "wait:0.8",
         "walk:you:12:0",
         "fade:out:1.5",
-        "narrate:And so you leave Skelmed behind you, alone, with the road to Eastmere ahead and Rook's dagger at your belt.",
-        "narrate:This is where the opening ends for now. Eastmere, and the road to it, are being built next.",
+        "narrate:And so you leave Skelmed behind you, alone, with the road to Eastmere ahead and Rook's dagger at your belt. Ida said the old track runs east out of the hills.",
         "fade:in:1"
       ],
       "choices": [
         {
-          "label": "Back into Skelmed",
+          "label": "Set off up the north lane",
           "effects": [
-            "travel:place:skelmed_north"
+            "travel:place:hills_gate"
           ],
           "go": "travel"
         }

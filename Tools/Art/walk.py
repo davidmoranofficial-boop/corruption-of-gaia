@@ -1395,6 +1395,7 @@ BROWNCLOTH = ['#a08c6c', '#7d6b52', '#5a4634']
 CHARCOAL = ['#575158', '#38343a', '#1e1a20']
 WHITE = ['#e8e2d6', '#cfc6bb', '#a69e9a']
 OLDBLUE = ['#5a7f88', '#46676a', '#253236']
+KINGSRED = ['#a8523a', '#7a3328', '#4a2020']   # the king's colours: the levy and the toll men
 
 # Townsfolk: figure, skin, hair style, hair colour, beard, then what they wear (layers from the waist out) and carry.
 ITEM_ART['hunting_dagger'] = ITEM_ART['knife']   # Ida's gift looks like a plain knife on the belt
@@ -1424,6 +1425,40 @@ NPCS = {
     'npc_rook': ('male', 'light', 'messy', 'red', None,
                  [Look({'thigh': BROWNCLOTH, 'shin': BROWNCLOTH, 'belt': DARKLEATHER, 'buckle': IRON}), Look({'foot': DARKLEATHER, 'shin': DARKLEATHER}, tall_boot_details),
                   Look({'chest': MOSS, 'arm': MOSS})], ['hunting_bow']),
+    # the Eastmere road (22 Oct). All names are placeholders.
+    'npc_wren': ('female', 'fair', 'braid', 'light brown', None,
+                 [Look({'thigh': MOSS, 'shin': MOSS, 'belt': DARKLEATHER, 'buckle': DARKLEATHER}, skirt(MOSS)), Look({'foot': DARKLEATHER}),
+                  Look({'chest': LINEN, 'arm': LINEN})], []),
+    'npc_hesta': ('female', 'brown', 'bun', 'black', None,
+                  [Look({'thigh': CHARCOAL, 'shin': CHARCOAL, 'belt': CHARCOAL, 'buckle': CHARCOAL}, skirt(CHARCOAL)), Look({'foot': DARKLEATHER}),
+                   Look({'chest': BROWNCLOTH, 'arm': BROWNCLOTH}, apron(LEATHER))], []),
+    'npc_col': ('male', 'brown', 'messy', 'black', None,
+                [Look({'thigh': CHARCOAL, 'shin': CHARCOAL, 'belt': ROPE, 'buckle': ROPE}), Look({'foot': SALTBOOT}),
+                 Look({'chest': LINEN, 'arm': LINEN})], []),
+    'npc_tobin': ('male', 'fair', 'short', 'light brown', 'beard',
+                  [Look({'thigh': BROWNCLOTH, 'shin': BROWNCLOTH, 'belt': DARKLEATHER, 'buckle': IRON}), Look({'foot': DARKLEATHER}),
+                   Look({'chest': WHITE, 'arm': WHITE})], []),
+    'npc_ness': ('female', 'fair', 'bun', 'blond', None,
+                 [Look({'thigh': TEAL, 'shin': TEAL, 'belt': TEAL, 'buckle': TEAL}, skirt(TEAL)), Look({'foot': DARKLEATHER}),
+                  Look({'chest': TEAL, 'arm': TEAL}, apron(WHITE))], []),
+    'npc_deserter': ('male', 'olive', 'cropped', 'dark brown', 'stubble',
+                     [Look({'thigh': SLATE, 'shin': SLATE, 'belt': DARKLEATHER, 'buckle': IRON}), Look({'foot': DARKLEATHER}),
+                      Look({'chest': LEATHER, 'arm': CHARCOAL})], ['iron_cap', 'wood_axe']),
+    'npc_toll': ('male', 'light', 'short', 'dark brown', 'moustache',
+                 [Look({'thigh': CHARCOAL, 'shin': CHARCOAL, 'belt': DARKLEATHER, 'buckle': IRON}), Look({'foot': DARKLEATHER, 'shin': DARKLEATHER}, tall_boot_details),
+                  Look({'chest': KINGSRED, 'arm': CHARCOAL})], ['iron_cap', 'buckler']),
+    'npc_vane': ('male', 'olive', 'cropped', 'grey', 'beard',
+                 [Look({'thigh': CHARCOAL, 'shin': CHARCOAL, 'belt': DARKLEATHER, 'buckle': ['#c9a44f', '#8e6e30', '#5a4634']}), Look({'foot': DARKLEATHER, 'shin': DARKLEATHER}, tall_boot_details),
+                  Look({'chest': KINGSRED, 'arm': KINGSRED})], ['knife']),
+    'npc_sorrel': ('male', 'fair', 'swept', 'blond', 'stubble',
+                   [Look({'thigh': SLATE, 'shin': SLATE, 'belt': ROPE, 'buckle': ROPE}), Look({'foot': SALTBOOT}),
+                    Look({'chest': KINGSRED, 'arm': LINEN})], []),
+    'npc_marda': ('female', 'olive', 'bun', 'grey', None,
+                  [Look({'thigh': OLDBLUE, 'shin': OLDBLUE, 'belt': OLDBLUE, 'buckle': OLDBLUE}, skirt(OLDBLUE)), Look({'foot': DARKLEATHER}),
+                   Look({'chest': BROWNCLOTH, 'arm': BROWNCLOTH})], []),
+    'npc_fenn': ('male', 'dark', 'cropped', 'black', 'beard',
+                 [Look({'thigh': BROWNCLOTH, 'shin': BROWNCLOTH, 'belt': DARKLEATHER, 'buckle': IRON}), Look({'foot': DARKLEATHER}),
+                  Look({'chest': TEAL, 'arm': TEAL})], ['flat_cap']),
 }
 
 HEAD_ITEMS = {'iron_cap', 'sou_wester', 'flat_cap'}

@@ -1,0 +1,1864 @@
+{
+  "scenes": [
+    {
+      "id": "road_wood1",
+      "title": "Deadwood",
+      "quick": true,
+      "text": [
+        "A dead branch, dry enough to burn."
+      ],
+      "choices": [
+        {
+          "label": "Gather it",
+          "time": 10,
+          "stamina": 4,
+          "train": [
+            "str+1",
+            "woodcutting+2"
+          ],
+          "why": "gathering wood",
+          "effects": [
+            "item:firewood+1",
+            "flag:road_wood1_today"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "road_wood2",
+      "title": "Deadwood",
+      "quick": true,
+      "text": [
+        "A dead branch, dry enough to burn."
+      ],
+      "choices": [
+        {
+          "label": "Gather it",
+          "time": 10,
+          "stamina": 4,
+          "train": [
+            "str+1",
+            "woodcutting+2"
+          ],
+          "why": "gathering wood",
+          "effects": [
+            "item:firewood+1",
+            "flag:road_wood2_today"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "road_mushrooms",
+      "title": "Mushrooms",
+      "quick": true,
+      "text": [
+        "A ring of fat brown mushrooms in the leaf litter. The good sort."
+      ],
+      "choices": [
+        {
+          "label": "Pick them",
+          "time": 10,
+          "train": [
+            "hunting+1"
+          ],
+          "why": "foraging",
+          "effects": [
+            "item:mushrooms+2",
+            "flag:road_mushrooms_today"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "road_stream",
+      "title": "Water",
+      "text": [
+        "Cold, clear water running over stones."
+      ],
+      "choices": [
+        {
+          "label": "Drink and fill your waterskin",
+          "time": 10,
+          "effects": [
+            "water=4",
+            "thirst+20"
+          ],
+          "go": "travel",
+          "result": "You drink until your teeth ache, then fill the skin."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "campfire",
+      "title": "The fire",
+      "text": [
+        "An old ring of fire stones, black inside. Other travellers have stopped here before you."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook drops his pack and starts on the fire without being asked."
+        },
+        {
+          "when": [
+            "follower:wren",
+            "!follower:rook"
+          ],
+          "text": "Wren sits down by the stones and pulls her knees up."
+        },
+        {
+          "when": [
+            "flag:fire_talk_today"
+          ],
+          "text": "You've talked enough for one night. The fire pops and settles."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Ask Rook about growing up in Skelmed",
+          "when": [
+            "follower:rook",
+            "!flag:rt1",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt1",
+            "flag:fire_talk_today",
+            "bond:rook+4",
+            "morale:rook+5"
+          ],
+          "result": "\"Not much to tell. Ma put a bow in my hands before I could walk properly. I can hit a hare at sixty paces and I can't read my own name.\"\n\n[[mood:happy]]\"When I was small the harbour was so full you could walk across it on the boats. I used to do it for a dare. Now there's two boats and one of them leaks.\""
+        },
+        {
+          "label": "Ask Rook about his father",
+          "when": [
+            "follower:rook",
+            "flag:rt1",
+            "!flag:rt2",
+            "bond:rook>=8",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt2",
+            "flag:fire_talk_today",
+            "bond:rook+5",
+            "morale:rook+5"
+          ],
+          "result": "[[mood:sad]]Rook pokes the fire for a long time before he answers.\n\n\"He went inland the year the levy doubled. Said there'd be work. Said he'd send for us.\" He shrugs. \"That was nine years ago.\"\n\n\"Eastmere's the first town inland. If he went anywhere, he went through there.\" He doesn't look at you. \"Ma doesn't know I'm going to ask after him. Don't tell her.\""
+        },
+        {
+          "label": "Ask Rook what happens to Skelmed",
+          "when": [
+            "follower:rook",
+            "flag:rt2",
+            "!flag:rt3",
+            "bond:rook>=14",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt3",
+            "flag:fire_talk_today",
+            "bond:rook+5"
+          ],
+          "result": "[[mood:worried]]\"Honestly? If Eastmere won't help, Skelmed's done by winter. Ma knows it. She won't say it.\"\n\n\"She won't leave, either. She'll be the last one there, shooting wolves off the wall.\" He laughs, but it isn't a laugh. \"So I have to make Eastmere listen. That's all. Easy.\""
+        },
+        {
+          "label": "Ask Rook what he wants, after all this",
+          "when": [
+            "follower:rook",
+            "flag:rt3",
+            "!flag:rt4",
+            "bond:rook>=22",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt4",
+            "flag:rook_close",
+            "flag:fire_talk_today",
+            "bond:rook+6",
+            "morale:rook+10"
+          ],
+          "result": "[[mood:surprised]]\"Me? Nobody's asked me that.\"\n\nHe thinks about it properly.\n\n[[mood:happy]]\"A place where people are coming instead of going. That's it. Somewhere you can hear children in the street.\" He looks at you across the fire. \"You washed up out of nowhere and you're walking two days for a village that isn't yours. I'm glad it was you the sea coughed up.\""
+        },
+        {
+          "label": "Ask Wren about Thornby",
+          "when": [
+            "follower:wren",
+            "!flag:wt1",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:wt1",
+            "flag:fire_talk_today",
+            "bond:wren+4",
+            "morale:wren+5"
+          ],
+          "result": "\"Six houses and a mill. Well, five houses now. The Ashbys went inland in spring.\"\n\n\"We grind for everyone this side of the river. Took a cartload of flour to Eastmere every month. They pay half what they used to: the king's man at the gate takes the rest.\" [[mood:angry]]\"And now there's no cart.\""
+        },
+        {
+          "label": "Ask Wren what she wanted to do in Eastmere",
+          "when": [
+            "follower:wren",
+            "flag:wt1",
+            "!flag:wt2",
+            "bond:wren>=8",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:wt2",
+            "flag:fire_talk_today",
+            "bond:wren+5"
+          ],
+          "result": "[[mood:sad]]\"There's a herb-wife there, old Agna. I was going to ask her to take me on. Da said we'd ask together, this trip.\"\n\nShe turns a stalk of yarrow in her fingers. \"I know every plant between here and the sea. My mother says that and a sharp tongue won't feed anybody.\"\n\n[[mood:happy]]\"She's not wrong about the tongue.\""
+        },
+        {
+          "label": "Rook and Wren are arguing again",
+          "when": [
+            "follower:rook",
+            "follower:wren",
+            "flag:rt1",
+            "flag:wt1",
+            "!flag:bicker_done",
+            "!flag:fire_talk_today"
+          ],
+          "time": 20,
+          "effects": [
+            "flag:fire_talk_today"
+          ],
+          "go": "bicker"
+        },
+        {
+          "label": "Make camp here for the night",
+          "effects": [
+            "sleep:camp"
+          ],
+          "go": "travel"
+        },
+        {
+          "label": "Leave the fire",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "bicker",
+      "title": "The fire",
+      "text": [
+        "It starts over nothing (who let the fire die down) and turns into the thing it's really about.",
+        "[[mood:angry]]\"They burned our cart,\" Wren says. \"Deserters. They'd have done worse if Da hadn't fought.\"",
+        "\"They're starving,\" says Rook. \"My da ran from the levy too. Doesn't make him a monster.\"",
+        "They both look at you."
+      ],
+      "choices": [
+        {
+          "label": "\"Rook's right. Hunger makes people do bad things.\"",
+          "tone": "blunt",
+          "effects": [
+            "flag:bicker_done",
+            "bond:rook+5",
+            "bond:wren-3",
+            "morale:wren-5"
+          ],
+          "result": "Wren turns her back on both of you and lies down. Rook gives you a small nod. It's a while before anyone speaks.",
+          "go": "campfire"
+        },
+        {
+          "label": "\"Wren's right. Hungry or not, they burned a family's cart.\"",
+          "tone": "blunt",
+          "effects": [
+            "flag:bicker_done",
+            "bond:wren+5",
+            "bond:rook-3",
+            "morale:rook-5"
+          ],
+          "result": "Rook mutters something and goes to fetch more wood he doesn't need. Wren watches him go, and doesn't look as pleased as she expected to.",
+          "go": "campfire"
+        },
+        {
+          "label": "\"You're both right. The king made deserters out of hungry men, and they took it out on a miller.\"",
+          "tone": "kind",
+          "check": "stat:cha>=5",
+          "effects": [
+            "flag:bicker_done",
+            "bond:rook+3",
+            "bond:wren+3"
+          ],
+          "result": "[[mood:surprised]]A long silence. Then Wren snorts. \"Fine. The king, then.\"\n\nRook grins. \"I'll drink to that, if anyone's got anything to drink.\"\n\n[[voice:Charisma]]You said the thing they were both circling round. It cost you nothing and they'll remember it.",
+          "failEffects": [
+            "flag:bicker_done",
+            "bond:rook-1",
+            "bond:wren-1"
+          ],
+          "failResult": "\"Easy for you to say,\" they both say, at the same time, and then look annoyed about it. Nobody's happy. Nobody's going to say any more tonight either.",
+          "go": "campfire"
+        },
+        {
+          "label": "(Stay out of it.)",
+          "effects": [
+            "flag:bicker_done"
+          ],
+          "result": "You poke the fire and say nothing. Eventually they run out of things to say, and the night is very long and very quiet.",
+          "go": "campfire"
+        }
+      ]
+    },
+    {
+      "id": "hesta",
+      "title": "Hesta",
+      "speaker": "Hesta",
+      "greet": [
+        {
+          "when": [
+            "flag:col_freed",
+            "!flag:hesta_told"
+          ],
+          "mood": "happy",
+          "text": "Hesta has Col by both shoulders and won't let go. When she sees you she lets go of him to grab you instead."
+        },
+        {
+          "when": [
+            "flag:hesta_told"
+          ],
+          "mood": "happy",
+          "text": "\"There they are. Sit, sit. There's always a place by our kilns for you.\""
+        },
+        {
+          "when": [
+            "quest:burners_son"
+          ],
+          "mood": "worried",
+          "text": "\"Any word of my Col?\""
+        },
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "mood": "worried",
+          "text": "A broad woman black to the elbows with charcoal dust. \"Rook? Ida's Rook? Look at the size of you.\" Then her face falls. \"You haven't seen my boy on the road, have you?\""
+        },
+        {
+          "when": [],
+          "mood": "worried",
+          "text": "A broad woman black to the elbows with charcoal dust. She looks past you, down the track, as if you might be someone else."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"What's wrong?\"",
+          "when": [
+            "!quest:burners_son",
+            "!done:burners_son",
+            "!flag:col_freed"
+          ],
+          "tone": "kind",
+          "effects": [
+            "quest:burners_son",
+            "bond:hesta+3"
+          ],
+          "result": "[[mood:worried]]\"My son Col. He took two sacks of charcoal to the old watch house on the forest track, three days back. There's men camped there who buy it, he said.\"\n\n\"He hasn't come home. And a tinker came by yesterday saying the men at the watch house are runaways from the levy.\" She grips her apron. \"He's fifteen.\""
+        },
+        {
+          "label": "\"Col's safe. He's right here.\"",
+          "when": [
+            "flag:col_freed",
+            "!flag:hesta_told"
+          ],
+          "effects": [
+            "flag:hesta_told",
+            "complete:burners_son",
+            "bond:hesta+10",
+            "item:hare+2",
+            "coins+20",
+            "bond:rook+2"
+          ],
+          "result": "[[mood:happy]]Hesta presses a purse into your hands and two smoked hares on top of it, and won't hear a word against either.\n\n\"Any time you come by this road, there's a fire and a meal at our kilns. Any time. You tell Ida that too, Rook.\""
+        },
+        {
+          "label": "Buy a smoked hare ({price:10})",
+          "need": [
+            "afford:10"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:10",
+            "item:hare+1"
+          ],
+          "result": "\"Smoked it over the kilns. Keeps for weeks.\""
+        },
+        {
+          "label": "\"Do you know this road well?\"",
+          "topic": "road",
+          "time": 5,
+          "result": "\"Thirty years on it. East from the crossroads is the old track: quicker, but nobody goes through it that can help it any more. Something's wrong in those trees.\"\n\n\"North is Greyfell. Longer, and cold at night even in summer, but you can see trouble coming up there. Both come down to Brannock bridge.\" She spits. \"Where the king's men want paying for walking over a bridge my grandfather helped build.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "col",
+      "title": "Col",
+      "speaker": "Col",
+      "greet": [
+        {
+          "when": [],
+          "mood": "happy",
+          "text": "Col is stacking turf with his mother watching him like a hawk. He has a bruise the size of a plum on one cheek and he looks very pleased to have it."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"What did they want with you?\"",
+          "topic": "why",
+          "time": 3,
+          "result": "\"Money. They thought Ma would pay to get me back.\" He goes red. \"They weren't all bad. One of them gave me his bread. The other one said if nobody came by the new moon they'd sell me to the king's men as a runaway.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "cart_seen",
+      "title": "Smoke",
+      "onEnter": [
+        "flag:cart_seen"
+      ],
+      "text": [
+        "Ahead, in a clearing off the road, a cart lies on its side with smoke still curling off it.",
+        "Somebody is kneeling in the ash beside it."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook has an arrow on the string before you've finished looking. \"Careful,\" he breathes."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Go and see",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "cart",
+      "title": "The burnt cart",
+      "text": [
+        "A miller's cart, burnt down to the axles. Spilt flour has turned to grey paste in the rain. The mule is dead in the traces, and someone has taken the harness."
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:wren_met",
+            "!flag:tobin_found"
+          ],
+          "text": "There are drag marks in the grass going off south of the road, and blood on them."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "wren_meet",
+      "title": "Wren",
+      "speaker": "Wren",
+      "greet": [
+        {
+          "when": [],
+          "mood": "angry",
+          "text": "A young woman gets up out of the ash with a sling already whirling. \"That's close enough. If you're with them, I'll put your eye out, I swear it.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"We're not with anyone. We're walking to Eastmere.\"",
+          "tone": "kind",
+          "topic": "calm",
+          "effects": [
+            "bond:wren+3"
+          ],
+          "result": "[[mood:sad]]She looks from you to Rook and lets the sling drop. \"...Sorry. Sorry. I thought...\"\n\n\"I'm Wren. From Thornby, over the river. We were taking flour to Eastmere, me and my da.\""
+        },
+        {
+          "label": "\"What happened here?\"",
+          "when": [
+            "flag:asked:wren_meet:calm"
+          ],
+          "topic": "what",
+          "time": 3,
+          "result": "[[mood:angry]]\"Deserters. Four of them, out of the trees last night. Da went at them with the cart whip. One of them hit him with something.\"\n\n[[mood:sad]]\"They took the harness and the money and set fire to the rest, to be spiteful. I ran. When I came back Da was gone. There's blood going into the trees and I can't...\" She stops. \"I couldn't find him in the dark.\""
+        },
+        {
+          "label": "\"We'll help you find him.\"",
+          "when": [
+            "flag:asked:wren_meet:what"
+          ],
+          "tone": "kind",
+          "effects": [
+            "flag:wren_met",
+            "quest:wren_home",
+            "follow:wren",
+            "bond:wren+5",
+            "bond:rook+2"
+          ],
+          "result": "[[mood:surprised]]\"You will?\" She's already moving. \"The marks go south. Come on.\"\n\nRook falls in beside you. \"Thornby's on our way,\" he says quietly. \"Over the bridge. We can see her home.\"",
+          "go": "travel"
+        },
+        {
+          "label": "\"We can't stop. I'm sorry.\"",
+          "when": [
+            "flag:asked:wren_meet:what"
+          ],
+          "tone": "blunt",
+          "effects": [
+            "bond:wren-5",
+            "bond:rook-4"
+          ],
+          "result": "[[mood:angry]]She stares at you, then turns back to the trees without another word.\n\nRook doesn't say anything either. He doesn't have to.",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "tracks",
+      "title": "Tracks",
+      "text": [
+        "Drag marks through the grass, and dark spots on the leaves. Somebody crawled this way, hurt, and not long ago."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "Wren is off ahead of you before you can say anything."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Follow them",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "tobin",
+      "title": "Tobin",
+      "speaker": "Tobin",
+      "onEnter": [
+        "flag:tobin_found"
+      ],
+      "greet": [
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "mood": "sad",
+          "text": "\"Wren? Wrennie?\" A big fair-bearded man lies in the hollow with his leg bent wrong below the knee. Wren is on her knees beside him before he's finished saying it."
+        },
+        {
+          "when": [],
+          "mood": "sad",
+          "text": "A big fair-bearded man lies in the hollow with his leg bent wrong below the knee. He's been here all night."
+        }
+      ],
+      "text": [],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook crouches and looks at the leg. \"Broken. Clean, I think. He's not walking anywhere on that.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Splint the leg and take him with you, slowly",
+          "need": [
+            "item:bandage",
+            "item:firewood"
+          ],
+          "needText": "You need a bandage, and a length of firewood for the splint.",
+          "time": 75,
+          "stamina": 20,
+          "train": [
+            "first_aid+4"
+          ],
+          "why": "setting a bone",
+          "effects": [
+            "item:bandage-1",
+            "item:firewood-1",
+            "flag:tobin_carried",
+            "bond:wren+10",
+            "bond:rook+3",
+            "exp:30"
+          ],
+          "result": "It takes all three of you to set it, and Tobin bites through a strap of leather doing it.\n\n[[mood:happy]]\"We'll go slow,\" Wren says. \"We'll go as slow as you like, Da.\"\n\nHe hops between you and Rook with an arm round each of your necks, all the way back to the road. He'll make Thornby, at Wren's pace.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave him your water, and send help back from Thornby",
+          "when": [
+            "follower:wren"
+          ],
+          "effects": [
+            "water=0",
+            "flag:tobin_left_food",
+            "bond:wren+2"
+          ],
+          "result": "You give him your waterskin and make him as comfortable as the hollow allows.\n\n[[mood:worried]]\"Thornby's two days,\" Wren says. \"Two days there, one back. He'll keep that long.\" She's telling herself. \"He'll keep.\"",
+          "go": "travel"
+        },
+        {
+          "label": "There's nothing we can do for him",
+          "when": [
+            "follower:wren"
+          ],
+          "tone": "blunt",
+          "effects": [
+            "unfollow:wren",
+            "flag:tobin_with_wren",
+            "bond:wren-20",
+            "bond:rook-6"
+          ],
+          "result": "[[mood:angry]]Wren looks at you as if you've hit her.\n\n\"Then I'll stay with him. Go on. Go to your Eastmere.\"\n\nShe doesn't look up again. Rook walks back to the road a long way ahead of you.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave him for now",
+          "when": [
+            "!follower:wren"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "deer",
+      "title": "A dead deer",
+      "text": [
+        "A hind, dead in the hollow. It isn't rotting the way dead things rot: it's gone thin and grey, and the hide is blotched with a purple bloom like spilt wine."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook catches your sleeve. \"Don't touch it.\" He doesn't say why. He doesn't seem to know why."
+        },
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "Wren has gone very quiet."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Look closer",
+          "check": "stat:int>=4",
+          "time": 5,
+          "result": "[[voice:Intellect]]No wound. No sign of wolves or crows. The eyes have clouded over purple, the same purple as the bloom. Whatever killed it came from inside.\n\nThe same colour as the skin under the pack leader's fur.",
+          "failResult": "[[voice:Intellect]]A dead deer. Some sickness. You'd rather not think about it.",
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "rook_fall",
+      "title": "Rotten ground",
+      "speaker": "Rook",
+      "onEnter": [
+        "flag:rook_fell"
+      ],
+      "text": [
+        "The ground under Rook gives way with a wet crack: a rotten log under the moss. He goes in up to the thigh and comes out swearing, with his ankle already swelling."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "Wren is kneeling by him before he's finished swearing. \"Twisted, not broken. Lucky.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Stop and bind it properly",
+          "need": [
+            "item:bandage"
+          ],
+          "needText": "You need a bandage.",
+          "time": 45,
+          "train": [
+            "first_aid+2"
+          ],
+          "why": "binding a sprain",
+          "effects": [
+            "item:bandage-1",
+            "bond:rook+4"
+          ],
+          "result": "[[mood:happy]]\"Fussing like Ma,\" he grumbles, but he holds still and lets you strap it.\n\nAn hour lost. He walks on it without limping, mostly.",
+          "go": "travel"
+        },
+        {
+          "label": "\"Can you walk on it? We need to keep moving.\"",
+          "tone": "blunt",
+          "effects": [
+            "hurt:rook:sprain:rotten ground",
+            "bond:rook-3",
+            "morale:rook-8"
+          ],
+          "result": "[[mood:angry]]\"I'll walk.\" He does, badly. He doesn't complain once, which is somehow worse.\n\n[[voice:Endurance]]He's hurt. He'll fight worse and slow you down until it's seen to. You can still treat it from Survival.",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "deserters",
+      "title": "The watch house",
+      "speaker": "Deserter",
+      "onEnter": [
+        "flag:tower_seen",
+        "flag:col_found"
+      ],
+      "text": [
+        "The old watch house squats on the rise, roof half gone. Two men sit by a fire in front of it, axes across their knees. Levy coats, the red faded to brown.",
+        "Tied to the doorpost behind them is a boy of fifteen or so, black to the elbows with charcoal."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!quest:burners_son"
+          ],
+          "text": "The boy sees you. \"Tell my ma! Hesta, at the kilns! Tell her I'm here!\""
+        },
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "[[mood:angry]]Wren goes white. \"That's them,\" she whispers. \"That's two of them. The ones who burned our cart.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Let the boy go.\"",
+          "topic": "demand",
+          "tone": "blunt",
+          "result": "[[mood:angry]]The bigger one laughs. \"When his mother pays. Forty copper, or we sell him to the king's men as a runaway. They pay a bounty.\""
+        },
+        {
+          "label": "Pay them for the boy ({price:40})",
+          "when": [
+            "flag:asked:deserters:demand"
+          ],
+          "need": [
+            "afford:40"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:40",
+            "flag:col_freed",
+            "flag:deserters_paid",
+            "bond:rook-2",
+            "bond:wren-4",
+            "exp:20"
+          ],
+          "result": "They count it twice and cut the boy loose. He runs for the kilns without looking back.\n\n[[mood:angry]]\"Now they'll do it again,\" says Rook, low, as you walk away. \"To the next one.\"",
+          "go": "travel"
+        },
+        {
+          "label": "\"You served in the levy. So did I. Is this what we ran from it to become?\"",
+          "when": [
+            "flag:asked:deserters:demand"
+          ],
+          "check": "background:soldier",
+          "effects": [
+            "flag:col_freed",
+            "flag:deserters_gone",
+            "bond:rook+3",
+            "exp:40"
+          ],
+          "result": "[[mood:sad]]The bigger man looks at you a long time. Then he gets up, cuts the rope, and kicks the fire out.\n\n\"Come on, Brin,\" he says. \"We're done here.\" They go off north through the trees, and the boy runs for home.",
+          "failResult": "Nothing.",
+          "go": "travel"
+        },
+        {
+          "label": "\"Let him go, and take the road north before the king's men come looking. They will.\"",
+          "when": [
+            "flag:asked:deserters:demand"
+          ],
+          "check": "stat:cha>=5",
+          "effects": [
+            "flag:col_freed",
+            "flag:deserters_gone",
+            "bond:rook+3",
+            "exp:40"
+          ],
+          "result": "[[voice:Charisma]]You don't threaten. You just tell them how it ends: the bridge, the bounty, the rope.\n\n[[mood:worried]]They look at each other. Then the smaller one cuts the boy loose without a word, and they're gone into the trees before he's finished rubbing his wrists.",
+          "failResult": "[[mood:angry]]\"Go to the bridge, then,\" the big one says. \"Tell them. See who they hang first.\" He picks up his axe.",
+          "failEffects": [
+            "flag:talk_failed_deserters"
+          ]
+        },
+        {
+          "label": "Fight them",
+          "effects": [
+            "combat:deserter:deserters_won:deserters_fled"
+          ],
+          "result": "The big one comes at you with his axe. The other hangs back by the boy."
+        },
+        {
+          "label": "Back away",
+          "go": "travel",
+          "result": "You back down the rise. They watch you all the way."
+        }
+      ]
+    },
+    {
+      "id": "deserters_won",
+      "title": "The watch house",
+      "onEnter": [
+        "flag:col_freed",
+        "flag:deserters_gone",
+        "coins+12"
+      ],
+      "text": [
+        "The big deserter goes down and stays down, groaning. The other one takes one look and runs, off north through the trees.",
+        "You cut the boy loose. He's off to the kilns like a hare. There are twelve coppers in the deserter's purse."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook lowers his bow. \"He'll live,\" he says, looking at the man on the ground. \"Leave him his axe. He'll need it.\""
+        },
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "[[mood:angry]]Wren stands over the deserter for a long moment, sling in her hand. Then she spits beside his head and walks away."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Move on",
+          "time": 10,
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "deserters_fled",
+      "title": "Away",
+      "text": [
+        "You get clear of the watch house and down the rise. Nobody follows. They have the boy to guard."
+      ],
+      "choices": [
+        {
+          "label": "Catch your breath",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "gf_lookout",
+      "title": "The view from Greyfell",
+      "text": [
+        "From up on the outcrop you can see the whole road. West, a grey line of sea, and somewhere on it Skelmed, too small to make out. East, the river, with a bridge across it and smoke rising from the far bank where a village must be.",
+        "Further still, at the very edge of seeing, a smudge on the horizon that could be walls."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "\"Eastmere,\" says Rook. \"Doesn't look like much from here.\""
+        },
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "\"That's Thornby smoke,\" Wren says, and has to look away for a moment."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Climb down",
+          "time": 10,
+          "effects": [
+            "flag:gf_view"
+          ],
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "shrine",
+      "title": "The hill shrine",
+      "text": [
+        "A tumbledown shrine to some old god of travellers, roofed with slate. Inside it's dry and out of the wind, and the floor is scattered with little carved tokens: boats, carts, feet."
+      ],
+      "choices": [
+        {
+          "label": "Sleep here for the night, out of the wind",
+          "effects": [
+            "sleep:camp"
+          ],
+          "go": "travel"
+        },
+        {
+          "label": "Leave a token",
+          "when": [
+            "!flag:shrine_token"
+          ],
+          "time": 5,
+          "effects": [
+            "flag:shrine_token"
+          ],
+          "result": "You find a flat stone and scratch a boat on it, and set it with the others. It feels like the right thing to do up here."
+        },
+        {
+          "label": "Leave",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "sorrel",
+      "title": "Sorrel",
+      "speaker": "Sorrel",
+      "onEnter": [
+        "flag:sorrel_met"
+      ],
+      "greet": [
+        {
+          "when": [
+            "flag:sorrel_helped"
+          ],
+          "mood": "happy",
+          "text": "\"Still here. Still breathing. Thanks to you.\""
+        },
+        {
+          "when": [],
+          "mood": "worried",
+          "text": "A young man sits against the shrine wall in a faded levy coat, holding his side. There's a lot of blood on his hand. \"I'm not with anybody,\" he says, before you can ask. \"I'm not anybody.\""
+        }
+      ],
+      "extra": [],
+      "choices": [
+        {
+          "label": "\"You're a deserter.\"",
+          "topic": "who",
+          "tone": "blunt",
+          "result": "[[mood:sad]]\"I'm a cooper's son from Lisle who got told to carry a spear for a king who doesn't pay. When the pay stopped, I stopped.\"\n\n\"The sergeant at Brannock bridge put a sword in me for it, two days ago. I got this far.\""
+        },
+        {
+          "label": "See to his wound",
+          "when": [
+            "!flag:sorrel_helped"
+          ],
+          "need": [
+            "item:bandage"
+          ],
+          "needText": "You need a bandage.",
+          "time": 30,
+          "train": [
+            "first_aid+3"
+          ],
+          "why": "dressing a wound",
+          "effects": [
+            "item:bandage-1",
+            "flag:sorrel_helped",
+            "flag:ford_known",
+            "bond:sorrel+10",
+            "bond:rook+3",
+            "bond:wren-4",
+            "exp:20"
+          ],
+          "result": "It's deep, but clean. You pack it and bind it tight.\n\n[[mood:happy]]\"Listen,\" he says. \"You don't want to pay those men at the bridge. Upstream there's a ford. Cross where the alders lean over, on the flat stones, not the shallows. The shallows look easy and they'll take your legs out from under you.\"\n\n[[voice:Intellect]]A safe way over the river, for free."
+        },
+        {
+          "label": "\"Who's on the bridge?\"",
+          "topic": "bridge",
+          "time": 3,
+          "result": "\"Sergeant Vane and two lads. Fifteen copper a head to cross, and it goes in Vane's pocket as much as the king's.\" He winces. \"He'd pay you more than that for me.\""
+        },
+        {
+          "label": "Leave him",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "toll",
+      "title": "Brannock bridge",
+      "speaker": "Vane",
+      "onEnter": [
+        "flag:toll_seen"
+      ],
+      "greet": [
+        {
+          "when": [],
+          "mood": "happy",
+          "text": "A heavy grey-bearded man in the king's red bars the bridge with an arm. \"Toll's fifteen copper a head, by order of His Majesty. Every head. Children and dogs too.\""
+        }
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook's jaw is tight. \"My grandfather helped build this bridge,\" he says, to nobody."
+        },
+        {
+          "when": [
+            "flag:outlaw"
+          ],
+          "text": "Vane's hand goes to his sword when he sees you."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Pay the toll ({price:15})",
+          "when": [
+            "!follower:"
+          ],
+          "need": [
+            "afford:15"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:15",
+            "flag:toll_done",
+            "flag:crossed_river",
+            "travel:at:br_bridge_east"
+          ],
+          "result": "Vane bites the coin and waves you across."
+        },
+        {
+          "label": "Pay the toll for two ({price:30})",
+          "when": [
+            "follower:",
+            "!party>=2"
+          ],
+          "need": [
+            "afford:30"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:30",
+            "bond:rook-2",
+            "flag:toll_done",
+            "flag:crossed_river",
+            "travel:at:br_bridge_east"
+          ],
+          "result": "Vane counts it twice and waves you across. Behind you, someone mutters about thieves."
+        },
+        {
+          "label": "Pay the toll for three ({price:45})",
+          "when": [
+            "party>=2"
+          ],
+          "need": [
+            "afford:45"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:45",
+            "bond:rook-2",
+            "flag:toll_done",
+            "flag:crossed_river",
+            "travel:at:br_bridge_east"
+          ],
+          "result": "Vane counts it twice and waves you across. Wren looks at what's left in your purse and says nothing."
+        },
+        {
+          "label": "\"There's a wounded deserter sheltering at the hill shrine.\"",
+          "when": [
+            "flag:sorrel_met",
+            "!flag:sorrel_gone"
+          ],
+          "tone": "sly",
+          "effects": [
+            "flag:informer",
+            "flag:sorrel_gone",
+            "coins+20",
+            "bond:rook-8",
+            "bond:wren+3",
+            "bond:vane+10",
+            "flag:toll_done",
+            "flag:crossed_river",
+            "travel:at:br_bridge_east"
+          ],
+          "result": "[[mood:happy]]Vane's eyes light up. He tosses you a purse. \"Twenty copper bounty, and your toll's paid. Good to meet an honest traveller.\"\n\nHe sends both his men up the hill at a run.\n\n[[mood:angry]]Rook doesn't speak to you until you're well across the bridge, and then only to say: \"He was a cooper's son.\""
+        },
+        {
+          "label": "\"This bridge was free before your king. It'll be free after him.\"",
+          "tone": "blunt",
+          "check": "stat:cha>=6",
+          "effects": [
+            "flag:toll_done",
+            "flag:crossed_river",
+            "bond:rook+4",
+            "travel:at:br_bridge_east"
+          ],
+          "result": "[[voice:Charisma]]You don't shout. You just say it loud enough for his men to hear, and watch them look at each other.\n\n[[mood:worried]]Vane decides it isn't worth it today. \"Go on, then. Get over before I change my mind.\"",
+          "failResult": "[[mood:angry]]\"Is that right.\" Vane steps closer. \"Then it's thirty for you. For the speech.\"\n\n(He doesn't mean it. You hope.)"
+        },
+        {
+          "label": "Fight your way across",
+          "tone": "blunt",
+          "effects": [
+            "combat:toll_man:toll_won:toll_fled"
+          ],
+          "result": "Vane steps back and lets his best man come at you with sword and shield."
+        },
+        {
+          "label": "Walk away",
+          "go": "travel",
+          "result": "\"Come back when you've got the coin,\" Vane calls after you. \"Or don't.\""
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "toll_won",
+      "title": "Brannock bridge",
+      "onEnter": [
+        "flag:outlaw",
+        "coins+30",
+        "bond:rook+5",
+        "bond:wren-2",
+        "flag:toll_done",
+        "flag:crossed_river"
+      ],
+      "text": [
+        "The king's man goes down on the bridge planks. Vane takes one look at him, at you, and decides he's paid too little to die here. He grabs the other lad by the collar and they run for the toll house and bar the door.",
+        "The toll box is left on the bridge. Thirty copper in it."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "[[mood:happy]]Rook is grinning like a fool. \"My grandfather,\" he says, \"would have loved that.\""
+        },
+        {
+          "when": [
+            "follower:wren"
+          ],
+          "text": "[[mood:worried]]\"They'll know your face now,\" Wren says quietly. \"Every king's man from here to Zaron.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Cross the bridge",
+          "effects": [
+            "travel:at:br_bridge_east"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "toll_fled",
+      "title": "Away",
+      "text": [
+        "You get clear of the bridge. Vane's laughter follows you down the bank."
+      ],
+      "choices": [
+        {
+          "label": "Catch your breath",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ford",
+      "title": "The ford",
+      "text": [
+        "Upstream of the bridge the river spreads out wide and shallow over stones, fast and very cold."
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:ford_known"
+          ],
+          "text": "There are the alders Sorrel told you about, leaning out over a line of flat stones. Not the inviting shallows: the stones."
+        },
+        {
+          "when": [
+            "follower:wren",
+            "!flag:ford_known"
+          ],
+          "text": "\"People drown here,\" Wren says. \"Every spring somebody.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Cross on the flat stones under the alders",
+          "when": [
+            "flag:ford_known"
+          ],
+          "time": 20,
+          "effects": [
+            "flag:crossed_river",
+            "thirst+5",
+            "travel:at:br_ford_east"
+          ],
+          "result": "Knee-deep and freezing, but the stones hold. You come out on the far bank wet to the thigh and laughing."
+        },
+        {
+          "label": "Wade across",
+          "when": [
+            "!flag:ford_known"
+          ],
+          "time": 25,
+          "check": "stat:agi>=5",
+          "effects": [
+            "flag:crossed_river",
+            "travel:at:br_ford_east"
+          ],
+          "result": "[[voice:Agility]]Halfway over the current takes your feet, and you catch yourself on a rock without going under. You come out soaked to the waist and shaking, but over.",
+          "failEffects": [
+            "flag:crossed_river",
+            "wound:chill:the river",
+            "item:bread-1",
+            "energy-15",
+            "travel:at:br_ford_east"
+          ],
+          "failResult": "[[voice:Agility]]The current takes your feet and you go under. You come up gasping and get hold of a rock, and somehow you're on the far bank, soaked through, shaking, a loaf of bread gone downriver."
+        },
+        {
+          "label": "Not here",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ford_back",
+      "title": "The ford",
+      "text": [
+        "The ford, back to the west bank. Cold, fast, and you know it now."
+      ],
+      "choices": [
+        {
+          "label": "Cross back over",
+          "time": 20,
+          "effects": [
+            "travel:at:br_ford_west"
+          ],
+          "result": "You come out on the west bank wet to the thigh."
+        },
+        {
+          "label": "Not here",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "wren_arrives",
+      "title": "Thornby",
+      "speaker": "Wren",
+      "onEnter": [
+        "flag:wren_home",
+        "flag:tobin_home",
+        "unfollow:wren",
+        "complete:wren_home",
+        "bond:wren+5",
+        "bond:ness+10",
+        "flag:ness_bed",
+        "item:bread+2"
+      ],
+      "text": [
+        "Wren sees her mother before her mother sees her. Then Ness is running down the street with her skirts in her fists, and the two of them nearly knock each other over."
+      ],
+      "extra": [
+        {
+          "when": [
+            "flag:tobin_carried"
+          ],
+          "text": "[[mood:happy]]Tobin hobbles up behind, an arm round Rook's neck, and Ness doesn't know which of them to hold first, so she holds both, and then Rook as well, who goes red to the ears.\n\nAll of Thornby is out of doors by now. It's the first good thing that's happened here in a long time, and everybody knows it."
+        },
+        {
+          "when": [
+            "flag:tobin_left_food"
+          ],
+          "text": "[[mood:worried]]\"Your father?\" Ness says, and Wren tells her. Within the hour three men have taken a door off its hinges for a stretcher and gone back over the river for him.\n\n\"He'll keep,\" Wren says again. Her mother holds her hand very tightly."
+        },
+        {
+          "when": [],
+          "text": "Ness turns to you. \"You brought her home. There's a bed in our house for you any night you want it, and bread, and I'll hear no argument.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Go on",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "ness",
+      "title": "Ness",
+      "speaker": "Ness",
+      "greet": [
+        {
+          "when": [
+            "flag:wren_home"
+          ],
+          "mood": "happy",
+          "text": "\"There's our friend. Come in, sit, eat something.\""
+        },
+        {
+          "when": [
+            "flag:tobin_with_wren"
+          ],
+          "mood": "worried",
+          "text": "\"Have you come down the forest road? You didn't see a miller's cart? My husband and my girl. They're two days late.\""
+        },
+        {
+          "when": [],
+          "mood": "worried",
+          "text": "A fair woman with flour in the creases of her hands keeps looking west along the road. \"Sorry. I'm waiting for my husband and my girl. They're late back.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"We met them on the road. Tobin's leg is broken. Wren stayed with him.\"",
+          "when": [
+            "flag:tobin_with_wren",
+            "!flag:ness_told"
+          ],
+          "effects": [
+            "flag:ness_told",
+            "flag:tobin_rescued",
+            "flag:tobin_home",
+            "flag:wren_home",
+            "unflag:quest:wren_home",
+            "bond:ness-5"
+          ],
+          "result": "[[mood:worried]]Ness is already shouting for her neighbours. Within the hour three men are over the bridge with a door for a stretcher.\n\nThey come back the next evening with Tobin on the door and Wren walking beside him. Wren doesn't look at you when she passes."
+        },
+        {
+          "label": "Sleep in Wren's house tonight",
+          "when": [
+            "flag:ness_bed"
+          ],
+          "effects": [
+            "sleep:safe"
+          ],
+          "go": "travel",
+          "result": "\"Top of the ladder. Mind the flour sacks.\""
+        },
+        {
+          "label": "\"What's Thornby like these days?\"",
+          "topic": "thornby",
+          "time": 5,
+          "result": "[[mood:sad]]\"Quiet. Too quiet. Half the young ones have gone inland, and the well's turned bad, and the king's man at the bridge takes a toll on everything we sell.\"\n\n\"Talk to old Marda by the well if you want to help. She's the nearest thing we have to someone in charge.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "wren_home",
+      "title": "Wren",
+      "speaker": "Wren",
+      "greet": [
+        {
+          "when": [
+            "bond:wren>=25"
+          ],
+          "mood": "happy",
+          "text": "\"Oh, it's you.\" She grins. \"The hero of the forest road. Ma's telling everyone. You'll never live it down.\""
+        },
+        {
+          "when": [
+            "flag:tobin_rescued"
+          ],
+          "mood": "sad",
+          "text": "Wren is sorting herbs on the step. She looks up, sees who it is, and goes back to the herbs. \"Da's inside. The leg set crooked. Ma says it's not your fault.\" She doesn't say whether she agrees."
+        },
+        {
+          "when": [],
+          "mood": "happy",
+          "text": "Wren is sitting on the step with a basket of something green, sorting it. \"Thank you. For bringing me home. I mean it.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"What will you do now?\"",
+          "topic": "now",
+          "time": 5,
+          "result": "\"Mend things. Find a new cart. Tell everyone at Eastmere market what's waiting on the forest road.\"\n\n[[mood:happy]]\"And when you come back this way, I'll have a herb-wife's pack of bandages for you, and I'll know what I'm doing with them.\""
+        },
+        {
+          "label": "\"Take care of yourself, Wren.\"",
+          "when": [
+            "bond:wren>=25",
+            "!flag:wren_gift"
+          ],
+          "tone": "warm",
+          "effects": [
+            "flag:wren_gift",
+            "item:yarrow+3",
+            "item:bandage+1"
+          ],
+          "result": "[[mood:happy]]She pushes a twist of cloth into your hands: yarrow, picked fresh, and a clean bandage.\n\n\"For the next time someone does something stupid in a forest.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "tobin_home",
+      "title": "Tobin",
+      "speaker": "Tobin",
+      "greet": [
+        {
+          "when": [
+            "flag:tobin_carried"
+          ],
+          "mood": "happy",
+          "text": "Tobin is propped in a chair outside the mill with his splinted leg on a stool, giving orders to everyone who passes."
+        },
+        {
+          "when": [],
+          "mood": "sad",
+          "text": "Tobin lies in the doorway of the mill in the sun, grey in the face. The leg went bad out there in the hollow. He'll keep it, the herb-wife says. He'll never walk right on it again."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"How's the leg?\"",
+          "when": [
+            "flag:tobin_carried",
+            "!flag:tobin_thanks"
+          ],
+          "effects": [
+            "flag:tobin_thanks",
+            "give:knife"
+          ],
+          "result": "[[mood:happy]]\"Knitting. Thanks to you.\" He holds out a plain knife in a good sheath. \"My father's. You'll use it more than I will, the way you go about.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "marda",
+      "title": "Marda",
+      "speaker": "Marda",
+      "greet": [
+        {
+          "when": [
+            "flag:carcass_burnt",
+            "!done:thornby_well"
+          ],
+          "mood": "happy",
+          "text": "\"The water's running clean again. Was it you? It was you, wasn't it.\""
+        },
+        {
+          "when": [
+            "done:thornby_well"
+          ],
+          "mood": "happy",
+          "text": "\"Our friend from the coast. Sit by the well with me. It's good for sitting by again.\""
+        },
+        {
+          "when": [],
+          "text": "A small, very old woman sits on the well step with a stick across her knees, watching everything."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Is something wrong with the well?\"",
+          "when": [
+            "!quest:thornby_well",
+            "!done:thornby_well"
+          ],
+          "tone": "kind",
+          "effects": [
+            "quest:thornby_well",
+            "bond:marda+3"
+          ],
+          "result": "[[mood:worried]]\"Smell it.\" You do. Rot, faint under the cold. \"Three people sick from it this week. The well's fed from a spring up in the trees north-east of here.\"\n\n\"Something's got in it. My legs won't take me up there. Yours will.\""
+        },
+        {
+          "label": "\"There was a dead boar in the spring. We burned it.\"",
+          "when": [
+            "flag:carcass_burnt",
+            "quest:thornby_well"
+          ],
+          "effects": [
+            "complete:thornby_well",
+            "coins+15",
+            "bond:marda+10",
+            "rep:thornby+10"
+          ],
+          "result": "[[mood:happy]]\"Burned it. Good. Good.\" She presses fifteen coppers into your hand with surprising strength.\n\n[[mood:worried]]\"A boar, sick in a spring. And a deer up on the old track, they say, and the crows dropping out of the sky at Lisle. Something's wrong in the land, and it's coming from somewhere.\""
+        },
+        {
+          "label": "\"There's a dead boar in the spring. Don't drink until it's gone.\"",
+          "when": [
+            "flag:well_warned",
+            "quest:thornby_well",
+            "!flag:carcass_burnt"
+          ],
+          "effects": [
+            "complete:thornby_well",
+            "bond:marda+3"
+          ],
+          "result": "[[mood:worried]]\"Then we'll haul water from the river till someone strong enough comes along.\" She looks at you. \"Thank you for telling us, at least.\""
+        },
+        {
+          "label": "\"What do you hear from Eastmere?\"",
+          "topic": "eastmere",
+          "time": 5,
+          "result": "\"They shut the gates at dusk now, and want to know your business before they'll let you in. The lord there's a decent man, people say, but he's frightened. Everyone's frightened.\"\n\n\"A day's walk, east. Mind the road.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "th_well",
+      "title": "The well",
+      "text": [
+        "Thornby's well, stone-lined, with a bucket on a chain."
+      ],
+      "extra": [
+        {
+          "when": [
+            "!flag:carcass_burnt"
+          ],
+          "text": "The water smells faintly of rot."
+        },
+        {
+          "when": [
+            "flag:carcass_burnt"
+          ],
+          "text": "The water smells of nothing but cold stone now."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Drink and fill your waterskin",
+          "when": [
+            "flag:carcass_burnt"
+          ],
+          "time": 5,
+          "effects": [
+            "water=4",
+            "thirst+20"
+          ],
+          "go": "travel",
+          "result": "Cold and clean."
+        },
+        {
+          "label": "Drink it anyway",
+          "when": [
+            "!flag:carcass_burnt"
+          ],
+          "time": 5,
+          "effects": [
+            "thirst+15",
+            "energy-10"
+          ],
+          "go": "travel",
+          "result": "It tastes as bad as it smells. Your stomach turns over for an hour afterwards."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "carcass",
+      "title": "The spring",
+      "onEnter": [
+        "flag:carcass_found"
+      ],
+      "text": [
+        "A boar lies half in the spring where the water wells up, dead some days. It's gone thin and grey, and its hide is blotched with a purple bloom, like the deer on the old track."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "Rook doesn't say \"don't touch it\" this time. He just looks at you."
+        }
+      ],
+      "choices": [
+        {
+          "label": "Haul it out and burn it",
+          "when": [
+            "!flag:carcass_burnt"
+          ],
+          "need": [
+            "item:firewood>=2"
+          ],
+          "needText": "You need two bundles of firewood for a fire hot enough.",
+          "time": 60,
+          "stamina": 25,
+          "train": [
+            "str+2"
+          ],
+          "why": "hauling a carcass",
+          "effects": [
+            "item:firewood-2",
+            "flag:carcass_burnt",
+            "corruption-0.2",
+            "exp:30"
+          ],
+          "result": "It's foul, heavy work. You drag it clear with a rope round its hind legs and burn it on the bank, and stand upwind while it goes.\n\nThe smoke comes up wrong. Purple at the edges, for a moment. Then just smoke."
+        },
+        {
+          "label": "Leave it, and warn them in the village",
+          "when": [
+            "!flag:well_warned",
+            "!flag:carcass_burnt"
+          ],
+          "effects": [
+            "flag:well_warned"
+          ],
+          "go": "travel",
+          "result": "You'll tell Marda what's in their water. Somebody else can drag it out."
+        },
+        {
+          "label": "Leave",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "th_spring",
+      "title": "The spring",
+      "text": [
+        "The spring wells up cold out of the rocks."
+      ],
+      "choices": [
+        {
+          "label": "Drink and fill your waterskin",
+          "when": [
+            "flag:carcass_burnt"
+          ],
+          "time": 5,
+          "effects": [
+            "water=4",
+            "thirst+20"
+          ],
+          "go": "travel"
+        },
+        {
+          "label": "Leave it",
+          "go": "travel",
+          "when": [
+            "!flag:carcass_burnt"
+          ],
+          "result": "Not with that in it."
+        },
+        {
+          "label": "Leave it",
+          "go": "travel",
+          "when": [
+            "flag:carcass_burnt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wren_hollow",
+      "title": "The hollow",
+      "speaker": "Wren",
+      "greet": [
+        {
+          "when": [],
+          "mood": "angry",
+          "text": "Wren is sitting by her father with his head in her lap. She doesn't look up. \"You said there was nothing you could do. So go.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Leave them",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "fenn",
+      "title": "Fenn",
+      "speaker": "Fenn",
+      "greet": [
+        {
+          "when": [
+            "flag:outlaw"
+          ],
+          "mood": "surprised",
+          "text": "\"You're the one who cleared the bridge? Drinks are on me. Well. Bread is on me. Half price.\""
+        },
+        {
+          "when": [],
+          "text": "A trader with a flat cap and a half-empty stall. \"Bread, bandages, bits and pieces. Whatever got past the toll.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Buy a loaf of bread ({price:6})",
+          "need": [
+            "afford:6"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:6",
+            "item:bread+1"
+          ]
+        },
+        {
+          "label": "Buy a bandage ({price:15})",
+          "need": [
+            "afford:15"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:15",
+            "item:bandage+1"
+          ]
+        },
+        {
+          "label": "Buy a splint ({price:12})",
+          "need": [
+            "afford:12"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:12",
+            "item:splint+1"
+          ]
+        },
+        {
+          "label": "Buy a mending kit ({price:25})",
+          "need": [
+            "afford:25"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:25",
+            "item:mending_kit+1"
+          ]
+        },
+        {
+          "label": "\"How's trade?\"",
+          "topic": "trade",
+          "time": 5,
+          "result": "\"What trade? The toll takes a third, the road takes the rest. I came out from Eastmere with a full cart and I'll go back with half of it.\"\n\n\"Mind, Eastmere's no better. Everyone there's waiting for something bad and pretending they're not.\""
+        },
+        {
+          "label": "\"Goodbye.\"",
+          "go": "travel"
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "barn",
+      "title": "The barn",
+      "text": [
+        "A big old barn, half full of hay. Nobody would mind a traveller sleeping in it, for a copper or two in the box by the door."
+      ],
+      "choices": [
+        {
+          "label": "Sleep in the hay ({price:3})",
+          "need": [
+            "afford:3"
+          ],
+          "needText": "You can't afford it.",
+          "effects": [
+            "pay:3",
+            "sleep:safe"
+          ],
+          "go": "travel"
+        },
+        {
+          "label": "Leave",
+          "go": "travel"
+        }
+      ]
+    },
+    {
+      "id": "eastmere_end",
+      "title": "The road east",
+      "text": [
+        "Beyond Thornby the road runs on east through open farmland, straight and empty. Eastmere is a day's walk on.",
+        "This is where the road ends for now. Eastmere is being built next."
+      ],
+      "extra": [
+        {
+          "when": [
+            "follower:rook"
+          ],
+          "text": "\"Nearly there,\" says Rook. \"Nearly.\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "Turn back into Thornby",
+          "effects": [
+            "travel:place:th_east"
+          ],
+          "go": "travel"
+        }
+      ]
+    }
+  ]
+}

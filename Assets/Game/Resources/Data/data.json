@@ -514,6 +514,157 @@
         }
       ],
       "enrageBelow": 0.35
+    },
+    {
+      "id": "deserter",
+      "name": "Deserter",
+      "rank": "E",
+      "hp": 70,
+      "atkMin": 6,
+      "atkMax": 10,
+      "speed": 3,
+      "exp": 35,
+      "desc": "A runaway from the king's levy, half-starved and dangerous with it.",
+      "figure": "male",
+      "skin": "olive",
+      "hair": "Dark brown",
+      "hairStyle": "Cropped",
+      "beard": "Stubble",
+      "worn": [
+        "iron_cap",
+        "leather_jerkin",
+        "castaway_trousers",
+        "leather_boots",
+        "wood_axe"
+      ],
+      "moves": [
+        {
+          "id": "hack",
+          "name": "hacks at you with his axe",
+          "tell": "He hefts the axe and comes at you, wild and quick.",
+          "power": 1,
+          "weight": 5,
+          "wounds": [
+            {
+              "id": "cut",
+              "chance": 22
+            },
+            {
+              "id": "gash",
+              "chance": 6
+            }
+          ],
+          "kind": "strike"
+        },
+        {
+          "id": "overhead",
+          "name": "brings the axe down two-handed",
+          "tell": "He lifts the axe high over his head with both hands.",
+          "power": 2.1,
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "gash",
+              "chance": 20
+            },
+            {
+              "id": "broken_arm",
+              "chance": 6
+            }
+          ],
+          "kind": "heavy"
+        },
+        {
+          "id": "feint",
+          "name": "jabs the axe haft at your face",
+          "tell": "He raises the axe high, but his feet stay planted.",
+          "power": 1.0,
+          "weight": 2,
+          "wounds": [
+            {
+              "id": "concussion",
+              "chance": 8
+            }
+          ],
+          "kind": "feint"
+        },
+        {
+          "id": "back",
+          "name": "backs off, breathing hard",
+          "tell": "He steps back, axe across his chest, catching his breath.",
+          "power": 0,
+          "guard": true,
+          "weight": 2,
+          "kind": "guard"
+        }
+      ]
+    },
+    {
+      "id": "toll_man",
+      "name": "The king's man",
+      "rank": "E",
+      "hp": 80,
+      "atkMin": 7,
+      "atkMax": 11,
+      "speed": 3,
+      "exp": 40,
+      "desc": "One of the king's men keeping the bridge. Fed, drilled and armed, which is more than anyone else on this road.",
+      "figure": "male",
+      "skin": "light",
+      "hair": "Dark brown",
+      "hairStyle": "Short",
+      "beard": "Moustache",
+      "worn": [
+        "iron_cap",
+        "leather_jerkin",
+        "castaway_trousers",
+        "leather_boots",
+        "knife",
+        "buckler"
+      ],
+      "moves": [
+        {
+          "id": "thrust",
+          "name": "thrusts with his short sword",
+          "tell": "He sets his feet behind his little shield, blade low. Drilled, careful.",
+          "power": 1,
+          "weight": 5,
+          "wounds": [
+            {
+              "id": "cut",
+              "chance": 25
+            }
+          ],
+          "kind": "strike"
+        },
+        {
+          "id": "bash",
+          "name": "smashes you with his shield",
+          "tell": "He tucks his shoulder behind the shield and lowers his head.",
+          "power": 1.9,
+          "weight": 3,
+          "wounds": [
+            {
+              "id": "concussion",
+              "chance": 12
+            },
+            {
+              "id": "cracked_ribs",
+              "chance": 10
+            }
+          ],
+          "kind": "heavy"
+        },
+        {
+          "id": "wall",
+          "name": "hunkers behind his shield",
+          "tell": "He crouches behind the shield, only his eyes over the rim.",
+          "power": 0,
+          "guard": true,
+          "weight": 3,
+          "kind": "guard"
+        }
+      ]
     }
   ],
   "backgrounds": [
@@ -1441,7 +1592,8 @@
           "y1": 1,
           "scene": "north_gate",
           "when": [
-            "flag:rook_escort"
+            "flag:rook_escort",
+            "!flag:left_skelmed"
           ]
         },
         {
@@ -1451,7 +1603,8 @@
           "y1": 1,
           "scene": "north_gate_alone",
           "when": [
-            "flag:ida_alone"
+            "flag:ida_alone",
+            "!flag:left_skelmed"
           ]
         },
         {
@@ -1530,6 +1683,12 @@
           "x": 23,
           "y": 31,
           "facing": "right"
+        },
+        {
+          "id": "hills_east",
+          "x": 32,
+          "y": 30,
+          "facing": "left"
         }
       ],
       "objects": [
@@ -1674,6 +1833,17 @@
           ]
         },
         {
+          "id": "east_trunk",
+          "kind": "sign",
+          "sprite": "obj_trunk",
+          "x": 31,
+          "y": 30,
+          "when": [
+            "!flag:left_skelmed"
+          ],
+          "text": "The old east track, the long way round to Eastmere. A pine has come down across it. Rook will clear it when there's a reason to."
+        },
+        {
           "id": "sign_hills",
           "kind": "sign",
           "sprite": "obj_sign",
@@ -1689,6 +1859,13 @@
           "x1": 17,
           "y1": 39,
           "to": "skelmed_north"
+        },
+        {
+          "x0": 33,
+          "y0": 30,
+          "x1": 33,
+          "y1": 30,
+          "to": "fr_west"
         },
         {
           "x0": 26,
@@ -1752,9 +1929,9 @@
         "TTT.ggg=....==T...T.T........TT.TT",
         "TT..ggg=....==....T.............TT",
         "TTT....=....==....T...........T.TT",
-        "TTT..=========.................TTT",
-        "TT..........==..................TT",
-        "TTT.TT.TT...==========..........TT",
+        "TTT..=========...............TTTTT",
+        "TT..........==...............=====",
+        "TTT.TT.TT...==========.......TTTTT",
         "TT..TTTTT...T==..T.T..........TTTT",
         ".T...T...TT..==....T...........TTT",
         "T..T..T.T....===...T.........T.TTT",
@@ -1763,6 +1940,940 @@
         "TT.TT....TTT.T.===.....T...T..T.TT",
         "TT.T..T.T..T...===...TT...T.....TT",
         "TTTTTTTTTTTTTTTT==TTTTTTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "forest_road",
+      "name": "The forest road",
+      "minutes": 2,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 14,
+      "spots": [
+        {
+          "id": "fr_west",
+          "x": 1,
+          "y": 23,
+          "facing": "right"
+        },
+        {
+          "id": "fr_east",
+          "x": 44,
+          "y": 24,
+          "facing": "left"
+        },
+        {
+          "id": "fr_north",
+          "x": 43,
+          "y": 1,
+          "facing": "down"
+        },
+        {
+          "id": "fr_camp",
+          "x": 12,
+          "y": 15,
+          "facing": "left"
+        }
+      ],
+      "objects": [
+        {
+          "id": "fr_sign",
+          "kind": "sign",
+          "sprite": "obj_sign",
+          "x": 2,
+          "y": 22,
+          "text": "An old marker post, half eaten by moss. EAST: EASTMERE. Below it someone has carved a crude kiln and an arrow pointing up the road."
+        },
+        {
+          "id": "fr_fire",
+          "kind": "spot",
+          "sprite": "obj_firepit",
+          "x": 11,
+          "y": 13,
+          "scene": "campfire"
+        },
+        {
+          "id": "fr_wood1",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 7,
+          "y": 15,
+          "scene": "road_wood1",
+          "when": [
+            "!flag:road_wood1_today"
+          ]
+        },
+        {
+          "id": "fr_wood2",
+          "kind": "item",
+          "sprite": "obj_log",
+          "x": 15,
+          "y": 12,
+          "scene": "road_wood2",
+          "when": [
+            "!flag:road_wood2_today"
+          ]
+        },
+        {
+          "id": "fr_mush",
+          "kind": "item",
+          "sprite": "obj_yarrow",
+          "x": 8,
+          "y": 11,
+          "scene": "road_mushrooms",
+          "when": [
+            "!flag:road_mushrooms_today"
+          ]
+        },
+        {
+          "id": "hesta",
+          "kind": "npc",
+          "sprite": "npc_hesta",
+          "x": 30,
+          "y": 6,
+          "facing": "down",
+          "scene": "hesta"
+        },
+        {
+          "id": "col_home",
+          "kind": "npc",
+          "sprite": "npc_col",
+          "x": 33,
+          "y": 7,
+          "facing": "left",
+          "scene": "col",
+          "when": [
+            "flag:col_freed"
+          ]
+        },
+        {
+          "id": "kiln1",
+          "kind": "sign",
+          "sprite": "obj_kiln",
+          "x": 27,
+          "y": 4,
+          "text": "A charcoal kiln: a dome of turf over a stack of wood, smoking slow. It will burn like this for days. The heat comes off it like a sleeping animal."
+        },
+        {
+          "id": "kiln2",
+          "kind": "sign",
+          "sprite": "obj_kiln",
+          "x": 31,
+          "y": 3,
+          "text": "A kiln gone out and cold. Nobody has opened it. Whoever tends it has had other things to think about."
+        },
+        {
+          "id": "cart",
+          "kind": "sign",
+          "sprite": "obj_cart_burnt",
+          "x": 36,
+          "y": 23,
+          "scene": "cart"
+        },
+        {
+          "id": "wren",
+          "kind": "npc",
+          "sprite": "npc_wren",
+          "x": 34,
+          "y": 24,
+          "facing": "right",
+          "scene": "wren_meet",
+          "when": [
+            "!flag:wren_met"
+          ]
+        },
+        {
+          "id": "fr_tracks",
+          "kind": "sign",
+          "sprite": "obj_tracks",
+          "x": 39,
+          "y": 28,
+          "scene": "tracks",
+          "when": [
+            "flag:wren_met",
+            "!flag:tobin_found"
+          ]
+        },
+        {
+          "id": "tobin",
+          "kind": "npc",
+          "sprite": "npc_tobin",
+          "x": 38,
+          "y": 30,
+          "facing": "up",
+          "scene": "tobin",
+          "when": [
+            "flag:wren_met",
+            "!flag:tobin_carried",
+            "!flag:tobin_left_food",
+            "!flag:tobin_with_wren"
+          ]
+        },
+        {
+          "id": "tobin_left",
+          "kind": "npc",
+          "sprite": "npc_tobin",
+          "x": 38,
+          "y": 30,
+          "facing": "up",
+          "scene": "wren_hollow",
+          "when": [
+            "flag:tobin_with_wren",
+            "!flag:tobin_rescued"
+          ]
+        },
+        {
+          "id": "wren_left",
+          "kind": "npc",
+          "sprite": "npc_wren",
+          "x": 37,
+          "y": 30,
+          "facing": "right",
+          "scene": "wren_hollow",
+          "when": [
+            "flag:tobin_with_wren",
+            "!flag:tobin_rescued"
+          ]
+        },
+        {
+          "id": "cross_sign",
+          "kind": "sign",
+          "sprite": "obj_sign",
+          "x": 42,
+          "y": 22,
+          "text": "A crossroads post. EAST: THE OLD TRACK, BRANNOCK BRIDGE. NORTH: GREYFELL. Someone has added under EAST, in charcoal: DESERTERS. and under NORTH: COLD."
+        }
+      ],
+      "zones": [
+        {
+          "x0": 0,
+          "y0": 22,
+          "x1": 0,
+          "y1": 25,
+          "to": "hills_east"
+        },
+        {
+          "x0": 45,
+          "y0": 23,
+          "x1": 45,
+          "y1": 26,
+          "to": "ot_west"
+        },
+        {
+          "x0": 43,
+          "y0": 0,
+          "x1": 44,
+          "y1": 0,
+          "to": "gf_south"
+        },
+        {
+          "x0": 29,
+          "y0": 19,
+          "x1": 41,
+          "y1": 28,
+          "scene": "cart_seen",
+          "when": [
+            "!flag:cart_seen"
+          ]
+        }
+      ],
+      "uses": [
+        {
+          "tile": "w",
+          "scene": "road_stream"
+        }
+      ],
+      "events": [],
+      "rows": [
+        "TTTTTT.TTTTTTTTTTTwwTTTTTTTTTTTTTTTTTTTTTTT==T",
+        "TTTTTT.TTTTTTTTTTTwwTTTTTTTTTTTTTTTTTTTTT..==.",
+        ".T.TTTT...T..T.T.T.wwTT..T.........TTT..TT.==T",
+        "TTT.......TT.T.T...ww.............HHH..T...==T",
+        ".T...TTT....T.TT.TTwwTT...........HHH.TT.T.==T",
+        "TTT..T....TT..TT..TTww...jj............T...==T",
+        "TTT..T...T.....TT.TTww.................o.TT==T",
+        "T.T....T....T...T..ww...............j......==T",
+        "TTTT.T.TTT.....T..Tww.....................T==T",
+        "TTTTTT..T.T..T...T.wwTr......=.......TrT...==T",
+        "TT...TTTT.......TTwwT.T.....==.....T.TTTT.T==T",
+        ".T...T............wwT.......=.T.T..T....T.T==T",
+        ".T.T....r..g.....wwo.TT.T.T==..T.T..TTo..T.==T",
+        "TT.......ggggg...ww........=T.....TTTT..T.T==T",
+        "TTT.T...ggggggg...wTTT..TTT=T......T..TTT..==T",
+        "TTT.T....ggggg...wTT.TTT...=.....T.T..TT.T.==.",
+        "TT.T.......g...r.w...T..TT.=..o.T.TT...TT..==.",
+        "TT.TTTT....=o...ww.........=T.TT..T..T..T..==.",
+        "TTTTT...T..=..T.TwwTT.TT...=T....T....o....==.",
+        "T..T....TTT=T.===bb=T......=T...T.......T..==.",
+        "TTT..TT....======bb===.T..T=...............==.",
+        "TT......=======TT.wb===.TT.=...............==T",
+        "T.TTT=======..T...ww.====..=...T.........TT==T",
+        "=========..T...TT.TwwT====.=.T.TT.......T.T==.",
+        "======T.TT...T...T.ww...====..T.TT....TT.=====",
+        "TT.o..T..oT..T..T.oww....=====.ggg.===========",
+        "TTTgggg...T......To.ww.....===============.TTT",
+        "TTTggggTo.....T...TTwwggg...T=======....T.T..T",
+        "TTTgggg..TT.T......wwggggTTTTT.gggT......oT.TT",
+        "TT.gggg.TTTT.T..TT.wwggggT.T..T..TT.........TT",
+        "TTTTTT....T.o....T.wwgggg...T...T.T.......T.TT",
+        "TT..T.TT.T..T..T..ww.T......T...T..........TTT",
+        "TTTTTTTTTTTTTTTTTTwwTTTTTTTTTTT.TTTTT...TTTTTT",
+        "TTTTTTTTT.TTTTTTTTwwT.TTTTTTTTTTTTTT.TTTTTT.TT"
+      ]
+    },
+    {
+      "id": "old_track",
+      "name": "The old forest track",
+      "minutes": 2,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 14,
+      "spots": [
+        {
+          "id": "ot_west",
+          "x": 1,
+          "y": 27,
+          "facing": "right"
+        },
+        {
+          "id": "ot_east",
+          "x": 36,
+          "y": 15,
+          "facing": "left"
+        }
+      ],
+      "objects": [
+        {
+          "id": "deer",
+          "kind": "sign",
+          "sprite": "obj_deer_dead",
+          "x": 9,
+          "y": 20,
+          "scene": "deer"
+        },
+        {
+          "id": "deserter1",
+          "kind": "npc",
+          "sprite": "npc_deserter",
+          "x": 24,
+          "y": 7,
+          "facing": "down",
+          "scene": "deserters",
+          "when": [
+            "!flag:col_freed",
+            "!flag:deserters_gone"
+          ]
+        },
+        {
+          "id": "deserter2",
+          "kind": "npc",
+          "sprite": "npc_deserter",
+          "x": 27,
+          "y": 8,
+          "facing": "left",
+          "scene": "deserters",
+          "when": [
+            "!flag:col_freed",
+            "!flag:deserters_gone"
+          ]
+        },
+        {
+          "id": "col",
+          "kind": "npc",
+          "sprite": "npc_col",
+          "x": 26,
+          "y": 6,
+          "facing": "down",
+          "scene": "deserters",
+          "when": [
+            "!flag:col_freed"
+          ]
+        },
+        {
+          "id": "ot_fire",
+          "kind": "spot",
+          "sprite": "obj_firepit",
+          "x": 22,
+          "y": 9,
+          "scene": "campfire",
+          "when": [
+            "flag:deserters_gone|flag:col_freed"
+          ]
+        }
+      ],
+      "zones": [
+        {
+          "x0": 0,
+          "y0": 26,
+          "x1": 0,
+          "y1": 28,
+          "to": "fr_east"
+        },
+        {
+          "x0": 37,
+          "y0": 14,
+          "x1": 37,
+          "y1": 16,
+          "to": "br_west_south"
+        },
+        {
+          "x0": 17,
+          "y0": 14,
+          "x1": 19,
+          "y1": 16,
+          "scene": "rook_fall",
+          "when": [
+            "follower:rook",
+            "!flag:rook_fell"
+          ]
+        },
+        {
+          "x0": 24,
+          "y0": 11,
+          "x1": 26,
+          "y1": 12,
+          "scene": "deserters",
+          "when": [
+            "!flag:col_freed",
+            "!flag:deserters_gone",
+            "!flag:tower_seen"
+          ]
+        }
+      ],
+      "uses": [],
+      "events": [],
+      "rows": [
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "TTTTTTTT..TT.T.T.TT.TTT..T.TTTTTTT.TTT",
+        ".TTTT.T..TTTTTT.T..TT...HHH...TTT.TTTT",
+        "TT...TTT.TT.TTT.TT......HHH....TT.TTTT",
+        "TTT..T..TT.TT.TTT.......HHH...r.TT..TT",
+        "TT.TTTT..T.T.TT.T...r...........T.TTTT",
+        "TTTTT.T...T..TT.T................TT.TT",
+        "TT..TTTTTT..T..TT.T..j..........TTTTTT",
+        "TTTTTT.TT...TTT...T......=...K...TTTTT",
+        "TTTTTT..TTTT.TT.TT.T.....=......TTT.TT",
+        "TT.TTT..TT.TTT.T.TTTTT...=....TTTTT.T.",
+        "TTT...T.T.T.TTT..T.TT..TT=T.T...TkT.TT",
+        "TTTTTTT.TTTTTTTT.TgTT...T=T.T.T.T.T.TT",
+        "TT.TT...TT..T..TgggggTTTT=TTTTT====TTT",
+        "TTTTT...TTTT.TT.gg========T.T.==TT====",
+        "TT.T.TTT.T..k..Tg==ggT.T===.===.TT.TTT",
+        "TTTTT.TTTT.TT.T===gTTT..TT===TT.TTTTTT",
+        "TTT.TT.Tr...T.==T.T.T.TTTTT.TTk..TT.TT",
+        "TT.TTTT.....T==T..T.TT.T.T.T...T.TTTTT",
+        "TT...T.....===.TT..TTT.TTTTTTTT..T.TTT",
+        "TTTT.T...===TTTT...TTT.T..TTTTT.TT.TTT",
+        "TTTT.T..==.T.TT.T.T.TTTT.T.TTTTTTT..TT",
+        "TTTTTT.==T....TT..T.T.TTTTTT.TTT.TT.TT",
+        "TT...TT=T.T.TT..kT...T.TTTT.T.TTT.TTTT",
+        "TTT.TT==TT.TT.T.TT...TTT.TT.T...T.TTTT",
+        "TTT.T.=TTTTT.T.TTT.T.T....TT.TT.T.TTTT",
+        "=======TTTTTTT.T.T.TTTTTT.TTT.T.TTT.TT",
+        "TT..TTT.TTT.TTT.TTTTT..TTTTTTTTT..TTTT",
+        "TTTTT..TTTT...TTTT.TTT...T.TTTT.TTT.TT",
+        "TTT..T..TTTTTTTT.TTTTTTTTT..TTTT..TT.T",
+        "TT.T...TT.T.T.TTTT..TTTTT.TTTTTTT.T.TT",
+        "TT.TTTTTTTTTTTTTTTTTTTT.TTTTTTTTTT.T.T",
+        "TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "greyfell",
+      "name": "Greyfell",
+      "minutes": 2,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 14,
+      "spots": [
+        {
+          "id": "gf_south",
+          "x": 4,
+          "y": 27,
+          "facing": "up"
+        },
+        {
+          "id": "gf_east",
+          "x": 36,
+          "y": 14,
+          "facing": "left"
+        }
+      ],
+      "objects": [
+        {
+          "id": "cairn1",
+          "kind": "sign",
+          "sprite": "obj_cairn",
+          "x": 7,
+          "y": 21,
+          "text": "A cairn: a stack of stones as tall as you. Travellers add a stone for luck. You add one. It feels like the right thing to do up here."
+        },
+        {
+          "id": "cairn2",
+          "kind": "sign",
+          "sprite": "obj_cairn",
+          "x": 16,
+          "y": 16,
+          "text": "Another cairn. Someone has wedged a wooden token between the stones: a little carved boat."
+        },
+        {
+          "id": "gf_lookout",
+          "kind": "spot",
+          "sprite": "obj_cairn",
+          "x": 9,
+          "y": 7,
+          "scene": "gf_lookout"
+        },
+        {
+          "id": "sorrel",
+          "kind": "npc",
+          "sprite": "npc_sorrel",
+          "x": 24,
+          "y": 9,
+          "facing": "left",
+          "scene": "sorrel",
+          "when": [
+            "!flag:sorrel_gone"
+          ]
+        },
+        {
+          "id": "gf_fire",
+          "kind": "spot",
+          "sprite": "obj_firepit",
+          "x": 20,
+          "y": 10,
+          "scene": "campfire"
+        },
+        {
+          "id": "shrine",
+          "kind": "sign",
+          "x": 22,
+          "y": 8,
+          "scene": "shrine"
+        }
+      ],
+      "zones": [
+        {
+          "x0": 3,
+          "y0": 29,
+          "x1": 5,
+          "y1": 29,
+          "to": "fr_north"
+        },
+        {
+          "x0": 37,
+          "y0": 13,
+          "x1": 37,
+          "y1": 15,
+          "to": "br_west_north"
+        }
+      ],
+      "uses": [
+        {
+          "tile": "w",
+          "scene": "road_stream"
+        }
+      ],
+      "events": [],
+      "rows": [
+        "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+        "gg.ggggggggggg...gggggggggggTrg.g..ggg",
+        "gg..gg.g.g.g.gggg.g..gggggggrgggggggg.",
+        "ggggg...gggggggg.ggg.gg..gg.gggg..g.gg",
+        ".gggggg.ggggg....ggggggggggggg..ggg.gg",
+        "gg..g.ghhhhhg.ggggg.gg.ggg.gggwwwgr..g",
+        ".ggg.hhhhuhhhh.gggg..HHH...g.wwwwwT.gg",
+        "gg.gghhuuuuuhh.gg....HHH.....gwwwT.gg.",
+        "g.gghhuuuuuuuhhgg....HHH....g..g.g.gg.",
+        "gg.gghhuuuuuhhgr..............g.g..rr.",
+        "gr..ghhhhuhhhhggg.....=======ggggg.g..",
+        ".gggg..hhshhg.ggg...===.....==.g..gggg",
+        "gg..gggrg==.gggggg.==.....g.g===..ggg.",
+        "grg.g.gggg=ggg.ggg==...ggggg.g.====..g",
+        "rr.gg.rggg=ggggg===g.ggg.ggggggg.g====",
+        "g.g.g...gg==gg.==g.gg..grggggggg.gggg.",
+        ".gggTg.gg.g=.g==g.gg.gg.r.g.gggg.ggggg",
+        ".gggr.gg..gg.==g...ggggggggggg..gggg.g",
+        "grrgg.gggTr===ggg..T..ggg.g.g..ggg.g.g",
+        "g.g.gggg..==.g.gggTgggg.gg.g.grg.gg..g",
+        "ggggg..gg==.g.gggggggggg.g.gr..ggg.ggg",
+        "gg.g..gg==gg.gggggggg..g.ggggggg....rg",
+        "g.ggg.g==ggggggggg.g.rggrg...ggT.g.g.g",
+        "ggg.gg==.gggrgggg..gg.gg.gg..ggggggggg",
+        ".g.gg==..ggg..grgg.gg..gggggggg..g...g",
+        "gggg.=gggg.gggg.gggrggr....gggg.ggT..g",
+        "grg.g=g.TrggggggggTTggggg..ggg.gggg.gg",
+        "gggg==..ggg.g.gggggrg.ggggg.g.gg.....g",
+        "TTTT=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        "TTTT=TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "brannock",
+      "name": "Brannock bridge",
+      "minutes": 2,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 14,
+      "spots": [
+        {
+          "id": "br_west_north",
+          "x": 1,
+          "y": 15,
+          "facing": "right"
+        },
+        {
+          "id": "br_west_south",
+          "x": 1,
+          "y": 25,
+          "facing": "right"
+        },
+        {
+          "id": "br_east",
+          "x": 38,
+          "y": 17,
+          "facing": "left"
+        },
+        {
+          "id": "br_ford_west",
+          "x": 17,
+          "y": 4,
+          "facing": "right"
+        },
+        {
+          "id": "br_ford_east",
+          "x": 24,
+          "y": 4,
+          "facing": "left"
+        },
+        {
+          "id": "br_bridge_east",
+          "x": 22,
+          "y": 17,
+          "facing": "right"
+        }
+      ],
+      "objects": [
+        {
+          "id": "vane",
+          "kind": "npc",
+          "sprite": "npc_vane",
+          "x": 17,
+          "y": 17,
+          "facing": "left",
+          "scene": "toll",
+          "when": [
+            "!flag:toll_done"
+          ]
+        },
+        {
+          "id": "toll1",
+          "kind": "npc",
+          "sprite": "npc_toll",
+          "x": 17,
+          "y": 18,
+          "facing": "left",
+          "scene": "toll",
+          "when": [
+            "!flag:toll_done"
+          ]
+        },
+        {
+          "id": "toll2",
+          "kind": "npc",
+          "sprite": "npc_toll",
+          "x": 12,
+          "y": 16,
+          "facing": "down",
+          "scene": "toll",
+          "when": [
+            "!flag:toll_done"
+          ]
+        },
+        {
+          "id": "br_sign",
+          "kind": "sign",
+          "sprite": "obj_sign",
+          "x": 8,
+          "y": 15,
+          "text": "A new board, nailed over an old one. BRANNOCK BRIDGE. TOLL BY ORDER OF HIS MAJESTY KING MELVIN. Under it, the old board's last line still shows: FREE PASSAGE TO ALL."
+        },
+        {
+          "id": "br_fire",
+          "kind": "spot",
+          "sprite": "obj_firepit",
+          "x": 5,
+          "y": 21,
+          "scene": "campfire"
+        }
+      ],
+      "zones": [
+        {
+          "x0": 0,
+          "y0": 14,
+          "x1": 0,
+          "y1": 16,
+          "to": "gf_east"
+        },
+        {
+          "x0": 0,
+          "y0": 24,
+          "x1": 0,
+          "y1": 26,
+          "to": "ot_east"
+        },
+        {
+          "x0": 39,
+          "y0": 16,
+          "x1": 39,
+          "y1": 19,
+          "to": "th_west"
+        },
+        {
+          "x0": 18,
+          "y0": 3,
+          "x1": 18,
+          "y1": 4,
+          "scene": "ford"
+        },
+        {
+          "x0": 23,
+          "y0": 3,
+          "x1": 23,
+          "y1": 4,
+          "scene": "ford_back"
+        },
+        {
+          "x0": 14,
+          "y0": 16,
+          "x1": 15,
+          "y1": 19,
+          "scene": "toll",
+          "when": [
+            "!flag:toll_done",
+            "!flag:toll_seen"
+          ]
+        }
+      ],
+      "uses": [
+        {
+          "tile": "w",
+          "scene": "road_stream"
+        }
+      ],
+      "events": [],
+      "rows": [
+        "TTTTTTTTTTTTTTTTT,wwwwTTTTTT.TTTTTTTTTTT",
+        "TT.TTTTTTTTT.TT.T,wwww,.TTTTT.TTT.TTTTTT",
+        "TT......T..........wwww.T.......T....TTT",
+        "TT.......T.T.....T,wwww,..............TT",
+        "TT.....T.........==wwww==...T.........TT",
+        "TT.............===,wwww,=.............TT",
+        ".T...T.......===.o,wwww,==....TT......TT",
+        "TT...T..T.T===.....wwww,.=.T.....T....TT",
+        "TT..T....===..o...,wwww,.==..........TTT",
+        "TT.......=........Twwww,..=........T..TT",
+        "TT.......=........,wwww...=..T.T......TT",
+        "TT..To...=.........wwww,..=...........TT",
+        "TT.......=THHHH....wwww,..=.........TTTT",
+        ".T.......=.HHHH...,wwww,..=T...o......TT",
+        "TT.....T.=.HHHHn..,wwww...=TT.........TT",
+        "========.=.K......wwww,T..=...........TT",
+        "===========......,wwww,...=........T..TT",
+        "TT.....===========bbbb==================",
+        "TT.....o.o=======bbbbb==================",
+        "TT........==....Twwww,....TT....T.....TT",
+        "TT..T.....==...TTwwww...T.............TT",
+        "TT........==.....wwww,T....TT........T.T",
+        "T.T....oT==.T...,wwww.....TT.T....T..TTT",
+        "TT.T....===......wwww.................TT",
+        "T.TToTT===.TT....wwww..........T..T...TT",
+        "=========o......,wwww,.............T..TT",
+        "========........,wwwwo..T.....T..T.....T",
+        "TT......o.......,wwww,T.o...........T.TT",
+        "TT...............wwww,................TT",
+        "TT..............,wwww..........TT.....TT",
+        "TTTTTTTTTTTTTTTTT.wwww,TT..TTTTTTTT.TTTT",
+        "TTTTTTTT.TTTTTTTT,wwwwTTTTTTTTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "thornby",
+      "name": "Thornby",
+      "minutes": 1,
+      "eventChance": 0,
+      "fightChance": 0,
+      "fightGap": 14,
+      "camp": false,
+      "spots": [
+        {
+          "id": "th_west",
+          "x": 1,
+          "y": 17,
+          "facing": "right"
+        },
+        {
+          "id": "th_east",
+          "x": 33,
+          "y": 15,
+          "facing": "left"
+        }
+      ],
+      "objects": [
+        {
+          "id": "marda",
+          "kind": "npc",
+          "sprite": "npc_marda",
+          "x": 16,
+          "y": 12,
+          "facing": "down",
+          "scene": "marda"
+        },
+        {
+          "id": "fenn",
+          "kind": "npc",
+          "sprite": "npc_fenn",
+          "x": 21,
+          "y": 13,
+          "facing": "down",
+          "scene": "fenn"
+        },
+        {
+          "id": "ness",
+          "kind": "npc",
+          "sprite": "npc_ness",
+          "x": 13,
+          "y": 12,
+          "facing": "down",
+          "scene": "ness"
+        },
+        {
+          "id": "wren_home",
+          "kind": "npc",
+          "sprite": "npc_wren",
+          "x": 14,
+          "y": 12,
+          "facing": "down",
+          "scene": "wren_home",
+          "when": [
+            "flag:wren_home"
+          ]
+        },
+        {
+          "id": "tobin_home",
+          "kind": "npc",
+          "sprite": "npc_tobin",
+          "x": 12,
+          "y": 12,
+          "facing": "down",
+          "scene": "tobin_home",
+          "when": [
+            "flag:tobin_home"
+          ]
+        },
+        {
+          "id": "carcass",
+          "kind": "sign",
+          "sprite": "obj_boar_dead",
+          "x": 28,
+          "y": 5,
+          "scene": "carcass",
+          "when": [
+            "!flag:carcass_burnt"
+          ]
+        },
+        {
+          "id": "th_sign",
+          "kind": "sign",
+          "sprite": "obj_sign",
+          "x": 3,
+          "y": 15,
+          "text": "THORNBY. Somebody has painted a sheaf of wheat on the post, a long time ago, and nobody has painted it since."
+        },
+        {
+          "id": "barn",
+          "kind": "sign",
+          "x": 30,
+          "y": 21,
+          "scene": "barn"
+        },
+        {
+          "id": "th_fire",
+          "kind": "spot",
+          "sprite": "obj_firepit",
+          "x": 13,
+          "y": 15,
+          "scene": "campfire"
+        }
+      ],
+      "zones": [
+        {
+          "x0": 0,
+          "y0": 16,
+          "x1": 0,
+          "y1": 18,
+          "to": "br_east"
+        },
+        {
+          "x0": 35,
+          "y0": 14,
+          "x1": 35,
+          "y1": 16,
+          "scene": "eastmere_end"
+        },
+        {
+          "x0": 9,
+          "y0": 16,
+          "x1": 11,
+          "y1": 18,
+          "scene": "wren_arrives",
+          "when": [
+            "follower:wren",
+            "!flag:wren_home"
+          ]
+        }
+      ],
+      "uses": [
+        {
+          "tile": "O",
+          "scene": "th_well"
+        },
+        {
+          "tile": "w",
+          "scene": "th_spring"
+        }
+      ],
+      "events": [],
+      "rows": [
+        "T.TTTTTTTTTTTTTTTTTTTTTT.TTTTTTTT.TT",
+        ".TTTT..TTTTTTTTT.TTTTT.TTTTTTTTTTTTT",
+        "TT.......T.....T.T..........www...T.",
+        "TT.....T....................www...TT",
+        "TT...o.....................wwwww..TT",
+        "TT...............T..........www...TT",
+        "TT.........T.............T........TT",
+        ".T....T.........o......======.....TT",
+        "TT..........HHHHT..HHHH=...........T",
+        "TT.....HHHH.HHHH...HHHH=HHHH......TT",
+        "TT.vvv.HHHH.HHHHo..HHHH=HHHHvvv...TT",
+        "TT.vvv.HHHH.nmmmmmmmmm.=HHHHvvv....T",
+        "TT.vvv...m...mmmmmmmSSK=.m........TT",
+        "TT.......m..mmmmmmmmmmm=.m..o.....TT",
+        "TT.........mmmmmmOmmmmmm..........TT",
+        "TT.......m..mmmmmmmmmmm.m......mmmmm",
+        "TT...o...m...mmmmmmmmmmmmmmmmmmmmmmm",
+        "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm..T.",
+        "mmmmmmmmmmmmmmmmmmmmmmm.m..n.HHHH.TT",
+        "TT....j.HHHH...........HHHH..HHHH.TT",
+        "TT......HHHH...........HHHH..HHHH.TT",
+        "TT......HHHH...........HHHH..HHHH.TT",
+        "TT................................TT",
+        ".T.........T...T....T..............T",
+        "TT............T.T.T.....T...T.....TT",
+        "TT.o....T..T.....T..........o.TT..TT",
+        "T.TTTTTT.TTT.TTTTTTTTTTTTT.TToTTTTTT",
+        ".TTTTT.T..TTTTTTTT..TTTTTT.TTTT..TTT"
       ]
     }
   ],
@@ -2015,8 +3126,12 @@
       "desc": "\"Things are getting worse around here. If we don't get help soon, this village is done for.\" Ida is sending Rook to Eastmere, the nearest town, to find someone who'll help Skelmed, and you're going with him.",
       "goals": [
         {
-          "text": "Set out with Rook through Skelmed's north gate",
+          "text": "Set out with Rook through the forest, on the old east track",
           "when": "flag:left_skelmed"
+        },
+        {
+          "text": "Get across the river at Brannock bridge",
+          "when": "flag:crossed_river"
         },
         {
           "text": "Reach Eastmere",
@@ -2038,6 +3153,61 @@
         {
           "text": "Kill the pack leader",
           "when": "flag:alpha_dead"
+        }
+      ]
+    },
+    {
+      "id": "burners_son",
+      "name": "The burners' boy",
+      "giver": "Hesta",
+      "exp": 80,
+      "desc": "Hesta's son Col went to sell charcoal at the old watch house on the forest track three days ago, and he hasn't come back. She's heard there are deserters camped up there.",
+      "goals": [
+        {
+          "text": "Find Col at the old watch house on the old forest track",
+          "when": "flag:col_found"
+        },
+        {
+          "text": "Get him away from the deserters",
+          "when": "flag:col_freed"
+        },
+        {
+          "text": "Tell Hesta",
+          "when": "flag:hesta_told"
+        }
+      ]
+    },
+    {
+      "id": "wren_home",
+      "name": "Wren's way home",
+      "giver": "Wren",
+      "exp": 90,
+      "desc": "Deserters burned Wren's family cart on the forest road. Her father Tobin crawled off into the trees. She lives in Thornby, over Brannock bridge, on your way.",
+      "goals": [
+        {
+          "text": "Look for Wren's father",
+          "when": "flag:tobin_found"
+        },
+        {
+          "text": "Get Wren home to Thornby",
+          "when": "flag:wren_home"
+        }
+      ]
+    },
+    {
+      "id": "thornby_well",
+      "name": "The fouled well",
+      "giver": "Marda",
+      "exp": 60,
+      "desc": "Thornby's well has gone foul: the water smells of rot and people are sick from it. It's fed from a spring in the trees north-east of the village.",
+      "goals": [
+        {
+          "text": "Find what's fouling the spring",
+          "when": "flag:carcass_found"
+        },
+        {
+          "text": "Deal with it",
+          "when": "flag:carcass_burnt|flag:well_warned"
         }
       ]
     }
@@ -2295,6 +3465,48 @@
         }
       ],
       "hairStyle": "Messy"
+    },
+    {
+      "id": "wren",
+      "name": "Wren",
+      "sprite": "npc_wren",
+      "desc": "A miller's daughter from Thornby, quick and sharp-tongued. Deserters burned her family's cart on the Eastmere road.",
+      "hp": 38,
+      "atkMin": 3,
+      "atkMax": 6,
+      "attack": "slings a stone at",
+      "hunger": 55,
+      "thirst": 60,
+      "energy": 70,
+      "morale": 50,
+      "leaves": false,
+      "until": "You're walking her home to Thornby, across Brannock bridge.",
+      "untilWhen": [
+        "follower:wren"
+      ],
+      "warmth": 4,
+      "figure": "female",
+      "skin": "fair",
+      "hair": "Light brown",
+      "hairStyle": "Braid",
+      "worn": [
+        "castaway_shirt",
+        "castaway_trousers",
+        "leather_boots"
+      ],
+      "level": 1,
+      "role": "Miller's daughter, sling",
+      "trait": "forager",
+      "traitName": "Forager",
+      "traitDesc": "Knows every plant on the roadside. Each night at camp she finds berries or mushrooms for the pack.",
+      "abilities": [
+        {
+          "id": "field_dressing",
+          "name": "Field dressing",
+          "desc": "After a fight she binds the worst bleeding wound in the party, yours included, with herbs from the verge instead of your linen.",
+          "level": 1
+        }
+      ]
     }
   ],
   "afflictions": [
@@ -2766,6 +3978,72 @@
       "id": "tam",
       "name": "Tam",
       "pitch": 0.86,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "wren",
+      "name": "Wren",
+      "pitch": 1.22,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "hesta",
+      "name": "Hesta",
+      "pitch": 0.9,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "marda",
+      "name": "Marda",
+      "pitch": 0.82,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "ness",
+      "name": "Ness",
+      "pitch": 1.1,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "sorrel",
+      "name": "Sorrel",
+      "pitch": 0.95,
+      "bondNames": [
+        "Stranger",
+        "Friendly",
+        "Friend",
+        "Close friend"
+      ]
+    },
+    {
+      "id": "vane",
+      "name": "Vane",
+      "pitch": 0.74,
       "bondNames": [
         "Stranger",
         "Friendly",

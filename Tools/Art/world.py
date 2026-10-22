@@ -431,8 +431,8 @@ def skelmed():
         ],
         'zones': [
             {'x0': 17, 'y0': 27, 'x1': 18, 'y1': 27, 'to': 'skelmed'},
-            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate', 'when': ['flag:rook_escort']},
-            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate_alone', 'when': ['flag:ida_alone']},
+            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate', 'when': ['flag:rook_escort', '!flag:left_skelmed']},
+            {'x0': 12, 'y0': 1, 'x1': 13, 'y1': 1, 'scene': 'north_gate_alone', 'when': ['flag:ida_alone', '!flag:left_skelmed']},
             {'x0': 12, 'y0': 0, 'x1': 13, 'y1': 0, 'to': 'hills_gate'},
             # Bess sees the wolf bite as you walk in, and shows you how to treat it
             {'x0': 14, 'y0': 22, 'x1': 21, 'y1': 23, 'scene': 'bess_patch', 'when': ['untreated:bite', '!flag:patch_lesson']},
@@ -525,6 +525,9 @@ def hills():
     for (x, y) in marked + [ash, (5, 17), (path(36) + 2, 36)]: setc(x, y, '.')
     setc(ash[0], ash[1] + 1, '.'); setc(ash[0] - 1, ash[1] + 1, '.')
     for (x, y) in ((path(34) + 3, 34), (24, 28), (10, 30), (27, 33)): setc(x, y, '.')   # deadwood for the hunt
+    # the old east track out of Ida's camp: the road to Eastmere (22 Oct); a fallen trunk across it until you leave
+    for x in range(29, W):
+        setc(x, 29, 'T'); setc(x, 30, '='); setc(x, 31, 'T')
 
     rows = [''.join(r) for r in g]
     snares = [(4, 26), (8, 14), (3, 8)]
@@ -550,6 +553,8 @@ def hills():
         {'id': 'yarrow1', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 19, 'y': 23, 'scene': 'herb_yarrow1', 'when': ['!flag:yarrow1_today']},
         {'id': 'yarrow2', 'kind': 'item', 'sprite': 'obj_yarrow', 'x': 5, 'y': 17, 'scene': 'herb_yarrow2', 'when': ['!flag:yarrow2_today']},
         {'id': 'willow', 'kind': 'item', 'sprite': 'obj_willow', 'x': 12, 'y': 21, 'scene': 'herb_willow', 'when': ['!flag:willow_today']},
+        {'id': 'east_trunk', 'kind': 'sign', 'sprite': 'obj_trunk', 'x': 31, 'y': 30, 'when': ['!flag:left_skelmed'],
+         'text': "The old east track, the long way round to Eastmere. A pine has come down across it. Rook will clear it when there's a reason to."},
         {'id': 'sign_hills', 'kind': 'sign', 'sprite': 'obj_sign', 'x': path(36) + 2, 'y': 36,
          'text': "Left: SNARES, KEEP OFF. (Rook) Someone has scratched a wolf's head underneath, and a cross through it."},
     ]
@@ -560,10 +565,12 @@ def hills():
         'spots': [
             {'id': 'hills_gate', 'x': gx, 'y': H - 3, 'facing': 'up'},
             {'id': 'forest_camp', 'x': 23, 'y': 31, 'facing': 'right'},
+            {'id': 'hills_east', 'x': W - 2, 'y': 30, 'facing': 'left'},
         ],
         'objects': objects,
         'zones': [
             {'x0': gx, 'y0': H - 1, 'x1': gx + 1, 'y1': H - 1, 'to': 'skelmed_north'},
+            {'x0': W - 1, 'y0': 30, 'x1': W - 1, 'y1': 30, 'to': 'fr_west'},
             {'x0': 26, 'y0': 2, 'x1': 31, 'y1': 6, 'scene': 'den', 'when': ['quest:pack', '!flag:alpha_dead', '!flag:den_found']},
             # the boar charges when you come into its glade
             {'x0': 3, 'y0': 23, 'x1': 9, 'y1': 29, 'scene': 'boar', 'when': ['quest:hunt', '!flag:boar_killed', '!flag:boar_seen']},
@@ -576,7 +583,8 @@ def hills():
     }
 
 
-AREAS = [coast_road, yenson_hut, skelmed, hills]
+import road
+AREAS = [coast_road, yenson_hut, skelmed, hills] + road.AREAS
 
 # ============================================================================================== tile painting
 
@@ -1808,6 +1816,99 @@ def big_objects(out):
 
 # ============================================================================================== weather
 
+# ============================================================================================== the Eastmere road's things (22 Oct)
+
+def road_objects(out):
+    """The burnt cart, the burners' kilns, carcasses gone bad, tracks in the mud."""
+    rnd = random.Random(77)
+    # --- a burnt-out cart: charred bed tipped on a broken wheel, a scatter of ash and spilt flour
+    s = Spr(40, 26)
+    s.shadow(20, 22, 17, 3)
+    for (x, y) in terrain.blob(20, 21, 16, 3.5):
+        s.put(x, y, 'g' if rnd.random() < 0.6 else 'G', 200)
+    for (x, y) in terrain.blob(30, 21, 5, 1.6):
+        s.put(x, y, 'W' if rnd.random() < 0.7 else 'Y')         # spilt flour
+    for y in range(8, 13):                                    # the bed, tilted down to the left
+        for x in range(5, 34):
+            yy = y + (34 - x) // 9
+            k = 'B' if (x % 5 == 0) else ('b' if rnd.random() < 0.55 else 'o')
+            if y == 8: k = 'b' if rnd.random() < 0.5 else 'B'
+            if rnd.random() < 0.18: k = 'g'                     # burnt through
+            if rnd.random() < 0.05: k = 'R'                     # an ember still in it
+            s.put(x, yy, k)
+    for x in range(1, 7):                                     # the shafts, snapped
+        s.put(x, 17 + x // 3, 'B'); s.put(x, 18 + x // 3, 'o')
+    for (cx, cy, r) in ((11, 19, 4.6), (29, 18, 4.6)):        # wheels: one whole, one broken
+        for (x, y) in terrain.blob(cx, cy, r, r):
+            d = math.hypot(x - cx, y - cy)
+            if d > r - 1.3: s.put(x, y, 'B' if (x + y) % 3 else 'o')
+            elif abs(x - cx) < 0.7 or abs(y - cy) < 0.7: s.put(x, y, 'b')
+        s.put(cx, cy, 'g')
+    for (x, y) in terrain.blob(29, 18, 4.6, 4.6):             # the broken one's lower half is gone
+        if y > 19 and x > 27: s.px[x, y] = (0, 0, 0, 0)
+    s.outline()
+    s.save(out, 'obj_cart_burnt')
+
+    # --- a charcoal kiln: a dome of turf and earth, a smoke hole on top, a wisp of smoke
+    s = Spr(20, 24)
+    s.shadow(10, 21, 9, 2.5)
+    pts = set(terrain.blob(10, 17, 8.5, 6.5))
+    for (x, y) in pts:
+        if y > 21: continue
+        dx, dy = (x - 10) / 8.5, (y - 15) / 6.5
+        l = -dx * 0.6 - dy * 0.9 + rnd.uniform(-0.3, 0.3)
+        k = 'i' if l > 0.7 else 'F' if l > 0.1 else 'b' if l > -0.5 else 'B'
+        if rnd.random() < 0.15: k = 'v'
+        s.put(x, y, k)
+    for (x, y) in ((9, 11), (10, 11), (11, 11), (10, 12)): s.put(x, y, 'o')
+    s.outline()
+    for i, (x, y) in enumerate(((10, 9), (11, 8), (11, 7), (10, 6), (9, 5), (10, 4), (11, 3), (12, 2))):
+        s.put(x, y, 'Y' if i < 4 else 'y', 200 - i * 20)
+        s.put(x + 1, y, 'y', 150 - i * 15)
+    s.save(out, 'obj_kiln')
+
+    # --- a dead deer, wrong: thin, the hide gone grey and blotched with a purple bloom
+    def carcass(name, w, body, cols, bloom):
+        s = Spr(w, 14)
+        s.shadow(w / 2, 12, w / 2 - 1, 2)
+        pts = set(terrain.blob(w / 2, 9, w / 2 - 3, 3))
+        for (x, y) in pts:
+            k = cols[1]
+            if (x, y - 1) not in pts: k = cols[0]
+            if (x, y + 1) not in pts: k = cols[2]
+            if rnd.random() < bloom: k = 'p' if rnd.random() < 0.6 else 'P'
+            s.put(x, y, k)
+        body(s)
+        s.outline()
+        s.save(out, name)
+
+    def deer_bits(s):
+        for (x, y) in terrain.blob(20, 6, 2.5, 2):             # head, laid back
+            s.put(x, y, 'D')
+        s.put(21, 5, 'o'); s.put(22, 3, 'b'); s.put(23, 2, 'b'); s.put(21, 3, 'b'); s.put(24, 3, 'b')   # antler stubs
+        for x in (6, 9, 13, 16):                              # legs out stiff
+            s.put(x, 12, 'b'); s.put(x - 1, 13, 'b')
+    carcass('obj_deer_dead', 26, deer_bits, ['d', 'D', 'b'], 0.16)
+
+    def boar_bits(s):
+        for (x, y) in terrain.blob(19, 8, 3, 2.2):
+            s.put(x, y, 'G')
+        s.put(22, 8, 'W'); s.put(22, 9, 'W')                   # a tusk
+        for x in (6, 10, 14):
+            s.put(x, 12, 'g'); s.put(x, 13, 'g')
+    carcass('obj_boar_dead', 24, boar_bits, ['y', 'G', 'g'], 0.22)
+
+    # --- tracks: boot prints and a drag mark going off the path
+    s = Spr(16, 16)
+    for i in range(4):
+        x, y = 3 + i * 3, 13 - i * 3
+        for (dx, dy) in ((0, 0), (1, 0), (0, 1), (1, 1), (0, -1)):
+            s.put(x + dx, y + dy, 'B', 230)
+    for i in range(14):
+        s.put(1 + i, 14 - i, 'b', 190)
+    s.save(out, 'obj_tracks')
+
+
 def fx_sprites(out):
     """Rain drawn over the world: long thin streaks slanting a little with the wind, in a tile that repeats."""
     for name, count, length, alpha in (('fx_drizzle', 18, 7, 70), ('fx_rain', 30, 12, 110), ('fx_storm', 55, 16, 140)):
@@ -1867,6 +1968,7 @@ def main():
     for name, text in OBJECTS.items():
         object_sprite(text).save(os.path.join(out, name + '.png'))
     big_objects(out)
+    road_objects(out)
     fx_sprites(out)
     print('world: %d areas' % len(AREAS))
 

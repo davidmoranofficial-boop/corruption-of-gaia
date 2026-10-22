@@ -217,6 +217,9 @@ namespace Loran.Core
         public int exp;                        // experience for beating it
         public float size = 1;                 // how big it's drawn in battle (a boss is bigger)
         public bool boss;
+        // A person (deserters, the king's men): drawn in battle as a paper doll like you, facing you, instead of a beast sheet
+        public string figure = "", skin = "", hair = "", hairStyle = "", beard = "";
+        public List<string> worn = new List<string>();
         public List<EnemyMove> moves = new List<EnemyMove>();
     }
 
