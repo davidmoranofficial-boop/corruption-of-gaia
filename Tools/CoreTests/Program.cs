@@ -46,7 +46,7 @@ static class Program
         Test("mana: spells use it, time and sleep bring it back", Mana);
         Test("dialogue: greetings that notice, questions marked as asked, checks that can fail, tones and bonds", Dialogue);
         Test("creation: origins, quirks, and stats that matter out in the world", Creation);
-        Test("time: the clock runs standing still, slowly; long roads take days", () =>
+        Test("time: the clock runs standing still, and slowly", () =>
         {
             var e = NewEngine();
             e.DevStart("village");
@@ -288,20 +288,8 @@ static class Program
         Keep(e);
         WalkUntil(e, (12, 1), () => e.S.scene == "north_gate");
         Assert(e.Check("flag:left_skelmed") && e.Current.script.Any(x => x.StartsWith("fade:out")), "the opening ends at the north gate");
-        Pick(e, "Set off for Eastmere");
-        Assert(e.S.scene == Engine.JourneyId && e.OnJourney, "on the road to Eastmere");
-        int setOff = e.S.minutes;
-        RoadTo(e, () => e.S.scene == "eastmere_end");
-        int took = e.S.minutes - setOff;
-        Console.WriteLine("    the road to Eastmere took " + Engine.Duration(took) + ", arriving day " + e.S.Day + " " + Rules.Clock(e.S)
-                          + "; hunger " + (int)e.S.hunger + ", thirst " + (int)e.S.thirst + ", energy " + (int)e.S.energy);
-        Assert(took >= 24 * 60 && took <= 60 * 60, "two days or so on the road");
-        Assert(e.Check("flag:seen:jr_ford") && e.Check("flag:seen:jr_lookback"), "the set places along the way");
-        Pick(e, "walk back to Skelmed");
-        RoadTo(e, () => e.Travelling);
-        Assert(!e.OnJourney && e.Area.id == "skelmed" && AtSpot(e, "skelmed_north"), "back inside the north gate");
-        Assert(e.S.Toasts.Any(x => x.Contains("days on the road")), "a toast for the trip");
-        e.S.Toasts.Clear();
+        Pick(e, "Back into Skelmed");
+        Assert(e.Travelling && e.Area.id == "skelmed" && AtSpot(e, "skelmed_north"), "back inside the gate");
         Assert(e.ActiveQuests.Count() == 1 && e.FinishedQuests.Count() == 1, "the hunt's done; Eastmere's ahead");
 
         // Out through the gate and back down the road
@@ -1353,31 +1341,6 @@ static class Program
         else if (e.S.scene.StartsWith("ev_") || e.S.scene.StartsWith("dog_") || e.S.scene == "collapse")
             e.Choose(e.Choices().Where(c => c.enabled).Last().def);
         else throw new Exception("walking stopped in " + e.S.scene + ": " + e.S.result + " " + e.S.deathCause + " [" + string.Join(", ", Rules.BodyStates(e.S.body, e.data)) + "] day " + e.S.Day + " " + Rules.Clock(e.S));
-    }
-
-    /// <summary>Walks a long road, as a player would: walks on, camps at dusk, takes what's met on the way and moves on.</summary>
-    static void RoadTo(Engine e, Func<bool> done)
-    {
-        for (int i = 0; i < 40000 && !done(); i++)
-        {
-            if (e.S.inCombat) { SmartRound(e, e.S.round); continue; }
-            if (e.S.scene == "collapse" || e.S.scene == "death") throw new Exception("went down on the road: " + e.S.deathCause + " day " + e.S.Day + " " + Rules.Clock(e.S));
-            if (!string.IsNullOrEmpty(e.S.result)) { e.S.result = ""; continue; }
-            if (e.S.scene == Engine.JourneyId)
-            {
-                bool low = (e.S.hunger < 35 && e.S.items.Any(x => e.data.Item(x.id)?.food == true)) || (e.S.thirst < 35 && e.S.water > 0);
-                if (e.S.journeyWalking && !low) { e.March(0.5f); continue; }
-                if (e.S.journeyWalking) e.Halt(false);
-                if (e.S.hunger < 40 && e.S.items.Any(x => e.data.Item(x.id)?.food == true)) { e.Eat(e.S.items.First(x => e.data.Item(x.id)?.food == true).id); continue; }
-                if (e.S.thirst < 40 && e.S.water > 0) { e.Drink(); continue; }
-                Pick(e, e.Dark ? "Make camp" : "Walk on");
-                continue;
-            }
-            var opts = e.Choices().Where(c => c.enabled).ToList();
-            var go = opts.FirstOrDefault(c => c.def.effects.Any(x => x == "journey:go" || x == "journey:sleep")) ?? opts.Last();
-            e.Choose(go.def);
-        }
-        Assert(done(), "the road never got there: " + e.S.scene + " mile " + e.S.journeyMiles);
     }
 
     /// <summary>What a step takes in real time on screen: the world clock runs, and your breath comes back.</summary>

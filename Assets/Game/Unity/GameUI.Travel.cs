@@ -39,7 +39,7 @@ namespace Loran.UnityLayer
         int stepCount, unsavedSteps;
         float breathAt, hudDrawnAt;
 
-        public bool InWorld => engine.Area != null && !engine.OnJourney && engine.S.scene != Engine.Death && engine.S.scene != Engine.Collapse;
+        public bool InWorld => engine.Area != null && engine.S.scene != Engine.Death && engine.S.scene != Engine.Collapse;
 
         float TravelHeight()
         {
@@ -688,7 +688,6 @@ namespace Loran.UnityLayer
         void WorldTick()
         {
             if (worldView == null || worldView.panel == null) return;
-            if (engine.OnJourney) { if (!InBattle) JourneyTick(); return; }
             MoveWeather();
             if (DirectorActive) { DirectorTick(); return; }
             if (walkPath != null) PlaceWalk();

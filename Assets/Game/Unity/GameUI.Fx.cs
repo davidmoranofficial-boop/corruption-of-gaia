@@ -87,8 +87,28 @@ namespace Loran.UnityLayer
                 f.box.style.opacity = a;
             }
 
-            if (worldView != null && worldView.panel != null && worldLayer != null && !InBattle) WorldLife(now);
+            if (worldView != null && worldView.panel != null && worldLayer != null && !InBattle) { WorldLife(now); YSort(); }
         }
+
+        /// <summary>Draws people and things lower on the screen in front of those higher up, so someone standing
+        /// behind you is hidden by you instead of standing on your head. Only walkers and world things are
+        /// reordered, among the places they already hold, so tree tops, light and weather stay on top.</summary>
+        void YSort()
+        {
+            var kids = worldLayer.Children().ToList();
+            var slots = new List<int>();
+            var items = new List<VisualElement>();
+            for (int i = 0; i < kids.Count; i++)
+                if (kids[i].ClassListContains("walker") || kids[i].ClassListContains("world-thing")) { slots.Add(i); items.Add(kids[i]); }
+            var sorted = items.OrderBy(Feet).ToList();
+            bool same = true;
+            for (int i = 0; i < items.Count && same; i++) same = ReferenceEquals(items[i], sorted[i]);
+            if (same) return;
+            foreach (var e in items) e.RemoveFromHierarchy();
+            for (int i = 0; i < slots.Count; i++) worldLayer.Insert(slots[i], sorted[i]);
+        }
+
+        static float Feet(VisualElement e) => e.style.top.value.value + e.style.height.value.value;
 
         // ------------------------------------------------------------------ light
 

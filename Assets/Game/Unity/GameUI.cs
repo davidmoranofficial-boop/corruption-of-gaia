@@ -106,7 +106,7 @@ namespace Loran.UnityLayer
             mainBox.RegisterCallback<GeometryChangedEvent>(_ =>
             {
                 if (InBattle && !busy && timing == null && Mathf.Abs(BattleHeight() - battleHeight) > 4f) Render();
-                else if ((InWorld || engine.OnJourney) && !InBattle && !moving && openMenu == ""
+                else if (InWorld && !InBattle && !moving && openMenu == ""
                          && (Mathf.Abs(TravelHeight() - worldSize.y) > 4f || Mathf.Abs(TravelWidth() - worldSize.x) > 4f)) Render();
             });
 
@@ -224,10 +224,9 @@ namespace Loran.UnityLayer
                 else
                 {
                     RenderHud();
-                    main.EnableInClassList("main-flush", InWorld || engine.OnJourney);
+                    main.EnableInClassList("main-flush", InWorld);
                     hud.RemoveFromClassList("hud-talking");
                     if (InWorld) RenderWorld();
-                    else if (engine.OnJourney) RenderJourney();
                     else { worldView = null; RenderStory(); }
                 }
                 if (openMenu == "wheel") RenderWheel();
@@ -1123,7 +1122,6 @@ namespace Loran.UnityLayer
             if (DirectorActive && InWorld && openMenu == "") { DirectorKey(e); e.StopPropagation(); return; }
             if (engine.S.scene == Engine.ForgeId) { ForgeKey(e); e.StopPropagation(); return; }
             if (InWorld && openMenu == "" && WorldKeyDown(e)) { e.StopPropagation(); return; }
-            if (engine.OnJourney && !InBattle && openMenu == "" && JourneyKeyDown(e)) { e.StopPropagation(); return; }
             if (openMenu == "wheel") { WheelKey(e); e.StopPropagation(); return; }
             if (e.keyCode == KeyCode.Escape && openMenu != "") { GameAudio.Play("ui_close"); openMenu = ""; Render(); e.StopPropagation(); return; }
             if (openMenu != "" && MenuKey(e)) { e.StopPropagation(); return; }
