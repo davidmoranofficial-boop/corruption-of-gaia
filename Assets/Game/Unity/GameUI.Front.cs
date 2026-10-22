@@ -135,7 +135,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 22 OCT, THE EASTMERE ROAD"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 22 OCT, STYLE WARNING FIXED"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
@@ -352,6 +352,8 @@ namespace Loran.UnityLayer
                     break;
                 }
             }
+            // the top heading sits closer to the card's edge (USS has no :first-child)
+            if (infoBox.childCount > 0 && infoBox[0].ClassListContains("info-kicker")) infoBox[0].AddToClassList("info-kicker-top");
         }
 
         void InfoEmpty(string text) => Add(infoBox, new Label(text), "info-text");

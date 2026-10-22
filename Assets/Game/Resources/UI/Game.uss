@@ -2764,7 +2764,7 @@
 .create-stat-now { font-size: 16px; color: var(--muted); margin-top: 2px; white-space: normal; }
 
 .info-kicker { font-size: 15px; letter-spacing: 3px; color: var(--brine); margin: 16px 0 6px 0; }
-.create-info > .info-kicker:first-child { margin-top: 4px; }
+.info-kicker.info-kicker-top { margin-top: 4px; }
 .info-name { font-size: 32px; color: var(--text); -unity-font-style: bold; white-space: normal; margin-bottom: 8px; }
 .info-sub { font-size: 22px; color: var(--text); margin-top: 12px; }
 .info-text { font-size: 19px; color: var(--text); white-space: normal; }
