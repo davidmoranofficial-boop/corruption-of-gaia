@@ -2730,3 +2730,87 @@
 .upkeep-state.upkeep-good { color: var(--moss); }
 .upkeep-state.upkeep-fair { color: var(--ember); }
 .upkeep-state.upkeep-bad { color: var(--blood); }
+
+/* ---------- character creation, 22 Oct redesign ----------
+   Options on the left, you in the middle in a pool of light (the "creation" backdrop), and on the right a card
+   about whatever you point at. Both side panels are the same width so you stand in the middle of the screen. */
+.create-page { padding: 28px 48px 28px 48px; background-color: rgba(0, 0, 0, 0); }
+.create-title { font-size: 22px; letter-spacing: 6px; color: var(--muted); }
+.create-step { padding: 8px 18px 8px 10px; background-color: rgba(10, 12, 16, 0.8); }
+.create-step-num { width: 30px; height: 30px; border-radius: 15px; font-size: 16px; }
+.create-step-name { font-size: 17px; }
+.create-options, .create-info { width: 520px; flex-shrink: 0; }
+.create-panel { background-color: rgba(10, 12, 16, 0.84); border-color: rgba(70, 80, 84, 0.6); padding: 22px 28px 22px 28px; }
+.create-summary { width: 520px; }
+.create-stage { flex-grow: 1; align-items: center; justify-content: flex-end; padding-bottom: 50px; position: relative; }
+.create-stand { align-items: center; }
+.create-shadow { width: 230px; height: 26px; margin-top: -16px; background-color: rgba(0, 0, 0, 0.5); }
+.create-stand-name { font-size: 24px; letter-spacing: 3px; color: var(--text); margin-top: 10px; -unity-font-style: bold; }
+.create-walk { right: 12px; bottom: 50px; background-color: rgba(10, 12, 16, 0.8); }
+.create-walk-label { font-size: 14px; }
+
+.create-ask { font-size: 32px; color: var(--text); -unity-font-style: bold; white-space: normal; }
+.create-ask-sub { font-size: 18px; color: var(--muted); white-space: normal; margin: 6px 0 20px 0; }
+.create-options .field-label { font-size: 16px; margin: 12px 0 8px 0; }
+.create-options .option-chip { font-size: 19px; }
+.create-options .name-field { font-size: 26px; margin-bottom: 14px; }
+
+.create-row {
+    flex-direction: row; align-items: center; justify-content: space-between;
+    margin: 0 0 8px 0; padding: 14px 18px 14px 16px;
+    background-color: rgba(21, 36, 43, 0.7); border-width: 1px; border-left-width: 4px; border-radius: 6px;
+    border-color: var(--line); border-left-color: rgba(0, 0, 0, 0);
+}
+.create-row:hover { border-color: var(--muted); background-color: rgba(28, 47, 55, 0.9); }
+.create-row-on, .create-row-on:hover { border-color: var(--lantern); border-left-color: var(--lantern); background-color: rgba(40, 52, 50, 0.95); }
+.create-row-name { font-size: 22px; color: var(--text); }
+.create-row-tag { font-size: 16px; color: var(--brine); letter-spacing: 1px; }
+.create-row-on .create-row-tag { color: var(--lantern); }
+.create-quirk { justify-content: flex-start; padding-top: 11px; padding-bottom: 11px; }
+.create-check { width: 30px; font-size: 20px; color: var(--lantern); }
+.create-opt-scroll { flex-grow: 1; flex-shrink: 1; }
+
+.create-pips { flex-direction: row; align-items: center; margin-bottom: 16px; }
+.create-pips-label { font-size: 16px; letter-spacing: 3px; color: var(--brine); margin-right: 14px; }
+.create-pip, .create-pip-on { width: 20px; height: 20px; border-radius: 10px; margin-right: 8px; background-color: var(--line); }
+.create-pip-on { background-color: var(--lantern); }
+.create-stat {
+    margin-bottom: 10px; padding: 10px 16px 12px 16px; background-color: rgba(21, 36, 43, 0.7);
+    border-width: 1px; border-color: var(--line); border-radius: 6px;
+}
+.create-stat:hover { border-color: var(--muted); }
+.create-stat-row { flex-direction: row; align-items: center; }
+.create-stat-name { flex-grow: 1; font-size: 22px; color: var(--text); }
+.create-stat-btn {
+    width: 44px; height: 44px; margin: 0; font-size: 24px; color: var(--text);
+    background-color: var(--sea); border-width: 1px; border-color: var(--line); border-radius: 4px;
+}
+.create-stat-btn:hover { border-color: var(--lantern); color: var(--lantern); }
+.create-stat-value { width: 64px; font-size: 30px; color: var(--lantern); -unity-text-align: middle-center; -unity-font-style: bold; }
+.create-stat-now { font-size: 16px; color: var(--muted); margin-top: 2px; white-space: normal; }
+
+.info-kicker { font-size: 15px; letter-spacing: 3px; color: var(--brine); margin: 16px 0 6px 0; }
+.create-info > .info-kicker:first-child { margin-top: 4px; }
+.info-name { font-size: 32px; color: var(--text); -unity-font-style: bold; white-space: normal; margin-bottom: 8px; }
+.info-sub { font-size: 22px; color: var(--text); margin-top: 12px; }
+.info-text { font-size: 19px; color: var(--text); white-space: normal; }
+.info-note { font-size: 16px; color: var(--muted); white-space: normal; margin-top: 12px; }
+.info-warn { font-size: 17px; color: var(--ember); white-space: normal; margin-top: 12px; }
+.info-up { font-size: 19px; color: var(--moss); white-space: normal; margin-top: 4px; }
+.info-down { font-size: 19px; color: var(--blood); white-space: normal; margin-top: 4px; }
+.info-perk { margin-top: 18px; padding: 14px 16px; background-color: rgba(127, 174, 106, 0.12); border-left-width: 4px; border-left-color: var(--moss); border-radius: 4px; }
+.info-perk-name { font-size: 15px; letter-spacing: 2px; color: var(--moss); -unity-font-style: bold; }
+.info-perk-text { font-size: 19px; color: var(--text); white-space: normal; margin-top: 6px; }
+.create-info .sheet-name, .create-info .sheet-value { font-size: 19px; }
+.info-tiles { flex-direction: row; flex-wrap: wrap; }
+.info-tile { width: 148px; margin: 0 6px 6px 0; padding: 6px 0 6px 0; background-color: rgba(21, 36, 43, 0.8); border-radius: 4px; align-items: center; }
+.info-tile-value { font-size: 28px; color: var(--lantern); -unity-font-style: bold; }
+.info-tile-name { font-size: 15px; color: var(--muted); }
+.info-day { flex-direction: row; justify-content: space-between; padding: 4px 0; border-bottom-width: 1px; border-bottom-color: rgba(42, 61, 69, 0.6); }
+.info-day-name { font-size: 18px; color: var(--text); }
+.info-day-good { font-size: 18px; color: var(--moss); -unity-font-style: bold; }
+.info-day-bad { font-size: 18px; color: var(--blood); -unity-font-style: bold; }
+.info-stats { flex-direction: row; margin-top: 14px; }
+.info-stat { flex-grow: 1; align-items: center; }
+.info-stat-value { font-size: 26px; color: var(--lantern); -unity-font-style: bold; }
+.info-stat-name { font-size: 14px; letter-spacing: 2px; color: var(--muted); }

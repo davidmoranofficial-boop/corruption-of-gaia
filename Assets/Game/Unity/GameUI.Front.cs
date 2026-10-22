@@ -135,7 +135,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 22 OCT, GEAR UPKEEP"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 22 OCT, NEW CHARACTER CREATION"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 
@@ -163,6 +163,19 @@ namespace Loran.UnityLayer
 
         // ------------------------------------------------------------------ character creation
 
+        /// <summary>The question each creation step asks, and one line on what it's for.</summary>
+        static readonly string[][] StepAsks =
+        {
+            new[] { "How do you look?", "Only looks. None of this changes your numbers." },
+            new[] { "Where did you grow up?", "Changes how people in Loran see you, and what you can talk to them about." },
+            new[] { "What did you do before?", "The life you're leaving behind. Each one gives you a perk." },
+            new[] { "Any quirks?", "Optional. Pick up to two. Each one is a trade: a gain and a price." },
+            new[] { "Where are you strongest?", "Everyone starts at 3. Every stat still grows as you use it." },
+            new[] { "What's your name?", "What people in Loran will call you." },
+        };
+
+        VisualElement infoBox;    // the card on the right, refilled when you point at an option
+
         void RenderCreation()
         {
             var d = engine.data.file;
@@ -172,7 +185,7 @@ namespace Loran.UnityLayer
             cHairStyle ??= "";
             cBeard ??= "None";
             screen.Clear();
-            FrontBackdrop("coast");
+            FrontBackdrop("creation");
             var page = Add(screen, new VisualElement(), "create-page");
             FillScreen(page);
 
@@ -183,7 +196,7 @@ namespace Loran.UnityLayer
             for (int i = 0; i < CreationSteps.Length; i++)
             {
                 int idx = i;
-                var b = Add(steps, new Button(() => { cStep = idx; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "create-step");
+                var b = Add(steps, new Button(() => { cStep = idx; createError = null; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "create-step");
                 if (i == cStep) b.AddToClassList("create-step-on");
                 else if (StepDone(i)) b.AddToClassList("create-step-done");
                 Add(b, new Label(StepDone(i) && i != cStep ? "✓" : (i + 1).ToString()), "create-step-num");
@@ -191,54 +204,36 @@ namespace Loran.UnityLayer
             }
 
             var body = Add(page, new VisualElement(), "create-body");
+
+            // Left: this step's question and its choices, nothing else
             var left = Add(body, new VisualElement(), "create-panel");
             left.AddToClassList("create-options");
+            Add(left, new Label(StepAsks[cStep][0]), "create-ask");
+            Add(left, new Label(StepAsks[cStep][1]), "create-ask-sub");
             switch (cStep)
             {
                 case 0: CreateLooks(left); break;
-                case 1: CreateOrigin(left); break;
-                case 2: CreateBackground(left); break;
+                case 1: CreatePick(left, d.origins.Select(o => (o.id, o.name, o.perkName)), cOrigin, id => cOrigin = id); break;
+                case 2: CreatePick(left, d.backgrounds.Select(b => (b.id, b.name, b.perkName)), cBackground, id => cBackground = id); break;
                 case 3: CreateQuirks(left); break;
                 case 4: CreateStats(left); break;
                 default: CreateName(left); break;
             }
 
-            // You, standing in the middle, in the clothes you washed up in
+            // Middle: you, standing in a pool of light, in the clothes you washed up in
             var stage = Add(body, new VisualElement(), "create-stage");
             var clothes = new List<(string, string)>();
             foreach (var id in Engine.StartingClothes) { var gd = engine.data.Gear(id); if (gd != null) clothes.Add((id, gd.slot)); }
-            Doll(stage, 8, cFigure, cSkin, cHair, clothes, CreationHairStyle(), cBeard);
-            Add(stage, new VisualElement(), "create-shadow");
+            var stand = Add(stage, new VisualElement { pickingMode = PickingMode.Ignore }, "create-stand");
+            Doll(stand, 9, cFigure, cSkin, cHair, clothes, CreationHairStyle(), cBeard);
+            Add(stand, new VisualElement(), "create-shadow");
+            Add(stand, new Label(string.IsNullOrWhiteSpace(cName) ? "" : cName.Trim()), "create-stand-name");
             WalkPreview(stage, clothes);
 
-            // Who you're making, so far
-            var sum = Add(body, new VisualElement(), "create-panel");
-            sum.AddToClassList("create-summary");
-            Add(sum, new Label(string.IsNullOrWhiteSpace(cName) ? "Nameless" : cName.Trim()), "create-sum-name");
-            string sex = cGender == "" ? "Sex not chosen" : char.ToUpperInvariant(cGender[0]) + cGender.Substring(1);
-            string beardNote = BeardKey(cBeard) == null ? "" : "  ·  " + cBeard.ToLowerInvariant();
-            Add(sum, new Label(sex + "  ·  " + cBuild + "  ·  " + cSkin + " skin  ·  " + cHair.ToLowerInvariant() + " hair, "
-                                + CreationHairStyle().ToLowerInvariant() + beardNote), "create-sum-sub");
-            var you = engine.PreviewCharacter(cBackground, alloc, cOrigin, cQuirks);
-            var scroll = Add(sum, new ScrollView(ScrollViewMode.Vertical), "create-sum-scroll");
-            var orDef = engine.data.Origin(cOrigin);
-            var bgDef = engine.data.Background(cBackground);
-            Add(scroll, new Label("FROM"), "section-head");
-            Add(scroll, new Label(orDef != null ? orDef.name + "  ·  " + orDef.perkName : "Not chosen"), orDef != null ? "create-sum-line" : "create-sum-missing");
-            Add(scroll, new Label("BACKGROUND"), "section-head");
-            Add(scroll, new Label(bgDef != null ? bgDef.name + "  ·  " + bgDef.perkName : "Not chosen"), bgDef != null ? "create-sum-line" : "create-sum-missing");
-            if (cQuirks.Count > 0)
-            {
-                Add(scroll, new Label("QUIRKS"), "section-head");
-                Add(scroll, new Label(string.Join(", ", cQuirks.Select(q => engine.data.Quirk(q)?.name))), "create-sum-line");
-            }
-            Add(scroll, new Label("STATS"), "section-head");
-            for (int i = 0; i < Stat.Count; i++) Sheet(scroll, Stat.Names[i], you.stats[i].ToString());
-            int spare = Engine.CreationPoints - alloc.Sum();
-            if (spare > 0) Add(scroll, new Label(spare + " point" + (spare == 1 ? "" : "s") + " still to spend"), "create-sum-missing");
-            Add(scroll, new Label("WHAT THAT MAKES YOU"), "section-head");
-            YouSheet(scroll, you, true);
-            Add(scroll, new Label("Everything else you'll earn by doing it: skills grow with use, and there are no classes."), "line-muted");
+            // Right: about whatever you're pointing at, or what you've picked
+            infoBox = Add(body, new VisualElement(), "create-panel");
+            infoBox.AddToClassList("create-info");
+            FillInfo(null);
 
             // Along the bottom: back, next, and the problem if there is one
             var foot = Add(page, new VisualElement(), "create-foot");
@@ -246,6 +241,7 @@ namespace Loran.UnityLayer
             {
                 if (cStep > 0) cStep--;
                 else { engine.GoTo(Engine.Title); titleStep = "menu"; }
+                createError = null;
                 GameAudio.Play("ui_close");
                 Render();
             }) { text = cStep > 0 ? "◂  Back" : "◂  Title screen", focusable = false }, "front-btn");
@@ -253,7 +249,172 @@ namespace Loran.UnityLayer
             if (cStep < CreationSteps.Length - 1)
                 Add(foot, new Button(() => { cStep++; createError = null; GameAudio.Play("ui_tick"); Render(); }) { text = "Next  ▸", focusable = false }, "front-btn-main");
             else
-                Add(foot, new Button(FinishCreation) { text = "Create character", focusable = false }, "front-btn-main");
+                Add(foot, new Button(FinishCreation) { text = "Begin your story", focusable = false }, "front-btn-main");
+        }
+
+        /// <summary>Shows the card for what's under the pointer, and goes back to the picked one when it leaves.</summary>
+        void HoverInfo(VisualElement e, string id)
+        {
+            e.RegisterCallback<PointerEnterEvent>(_ => FillInfo(id));
+            e.RegisterCallback<PointerLeaveEvent>(_ => FillInfo(null));
+        }
+
+        /// <summary>The right-hand card. hover is the option under the pointer, or null for what's picked.</summary>
+        void FillInfo(string hover)
+        {
+            if (infoBox == null) return;
+            infoBox.Clear();
+            var d = engine.data;
+            switch (cStep)
+            {
+                case 0:
+                    Add(infoBox, new Label("YOUR LOOKS"), "info-kicker");
+                    string sex = cGender == "" ? "Not chosen" : char.ToUpperInvariant(cGender[0]) + cGender.Substring(1);
+                    Sheet(infoBox, "Sex", sex);
+                    Sheet(infoBox, "Body", cFigure == "female" ? "Feminine" : "Masculine");
+                    Sheet(infoBox, "Skin", cSkin);
+                    Sheet(infoBox, "Build", cBuild);
+                    Sheet(infoBox, "Hair", CreationHairStyle() + ", " + cHair.ToLowerInvariant());
+                    if (d.file.beards.Count > 0) Sheet(infoBox, "Beard", cBeard);
+                    Add(infoBox, new Label("Sex only changes how people speak of you."), "info-note");
+                    break;
+                case 1:
+                {
+                    var o = d.Origin(hover ?? cOrigin);
+                    if (o == null) { InfoEmpty("Point at a place to read about it."); break; }
+                    InfoCard("WHERE YOU GREW UP", o.name, o.desc, o.perkName, o.perkDesc, hover != null && hover != cOrigin);
+                    break;
+                }
+                case 2:
+                {
+                    var b = d.Background(hover ?? cBackground);
+                    if (b == null) { InfoEmpty("Point at a life to read about it."); break; }
+                    InfoCard("YOUR OLD LIFE", b.name, b.desc, b.perkName, b.perkDesc, hover != null && hover != cBackground);
+                    break;
+                }
+                case 3:
+                {
+                    var q = hover != null ? d.Quirk(hover) : null;
+                    if (q != null)
+                    {
+                        Add(infoBox, new Label("QUIRK"), "info-kicker");
+                        Add(infoBox, new Label(q.name), "info-name");
+                        InfoTrade(q.up, q.down);
+                        if (!cQuirks.Contains(q.id) && cQuirks.Count >= Rules.MaxQuirks)
+                            Add(infoBox, new Label("You already have two. Take one off first."), "info-warn");
+                        break;
+                    }
+                    Add(infoBox, new Label("YOUR QUIRKS  ·  " + cQuirks.Count + " OF " + Rules.MaxQuirks), "info-kicker");
+                    if (cQuirks.Count == 0) Add(infoBox, new Label("None yet. That's fine: quirks are optional."), "info-text");
+                    foreach (var id in cQuirks)
+                    {
+                        var qq = d.Quirk(id);
+                        if (qq == null) continue;
+                        Add(infoBox, new Label(qq.name), "info-sub");
+                        InfoTrade(qq.up, qq.down);
+                    }
+                    break;
+                }
+                case 4:
+                {
+                    var you = engine.PreviewCharacter(cBackground, alloc, cOrigin, cQuirks);
+                    int stat = hover != null && hover.StartsWith("stat:") ? int.Parse(hover.Substring(5)) : -1;
+                    if (stat >= 0)
+                    {
+                        Add(infoBox, new Label(Stat.Names[stat].ToUpperInvariant()), "info-kicker");
+                        Add(infoBox, new Label(StatHelp[stat]), "info-text");
+                    }
+                    InfoNumbers(you);
+                    break;
+                }
+                default:
+                {
+                    var you = engine.PreviewCharacter(cBackground, alloc, cOrigin, cQuirks);
+                    Add(infoBox, new Label("WHO YOU ARE"), "info-kicker");
+                    Add(infoBox, new Label(string.IsNullOrWhiteSpace(cName) ? "Nameless" : cName.Trim()), "info-name");
+                    var o = d.Origin(cOrigin);
+                    var b = d.Background(cBackground);
+                    Sheet(infoBox, "From", o != null ? o.name : "Not chosen");
+                    Sheet(infoBox, "Was a", b != null ? b.name : "Not chosen");
+                    var perks = new List<string>();
+                    if (o != null) perks.Add(o.perkName);
+                    if (b != null) perks.Add(b.perkName);
+                    perks.AddRange(cQuirks.Select(q => d.Quirk(q)?.name).Where(n => n != null));
+                    if (perks.Count > 0) Sheet(infoBox, "Perks", string.Join(", ", perks));
+                    var row = Add(infoBox, new VisualElement(), "info-stats");
+                    for (int i = 0; i < Stat.Count; i++)
+                    {
+                        var cell = Add(row, new VisualElement(), "info-stat");
+                        Add(cell, new Label(you.stats[i].ToString()), "info-stat-value");
+                        Add(cell, new Label(Stat.Names[i].Substring(0, 3).ToUpperInvariant()), "info-stat-name");
+                    }
+                    InfoNumbers(you);
+                    break;
+                }
+            }
+        }
+
+        void InfoEmpty(string text) => Add(infoBox, new Label(text), "info-text");
+
+        /// <summary>A card for an origin or a background: what it is, then its perk in its own box.</summary>
+        void InfoCard(string kicker, string name, string desc, string perkName, string perkDesc, bool preview)
+        {
+            Add(infoBox, new Label(kicker), "info-kicker");
+            Add(infoBox, new Label(name), "info-name");
+            Add(infoBox, new Label(desc), "info-text");
+            var perk = Add(infoBox, new VisualElement(), "info-perk");
+            Add(perk, new Label("PERK  ·  " + perkName.ToUpperInvariant()), "info-perk-name");
+            Add(perk, new Label(perkDesc), "info-perk-text");
+            if (preview) Add(infoBox, new Label("Click to pick this."), "info-note");
+        }
+
+        /// <summary>A quirk's gain and price, one per line.</summary>
+        void InfoTrade(string up, string down)
+        {
+            Add(infoBox, new Label("▲  " + up), "info-up");
+            Add(infoBox, new Label("▼  " + down), "info-down");
+        }
+
+        /// <summary>Your fighting numbers as tiles, then only the everyday rates that aren't normal.</summary>
+        void InfoNumbers(GameState you)
+        {
+            var d = engine.data;
+            Add(infoBox, new Label("IN A FIGHT"), "info-kicker");
+            var grid = Add(infoBox, new VisualElement(), "info-tiles");
+            void Tile(string name, string value)
+            {
+                var t = Add(grid, new VisualElement(), "info-tile");
+                Add(t, new Label(value), "info-tile-value");
+                Add(t, new Label(name), "info-tile-name");
+            }
+            Tile("Health", Rules.MaxHp(you).ToString());
+            Tile("Stamina", Rules.MaxStamina(you, d).ToString());
+            Tile("Mana", Rules.MaxMana(you).ToString());
+            Tile("Attack", Mathf.RoundToInt(Rules.Attack(you, d, 0)).ToString());
+            Tile("Crit chance", Rules.CritChance(you, d) + "%");
+            Tile("Speed", Rules.Speed(you, d).ToString());
+
+            Add(infoBox, new Label("EVERY DAY"), "info-kicker");
+            int shown = 0;
+            void Day(string name, float rate, bool upIsGood)
+            {
+                if (Signed(rate) == "normal") return;
+                shown++;
+                bool good = (rate > 1f) == upIsGood;
+                var r = Add(infoBox, new VisualElement(), "info-day");
+                Add(r, new Label(name), "info-day-name");
+                Add(r, new Label(Signed(rate)), good ? "info-day-good" : "info-day-bad");
+            }
+            Day("Your blows", Rules.QuirkMul(you, d, q => q.dealt), true);
+            Day("Harm you take", Rules.QuirkMul(you, d, q => q.taken), false);
+            Day("Shop prices", Rules.PriceRate(you, d), false);
+            Day("Hunger", Rules.HungerRate(you, d), false);
+            Day("Thirst", Rules.ThirstRate(you, d), false);
+            Day("Cold and rain", Rules.WeatherRate(you, d), false);
+            Day("Hard work", Rules.WorkRate(you), false);
+            Day("Learning", Rules.LearnRate(you), true);
+            if (shown == 0) Add(infoBox, new Label("Hunger, thirst, prices and the rest are all normal."), "info-text");
+            else Add(infoBox, new Label("Green is in your favour. Everything not listed is normal."), "info-note");
         }
 
         bool StepDone(int i)
@@ -297,7 +458,6 @@ namespace Loran.UnityLayer
             Chip(sexes, "Male", cGender == "male", () => { cGender = "male"; cFigure = "male"; Render(); });
             Chip(sexes, "Female", cGender == "female", () => { cGender = "female"; cFigure = "female"; Render(); });
             Chip(sexes, "Other", cGender == "other", () => { cGender = "other"; Render(); });
-            Add(p, new Label("Only changes how people speak of you."), "line-muted");
 
             Add(p, new Label("BODY"), "field-label");
             var figures = Add(p, new VisualElement(), "option-row");
@@ -365,66 +525,41 @@ namespace Loran.UnityLayer
             Add(row, new Button(() => { set(values[(at + 1) % values.Count]); GameAudio.Play("ui_tick"); Render(); }) { text = "▸", focusable = false }, "picker-arrow");
         }
 
-        void CreateBackground(VisualElement p)
+        /// <summary>One line per choice: its name, and its perk on the right. Point at one to read about it.</summary>
+        void CreatePick(VisualElement p, IEnumerable<(string id, string name, string perk)> options, string now, Action<string> set)
         {
-            Add(p, new Label("THE LIFE YOU'RE LEAVING BEHIND"), "field-label");
-            Add(p, new Label("Who you were before the boat went down. Each life gives you one perk: your own way of getting by."), "line-muted");
-            foreach (var bg in engine.data.file.backgrounds)
+            foreach (var (id, name, perk) in options)
             {
-                var v = bg;
-                var line = Add(p, new Button(() => { cBackground = v.id; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "option");
-                line.AddToClassList("option-line");
-                if (cBackground == v.id) line.AddToClassList("selected");
-                var top = Add(line, new VisualElement(), "skill-tab-top");
-                Add(top, new Label(v.name), "option-line-name");
-                Add(top, new Label(v.perkName.ToUpperInvariant()), "option-line-bonus");
-                Add(line, new Label(v.desc), "option-line-desc");
-                Add(line, new Label(v.perkDesc), "perk-desc");
-            }
-        }
-
-        void CreateOrigin(VisualElement p)
-        {
-            Add(p, new Label("WHERE YOU GREW UP"), "field-label");
-            Add(p, new Label("Where you're from changes how people in Loran see you, and what you can talk to them about."), "line-muted");
-            foreach (var o in engine.data.file.origins)
-            {
-                var v = o;
-                var line = Add(p, new Button(() => { cOrigin = v.id; GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "option");
-                line.AddToClassList("option-line");
-                if (cOrigin == v.id) line.AddToClassList("selected");
-                var top = Add(line, new VisualElement(), "skill-tab-top");
-                Add(top, new Label(v.name), "option-line-name");
-                Add(top, new Label(v.perkName.ToUpperInvariant()), "option-line-bonus");
-                Add(line, new Label(v.desc), "option-line-desc");
-                Add(line, new Label(v.perkDesc), "perk-desc");
+                var v = id;
+                var row = Add(p, new Button(() => { set(v); GameAudio.Play("ui_tick"); Render(); }) { focusable = false }, "create-row");
+                if (now == id) row.AddToClassList("create-row-on");
+                Add(row, new Label(name), "create-row-name");
+                Add(row, new Label(perk), "create-row-tag");
+                HoverInfo(row, id);
             }
         }
 
         void CreateQuirks(VisualElement p)
         {
-            Add(p, new Label("QUIRKS  ·  " + cQuirks.Count + " OF " + Rules.MaxQuirks), "field-label");
-            Add(p, new Label("Optional. Each quirk is a trade: something you're good at, and the price you pay for it."), "line-muted");
             var scroll = Add(p, new ScrollView(ScrollViewMode.Vertical), "create-opt-scroll");
+            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             foreach (var q in engine.data.file.quirks)
             {
                 var v = q;
                 bool on = cQuirks.Contains(v.id);
-                var line = Add(scroll, new Button(() =>
+                var row = Add(scroll, new Button(() =>
                 {
                     if (cQuirks.Contains(v.id)) cQuirks.Remove(v.id);
                     else if (cQuirks.Count < Rules.MaxQuirks) cQuirks.Add(v.id);
                     else { GameAudio.Play("ui_deny"); return; }
                     GameAudio.Play("ui_tick");
                     Render();
-                }) { focusable = false }, "option");
-                line.AddToClassList("option-line");
-                line.AddToClassList("quirk-line");
-                if (on) line.AddToClassList("selected");
-                Add(line, new Label((on ? "✓  " : "") + v.name), "option-line-name");
-                var trade = Add(line, new VisualElement(), "quirk-trade");
-                Add(trade, new Label("+ " + v.up), "quirk-up");
-                Add(trade, new Label("− " + v.down), "quirk-down");
+                }) { focusable = false }, "create-row");
+                row.AddToClassList("create-quirk");
+                if (on) row.AddToClassList("create-row-on");
+                Add(row, new Label(on ? "✓" : ""), "create-check");
+                Add(row, new Label(v.name), "create-row-name");
+                HoverInfo(row, v.id);
             }
         }
 
@@ -432,38 +567,40 @@ namespace Loran.UnityLayer
         {
             int left = Engine.CreationPoints - alloc.Sum();
             var you = engine.PreviewCharacter(cBackground, alloc, cOrigin, cQuirks);
-            Add(p, new Label("STATS  ·  " + left + " POINT" + (left == 1 ? "" : "S") + " TO SPEND"), "field-label");
-            Add(p, new Label("Everyone starts at 3. These are only where you begin: every stat grows as you use it."), "line-muted");
+            var pips = Add(p, new VisualElement(), "create-pips");
+            Add(pips, new Label("POINTS LEFT"), "create-pips-label");
+            for (int i = 0; i < Engine.CreationPoints; i++) Add(pips, new VisualElement(), i < left ? "create-pip-on" : "create-pip");
             for (int i = 0; i < Stat.Count; i++)
             {
                 int idx = i;
-                var box = Add(p, new VisualElement(), "alloc-box");
-                var r = Add(box, new VisualElement(), "alloc-row");
-                Add(r, new Label(Stat.Names[i]), "alloc-name");
-                int extra = you.stats[i] - (3 + alloc[i]);
-                if (extra != 0) Add(r, new Label((extra > 0 ? "+" : "") + extra + " from origin/quirks"), "alloc-bonus");
-                var minus = Add(r, new Button(() => { if (alloc[idx] > 0) { alloc[idx]--; GameAudio.Play("ui_tick"); Render(); } }) { text = "−", focusable = false }, "small-btn");
+                var box = Add(p, new VisualElement(), "create-stat");
+                HoverInfo(box, "stat:" + i);
+                var r = Add(box, new VisualElement(), "create-stat-row");
+                Add(r, new Label(Stat.Names[i]), "create-stat-name");
+                var minus = Add(r, new Button(() => { if (alloc[idx] > 0) { alloc[idx]--; GameAudio.Play("ui_tick"); Render(); } }) { text = "−", focusable = false }, "create-stat-btn");
                 minus.SetEnabled(alloc[idx] > 0);
-                Add(r, new Label(you.stats[i].ToString()), "alloc-value");
-                var plus = Add(r, new Button(() => { if (alloc.Sum() < Engine.CreationPoints) { alloc[idx]++; GameAudio.Play("ui_tick"); Render(); } }) { text = "+", focusable = false }, "small-btn");
+                Add(r, new Label(you.stats[i].ToString()), "create-stat-value");
+                var plus = Add(r, new Button(() => { if (alloc.Sum() < Engine.CreationPoints) { alloc[idx]++; GameAudio.Play("ui_tick"); Render(); } }) { text = "+", focusable = false }, "create-stat-btn");
                 plus.SetEnabled(left > 0);
-                Add(box, new Label(StatHelp[i]), "alloc-help");
-                Add(box, new Label(StatNow(you, i)), "alloc-now");
+                Add(box, new Label(StatNow(you, i)), "create-stat-now");
             }
         }
 
-        /// <summary>What one stat gives you right now, in numbers.</summary>
+        /// <summary>What one stat gives you right now, in a few words. Leaves out anything that's still normal.</summary>
         string StatNow(GameState s, int stat)
         {
             var d = engine.data;
+            var bits = new List<string>();
+            void Rate(string what, float rate) { if (Signed(rate) != "normal") bits.Add(what + " " + Signed(rate)); }
             switch (stat)
             {
-                case Stat.Str: return "Attack " + Mathf.RoundToInt(Rules.Attack(s, d, 0)) + "  ·  hard work " + Signed(Rules.WorkRate(s)) + " stamina";
-                case Stat.End: return "Health " + Rules.MaxHp(s) + "  ·  stamina " + Rules.MaxStamina(s, d) + "  ·  hunger and thirst " + Signed(Rules.NeedsRate(s));
-                case Stat.Agi: return "Critical hits " + Rules.CritChance(s, d) + "%  ·  speed " + Rules.Speed(s, d);
-                case Stat.Int: return "Mana " + Rules.MaxMana(s) + "  ·  learning " + Signed(Rules.LearnRate(s));
-                default: return "Shop prices " + Signed(Rules.PriceRate(s, d));
+                case Stat.Str: bits.Add("Attack " + Mathf.RoundToInt(Rules.Attack(s, d, 0))); Rate("hard work", Rules.WorkRate(s)); break;
+                case Stat.End: bits.Add("Health " + Rules.MaxHp(s)); bits.Add("stamina " + Rules.MaxStamina(s, d)); Rate("hunger and thirst", Rules.NeedsRate(s)); break;
+                case Stat.Agi: bits.Add("Crit " + Rules.CritChance(s, d) + "%"); bits.Add("speed " + Rules.Speed(s, d)); break;
+                case Stat.Int: bits.Add("Mana " + Rules.MaxMana(s)); Rate("learning", Rules.LearnRate(s)); break;
+                default: bits.Add("Shop prices " + Signed(Rules.PriceRate(s, d))); break;
             }
+            return string.Join("  ·  ", bits);
         }
 
         /// <summary>A rate as a change from normal: "normal", "-12%", "+8%".</summary>
@@ -509,13 +646,14 @@ namespace Loran.UnityLayer
 
         void CreateName(VisualElement p)
         {
-            Add(p, new Label("NAME"), "field-label");
             var field = new TextField { maxLength = 20, value = cName };
             field.AddToClassList("name-field");
             field.RegisterValueChangedCallback(e =>
             {
                 cName = e.newValue;
-                if (summaryName != null) summaryName.text = string.IsNullOrWhiteSpace(cName) ? "Nameless" : cName.Trim();
+                var shown = screen.Q<Label>(className: "create-stand-name");
+                if (shown != null) shown.text = string.IsNullOrWhiteSpace(cName) ? "" : cName.Trim();
+                FillInfo(null);
             });
             field.RegisterCallback<KeyDownEvent>(e =>
             {
@@ -523,11 +661,7 @@ namespace Loran.UnityLayer
             });
             p.Add(field);
             field.schedule.Execute(() => field.Focus());
-            Add(p, new Label("What people in Loran will call you."), "line-muted");
-            Add(p, new Label("WHEN YOU'RE READY"), "field-label");
-            Add(p, new Label("You'll wake on a strange shore, in a fisherman's hut, with the clothes on your back and nothing else."), "line-muted");
+            Add(p, new Label("You'll wake on a strange shore with the clothes on your back and nothing else. Press Enter or \"Begin your story\" when you're ready."), "create-ask-sub");
         }
-
-        Label summaryName => screen.Q<Label>(className: "create-sum-name");
     }
 }

@@ -1234,3 +1234,82 @@ for _name, _fn, _cl in (('road', road, sky_clouds(103, 62)), ('coast', coast, co
     BACKDROPS[_name + '_night'] = (lambda f: lambda: f(True))(_fn)
     BACKDROPS[_name + '_clouds'] = (lambda f: lambda: f(False))(_cl)
     BACKDROPS[_name + '_night_clouds'] = (lambda f: lambda: f(True))(_cl)
+
+
+# ============================================================================================== creation
+
+def creation():
+    """Behind character creation: a dim, empty room with a warm pool of light in the middle, where you stand.
+    Nothing in the centre third, so the character is the only thing there. 320 x 180 (16:9), as it fills the
+    whole screen. Wall of dark stone courses, a plank floor running away from you, and a lantern hanging at
+    each edge for a little warmth."""
+    w, h = 320, 180
+    horizon = 120
+    ys, xs = np.mgrid[0:h, 0:w].astype(float)
+    bay = BAYER[ys.astype(int) % 4, xs.astype(int) % 4] / 16.0 - 0.47
+    rnd = random.Random(331)
+    grain = fbm(w, h, 24, 331, 3)
+
+    def quant(v, cols, mask):
+        idx = np.clip(np.floor(v * (len(cols) - 1) + 0.5 + bay * 0.85), 0, len(cols) - 1).astype(int)
+        lut = np.array([hexrgb(c) for c in cols])
+        img[mask] = lut[idx[mask]]
+
+    img = np.zeros((h, w, 3))
+    # light: a soft cone from above onto the middle of the floor
+    cx = w / 2
+    dx = (xs - cx) / (w * 0.30)
+    wall_light = np.exp(-(dx ** 2) * 1.4 - ((ys - 70) / 120.0) ** 2)
+    floor_light = np.exp(-((xs - cx) / 88.0) ** 2 - ((ys - 152) / 24.0) ** 2)
+
+    # wall: dark stone courses
+    wall = ys < horizon
+    course = 13
+    row = (ys // course).astype(int)
+    off = (row % 2) * 17
+    joint_v = ((xs + off) % 34) < 1
+    joint_h = (ys % course) < 1
+    stone = 0.12 + wall_light * 0.62 + (grain - 0.5) * 0.18
+    stone = np.where(joint_v | joint_h, stone * 0.55, stone)
+    quant(np.clip(stone, 0, 1), ['#0a0b0f', '#111319', '#181b22', '#21252c', '#2c2f35', '#3a3a3d', '#4a4644'], wall)
+
+    # floor: planks that run toward the back, meeting at a point above the middle
+    floor = ys >= horizon
+    t = (ys - horizon) / (h - horizon)                 # 0 at the wall, 1 at the front
+    persp = (xs - cx) / np.maximum(0.25 + t * 0.75, 0.01)
+    seam = (np.abs(((persp + 1000) % 26) - 13) > 12.2)
+    cross = np.abs(np.sin((1.0 / np.maximum(t + 0.18, 0.05)) * 3.1)) < 0.06
+    board = 0.10 + floor_light * 0.85 + wall_light * 0.12 + (grain - 0.5) * 0.12
+    board = np.where(seam | cross, board * 0.5, board)
+    quant(np.clip(board, 0, 1), ['#0b0908', '#14100d', '#1e1813', '#2a2119', '#382b20', '#4a3827', '#5e4630', '#735538'], floor)
+
+    # a darker skirting line where wall meets floor
+    img[horizon:horizon + 2] *= 0.55
+
+    # a lantern hanging near each edge
+    def lantern(x, y):
+        glow = np.exp(-(((xs - x) / 26.0) ** 2) - (((ys - y) / 26.0) ** 2))
+        img[:] = img + glow[..., None] * np.array([70, 42, 14]) * 0.9
+        for yy in range(0, y - 6):                    # the chain
+            if yy % 3 != 2: img[yy, x] = hexrgb('#2a2622')
+        frame = '#2c2420'
+        for yy in range(y - 6, y + 7):
+            for xx in range(x - 4, x + 5):
+                edge = yy in (y - 6, y + 6) or xx in (x - 4, x + 4)
+                if edge: img[yy, xx] = hexrgb(frame)
+                else:
+                    lit = 1 - (abs(xx - x) + abs(yy - y)) / 9
+                    img[yy, xx] = hexrgb(mix(WARM[1], WARM[3], max(0, lit)))
+        img[y - 8:y - 6, x - 2:x + 3] = hexrgb(frame)
+    lantern(34, 52)
+    lantern(w - 35, 52)
+
+    # the room falls into shadow toward every edge
+    vx = (xs - cx) / (w * 0.62)
+    vy = (ys - h * 0.55) / (h * 0.75)
+    dark = np.clip(1 - (vx ** 2 + vy ** 2) * 0.9, 0.18, 1)
+    img *= dark[..., None]
+    return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), 'RGB').convert('RGBA')
+
+
+BACKDROPS['creation'] = creation
