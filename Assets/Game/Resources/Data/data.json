@@ -251,9 +251,9 @@
       "name": "Yellow-eyed wolf",
       "rank": "F",
       "desc": "A starved grey wolf, all ribs and matted fur. Its eyes have gone the colour of old pus, and it doesn't blink.",
-      "hp": 48,
-      "atkMin": 5,
-      "atkMax": 8,
+      "hp": 66,
+      "atkMin": 8,
+      "atkMax": 12,
       "speed": 4,
       "moves": [
         {
@@ -299,7 +299,11 @@
         }
       ],
       "art": "wolf",
-      "exp": 12
+      "exp": 12,
+      "ai": "hunter",
+      "move": 4,
+      "defence": 5,
+      "flee": 0.25
     },
     {
       "id": "crab",
@@ -355,7 +359,27 @@
           "weight": 2
         }
       ],
-      "exp": 10
+      "exp": 10,
+      "ai": "brute",
+      "move": 2,
+      "frontGuard": 0.5,
+      "parts": [
+        {
+          "id": "legs",
+          "name": "Legs",
+          "hit": -15,
+          "dmg": 1,
+          "effect": "hobble"
+        },
+        {
+          "id": "underside",
+          "name": "Soft underside",
+          "hit": -25,
+          "dmg": 2,
+          "effect": "bleed",
+          "vital": true
+        }
+      ]
     },
     {
       "id": "boar",
@@ -405,7 +429,8 @@
               "chance": 8
             }
           ],
-          "kind": "heavy"
+          "kind": "heavy",
+          "charge": true
         },
         {
           "id": "snort",
@@ -416,7 +441,36 @@
           "weight": 2
         }
       ],
-      "exp": 25
+      "exp": 25,
+      "ai": "charger",
+      "move": 3,
+      "flee": 0.2,
+      "frontGuard": 0.5,
+      "parts": [
+        {
+          "id": "snout",
+          "name": "Snout",
+          "hit": -25,
+          "dmg": 0.8,
+          "effect": "daze",
+          "front": true
+        },
+        {
+          "id": "legs",
+          "name": "Legs",
+          "hit": -10,
+          "dmg": 1,
+          "effect": "hobble"
+        },
+        {
+          "id": "flank",
+          "name": "Flank",
+          "hit": -20,
+          "dmg": 2,
+          "effect": "bleed",
+          "vital": true
+        }
+      ]
     },
     {
       "id": "pack_leader",
@@ -427,9 +481,9 @@
       "exp": 90,
       "art": "wolf_alpha",
       "desc": "The biggest wolf you've ever seen, grey going black along the spine, with an old scar across its muzzle. Its eyes burn yellow, and the other wolves won't come near it.",
-      "hp": 170,
-      "atkMin": 10,
-      "atkMax": 14,
+      "hp": 120,
+      "atkMin": 8,
+      "atkMax": 12,
       "speed": 5,
       "moves": [
         {
@@ -513,7 +567,14 @@
           "kind": "heavy"
         }
       ],
-      "enrageBelow": 0.35
+      "enrageBelow": 0.35,
+      "ai": "leader",
+      "move": 4,
+      "defence": 10,
+      "pack": [
+        "dog",
+        "dog"
+      ]
     },
     {
       "id": "deserter",
@@ -597,7 +658,11 @@
           "weight": 2,
           "kind": "guard"
         }
-      ]
+      ],
+      "ai": "soldier",
+      "move": 3,
+      "defence": 5,
+      "flee": 0.2
     },
     {
       "id": "toll_man",
@@ -664,7 +729,12 @@
           "weight": 3,
           "kind": "guard"
         }
-      ]
+      ],
+      "ai": "soldier",
+      "move": 3,
+      "defence": 10,
+      "flee": 0.15,
+      "frontGuard": 0.7
     }
   ],
   "backgrounds": [
@@ -3464,7 +3534,8 @@
           "level": 3
         }
       ],
-      "hairStyle": "Messy"
+      "hairStyle": "Messy",
+      "range": 8
     },
     {
       "id": "wren",
@@ -3506,7 +3577,8 @@
           "desc": "After a fight she binds the worst bleeding wound in the party, yours included, with herbs from the verge instead of your linen.",
           "level": 1
         }
-      ]
+      ],
+      "range": 6
     }
   ],
   "afflictions": [
@@ -4174,6 +4246,173 @@
       "down": "Thirst drains 20% faster",
       "weather": 0.7,
       "thirst": 1.2
+    }
+  ],
+  "battleMaps": [
+    {
+      "id": "forest_glade",
+      "terrain": "forest",
+      "rows": [
+        "TTTTTTTTTTTT",
+        "T..g....T..T",
+        "T.....g....T",
+        "T...T......T",
+        "T.......r..T",
+        "T.g...T..g.T",
+        "T.....gg...T",
+        "T..g.......T",
+        "TTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "forest_trail",
+      "terrain": "forest",
+      "rows": [
+        "TTTTTTTTTTTT",
+        "T.g...T....T",
+        "T......g.T.T",
+        "T==========T",
+        "T....T.....T",
+        "T.gg....g..T",
+        "T....g...T.T",
+        "T.T........T",
+        "TTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "forest_thicket",
+      "terrain": "forest",
+      "rows": [
+        "TTTTTTTTTTTT",
+        "T...kk.....T",
+        "T.g....T...T",
+        "T.....g....T",
+        "T..T.....g.T",
+        "T.....r....T",
+        "T.g..T..k..T",
+        "T........g.T",
+        "TTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "hills_slope",
+      "terrain": "hills",
+      "rows": [
+        "T.r.g.T..r.T",
+        "...g....g..r",
+        "r.....r.....",
+        "..gg.......g",
+        "g....g..g...",
+        "...r.......T",
+        "r......gg...",
+        "..g.........",
+        "Tg.r..T.g.rT"
+      ]
+    },
+    {
+      "id": "hills_cairn",
+      "terrain": "hills",
+      "rows": [
+        "r..T.g..r..T",
+        "..g......g..",
+        "g....g......",
+        "......rr...r",
+        "T..g........",
+        "........g..g",
+        "r.g..r......",
+        "......g.....",
+        "T.r..g.Tr..r"
+      ]
+    },
+    {
+      "id": "road_bend",
+      "terrain": "road",
+      "rows": [
+        "TTgTTTTgTTTT",
+        "T.....g....T",
+        "T..g...T...T",
+        "============",
+        "T...r......T",
+        "T.g.....g..T",
+        "T.....g....T",
+        "T..T.......T",
+        "TTTTgTTTTTTT"
+      ]
+    },
+    {
+      "id": "road_cart",
+      "terrain": "road",
+      "rows": [
+        "TTTTTTTTTTTT",
+        "T.g........T",
+        "T....g..T..T",
+        "T...====...T",
+        "====.K..====",
+        "T...====...T",
+        "T.g.....g..T",
+        "T.....T....T",
+        "TTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "coast_sand",
+      "terrain": "coast",
+      "rows": [
+        "~~~~~~~~~~~~",
+        "~,,,,,,,,,,~",
+        ",,,,,r,,,,,,",
+        ",..,,,,,,..,",
+        "...........r",
+        "..g...r..g..",
+        "....gg......",
+        ".g.......T..",
+        "TTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "coast_rocks",
+      "terrain": "coast",
+      "rows": [
+        "~~~~~~~~~~~~",
+        "~,,,,r,,,,,~",
+        ",,,,,,,,r,,,",
+        ",,r,,,,,,,,,",
+        ",,,,,,,r,,,,",
+        ",...,,,,,..,",
+        "..g.....g...",
+        "...r.....g..",
+        "TTTTTTTTTTTT"
+      ]
+    },
+    {
+      "id": "village_yard",
+      "terrain": "village",
+      "rows": [
+        "ZZZZZZZZZZZZ",
+        "Zmmmmmmmmmmm",
+        "Zmmj...K..mZ",
+        "Zmm.......mZ",
+        "Zm...n....mZ",
+        "Zmm.....n.mZ",
+        "Zmm.......mZ",
+        "Zmmmmmmmmmmm",
+        "ZZZZZZZZZZZZ"
+      ]
+    },
+    {
+      "id": "village_lane",
+      "terrain": "village",
+      "rows": [
+        "ZZZZZZZZZZZZ",
+        "Z...K....j.Z",
+        "Z..........Z",
+        "mmmmmmmmmmmm",
+        "mmmm.mmmmmmm",
+        "Z...n....g.Z",
+        "Z.g........Z",
+        "Z.....K....Z",
+        "ZZZZZZZZZZZZ"
+      ]
     }
   ]
 }

@@ -124,6 +124,7 @@ namespace Loran.Core
         public List<NpcDef> npcs = new List<NpcDef>();
         public List<OriginDef> origins = new List<OriginDef>();
         public List<QuirkDef> quirks = new List<QuirkDef>();
+        public List<BattleMapDef> battleMaps = new List<BattleMapDef>();
     }
 
     /// <summary>
@@ -221,6 +222,34 @@ namespace Loran.Core
         public string figure = "", skin = "", hair = "", hairStyle = "", beard = "";
         public List<string> worn = new List<string>();
         public List<EnemyMove> moves = new List<EnemyMove>();
+        // On the battle grid (25 Oct)
+        public string ai = "";                 // how it fights: charger (boar), hunter (wolf), leader, soldier (people), brute (anything else)
+        public int move = 3;                   // squares it can move in a turn
+        public int defence;                    // taken off your chance to hit it
+        public float flee;                     // below this share of its health it runs (0 = never; people may give up instead)
+        public List<string> pack = new List<string>();      // others that come with it (the pack leader's wolves)
+        public List<PartDef> parts = new List<PartDef>();   // where it can be hit (empty: the usual for a beast or a person)
+        public float frontGuard = 1;           // hits from in front land this much (the boar's skull, the crab's shell, a shield)
+    }
+
+    /// <summary>Somewhere on a body you can aim for: harder to hit than the body, but it does something.</summary>
+    [Serializable]
+    public class PartDef
+    {
+        public string id, name;
+        public int hit;                        // added to the chance to hit (negative: harder)
+        public float dmg = 1;                  // multiplies the damage
+        public string effect = "";             // daze, hobble, weaken, bleed
+        public bool vital;                     // only from the side or behind (or when it's open)
+        public bool front;                     // only from in front (the boar's skull)
+    }
+
+    /// <summary>A battlefield layout: rows of tiles (the outer ring is scenery, the fight is inside it).</summary>
+    [Serializable]
+    public class BattleMapDef
+    {
+        public string id, terrain;
+        public List<string> rows = new List<string>();
     }
 
     /// <summary>Something an enemy can do. Its tell is shown before it acts, so the player can react.</summary>
@@ -240,6 +269,7 @@ namespace Loran.Core
         //   howl:   it works itself up. Hurt it this round or it's enraged for the rest of the fight.
         // Left empty, it's worked out from power and guard.
         public string kind = "";
+        public bool charge;                    // on the grid: a run down a straight lane (the boar)
         public List<WoundChance> wounds = new List<WoundChance>();   // % chances a hit from this leaves a wound
 
         public string KindOf() => !string.IsNullOrEmpty(kind) ? kind : guard || power <= 0 ? "guard" : power >= 1.5f ? "heavy" : "strike";
@@ -287,6 +317,7 @@ namespace Loran.Core
         public string figure = "male", skin = "light", hair = "dark brown";
         public string hairStyle = "", beard = "";
         public List<string> worn = new List<string>();   // gear ids they wear
+        public int range = 1;                  // how far they can hit on the battle grid: 1 hand to hand, more with a bow or sling
         // What makes them themselves: one trait that's always on, and abilities that open up as they level (David, 20 Oct)
         public int level = 1;                  // the level they join at
         public string role = "";               // a word or two for the party screen: "Hunter, archer"

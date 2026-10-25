@@ -468,6 +468,7 @@ def main():
         made.append(save(render([list(r.ljust(16, '.')) for r in rows] + [['.'] * 16] * (16 - len(rows))), 'Icons', gid + '.png'))
     import beasts2   # the battle beasts, shaded and animated (20 Oct)
     made += beasts2.main()
+    made += beasts2.main(grid=True)   # and small, for the battle grid (25 Oct)
     from backdrops import BACKDROPS
     for name, paint in BACKDROPS.items():
         made.append(save(paint(), 'Backdrops', name + '.png'))
@@ -481,6 +482,8 @@ def main():
     print('portraits:', portrait.main())
     import world
     world.main()
+    import battlemaps   # the battle grid's fields (25 Oct); after world.py, which rewrites data.json
+    made += battlemaps.main()
     print('built %d sprites into %s' % (len(made), os.path.normpath(OUT)))
 
 

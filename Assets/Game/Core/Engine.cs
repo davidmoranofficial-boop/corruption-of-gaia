@@ -219,6 +219,7 @@ namespace Loran.Core
             MigrateGear();
             MigrateMoves();
             MigrateScene();
+            MigrateCombat();
             if (S.Has("created")) GiveClothes();
             // Saves from older backgrounds: the nearest new life (the 19 Oct jobs, then the first perk lives of 20 Oct)
             var oldLives = new Dictionary<string, string> {
@@ -813,7 +814,6 @@ namespace Loran.Core
                     redirect = pass ? parts[2] : parts[3];
                     return;
                 }
-                case "fight": Fight(arg, notes, ref redirect); return;
                 case "travel": Travel(parts, notes, ref redirect); return;
                 case "forge": Forge(parts, notes, ref redirect); return;
                 case "collapse": DoCollapse(notes); return;

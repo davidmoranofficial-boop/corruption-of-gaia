@@ -14,6 +14,8 @@ from rig import Mat, Ell, Cap, render, sheet, rot, add, lerp
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', '..', 'Assets', 'Game', 'Resources', 'Sprites', 'Enemies')
 
+SCALE = 1.0   # main(grid=True) draws them small for the battle grid (25 Oct)
+
 FRAMES = ['idle0', 'idle1', 'idle2', 'idle3', 'tell0', 'tell1', 'atk0', 'atk1', 'atk2', 'hurt', 'dead']
 
 
@@ -197,7 +199,7 @@ def wolf_frame(look, P):
         for f in range(4):
             p = head(22 + f * 0.9, 17.6 + f * 1.5, 6)
             det.append((p[0], p[1], 'R'))
-    return render(prims, W, H, ground=G, details=det, seed=7)
+    return render(prims, int(W * SCALE), int(H * SCALE), ground=G, details=det, seed=7, sc=SCALE)
 
 
 # ------------------------------------------------------------------ the boar
@@ -305,7 +307,7 @@ def boar_frame(P):
     if P.get('scrape'):   # dust kicked up by the scraping front hoof
         for j in range(P['scrape'] * 3):
             det.append((ox + 26 + dx - j * 2.3, G - 1 - (j % 3) * 1.4, 'd'))
-    sc = 0.75
+    sc = 0.75 * SCALE
     return render(prims, int(W * sc), int(H * sc), ground=G, details=det, seed=11, sc=sc)
 
 
@@ -389,7 +391,7 @@ def crab_frame(P):
     # a mouth of little feelers under the eyes
     for x in (-2, 0, 2):
         det.append((cx + x + dx, 44 + dy, 'm'))
-    sc = 0.85
+    sc = 0.85 * SCALE
     return render(prims, int(W * sc), int(H * sc), ground=G, details=det, seed=5, sc=sc)
 
 
@@ -409,7 +411,12 @@ def shadow():
     return im
 
 
-def main(out=OUT):
+def main(out=OUT, grid=False):
+    """grid: the small versions that stand on the battle grid (Sprites/Battle/Units), same eleven frames."""
+    global SCALE
+    if grid:
+        SCALE = 0.36
+        out = os.path.join(out, '..', 'Battle', 'Units')
     os.makedirs(out, exist_ok=True)
     made = []
     ui = os.path.join(out, '..', 'Ui')
@@ -422,6 +429,7 @@ def main(out=OUT):
         path = os.path.join(out, name + '.png')
         sheet(frames).save(path)
         made.append(path)
+    SCALE = 1.0
     return made
 
 

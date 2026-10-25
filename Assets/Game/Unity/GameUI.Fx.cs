@@ -332,29 +332,6 @@ namespace Loran.UnityLayer
 
         // ------------------------------------------------------------------ fights
 
-        /// <summary>The effect for one thing that happens in a fight, played over whoever it happens to.</summary>
-        void BattleEffect(BattleEvent e, VisualElement pic, VisualElement over)
-        {
-            if (pic == null || over == null || pic.panel == null) return;
-            var r = pic.worldBound;
-            var o = over.worldBound;
-            var centre = new Vector2(r.center.x - o.x, r.center.y - o.y);
-            float size = Mathf.Max(r.height, 120f) * 1.15f;
-            bool hit = e.kind == "hit" || e.kind == "crit" || e.kind == "glance";
-            if (e.target == "enemy" && hit)
-            {
-                if (lastAct == "fight:move:flare") Spawn(over, "fx_flare", 6, 64, 64, size * 1.2f / 64f, centre, 0.6f);
-                else if (lastAct == "fight:kindle") Spawn(over, "fx_fire", 6, 48, 48, size / 48f, centre, 0.55f);
-                else if (e.kind == "crit") Spawn(over, "fx_slash_crit", 5, 64, 64, size * 1.15f / 64f, centre, 0.4f);
-                else if (e.kind == "glance") Spawn(over, "fx_hit", 4, 32, 32, size * 0.45f / 32f, centre, 0.25f);
-                else Spawn(over, "fx_slash", 4, 48, 48, size / 48f, centre, 0.3f);
-                if (e.kind == "crit") ScreenFlash(over);
-            }
-            else if (hit) Spawn(over, "fx_bite", 4, 32, 32, size * 0.7f / 32f, centre, 0.3f);
-            else if (e.kind == "parry") Spawn(over, "fx_parry", 4, 32, 32, size * 0.6f / 32f, centre + new Vector2(size * 0.25f, 0), 0.3f);
-            else if (e.kind == "heal") Spawn(over, "fx_heal", 5, 32, 32, size * 0.7f / 32f, centre, 0.7f);
-        }
-
         void ScreenFlash(VisualElement over)
         {
             var f = Add(over, new VisualElement { pickingMode = PickingMode.Ignore }, "screen-flash");

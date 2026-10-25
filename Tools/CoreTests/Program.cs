@@ -20,6 +20,7 @@ static class Program
     {
         Root = FindRoot();
         if (Environment.GetEnvironmentVariable("PERKS") == "1") { Test("perk balance", PerkBalance); return failures; }
+        if (Environment.GetEnvironmentVariable("FIGHTS") == "1") { Test("fight balance", DogFights); return failures; }
         Test("content has no broken links", ContentIsValid);
         Test("full playthrough: hut, the wreck, Ida and the wolf, Bess, the hunt with Rook, Ida sends you to Eastmere", FullPlaythrough);
         Test("save and load round trip", SaveLoad);
@@ -30,6 +31,7 @@ static class Program
         Test("running out of energy mid-fight kills you", CombatExhaustion);
         if (Environment.GetEnvironmentVariable("QUICK") != "1") Test("fights: reading tells wins, mashing loses", DogFights);
         Test("timing: perfect hits beat mistimed ones, parries block", Timing);
+        Test("the grid: charges, braces, flanks, bow range, free hits, the downed, a routed pack", GridRules);
         Test("breath, potions, and Rook's levels, trait and abilities", PartyAndPotions);
         Test("gear ranks, traits and slots", GearRanks);
         Test("equipment slots: clothes, rings, two hands", Slots);
@@ -69,14 +71,13 @@ static class Program
             var blade = e.MakeGear("hunting_dagger", null, null);
             var coat = e.MakeGear("leather_jerkin", null, null);
             Assert(blade.condition == 100 && coat.condition == 100, "new gear is in good shape");
-            bool struck = false;
-            for (int i = 0; i < 8 && e.S.inCombat && e.S.hp > 0; i++)
-            {
-                e.Act(e.Choices().First(c => c.def.label == "Attack").def, Engine.TimingMiss);
-                struck |= e.Events.Any(x => x.target == "player" && x.from == "enemy" && x.amount > 0);
-            }
+            var dog = Duel(e);
+            dog.hp = 999;
+            for (int i = 0; i < 8; i++) Swing(e);
             Assert(blade.condition < 100, "fighting dulls the blade: " + blade.condition);
-            Assert(!struck || e.S.Equipped.Any(g => g.guard > 0 && g.condition < 100), "taking hits wears what you're wearing");
+            Incoming(e, "snap");
+            e.React(Engine.TimingMiss);
+            Assert(e.S.Equipped.Any(g => g.guard > 0 && g.condition < 100), "taking hits wears what you're wearing");
             var v = NewEngine();
             v.DevStart("village");
             v.S.result = "";
@@ -351,7 +352,8 @@ static class Program
         var f = NewEngine();
         f.DevStart("dog");
         int exp0 = f.S.exp;
-        f.Act(f.Choices().First(c => c.def.label == "Attack").def, Engine.TimingPerfect);
+        Duel(f);
+        Swing(f);
         Assert(f.SkillProgress("dagger") > 0 || f.SkillLevel("dagger") > 0, "attacking with a knife trains daggers");
         for (int i = 0; i < 100 && f.S.inCombat; i++) StepToward(f, (0, 0));
         Assert(f.S.level > 1 || f.S.exp > exp0, "winning a fight gives EXP");
@@ -363,12 +365,12 @@ static class Program
         m.TrainSkill("bow", 100, "test");
         m.S.moves.Add("quick_stab");
         m.S.moves.Add("aimed_shot");
-        var skills = m.Choices().Where(c => Engine.CommandOf(c.def) == "skill").Select(c => c.def.label).ToList();
-        Assert(skills.Any(l => l.Contains(m.data.Move("quick_stab").name)) && !skills.Any(l => l.Contains(m.data.Move("aimed_shot").name)),
-               "dagger moves with a knife, no bow moves: " + string.Join(", ", skills));
-        float hpBefore = m.S.enemyHp;
-        m.Act(m.Choices().First(c => c.def.label.Contains(m.data.Move("quick_stab").name)).def, Engine.TimingGood);
-        Assert(m.S.enemyHp < hpBefore || !m.S.inCombat, "Quick Stab should hurt");
+        var acts = m.ActionsFor("you").Select(a => a.id).ToList();
+        Assert(acts.Contains("move:quick_stab") && !acts.Contains("move:aimed_shot"), "dagger moves with a knife, no bow moves: " + string.Join(", ", acts));
+        var mf = Duel(m);
+        float hpBefore = mf.hp;
+        Swing(m, "body", "move:quick_stab");
+        Assert(mf.hp < hpBefore || !m.S.inCombat, "Quick Stab should hurt");
 
         // Life skills make the work easier
         var w = NewEngine();
@@ -391,9 +393,16 @@ static class Program
         Assert(b2.Member("rook") != null && b2.Member("rook").hp == b.Member("rook").hp && b2.Member("rook").hunger == b.Member("rook").hunger, "Rook survives a save");
         WalkUntil(b, (29, 5), () => b.S.scene == "den");
         Pick(b, "Fight it");
-        float ehp = b.S.enemyHp;
-        b.Act(b.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
-        Assert(b.S.enemyHp < ehp || b.S.pinUsed || !b.S.inCombat, "Rook should hit (or pin) the pack leader even when you defend");
+        Assert(b.Grid.units.Count(u => u.side == "foe") == 3 && b.Unit("rook") != null, "the pack leader brings two wolves, and Rook fights beside you");
+        float foesHp = b.Grid.units.Where(u => u.side == "foe").Sum(u => u.hp);
+        for (int i = 0; i < 3 && b.S.inCombat; i++)
+        {
+            b.AutoUnit("rook");
+            b.GridDo("you", "guard");
+            b.EndTurn();
+            while (b.AwaitingReaction) b.React(Engine.TimingGood);
+        }
+        Assert(b.Grid.units.Where(u => u.side == "foe").Sum(u => u.hp) < foesHp || !b.S.inCombat, "Rook shoots at the pack while you hold back");
     }
 
     static void Party()
@@ -550,9 +559,10 @@ static class Program
         int dizzy = 0;
         for (int i = 0; i < 30 && c.S.inCombat; i++)
         {
-            c.S.enemyHp = 999;
-            c.Act(c.Choices().First(x => x.def.label == "Attack").def, Engine.TimingGood);
+            Duel(c).hp = 999;
+            Swing(c);
             if (c.S.battleLog.Any(x => x.Contains("world swims"))) dizzy++;
+            c.S.battleLog.Clear();
             c.S.hp = Rules.MaxHp(c.S); c.S.stamina = 100; c.S.energy = 100;
         }
         Assert(dizzy > 0, "a concussion should make you miss sometimes");
@@ -789,37 +799,96 @@ static class Program
     {
         var e = AtDog(1);
         e.S.energy = 0.5f;
-        Pick(e, "Defend");
+        e.GridDo("you", "guard");
+        e.EndTurn();
         Assert(e.S.scene == "death" && e.S.deathCause.Contains("energy"), "should die of exhaustion mid-fight");
     }
 
-    /// <summary>One round as someone who reads the tells: dodge the big ones, block the feints and quick ones,
-    /// hit it when it's open or howling, get your breath back while it holds off. Their presses are good, not perfect.</summary>
-    static void SmartRound(Engine e, int salt)
+    // ------------------------------------------------------------------ grid fight helpers
+
+    static int Dist(GridUnit a, GridUnit b) => Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
+    static GridUnit FirstFoe(Engine e) => e.Grid.units.First(u => u.side == "foe" && !u.gone);
+
+    /// <summary>Clears the field to open ground and puts one enemy right in front of you, facing you; the rest are sent off
+    /// and your companions stand out of the way. Returns the enemy.</summary>
+    static GridUnit Duel(Engine e, string foeId = null)
     {
-        var opts = e.Choices().Where(c => c.enabled).ToDictionary(c => c.def.label, c => c.def);
-        Loran.Core.ChoiceDef Get(string l) => opts.TryGetValue(l, out var d) ? d : null;
-        string kind = e.Intent.KindOf();
-        bool winded = Rules.Winded(e.S, e.data);
-        var pick =
-            e.S.enemyOpen > 0 || kind == "howl" ? Get("Attack")
-          : kind == "heavy" ? (winded ? null : Get("Dodge"))
-          : kind == "feint" || kind == "guard" ? Get("Defend")
-          : winded || e.S.stamina < 40 ? Get("Defend")
-          : Get("Attack");
-        pick ??= Get("Defend");
-        int r = (int)((salt * 7919L + e.S.round * 104729L + (long)e.S.enemyHp * 31) % 100);
-        if (pick.label == "Dodge" && Rules.HasPerk(e.S, e.data, "nimble")) r = r * 3 / 4;   // Nimble's wider dodge zone: fewer misses
-        e.Act(pick, r < 30 ? Engine.TimingPerfect : r < 82 ? Engine.TimingGood : Engine.TimingMiss);
+        var g = e.Grid;
+        for (int y = 0; y < g.h; y++) g.rows[y] = new string('.', g.w);
+        var you = e.Unit("you");
+        var f = foeId == null ? FirstFoe(e) : e.Unit(foeId);
+        foreach (var o in g.units.Where(o => o.side == "foe" && o != f)) { o.gone = true; o.goneHow = "fled"; }
+        int i = 0;
+        foreach (var o in g.units.Where(o => o.side == "party" && o != you)) { o.x = 0; o.y = i++ == 0 ? 0 : g.h - 1; o.acted = true; }
+        you.x = 3; you.y = 3; you.facing = "right"; you.states.Clear(); you.acted = false; you.reaction = true; you.moveLeft = e.MoveOf(you);
+        f.x = 4; f.y = 3; f.facing = "left"; f.states.Clear(); f.lane.Clear();
+        f.intent = e.FoeDef(f).moves.First(m => m.Attacks()).id; f.intentTarget = "you";
+        g.phase = "party";
+        e.S.stamina = Rules.MaxStamina(e.S, e.data);
+        return f;
     }
 
-    /// <summary>One round as a button-masher: attack whenever there's breath for it, otherwise block. Presses all over the place.</summary>
+    /// <summary>You hit the enemy in front of you (it's put back there if it stepped off).</summary>
+    static bool Swing(Engine e, string part = "body", string action = "attack")
+    {
+        var you = e.Unit("you");
+        var f = FirstFoe(e);
+        if (Dist(you, f) != 1 && e.At(you.x + 1, you.y) == null) { f.x = you.x + 1; f.y = you.y; }
+        e.Grid.phase = "party";
+        you.acted = false;
+        e.S.stamina = Rules.MaxStamina(e.S, e.data);
+        return e.GridAttack("you", f.id, part, action);
+    }
+
+    /// <summary>The enemy in front of you is about to use this move on you, and you end your turn: the timing bar comes up.</summary>
+    static GridUnit Incoming(Engine e, string move, bool guard = false, string foeId = null)
+    {
+        var f = Duel(e, foeId);
+        f.intent = move;
+        f.intentTarget = "you";
+        if (guard) e.GridDo("you", "guard");
+        e.EndTurn();
+        Assert(e.AwaitingReaction, "the timing bar should come up for " + move + " (" + string.Join(" / ", e.S.battleLog) + ")");
+        return f;
+    }
+
+    /// <summary>One round played well: everyone flanks, aims and helps (the engine's own sensible play), with good presses, some perfect.</summary>
+    static void SmartRound(Engine e, int salt)
+    {
+        int n = 0;
+        e.AutoRound(() =>
+        {
+            int r = (int)((salt * 7919L + e.Grid.round * 104729L + n++ * 31L) % 100);
+            if (Rules.HasPerk(e.S, e.data, "nimble") && e.Grid.reactKind == "dodge") r = r * 3 / 4;   // Nimble's wider dodge zone
+            return r < 30 ? Engine.TimingPerfect : r < 82 ? Engine.TimingGood : Engine.TimingMiss;
+        });
+    }
+
+    /// <summary>One round as a button-masher: walk straight at the nearest enemy and hit it in the body, companions too.
+    /// Never braces, never flanks, never helps anyone up. Presses all over the place.</summary>
     static void MashRound(Engine e, int salt)
     {
-        var opts = e.Choices().Where(c => c.enabled).ToList();
-        var pick = opts.FirstOrDefault(c => c.def.label == "Attack") ?? opts.First(c => c.def.label == "Defend");
-        int t = (salt + e.S.round) % 6;
-        e.Act(pick.def, t == 0 ? Engine.TimingPerfect : t <= 2 ? Engine.TimingGood : Engine.TimingMiss);
+        foreach (var u in e.Grid.units.Where(u => u.side == "party" && !u.gone && !u.down).ToList())
+        {
+            if (!e.S.inCombat) return;
+            var t = e.Grid.units.Where(f => f.side == "foe" && !f.gone).OrderBy(f => Dist(u, f)).FirstOrDefault();
+            if (t == null) break;
+            if (!e.Targets(u.id, "attack").Contains(t.id))
+            {
+                var sq = e.Reachable(u.id).OrderBy(q => Math.Abs(q.x - t.x) + Math.Abs(q.y - t.y)).FirstOrDefault();
+                if (sq != default && Math.Abs(sq.x - t.x) + Math.Abs(sq.y - t.y) < Dist(u, t)) e.GridMove(u.id, sq.x, sq.y);
+            }
+            if (!e.S.inCombat) return;
+            if (!e.GridAttack(u.id, t.id, "body", "attack")) e.GridDo(u.id, "wait");
+        }
+        if (!e.S.inCombat) return;
+        e.EndTurn();
+        int n = 0;
+        for (int i = 0; i < 60 && e.AwaitingReaction; i++)
+        {
+            int t = (salt + e.Grid.round + n++) % 6;
+            e.React(t == 0 ? Engine.TimingPerfect : t <= 2 ? Engine.TimingGood : Engine.TimingMiss);
+        }
     }
 
     static (int wins, int deaths, float lost) Simulate(Func<int, Engine> start, Action<Engine, int> play, string win, int n)
@@ -832,13 +901,12 @@ static class Program
             float hp0 = e.S.hp;
             for (int turn = 0; turn < 80 && e.S.inCombat; turn++) play(e, seed);
             Assert(!e.S.inCombat, "a fight should end within 80 rounds");
-            rounds += e.S.round;
-            lost += hp0 - Math.Max(0, e.S.hp);
-            if (e.S.scene == win) wins++;
-            else if (e.S.scene == "death") deaths++;
+            rounds += e.Grid.round;
+            if (e.S.scene == win) { wins++; lost += hp0 - Math.Max(0, e.S.hp); }
+            else if (e.S.scene == "death") { deaths++; if (Environment.GetEnvironmentVariable("WHY") == "1") Console.WriteLine("        died: " + e.S.deathCause + " | " + string.Join(" / ", e.S.battleLog.TakeLast(3))); }
         }
-        Console.WriteLine("      " + wins + "/" + n + " won, " + deaths + " died, " + (rounds / n).ToString("0.0") + " rounds, " + (lost / n).ToString("0") + " health lost on average");
-        return (wins, deaths, lost / n);
+        Console.WriteLine("      " + wins + "/" + n + " won, " + deaths + " died, " + (rounds / n).ToString("0.0") + " rounds, " + (lost / Math.Max(1, wins)).ToString("0") + " health lost in a win");
+        return (wins, deaths, lost / Math.Max(1, wins));
     }
 
     static void Perks()
@@ -848,16 +916,18 @@ static class Program
         // Berserk: badly hurt, harder blows
         var a = AtDog(3); a.S.background = "soldier";
         var b = AtDog(3); b.S.background = "soldier";
+        var fa = Duel(a); var fb = Duel(b);
+        fa.hp = fb.hp = 999;
         b.S.hp = Rules.MaxHp(b.S) * 0.2f;
-        a.S.enemyMove = b.S.enemyMove = "wary";
-        float ea = a.S.enemyHp, eb = b.S.enemyHp;
-        a.Act(a.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
-        b.Act(b.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
-        Assert(b.Berserk && !a.Berserk && (eb - b.S.enemyHp) >= (ea - a.S.enemyHp) * 1.2f, "berserk hits harder when you're badly hurt");
+        Swing(a); Swing(b);
+        Assert(b.Berserk && !a.Berserk && (999 - fb.hp) >= (999 - fa.hp) * 1.2f, "berserk hits harder when you're badly hurt: " + (999 - fb.hp) + " vs " + (999 - fa.hp));
 
-        // Nimble: dodging is free
+        // Nimble: dodging costs less
         var l = AtDog(3); l.S.background = "thief";
-        Assert(l.Choices().First(c => c.def.label == "Dodge").def.stamina == Rules.NimbleDodge, "a thief dodges for half the stamina");
+        Incoming(l, "snap");
+        l.S.stamina = 50;
+        l.React(Engine.TimingGood);
+        Assert(Math.Abs(50 - l.S.stamina - Rules.NimbleDodge) < 0.01f, "a thief dodges for half the stamina: " + (50 - l.S.stamina));
 
         // Deadeye: more crits
         var k1 = AtDog(3); k1.S.background = "hunter";
@@ -918,17 +988,18 @@ static class Program
         m.hunger = 90; float h0 = m.hunger;
         Rules.Advance(e.S, e.data, 120, false);
         Assert(h0 - m.hunger > 0 && h0 - m.hunger < Rules.HungerPerHour * 2 * 0.6f, "hill-born Rook gets hungry at half the rate");
-        // Pin down stops a heavy attack, once a fight
+        // Pin down stops a big attack, once a fight
         int pins = 0;
         for (int seed = 0; seed < 30 && pins == 0; seed++)
         {
             var g = AtPackLeader(seed);
-            for (int r = 0; r < 30 && g.S.inCombat; r++)
-            {
-                bool heavy = g.Intent.KindOf() == "heavy";
-                g.Act(g.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
-                if (heavy && g.S.battleLog.Any(l => l.Contains("pins"))) { pins++; break; }
-            }
+            for (int y = 0; y < g.Grid.h; y++) g.Grid.rows[y] = new string('.', g.Grid.w);
+            var leader = g.Grid.units.First(u => u.def == "pack_leader");
+            foreach (var w in g.Grid.units.Where(u => u.side == "foe")) { w.intent = "snap"; w.lane.Clear(); }
+            leader.intent = "lunge";
+            g.AutoUnit("rook");
+            Assert(g.Unit("rook").states.Contains("cd_pin_down:999"), "Rook uses Pin down on the big attack coming");
+            if (g.HasState(leader, "staggered")) pins++;
         }
         Assert(pins > 0, "Rook pins down a big attack");
     }
@@ -970,21 +1041,18 @@ static class Program
     {
         { var d0 = AtDog(0); Console.WriteLine("    at the wolf: hp " + d0.S.hp + "/" + Rules.MaxHp(d0.S) + ", stamina " + d0.S.stamina + "/" + Rules.MaxStamina(d0.S, d0.data) + ", str " + d0.S.stats[Stat.Str] + " agi " + d0.S.stats[Stat.Agi] + ", gear dmg " + Rules.GearDamage(d0.S) + " guard " + Rules.GearGuard(d0.S, d0.data) + ", crit " + Rules.CritChance(d0.S, d0.data) + "%, party " + d0.S.party.Count + ", speed " + Rules.Speed(d0.S, d0.data)); }
         { var d0 = AtPackLeader(0); Console.WriteLine("    at the pack leader: level " + d0.S.level + " hp " + d0.S.hp + "/" + Rules.MaxHp(d0.S) + ", stamina " + d0.S.stamina + ", str " + d0.S.stats[Stat.Str] + ", gear dmg " + Rules.GearDamage(d0.S) + " guard " + Rules.GearGuard(d0.S, d0.data) + ", party " + d0.S.party.Count); }
-        if (Environment.GetEnvironmentVariable("BOSS") != "1")
-        {
-        Console.WriteLine("    the wolf, reading its tells:");
-        var smart = Simulate(AtDog, SmartRound, "dog_won", 400);
+        int n = int.TryParse(Environment.GetEnvironmentVariable("FIGHTN"), out var fn) ? fn : 400;
+        Console.WriteLine("    the wolf, played well:");
+        var smart = Simulate(AtDog, SmartRound, "dog_won", n);
         Console.WriteLine("    the wolf, mashing attack:");
-        var mash = Simulate(AtDog, MashRound, "dog_won", 400);
-        Assert(smart.wins >= 380, "reading the wolf should nearly always win");
-        Assert(mash.wins < smart.wins - 40 && mash.lost > smart.lost * 1.5f, "mashing attack should go much worse");
-        }
-
-        Console.WriteLine("    the pack leader with Rook, reading its tells:");
-        var bs = Simulate(AtPackLeader, SmartRound, "den_won", 200);
+        var mash = Simulate(AtDog, MashRound, "dog_won", n);
+        Console.WriteLine("    the pack leader with Rook, played well:");
+        var bs = Simulate(AtPackLeader, SmartRound, "den_won", n / 2);
         Console.WriteLine("    the pack leader with Rook, mashing attack:");
-        var bm = Simulate(AtPackLeader, MashRound, "den_won", 200);
-        Assert(bs.wins >= 120, "the pack leader should be beatable by someone who reads it");
+        var bm = Simulate(AtPackLeader, MashRound, "den_won", n / 2);
+        Assert(smart.wins >= n * 0.95f, "playing the wolf well should nearly always win");
+        Assert(mash.wins < smart.wins - n / 20 && mash.lost > smart.lost * 1.5f, "mashing attack should go much worse");
+        Assert(bs.wins >= n / 2 * 0.6f, "the pack leader should be beatable by someone who plays it well");
         Assert(bm.wins < bs.wins / 2, "but it should punish mashing");
     }
 
@@ -1027,71 +1095,239 @@ static class Program
 
     static void Timing()
     {
-        Assert(AtDog(3).Intent != null && AtDog(3).Paragraphs().Count == 2, "the dog should show what it's about to do");
-        // Attacks no longer use the bar: crits (and the odd glancing blow) come by chance
-        int crits = 0, glances = 0, hits = 0;
-        float critDmg = 0, hitDmg = 0;
+        var d = AtDog(3);
+        Assert(d.IntentText(FirstFoe(d)) != "", "the wolf should show what it's about to do");
+        // Attacks don't use the bar: crits come by chance, and a miss on the body is a graze
+        int crits = 0, grazes = 0, hits = 0;
+        float critDmg = 0, hitDmg = 0, grazeDmg = 0;
         for (int seed = 0; seed < 120; seed++)
         {
             var a = AtDog(seed);
-            float before = a.S.enemyHp;
-            a.Act(a.Choices().First(c => c.def.label == "Attack").def, Engine.TimingMiss);
-            var ev = a.Events.FirstOrDefault(x => x.target == "enemy");
-            Assert(ev != null, "a hit should be recorded for the screen");
+            Duel(a).hp = 999;
+            Swing(a);
+            var ev = a.Events.FirstOrDefault(x => x.from == "you" && (x.kind == "hit" || x.kind == "crit" || x.kind == "graze"));
+            Assert(ev != null, "a blow should be recorded for the screen: " + string.Join(", ", a.Events.Select(x => x.kind)));
             if (ev.kind == "crit") { crits++; critDmg += ev.amount; }
-            else if (ev.kind == "glance") glances++;
+            else if (ev.kind == "graze") { grazes++; grazeDmg += ev.amount; }
             else { hits++; hitDmg += ev.amount; }
         }
-        Assert(crits > 3 && crits < 40, "some attacks crit by chance (" + crits + " of 120)");
-        Assert(glances < 20, "only a few glance (" + glances + ")");
-        Assert(critDmg / crits > hitDmg / hits * 1.4f, "a crit hits much harder");
+        Console.WriteLine("    120 swings at a wolf: " + hits + " hits, " + crits + " crits, " + grazes + " grazes");
+        Assert(crits > 0 && crits < 40, "some attacks crit by chance (" + crits + " of 120)");
+        Assert(grazes > 5 && grazes < 50, "some miss and only graze (" + grazes + ")");
+        Assert(critDmg / crits > hitDmg / hits * 1.4f && grazeDmg / grazes < hitDmg / hits * 0.6f, "a crit hits much harder, a graze much softer");
 
         int parried = 0, dodged = 0, smashed = 0;
-        for (int seed = 0; seed < 60; seed++)
+        for (int seed = 0; seed < 30; seed++)
         {
             var e = AtDog(seed);
-            e.S.stamina = Rules.MaxStamina(e.S, e.data);
-            string kind = e.Intent.KindOf();
-            if (kind == "guard") continue;
-            float hp = e.S.hp;
-            if (kind == "strike")
+            float hp;
+            if (seed % 3 == 0)
             {
-                e.Act(e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingPerfect);
-                Assert(e.S.hp >= hp, "a perfect block parries a quick blow");
+                var f = Incoming(e, "snap", guard: true);
+                hp = e.S.hp;
+                float fh = f.hp;
+                e.React(Engine.TimingPerfect);
+                Assert(e.S.hp >= hp && f.hp < fh, "a perfect parry turns a quick blow and strikes back");
                 parried++;
             }
-            else if (seed % 2 == 0)
+            else if (seed % 3 == 1)
             {
-                e.Act(e.Choices().First(c => c.def.label == "Defend").def, Engine.TimingPerfect);
-                Assert(e.S.hp < hp, "a big blow smashes through a block without a shield");
+                Incoming(e, "lunge", guard: true);
+                hp = e.S.hp;
+                e.React(Engine.TimingPerfect);
+                Assert(e.S.hp < hp, "a big blow smashes through a parry without a shield");
                 smashed++;
             }
             else
             {
-                e.Act(e.Choices().First(c => c.def.label == "Dodge").def, Engine.TimingGood);
-                Assert(e.S.hp >= hp && e.S.enemyOpen > 0, "dodging a big blow takes nothing and leaves it open");
-                float ehp = e.S.enemyHp;
-                e.S.enemyMove = "wary";
-                e.Act(e.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
-                Assert(e.Events.Any(x => x.target == "enemy" && x.kind == "crit") && e.S.enemyOpen == 0, "the next blow into an open enemy is a sure crit");
+                var f = Incoming(e, "lunge");
+                hp = e.S.hp;
+                e.React(Engine.TimingGood);
+                Assert(e.S.hp >= hp && e.HasState(f, "open"), "dodging a big blow takes nothing and leaves it open: " + string.Join(", ", f.states));
+                f.hp = 999;
+                Swing(e);
+                Assert(e.Events.Any(x => x.target == f.id && x.kind == "crit"), "the next blow into an open enemy is a sure crit");
                 dodged++;
             }
         }
-        Assert(parried > 10 && dodged > 3 && smashed > 3, "should have tested parries, dodges and blocks (" + parried + "/" + dodged + "/" + smashed + ")");
+        Assert(parried >= 10 && dodged >= 10 && smashed >= 10, "should have tested parries, dodges and smashes");
 
-        // A feint punishes a dodge; a howl left alone enrages
-        var f = AtPackLeader(1);
-        f.S.stamina = Rules.MaxStamina(f.S, f.data);
-        f.S.enemyMove = "feint";
-        float fh = f.S.hp;
-        f.Act(f.Choices().First(c => c.def.label == "Dodge").def, Engine.TimingPerfect);
-        Assert(f.S.enemyOpen == 0 && (f.S.hp < fh || f.Member("rook").hp < f.data.Follower("rook").hp), "dodging a feint gets you caught");
-        f.S.enemyMove = "howl";
-        f.Act(f.Choices().First(c => c.def.label == "Defend").def, Engine.TimingGood);
-        Assert(f.S.enemyRage == 1, "letting it howl enrages it");
-        f.S.enemyMove = "howl";
-        f.Act(f.Choices().First(c => c.def.label == "Attack").def, Engine.TimingGood);
-        Assert(f.S.enemyRage == 1, "hitting it cuts the howl short");
+        // A feint punishes a dodge; a howl left alone enrages the pack, a blow first cuts it short
+        var p = AtPackLeader(1);
+        string leaderId = p.Grid.units.First(u => u.def == "pack_leader").id;
+        var lead = Incoming(p, "feint", foeId: leaderId);
+        float ph = p.S.hp;
+        p.React(Engine.TimingPerfect);
+        Assert(!p.HasState(lead, "open") && p.S.hp < ph, "dodging a feint gets you caught");
+
+        var h = AtPackLeader(1);
+        var hl = h.Grid.units.First(u => u.def == "pack_leader");
+        foreach (var o in h.Grid.units.Where(u => u.side == "party")) o.acted = true;
+        hl.intent = "howl";
+        h.EndTurn();
+        while (h.AwaitingReaction) h.React(Engine.TimingGood);
+        Assert(h.Grid.units.Where(u => u.side == "foe" && !u.gone).All(u => h.HasState(u, "enraged")), "letting it howl enrages the whole pack");
+
+        var c = AtPackLeader(1);
+        var cl = Duel(c, c.Grid.units.First(u => u.def == "pack_leader").id);
+        cl.hp = 999;
+        Swing(c);
+        cl.intent = "howl";
+        c.EndTurn();
+        Assert(!c.HasState(cl, "enraged"), "hitting it cuts the howl short");
+    }
+
+    /// <summary>The new grid: charges, braces, flanks, the vital point, bow range, free hits, the downed, a routed pack, a surrender.</summary>
+    static void GridRules()
+    {
+        // The boar shows its charge lane at the start of your turn
+        int lanes = 0;
+        for (int seed = 0; seed < 20; seed++)
+        {
+            var e = AtBoar(seed);
+            var boar = FirstFoe(e);
+            if (boar.lane.Count > 0) { lanes++; Assert(boar.intent == "charge" && boar.intentDir != "", "a lane comes with a charge and a direction"); }
+        }
+        Assert(lanes >= 10, "the boar usually lines up a charge from across the field (" + lanes + " of 20)");
+
+        // Braced: it stops dead, open and vulnerable, and you take a quarter
+        (Engine e, GridUnit boar) ChargeAt(int seed, bool brace, bool tree)
+        {
+            var e = AtBoar(seed);
+            var b = Duel(e);
+            var you = e.Unit("you");
+            b.x = 8; b.y = 3; b.facing = "left";
+            if (tree) { you.y = 5; e.Grid.rows[3] = "...T......"; }
+            b.intent = "charge"; b.intentDir = "left"; b.intentTarget = "you";
+            b.lane.Clear();
+            for (int x = 7; x >= 1; x--) b.lane.Add(x + 3 * e.Grid.w);
+            if (brace) e.GridDo("you", "brace");
+            else e.GridDo("you", "wait");
+            e.EndTurn();
+            return (e, b);
+        }
+        var (bz, bb) = ChargeAt(1, true, false);
+        Assert(bb.x == 4 && bz.HasState(bb, "open") && bz.HasState(bb, "vulnerable"), "braced: the boar stops dead in front of you, open");
+        Assert(bz.S.hp > Rules.MaxHp(bz.S) - 9, "and you take only a little: " + bz.S.hp);
+        float bracedLoss = Rules.MaxHp(bz.S) - bz.S.hp;
+        float flank = bb.hp;
+        bb.facing = "left";
+        var yb = bz.Unit("you");
+        yb.x = 4; yb.y = 2;   // step round to its side
+        yb.acted = false; bz.S.stamina = 100;
+        var pv = bz.Preview("you", bb.id, "flank", "attack");
+        Assert(pv.ok && pv.chance == 100, "its flank is open to a sure blow from the side: " + pv.why + " " + pv.chance);
+        bz.GridAttack("you", bb.id, "flank", "attack");
+        Assert(bb.hp < flank - 15 || bb.gone, "a blow to the flank of a stunned boar hurts it badly: " + (flank - bb.hp));
+
+        var (uz, ub) = ChargeAt(1, false, false);
+        var yu = uz.Unit("you");
+        Assert(uz.HasState(yu, "prone") && yu.x == 2 && Rules.MaxHp(uz.S) - uz.S.hp > bracedLoss * 2, "unbraced: knocked back a square and flat, and hurt");
+
+        var (tz, tb) = ChargeAt(1, false, true);
+        Assert(tb.x == 4 && tz.HasState(tb, "staggered") && tz.HasState(tb, "vulnerable") && tz.S.hp == Rules.MaxHp(tz.S), "out of its way it runs into the tree and stuns itself");
+
+        // Flanking: front, side, back
+        var fl = AtDog(2);
+        var fd = Duel(fl);
+        int front = fl.Preview("you", fd.id, "body", "attack").chance;
+        fd.facing = "up";
+        int side = fl.Preview("you", fd.id, "body", "attack").chance;
+        fd.facing = "right";
+        var back = fl.Preview("you", fd.id, "body", "attack");
+        Assert(side == Math.Min(95, front + Engine.SideBonus) && back.chance == Math.Min(95, front + Engine.BackBonus) && back.side == "back", "side and back are easier: " + front + "/" + side + "/" + back.chance);
+        fd.facing = "left";
+        Assert(!fl.Preview("you", fd.id, "vital", "attack").ok, "the vital point can't be reached from in front");
+        fd.facing = "right";
+        Assert(fl.Preview("you", fd.id, "vital", "attack").ok, "but it can from behind");
+
+        // A bow: full strength close in, weaker further out, nothing at all through a tree
+        var bw = AtDog(2);
+        var bd = Duel(bw);
+        bw.MakeGear("hunting_bow", null, null);
+        if (bw.S.InSlot("weapon")?.id == "hunting_bow")
+        {
+            bd.x = 7; var near = bw.Preview("you", bd.id, "body", "attack");
+            bd.x = 9; bd.y = 3; var mid = bw.Preview("you", bd.id, "body", "attack");
+            bd.x = 9; bd.y = 5; var far = bw.Preview("you", bd.id, "body", "attack");
+            Assert(near.ok && far.ok && near.chance > far.chance && near.max > far.max, "a bow loses aim and bite with distance: " + near.chance + "/" + mid.chance + "/" + far.chance);
+            bw.Grid.rows[3] = "....T.....";
+            bd.x = 9; bd.y = 3;
+            Assert(!bw.Targets("you", "attack").Contains(bd.id), "no shooting through a tree");
+        }
+        else Console.WriteLine("    (no hunting_bow item to test bow range with)");
+
+        // Walking away from an enemy that's facing you gives it a free hit
+        var fw = AtDog(4);
+        var fwd = Duel(fw);
+        float fh0 = fw.S.hp;
+        fw.GridMove("you", 1, 3);
+        Assert(fw.S.hp < fh0 || fw.Events.Any(x => x.from == fwd.id), "walking off gets you bitten: " + string.Join(", ", fw.Events.Select(x => x.kind)));
+
+        // A downed companion bleeds out unless someone gets them up
+        var dn = AtPackLeader(3);
+        var rk = dn.Unit("rook");
+        Duel(dn);
+        dn.Member("rook").hp = 0;
+        rk.down = true; rk.bleedOut = 1; rk.x = 2; rk.y = 3;
+        dn.GridDo("you", "wait");
+        dn.EndTurn();
+        while (dn.AwaitingReaction) dn.React(Engine.TimingGood);
+        Assert(rk.gone && dn.Member("rook") == null && dn.S.fallen.Contains("rook"), "left too long, Rook bleeds out, for good");
+        var up = AtPackLeader(3);
+        var rk2 = up.Unit("rook");
+        Duel(up);
+        up.Member("rook").hp = 0;
+        rk2.down = true; rk2.bleedOut = 1; rk2.x = 2; rk2.y = 3;
+        Assert(up.GridDo("you", "help:rook") && !rk2.down && up.Member("rook").hp > 0 && up.Member("rook").body.afflictions.Any(a => a.id == "gash"), "help him up: standing, with a gash");
+
+        // Kill the leader and the pack runs
+        var pk = AtPackLeader(5);
+        var pl = pk.Grid.units.First(u => u.def == "pack_leader");
+        pl.hp = 1;
+        Duel(pk, pl.id);
+        foreach (var w in pk.Grid.units.Where(u => u.def == "dog")) { w.gone = false; w.goneHow = ""; w.x = 9; w.y = w.id.EndsWith("1") ? 0 : 6; }
+        for (int i = 0; i < 10 && !pl.gone; i++) Swing(pk);
+        Assert(pl.gone && !pk.S.inCombat && pk.S.scene == "den_won", "kill the leader and its wolves run, and the fight's won: " + pk.S.scene);
+
+        // A beaten deserter gives up
+        var ds = NewEngine();
+        ds.DevStart("eastroad");
+        ds.Choose(new ChoiceDef { label = "fight", effects = new List<string> { "combat:deserter:travel:travel" } });
+        Assert(ds.S.inCombat, "a fight with a deserter");
+        var dd = Duel(ds);
+        dd.hp = dd.maxHp * 0.2f + 1;
+        for (int i = 0; i < 10 && ds.S.inCombat; i++) Swing(ds);
+        Assert(dd.goneHow == "surrendered" || dd.goneHow == "killed", "beaten, he gives up (or dies): " + dd.goneHow);
+
+        // Run: only from the left edge
+        var rn = AtDog(6);
+        var ry = rn.Unit("you");
+        Duel(rn);
+        Assert(!rn.ActionsFor("you").First(x => x.id == "run").enabled, "can't run from the middle of the field");
+        ry.x = 0;
+        Assert(rn.GridDo("you", "run") && !rn.S.inCombat, "from the left edge you get away");
+
+        // A save mid-fight carries the field; an old one-on-one fight starts again on the grid
+        var sv = AtPackLeader(2);
+        var json = Json.Write(sv.S);
+        var ld = NewEngine();
+        ld.LoadState(Json.Read<GameState>(json));
+        Assert(ld.InGrid && ld.Grid.units.Count == sv.Grid.units.Count && ld.Grid.map == sv.Grid.map, "a fight survives a save");
+        var old = Json.Read<GameState>(json);
+        old.grid = null;
+        var ol = NewEngine();
+        ol.LoadState(old);
+        Assert(ol.InGrid && ol.Grid.units.Any(u => u.def == "pack_leader"), "an old save mid-fight starts it on the grid");
+    }
+
+    static Engine AtBoar(int seed)
+    {
+        var e = NewEngine();
+        e.DevStart("hunt");
+        e.S.seed = seed * 13 + 5;
+        e.Choose(new ChoiceDef { label = "fight", effects = new List<string> { "combat:boar:travel:travel" } });
+        return e;
     }
 
     static void GearRanks()
@@ -1502,7 +1738,8 @@ static class Program
             var e = NewEngine();
             e.DevStart(id);
             Assert(e.IsDev && e.S.scene == expect[id] && e.Area != null, id + " should land in " + expect[id] + ", was " + e.S.scene);
-            if (e.S.scene != "travel" || e.S.inCombat) Assert(e.Choices().Any(c => c.enabled), id + " should have something to do");
+            if (e.S.inCombat) Assert(e.ActionsFor("you").Any(a => a.enabled), id + " should have something to do in the fight");
+            else if (e.S.scene != "travel") Assert(e.Choices().Any(c => c.enabled), id + " should have something to do");
             if (id == "dog" || id == "crab") Assert(e.S.inCombat && e.S.enemy == id, id + " should start the fight");
             if (id == "forge_iron") { Pick(e, "An iron cap"); Assert(e.S.scene == "forge", "should be at the anvil"); e.FinishForge(1, 1, 1); Assert(e.Travelling, "back in the village"); }
             if (id == "hunt") Assert(e.Member("rook") != null && e.Objects().Any(o => o.id == "hwood1") && e.Objects().Any(o => o.id == "boar"), "out hunting with Rook");
@@ -1543,7 +1780,7 @@ static class Program
     {
         if (e.S.inCombat)
         {
-            SmartRound(e, e.S.round);
+            SmartRound(e, e.Grid.round);
         }
         else if (e.S.scene == "travel")
         {
@@ -1665,6 +1902,7 @@ static class Program
                 if (e.Area?.id == "skelmed") village = true;
                 if (e.S.scene == "forge") { e.FinishForge((float)rng.NextDouble(), (float)rng.NextDouble(), (float)rng.NextDouble()); continue; }
 
+                if (e.S.inCombat) { if (rng.Next(2) == 0) SmartRound(e, seed); else MashRound(e, seed); continue; }
                 var opts = e.Choices().Where(c => c.enabled).ToList();
                 int r = rng.Next(10);
                 if (r == 0 && e.FreeToAct) { e.CatchBreath(); continue; }

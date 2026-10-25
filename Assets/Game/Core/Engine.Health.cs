@@ -113,17 +113,6 @@ namespace Loran.Core
             }
         }
 
-        /// <summary>Your wounds may make an action in a fight go wrong (a concussion, say).</summary>
-        bool Fumbles(string kind, List<string> lines)
-        {
-            if (kind == "defend" || kind == "flee" || kind == "drink" || kind.StartsWith("eat:") || kind.StartsWith("potion:")) return false;
-            int f = Rules.Fumble(S.body, data);
-            if (f <= 0 || Roll(1, 100) > f) return false;
-            lines.Add("The world swims. Your blow goes nowhere near.");
-            Events.Add(new BattleEvent { target = "player", kind = "glance", text = "Dizzy" });
-            return true;
-        }
-
         /// <summary>After a fight, anyone who went down is badly hurt: a grave wound that kills them if it isn't bandaged and stitched in time.</summary>
         void DownedAfterFight()
         {

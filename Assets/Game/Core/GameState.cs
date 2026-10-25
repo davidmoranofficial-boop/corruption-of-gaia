@@ -73,6 +73,51 @@ namespace Loran.Core
 
     [Serializable] public class SkillEntry { public string id; public int level; public float xp; }
 
+    /// <summary>Someone on the battle grid: you, a companion, or an enemy.</summary>
+    [Serializable]
+    public class GridUnit
+    {
+        public string id = "";                 // "you", a follower's id, or an enemy id with a number: "dog#1"
+        public string side = "";               // party or foe
+        public string def = "";                // the follower or enemy id ("" for you)
+        public int x, y;
+        public string facing = "right";
+        public float hp, maxHp;                // you and your companions: copied back to you when the fight ends
+        public int moveLeft;
+        public bool acted;
+        public bool reaction = true;           // one parry, block or dodge a round
+        public List<string> states = new List<string>();   // "name:rounds", e.g. "open:1", "hobbled:2", "enraged:99"
+        public string intent = "";             // an enemy: the move it will make this enemy turn
+        public string intentTarget = "";       // who it's after
+        public string intentDir = "";          // the charge's direction
+        public List<int> lane = new List<int>();   // the squares the charge will cross (x + y * width)
+        public bool down;                      // a companion at 0 health: bleeding out
+        public int bleedOut;                   // rounds left before they die
+        public bool gone;                      // dead, fled or given up: off the field
+        public string goneHow = "";            // killed, fled, surrendered
+        public float hitBy;                    // a person: the most damage one of you did them last round
+        public string hitByWho = "";
+    }
+
+    /// <summary>A fight on the battle grid (David, 25 Oct). Empty units when there's no fight.</summary>
+    [Serializable]
+    public class GridBattle
+    {
+        public string map = "";
+        public int w, h;
+        public List<string> rows = new List<string>();   // the fight's squares only (the scenery ring is cut off)
+        public List<GridUnit> units = new List<GridUnit>();
+        public int round;
+        public string phase = "";              // party or enemy
+        public int enemyIndex, enemyStage;     // where the enemies' turn has got to (it stops for your timing bar)
+        public string reactAttacker = "", reactTarget = "", reactMove = "", reactKind = "", reactSide = "";
+        public string selected = "you";
+        public bool leaderHowled;
+        public string outcome = "";            // won, fled or dead, once it's over
+        public float reactDamage;              // the blow waiting on your timing bar
+        public bool swung;                     // you attacked this round (or you get some wind back)
+    }
+
     /// <summary>
     /// One piece of gear the player owns. Each one is its own object, so two "iron knives" can have
     /// different ranks, names and traits.
@@ -172,6 +217,7 @@ namespace Loran.Core
         public bool enemyFury;                 // it has already flown into its low-health rage
         public int round;
         public List<string> battleLog = new List<string>();
+        public GridBattle grid = new GridBattle();
 
         // The walkable world: which area you're in, where, which way you face, and steps since the last fight
         public string area = "";
@@ -226,6 +272,7 @@ namespace Loran.Core
             gearItems ??= new List<GearItem>();
             foreach (var g in gearItems) g.traits ??= new List<string>();
             battleLog ??= new List<string>();
+            grid ??= new GridBattle();
             skills ??= new List<SkillEntry>();
             moves ??= new List<string>();
             if (level < 1) level = 1;

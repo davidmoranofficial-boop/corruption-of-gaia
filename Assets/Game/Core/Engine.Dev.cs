@@ -219,15 +219,6 @@ namespace Loran.Core
 
         public GearItem DevGear(string baseId, string rank) => MakeGear(baseId, rank, null);
 
-        /// <summary>Wins the current fight on the spot.</summary>
-        public void DevWinFight()
-        {
-            if (!S.inCombat) return;
-            S.inCombat = false;
-            S.result = "Dev mode: fight won.";
-            GoTo(S.combatWin);
-        }
-
         public IEnumerable<string> AllScenes => scenes.Keys.OrderBy(k => k);
     }
 }

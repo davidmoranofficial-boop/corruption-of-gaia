@@ -235,42 +235,6 @@ namespace Loran.Core
             }
         }
 
-        /// <summary>
-        /// Your party's turn in a fight: each one standing attacks, using their own abilities when the moment's right.
-        /// Hunger, thirst and tiredness make them weaker. Returns true if one of them pinned the enemy before it could act.
-        /// </summary>
-        bool FollowerActs(EnemyDef e, EnemyMove move, List<string> lines, bool enemyStillToAct)
-        {
-            bool pinned = false;
-            foreach (var m in S.party.ToList())
-            {
-                var f = data.Follower(m.id);
-                if (f == null || m.hp <= 0 || S.enemyHp <= 0) continue;
-                if (Rules.NoFight(m.body, data)) { lines.Add(f.name + " is in no state to fight."); continue; }
-                // Pin down: once a fight, they stop a big attack before it lands
-                if (enemyStillToAct && !S.pinUsed && move.KindOf() == "heavy" && Rules.HasAbility(m, f, "pin_down"))
-                {
-                    S.pinUsed = true;
-                    S.enemyStun = 1;
-                    pinned = true;
-                    lines.Add(f.name + " pins " + FoeName(e) + " down before it can spring!");
-                    Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Pinned" });
-                    continue;
-                }
-                float dmg = (Roll(f.atkMin, f.atkMax) + Rules.MemberLevel(m) - 1) * Rules.PartyPower(m, data);
-                // Aimed shot: every third round they take their time over it
-                bool aimed = S.round % 3 == 0 && Rules.HasAbility(m, f, "aimed_shot");
-                if (aimed) dmg *= Rules.AimedShot;
-                else if (move.KindOf() == "guard") dmg *= 0.5f;
-                int dealt = Math.Max(1, (int)Math.Round(dmg));
-                S.enemyHp -= dealt;
-                lines.Add(aimed ? f.name + " takes careful aim. An aimed shot hits " + FoeName(e) + " for " + dealt + "!"
-                                : f.name + " " + f.attack + " " + FoeName(e) + " for " + dealt + ".");
-                Events.Add(new BattleEvent { from = "follower" + S.party.IndexOf(m), target = "enemy", kind = aimed ? "crit" : "hit", amount = dealt, text = dealt.ToString() });
-            }
-            return pinned;
-        }
-
         /// <summary>Field dressing: after a fight, a party member who knows how binds the worst bleeding wound, without using your linen.</summary>
         void FieldDressing()
         {

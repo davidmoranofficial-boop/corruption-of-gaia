@@ -2846,3 +2846,77 @@
     font-size: 18px; color: #8fb3c9; -unity-font-style: bold;
     background-color: rgba(10, 18, 30, 1); border-width: 3px; border-color: #8fb3c9; border-radius: 6px;
 }
+
+/* ---------- the battle grid (25 Oct) ---------- */
+.battle { flex-direction: column; }
+.grid-row { flex-direction: row; flex-grow: 1; flex-shrink: 1; min-height: 0; }
+.grid-arena { flex-grow: 1; flex-shrink: 1; min-width: 0; align-items: center; justify-content: center; overflow: hidden; background-color: #0a1316; border-width: 2px; border-color: #2a3a3e; border-radius: 10px; }
+.grid-side { width: 520px; flex-shrink: 0; margin-left: 14px; flex-direction: column; overflow: hidden; }
+.grid-field { flex-shrink: 0; position: relative; }
+.grid-layer { position: absolute; left: 0; top: 0; right: 0; bottom: 0; -unity-background-scale-mode: stretch-to-fill; }
+.grid-night { background-color: rgba(18, 26, 64, 0.42); }
+.grid-mark { position: absolute; }
+.grid-cell { border-width: 1px; border-color: rgba(255, 255, 255, 0.07); }
+.grid-reach { background-color: rgba(79, 155, 215, 0.30); border-width: 1px; border-color: rgba(140, 200, 240, 0.55); }
+.grid-lane { background-color: rgba(200, 60, 40, 0.34); border-width: 1px; border-color: rgba(255, 110, 80, 0.5); }
+.grid-sel { border-width: 3px; border-color: #e3a64e; background-color: rgba(227, 166, 78, 0.18); }
+.grid-target { border-width: 3px; border-color: rgba(200, 87, 63, 0.85); }
+.grid-target-sel { border-width: 4px; border-color: #ff7a4d; background-color: rgba(200, 87, 63, 0.32); }
+.grid-cursor { position: absolute; border-width: 3px; border-color: #f0e2c4; border-radius: 3px; }
+.grid-face { position: absolute; }
+.grid-face-party { background-color: #e3a64e; }
+.grid-face-foe { background-color: #ff6a4a; }
+.grid-shadow { position: absolute; -unity-background-scale-mode: stretch-to-fill; }
+.grid-unit { position: absolute; transform-origin: 50% 100%; }
+.grid-sheet { position: absolute; left: 0; top: 0; -unity-background-scale-mode: stretch-to-fill; }
+.grid-down { rotate: 90deg; opacity: 0.65; }
+.grid-fade { opacity: 0; transition-property: opacity; transition-duration: 0.5s; }
+.grid-hp { position: absolute; height: 7px; background-color: rgba(0, 0, 0, 0.65); border-radius: 2px; overflow: hidden; }
+.grid-hp-fill { height: 100%; }
+.grid-hp-party .grid-hp-fill { background-color: #7fae6a; }
+.grid-hp-foe .grid-hp-fill { background-color: #c8573f; }
+.grid-intent { position: absolute; font-size: 13px; -unity-text-align: middle-center; color: #e2c27a; letter-spacing: 1px; -unity-font-style: bold; -unity-text-outline-width: 1px; -unity-text-outline-color: #000000; white-space: normal; }
+.grid-intent-big { color: #ff8a5c; font-size: 15px; }
+.grid-pop { position: absolute; right: auto; -unity-text-align: middle-center; }
+.grid-timing { position: absolute; left: 8%; right: 8%; bottom: 24px; padding: 12px 18px; background-color: rgba(14, 22, 26, 0.94); border-width: 1px; border-color: #5b4526; border-radius: 8px; }
+
+.grid-banner { padding: 8px 14px; background-color: var(--hull); border-left-width: 4px; border-color: var(--moss); border-radius: 6px; margin-bottom: 8px; flex-shrink: 0; }
+.grid-banner-foe { border-color: var(--blood); }
+.grid-banner-head { font-size: 15px; letter-spacing: 3px; -unity-font-style: bold; color: var(--lantern); }
+.grid-banner-text { font-size: 15px; color: var(--muted); white-space: normal; margin-top: 2px; }
+.grid-box { margin-bottom: 8px; padding: 6px 8px; background-color: rgba(21, 36, 43, 0.85); border-radius: 6px; flex-shrink: 1; }
+.grid-who { padding: 4px 8px; margin-bottom: 3px; border-radius: 4px; border-width: 1px; border-color: rgba(0, 0, 0, 0); }
+.grid-who-sel { border-color: var(--lantern); background-color: var(--hull-hi); }
+.grid-who-top { flex-direction: row; justify-content: space-between; align-items: center; }
+.grid-who-name { font-size: 18px; -unity-font-style: bold; }
+.grid-who-status { font-size: 13px; color: var(--muted); }
+.grid-who-down { font-size: 13px; color: var(--blood); -unity-font-style: bold; }
+.grid-bar { margin-top: 1px; }
+.grid-tell { font-size: 14px; -unity-font-style: italic; color: #e2c27a; white-space: normal; margin-top: 2px; }
+.grid-sub { font-size: 13px; letter-spacing: 2px; color: var(--lantern); margin-bottom: 6px; }
+.grid-acts { flex-direction: row; flex-wrap: wrap; }
+.grid-act { width: 49%; margin: 0 1% 5px 0; padding: 4px 10px; background-color: var(--hull); border-width: 1px; border-color: var(--line); border-radius: 6px; align-items: flex-start; }
+.grid-act:hover { border-color: var(--lantern); background-color: var(--hull-hi); }
+.grid-act:disabled { opacity: 0.4; }
+.grid-act .command-num { font-size: 12px; }
+.grid-act-name { font-size: 17px; color: var(--text); white-space: normal; }
+.grid-act-sub { font-size: 12px; color: var(--muted); white-space: normal; }
+.grid-part { padding: 5px 10px; margin: 0 0 4px 0; background-color: var(--hull); border-width: 1px; border-color: var(--line); border-radius: 6px; align-items: stretch; }
+.grid-part:hover { border-color: var(--lantern); }
+.grid-part:disabled { opacity: 0.45; }
+.grid-part-sel { border-color: var(--lantern); background-color: var(--hull-hi); }
+.grid-part-top { flex-direction: row; justify-content: space-between; align-items: center; }
+.grid-part-name { font-size: 17px; color: var(--text); }
+.grid-part-chance { font-size: 20px; -unity-font-style: bold; color: var(--lantern); }
+.grid-part-why { font-size: 13px; color: var(--muted); }
+.grid-part-sub { font-size: 13px; color: var(--muted); -unity-text-align: upper-left; }
+.grid-notes { font-size: 13px; color: var(--muted); white-space: normal; margin: 4px 2px; }
+.grid-aim-row { flex-direction: row; margin-top: 4px; }
+.grid-strike { flex-grow: 1; font-size: 18px; }
+.grid-back { font-size: 16px; }
+.grid-log { flex-grow: 1; flex-shrink: 1; justify-content: flex-end; overflow: hidden; margin: 2px 4px 6px 4px; min-height: 60px; }
+.grid-log .log-line, .grid-log .log-line-new { -unity-text-align: lower-left; font-size: 15px; }
+.grid-log .log-line-new { font-size: 17px; }
+.grid-end { height: 46px; font-size: 19px; flex-shrink: 0; }
+.grid-end-ready { background-color: #5b4526; border-color: var(--lantern); }
+.grid-keys { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 6px; white-space: normal; flex-shrink: 0; }

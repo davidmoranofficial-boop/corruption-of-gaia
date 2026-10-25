@@ -1,539 +1,1075 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Loran.Core
 {
-    /// <summary>Something that happened in a round of combat, for the screen to animate (damage numbers, flashes).</summary>
+    /// <summary>Something that happened in a fight, for the screen to animate: a step, a blow, a dodge, a number.</summary>
     public class BattleEvent
     {
-        public string target;   // "enemy" or "player": where the number pops up
-        public string kind;     // hit, crit, glance, parry, guard, heal, flee
+        public string from = "";        // who did it: a unit id ("you", "rook", "boar#1"), "" for nobody
+        public string target = "";      // who it happened to
+        public string kind = "";        // move, charge, hit, crit, graze, miss, dodge, parry, block, braced, guard, heal, rage, howl, open, down, dead, flee, yield, stun, bleed, state, turn
         public int amount;
-        public string text;     // what to show, e.g. "14" or "+30 hunger"
-        public string from = ""; // who did it, for the screen to animate: "player", "enemy", "follower0" ... ("" = nobody moves)
+        public string text = "";        // what to pop up: "14", "Dodged", "+30 health"
+        public List<int> path = new List<int>();   // move and charge: the squares crossed, x + y * width
     }
 
     /// <summary>
-    /// Turn-based combat. Each round the enemy shows what it's about to do (its tell), you pick a command,
-    /// and the faster side acts first. Attacks and defending take a timing: 0 = mistimed, 1 = good, 2 = perfect.
+    /// Fights on the battle grid (David, 25 Oct; design in world/battle-design.md). Your side moves first, everyone in
+    /// any order: a move and one action each. Then every enemy does what it showed it would do at the start of your
+    /// turn. Where you stand matters: hit from the side or behind, aim for a weak spot, brace for a charge, and don't
+    /// turn your back. This file is the flow of a fight and how the enemies think; Engine.Grid.cs is the squares,
+    /// the blows and your side's actions.
     /// </summary>
     public partial class Engine
     {
         public const int TimingMiss = 0, TimingGood = 1, TimingPerfect = 2;
 
-        int pendingTiming = TimingGood;
-        string fightRedirect;
-
-        /// <summary>What happened in the last round, for the screen to animate. Not saved.</summary>
+        /// <summary>What just happened, for the screen to animate. Not saved.</summary>
         public readonly List<BattleEvent> Events = new List<BattleEvent>();
 
+        GridBattle G => S.grid;
+        public GridBattle Grid => S.grid;
+        public bool InGrid => S.inCombat && S.grid != null && S.grid.units.Count > 0;
         public EnemyDef Foe => S.inCombat ? data.Enemy(S.enemy) : null;
-
-        /// <summary>The move the enemy will make this round. Shown to the player as its tell.</summary>
-        public EnemyMove Intent
-        {
-            get
-            {
-                var e = data.Enemy(S.enemy);
-                if (e == null) return null;
-                return e.moves.FirstOrDefault(m => m.id == S.enemyMove) ?? e.moves[0];
-            }
-        }
-
-        public bool PlayerActsFirst => Rules.Speed(S, data) >= (data.Enemy(S.enemy)?.speed ?? 0);
 
         /// <summary>Is someone in your party, on their feet, bringing this trait?</summary>
         public bool PartyTrait(string trait) => PartyUp.Any(m => data.Follower(m.id)?.trait == trait);
 
-        /// <summary>Does this combat choice use the timing bar?</summary>
-        public bool NeedsTiming(ChoiceDef c)
-        {
-            string e = c.effects.Count > 0 ? c.effects[0] : "";
-            // Only defending and dodging use the bar (a perfect brace parries, a clean dodge leaves it open).
-            // Attacks crit by chance, like most RPGs.
-            return e == "fight:defend" || e == "fight:dodge";
-        }
+        public const int BleedOutRounds = 3;       // a companion who's down dies after this many rounds unless someone gets them up
+        public const int ChargeLength = 7;         // the most squares a charge runs
+        public const float BackDamage = 1.25f, VulnerableTaken = 1.5f, EnragedHits = 1.3f, WeakenedHits = 0.7f;
 
-        /// <summary>The command a combat choice belongs to: attack, skill, item, defend or flee.</summary>
-        public static string CommandOf(ChoiceDef c)
-        {
-            string e = c.effects.Count > 0 ? c.effects[0] : "";
-            if (e == "fight:attack") return "attack";
-            if (e == "fight:kindle" || e.StartsWith("fight:move:")) return "skill";
-            if (e.StartsWith("fight:eat:") || e.StartsWith("fight:potion:") || e == "fight:drink") return "item";
-            if (e == "fight:defend") return "defend";
-            if (e == "fight:dodge") return "dodge";
-            if (e == "fight:flee") return "flee";
-            return "";
-        }
-
-        /// <summary>Takes a combat action with the timing the player managed on the bar.</summary>
-        public void Act(ChoiceDef c, int timing)
-        {
-            pendingTiming = Math.Clamp(timing, TimingMiss, TimingPerfect);
-            try { Choose(c); }
-            finally { pendingTiming = TimingGood; }
-        }
+        // ------------------------------------------------------------------ starting a fight
 
         void StartCombat(string enemyId, string win, string flee)
         {
             var e = data.Enemy(enemyId) ?? throw new Exception("Unknown enemy '" + enemyId + "'");
             S.inCombat = true;
             S.enemy = e.id;
-            S.enemyHp = e.hp;
             S.combatWin = win;
             S.combatFlee = flee;
-            S.defending = false;
-            S.round = 1;
-            S.enemyStun = 0;
-            S.enemyOpen = 0;
-            S.enemyRage = 0;
-            S.enemyFury = false;
-            S.pinUsed = false;
             S.battleLog.Clear();
-            S.enemyMove = PickMove(e).id;
             Events.Clear();
-        }
 
-        EnemyMove PickMove(EnemyDef e)
-        {
-            int total = e.moves.Sum(m => Math.Max(1, m.weight));
-            int r = Roll(1, total);
-            foreach (var m in e.moves)
+            var g = new GridBattle();
+            S.grid = g;
+            var map = PickBattleMap();
+            if (map != null)
             {
-                r -= Math.Max(1, m.weight);
-                if (r <= 0) return m;
+                g.map = map.id;
+                g.h = map.rows.Count - 2;
+                g.w = map.rows[0].Length - 2;
+                for (int y = 1; y <= g.h; y++) g.rows.Add(map.rows[y].Substring(1, g.w));
             }
-            return e.moves[0];
+            else
+            {
+                g.w = 10; g.h = 7;
+                for (int y = 0; y < g.h; y++) g.rows.Add(new string('.', g.w));
+            }
+
+            // your side on the left, you in the middle of it; them on the right
+            int mid = g.h / 2;
+            var you = new GridUnit { id = "you", side = "party", facing = "right" };
+            Place(you, 1, mid, 0, 2);
+            foreach (var m in S.party)
+            {
+                if (data.Follower(m.id) == null) continue;
+                var u = new GridUnit { id = m.id, def = m.id, side = "party", facing = "right", down = m.hp <= 0, bleedOut = BleedOutRounds };
+                Place(u, 1, mid, 0, 2);
+            }
+            var foes = new List<string> { e.id };
+            foes.AddRange(e.pack);
+            var count = new Dictionary<string, int>();
+            foreach (var id in foes)
+            {
+                var d = data.Enemy(id) ?? throw new Exception("Unknown enemy '" + id + "' in " + e.id + "'s pack");
+                count[id] = count.TryGetValue(id, out var c) ? c + 1 : 1;
+                var u = new GridUnit { id = id + "#" + count[id], def = id, side = "foe", facing = "left", hp = d.hp, maxHp = d.hp };
+                Place(u, g.w - 2, mid, g.w - 3, g.w - 1);
+            }
+            // the pack leader picks out its prey: whoever looks weakest
+            if (G.units.Any(u => u.side == "foe" && FoeDef(u).ai == "leader"))
+            {
+                var prey = G.units.Where(u => u.side == "party" && !u.down).OrderBy(u => Hp(u) / Math.Max(1, MaxHpOf(u))).ThenBy(u => u.id == "you" ? 1 : 0).First();
+                prey.states.Add("prey:999");
+            }
+            g.round = 1;
+            Log(Cap(FoeName(e)) + (e.pack.Count > 0 ? ", and " + e.pack.Count + " more with it" : "") + ". Your side moves first.");
+            StartPartyPhase();
         }
 
+        /// <summary>Puts someone on the nearest free open square to (cx, cy), between columns x0 and x1.</summary>
+        void Place(GridUnit u, int cx, int cy, int x0, int x1)
+        {
+            var best = (x: -1, y: -1);
+            int bestD = int.MaxValue;
+            for (int y = 0; y < G.h; y++)
+                for (int x = Math.Max(0, x0); x <= Math.Min(G.w - 1, x1); x++)
+                {
+                    if (Solid(x, y) || At(x, y) != null) continue;
+                    int d = Math.Abs(x - cx) * 2 + Math.Abs(y - cy) * 3;
+                    if (d < bestD) { bestD = d; best = (x, y); }
+                }
+            if (best.x < 0)
+                for (int y = 0; y < G.h && best.x < 0; y++)
+                    for (int x = 0; x < G.w; x++)
+                        if (!Solid(x, y) && At(x, y) == null) { best = (x, y); break; }
+            u.x = best.x;
+            u.y = best.y;
+            G.units.Add(u);
+        }
+
+        /// <summary>What kind of ground a fight here is on: forest, hills, road, coast or village.</summary>
+        public string BattleTerrain()
+        {
+            var a = Area;
+            if (a == null) return "coast";
+            if (a.id == "skelmed" || a.id == "thornby") return "village";
+            if (a.id == "forest_road" || a.id == "old_track") return "forest";
+            if (a.id == "greyfell" || a.id.Contains("hills")) return "hills";
+            if (a.id == "brannock") return "road";
+            int trees = 0, sea = 0;
+            for (int dy = -3; dy <= 3; dy++)
+                for (int dx = -3; dx <= 3; dx++)
+                {
+                    char c = TileAt(S.ax + dx, S.ay + dy);
+                    if (c == 'T') trees++;
+                    if (c == '~' || c == ',') sea++;
+                }
+            return trees >= 12 ? "forest" : sea >= 6 ? "coast" : "road";
+        }
+
+        BattleMapDef PickBattleMap()
+        {
+            var maps = data.file.battleMaps;
+            if (maps.Count == 0) return null;
+            string t = BattleTerrain();
+            var fit = maps.Where(m => m.terrain == t).ToList();
+            if (fit.Count == 0) fit = maps;
+            return fit[Roll(0, fit.Count - 1)];
+        }
+
+        /// <summary>Saves from before the grid (an old one-on-one fight in progress): start it again on the grid.</summary>
+        void MigrateCombat()
+        {
+            if (!S.inCombat) return;
+            S.grid ??= new GridBattle();
+            if (S.grid.units.Count > 0 && S.grid.phase != "over") return;
+            if (data.Enemy(S.enemy) == null) { S.inCombat = false; return; }
+            StartCombat(S.enemy, S.combatWin, S.combatFlee);
+        }
+
+        /// <summary>While you're fighting, the scene underneath is just a title: the battle screen does the rest.</summary>
         SceneDef CombatScene()
         {
             var e = data.Enemy(S.enemy);
             var under = Scene(S.scene) ?? new SceneDef { place = Area?.name };
-            var sc = new SceneDef
-            {
-                id = "combat",
-                place = under.place,
-                title = "Fight: " + e.name,
-                text = new List<string> { e.desc, Intent?.tell ?? "" },
-            };
-            float light = Math.Clamp(Rules.TraitSum(S, data, t => t.light), 0f, 0.5f);
-            sc.choices.Add(new ChoiceDef { label = "Attack", stamina = (int)Math.Round(Rules.AttackStamina * (1 - light)), energy = 1, time = 1, effects = { "fight:attack" } });
-            if (S.spells.Contains("kindle"))
-                sc.choices.Add(new ChoiceDef { label = "Cast Kindle", stamina = Rules.KindleStamina, mana = Rules.KindleMana, time = 1, effects = { "fight:kindle" } });
-            foreach (var m in UsableMoves())
-                sc.choices.Add(new ChoiceDef { label = m.name, stamina = m.stamina, energy = m.energy, mana = m.mana, time = 1, effects = { "fight:move:" + m.id } });
-            foreach (var it in S.items)
-            {
-                var def = data.Item(it.id);
-                if (def != null && def.food)
-                    sc.choices.Add(new ChoiceDef { label = "Eat: " + def.name + (it.count > 1 ? " (" + it.count + ")" : ""), time = 1, effects = { "fight:eat:" + it.id } });
-                if (def != null && def.heal > 0 && it.count > 0)
-                    sc.choices.Add(new ChoiceDef { label = "Drink: " + def.name + (it.count > 1 ? " (" + it.count + ")" : ""), time = 1, effects = { "fight:potion:" + it.id } });
-            }
-            if (S.water > 0)
-                sc.choices.Add(new ChoiceDef { label = "Drink from your waterskin (" + S.water + ")", time = 1, effects = { "fight:drink" } });
-            sc.choices.Add(new ChoiceDef { label = "Defend", energy = 1, time = 1, effects = { "fight:defend" } });
-            sc.choices.Add(new ChoiceDef { label = "Dodge", stamina = Rules.HasPerk(S, data, "nimble") ? Rules.NimbleDodge : Rules.DodgeStamina, energy = 1, time = 1, effects = { "fight:dodge" } });
-            sc.choices.Add(new ChoiceDef { label = "Try to get away", stamina = Rules.FleeStamina, energy = 1, time = 1, effects = { "fight:flee" } });
-            return sc;
+            return new SceneDef { id = "combat", place = under.place, title = "Fight: " + (e?.name ?? "?"), text = new List<string> { e?.desc ?? "" } };
         }
 
-        void Fight(string kind, StringBuilder notes, ref string redirect)
+        // ------------------------------------------------------------------ the round
+
+        void StartPartyPhase()
         {
+            G.phase = "party";
+            G.swung = false;
+            foreach (var u in G.units.Where(u => !u.gone))
+            {
+                u.reaction = true;
+                u.hitBy = 0;
+                if (u.side != "party") continue;
+                u.acted = u.down;
+                u.moveLeft = u.down ? 0 : MoveOf(u);
+            }
+            foreach (var u in G.units.Where(u => u.side == "foe" && !u.gone).ToList()) PlanFoe(u);
+        }
+
+        /// <summary>How many squares someone can move this turn.</summary>
+        public int MoveOf(GridUnit u)
+        {
+            int n = u.id == "you" ? 3 + (S.stats[Stat.Agi] >= 5 ? 1 : 0) : u.side == "party" ? 3 : FoeDef(u).move;
+            if (u.id == "you" && Rules.NoRun(S.body, data)) n = Math.Min(n, 1);
+            if (HasState(u, "hobbled")) n -= 2;
+            if (HasState(u, "prone")) n -= 1;
+            return Math.Max(0, n);
+        }
+
+        /// <summary>You've done what you want with your side: the enemies take their turn.</summary>
+        public bool EndTurn()
+        {
+            if (!InGrid || G.phase != "party") return false;
             Events.Clear();
-            fightRedirect = null;
-            var e = data.Enemy(S.enemy);
-            var move = Intent;
-            var lines = new List<string>();
-
-            S.defending = kind == "defend";
-            dodging = kind == "dodge";
-            struckGuard = false;
-            youHurtIt = false;
-            if (dodging && Rules.Winded(S, data))
+            // a round you didn't swing is a round you got some wind back
+            if (!G.swung) S.stamina += 6;
+            S.energy -= 1;
+            Rules.Advance(S, data, 1, G.swung);
+            Rules.Clamp(S, data);
+            if (S.energy <= 0)
             {
-                pendingTiming = TimingMiss;
-                lines.Add("You're too winded to get out of the way in time.");
+                S.deathCause = "Your energy gave out in the middle of the fight, and you couldn't lift your arms to defend yourself.";
+                S.hp = 0;
+                Finish("dead");
+                return true;
             }
-            var mv = kind.StartsWith("move:") ? data.Move(kind.Substring(5)) : null;
-            // Only an attack can beat you to it. Defending, dodging and quick moves always come first,
-            // and an enemy that's off balance from your dodge is too slow to strike first.
-            bool enemyFirst = move.Attacks() && !S.defending && !dodging && S.enemyOpen == 0 && !PlayerActsFirst && !(mv != null && mv.first);
-
-            if (enemyFirst)
-            {
-                EnemyActs(e, move, lines);
-                if (S.hp <= 0) { Finish(lines, notes); redirect = fightRedirect; return; }
-                lines.Add("");   // marks the break between their turn and yours
-            }
-
-            if (!Fumbles(kind, lines)) PlayerActs(kind, e, move, lines);
-            bool pinned = false;
-            if (S.inCombat && S.enemyHp > 0 && FollowerUp) pinned = FollowerActs(e, move, lines, !enemyFirst);
-            Fury(e, lines);
-
-            if (S.inCombat && S.enemyHp <= 0)
-            {
-                lines.Add(Cap(FoeName(e)) + " goes down and stays down.");
-                S.inCombat = false;
-                fightRedirect = S.combatWin;
-                GainExp(e.exp, "for beating " + FoeName(e));
-            }
-            else if (S.inCombat && !enemyFirst)
-            {
-                EnemyActs(e, move, lines);
-            }
-            if (!S.inCombat) { DownedAfterFight(); FollowerAfterFight(); FieldDressing(); }
-
-            if (S.inCombat && S.hp > 0)
-            {
-                Fury(e, lines);
-                if (S.enemyOpen > 0) S.enemyOpen--;
-                S.enemyMove = PickMove(e).id;
-                S.round++;
-            }
-            dodging = false;
-            Finish(lines, notes);
-            redirect = fightRedirect;
+            TickStates("party");
+            G.phase = "foe";
+            G.enemyIndex = 0;
+            G.enemyStage = 0;
+            RunFoes();
+            return true;
         }
 
-        bool dodging, struckGuard, youHurtIt;
-
-        /// <summary>A boss that's badly hurt flies into a rage, once.</summary>
-        void Fury(EnemyDef e, List<string> lines)
+        void RunFoes()
         {
-            if (e.enrageBelow <= 0 || S.enemyFury || S.enemyHp <= 0 || S.enemyHp >= e.hp * e.enrageBelow) return;
-            S.enemyFury = true;
-            S.enemyRage++;
-            lines.Add(Cap(FoeName(e)) + " is bleeding badly, and it's furious now. Its blows will hit harder.");
-            Events.Add(new BattleEvent { target = "enemy", kind = "rage", text = "Enraged" });
-        }
-
-        void Finish(List<string> lines, StringBuilder notes)
-        {
-            var real = lines.Where(l => l != "").ToList();
-            S.battleLog.AddRange(real);
-            while (S.battleLog.Count > 6) S.battleLog.RemoveAt(0);
-            notes.Append(string.Join(" ", real));
-        }
-
-        void PlayerActs(string kind, EnemyDef e, EnemyMove move, List<string> lines)
-        {
-            string foe = FoeName(e);
-            var mv = kind.StartsWith("move:") ? data.Move(kind.Substring(5)) ?? throw new Exception("Unknown move '" + kind + "'") : null;
-            switch (kind)
+            while (G.enemyIndex < G.units.Count)
             {
-                case "attack":
+                if (G.phase == "over") return;
+                var u = G.units[G.enemyIndex];
+                if (u.side == "foe" && !u.gone)
                 {
-                    float dmg = WeaponHit();
-                    int dealt = HitEnemy(dmg, move, out string how);
-                    lines.Add(how == "crit" ? "A perfect strike! You hit " + foe + " for " + dealt + "."
-                            : how == "glance" ? "You mistime it, and the blow only glances " + foe + ". " + dealt + " damage."
-                            : "You hit " + foe + " for " + dealt + ".");
-                    if (move.KindOf() == "guard" && how != "crit") lines.Add("It was ready for you, so the blow lands half as hard.");
-                    Rules.Train(S, Stat.Str, 1f, "fighting");
-                    Rules.Train(S, Stat.Agi, pendingTiming == TimingPerfect ? 1f : 0.5f, "fighting");
-                    TrainSkill(WeaponSkill(), pendingTiming == TimingPerfect ? 3 : 2, "fighting");
-                    break;
+                    if (!FoeTurn(u)) return;          // it's waiting on your timing bar
+                    if (G.phase == "over") return;
                 }
-                case "kindle":
+                G.enemyIndex++;
+                G.enemyStage = 0;
+            }
+            EndRound();
+        }
+
+        void EndRound()
+        {
+            TickStates("foe");
+            foreach (var u in G.units.Where(u => !u.gone).ToList())
+            {
+                if (HasState(u, "bleeding") && !u.down)
                 {
-                    float dmg = SpellHit();
-                    int dealt = HitEnemy(dmg, move, out string how);
-                    lines.Add(how == "crit" ? "Fire leaps from your hand and engulfs " + foe + ". " + dealt + " damage!"
-                            : how == "glance" ? "The spark sputters and only singes " + foe + ". " + dealt + " damage."
-                            : "Fire snaps from your fingers and catches " + foe + " for " + dealt + ".");
-                    Rules.Train(S, Stat.Int, 1f, "casting Kindle");
-                    TrainSkill("magic", 3, "casting Kindle");
-                    break;
+                    int n = Math.Max(2, (int)Math.Round(MaxHpOf(u) * 0.05f));
+                    Events.Add(new BattleEvent { target = u.id, kind = "bleed", amount = n, text = n.ToString() });
+                    if (u.side == "foe") DamageFoe(u, n, null);
+                    else HurtParty(u, n, "bleeding");
+                    if (G.phase == "over") return;
                 }
-                case "defend":
+                if (u.down && !u.gone)
                 {
-                    if (HasShield()) TrainSkill("shield", 1.5f, "blocking");
-                    // it's holding back too: a real chance to get your breath
-                    int back = Rules.DefendStaminaBack * (move.Attacks() ? 1 : 2);
-                    S.stamina += back;
-                    if (!move.Attacks()) lines.Add("It's holding back, so you hold back too and get your breath.");
-                    else lines.Add(pendingTiming == TimingPerfect ? "You read it perfectly and set yourself to turn the blow."
-                            : pendingTiming == TimingGood ? "You brace yourself and get your breath back."
-                            : "You brace yourself, a moment too late.");
-                    Events.Add(new BattleEvent { target = "player", kind = "heal", amount = back, text = "+" + back + " stamina" });
-                    break;
-                }
-                case "dodge":
-                    Rules.Train(S, Stat.Agi, 0.5f, "dodging");
-                    break;
-                case "drink":
-                    if (S.water > 0)
+                    u.bleedOut--;
+                    if (u.bleedOut <= 0)
                     {
-                        S.water--;
-                        S.thirst += 35;
-                        S.energy += 4;
-                        lines.Add("You snatch a mouthful from the waterskin.");
-                        Events.Add(new BattleEvent { target = "player", kind = "heal", amount = 35, text = "+35 thirst" });
+                        var m = Member(u.def);
+                        Log(UnitName(u) + " bleeds out where they fell.");
+                        Gone(u, "killed", "dead");
+                        if (m != null) Rules.Die(S, data, m, "their wounds, bleeding out in a fight");
                     }
-                    break;
-                case "flee":
+                    else Log(UnitName(u) + " is bleeding out: " + u.bleedOut + (u.bleedOut == 1 ? " round" : " rounds") + " left to get them up.");
+                }
+            }
+            if (CheckEnd()) return;
+            G.round++;
+            StartPartyPhase();
+        }
+
+        /// <summary>Is it over? You dead, or nobody left on their side who still wants to fight.</summary>
+        bool CheckEnd()
+        {
+            if (G.phase == "over") return true;
+            if (S.hp <= 0) { Finish("dead"); return true; }
+            if (!G.units.Any(u => u.side == "foe" && !u.gone && !HasState(u, "fleeing"))) { Finish("won"); return true; }
+            return false;
+        }
+
+        void Finish(string outcome)
+        {
+            G.phase = "over";
+            G.outcome = outcome;
+            ClearReact();
+            S.inCombat = false;
+            var main = data.Enemy(S.enemy);
+            string said = "";
+            if (outcome == "won")
+            {
+                foreach (var u in G.units.Where(u => u.side == "foe" && !u.gone).ToList()) Gone(u, "fled", "flee");
+                float exp = 0;
+                foreach (var u in G.units.Where(u => u.side == "foe"))
+                    exp += FoeDef(u).exp * (u.goneHow == "fled" ? 0.5f : 1f);
+                var killed = G.units.Count(u => u.side == "foe" && u.goneHow == "killed");
+                said = killed > 0 ? "The fight's over." : "They've had enough. The fight's over.";
+                GainExp((int)Math.Round(exp), "for beating " + FoeName(main));
+            }
+            else if (outcome == "fled") said = "You break away and get clear.";
+            if (outcome != "dead")
+            {
+                foreach (var u in G.units.Where(u => u.side == "party" && u.def != ""))
                 {
-                    int chance = Rules.NoRun(S.body, data) ? 5 : Math.Min(95, 35 + S.stats[Stat.Agi] * 8);
-                    if (Roll(1, 100) <= chance)
-                    {
-                        S.inCombat = false;
-                        Rules.Train(S, Stat.Agi, 1f, "escaping");
-                        lines.Add("You break away and get clear.");
-                        Events.Add(new BattleEvent { target = "player", kind = "flee", text = "Escaped" });
-                        fightRedirect = S.combatFlee;
-                        return;
-                    }
-                    lines.Add("You try to break away, but " + foe + " cuts you off.");
-                    Events.Add(new BattleEvent { target = "player", kind = "flee", text = "Cut off" });
-                    break;
+                    var m = Member(u.def);
+                    if (m != null && u.down) m.hp = Math.Min(m.hp, 0);
                 }
-                default:
-                    if (mv != null) { UseMove(mv, e, move, lines); break; }
-                    if (kind.StartsWith("potion:"))
-                    {
-                        string id = kind.Substring(7);
-                        var it = data.Item(id);
-                        if (it != null && it.heal > 0 && S.Count(id) > 0)
-                        {
-                            S.AddItem(id, -1);
-                            int back = (int)Math.Min(it.heal, Rules.MaxHp(S) - S.hp);
-                            S.hp += it.heal;
-                            lines.Add("You gulp down the " + it.name.ToLowerInvariant() + ".");
-                            Events.Add(new BattleEvent { target = "player", kind = "heal", amount = back, text = "+" + back + " health" });
-                        }
-                        break;
-                    }
-                    if (kind.StartsWith("eat:"))
-                    {
-                        string id = kind.Substring(4);
-                        var it = data.Item(id);
-                        if (it != null && it.food && S.Count(id) > 0)
-                        {
-                            S.AddItem(id, -1);
-                            S.hunger += it.hunger;
-                            S.thirst += it.thirst;
-                            S.energy += it.energy;
-                            lines.Add("You wolf down the " + it.name.ToLowerInvariant() + " between blows.");
-                            Events.Add(new BattleEvent { target = "player", kind = "heal", amount = (int)it.energy, text = "+" + it.energy.ToString("0") + " energy" });
-                        }
-                        break;
-                    }
-                    throw new Exception("Unknown fight action '" + kind + "'");
+                DownedAfterFight();
+                FollowerAfterFight();
+                FieldDressing();
             }
             Rules.Clamp(S, data);
+            if (said != "") S.result = Join(string.Join(" ", S.battleLog.Skip(Math.Max(0, S.battleLog.Count - 2))), said);
+            GoTo(outcome == "won" ? S.combatWin : outcome == "fled" ? S.combatFlee : S.scene);
         }
 
-        /// <summary>Your usual blow with what's in your hand, before luck: shown on the character sheet.</summary>
-        public float AttackPower() => Rules.Attack(S, data, SkillLevel(WeaponSkill()));
-
-        /// <summary>A hit with what's in your hand: Strength, the weapon, and how well you know it.</summary>
-        float WeaponHit() => 4 + S.stats[Stat.Str] * 1.5f + Rules.GearDamage(S) + SkillLevel(WeaponSkill()) * 0.8f + Roll(-1, 2);
-
-        float SpellHit() => 6 + S.stats[Stat.Int] * 2f + SkillLevel("magic") * 1.5f + Roll(0, 2);
-
-        void UseMove(MoveDef m, EnemyDef e, EnemyMove move, List<string> lines)
+        void Log(string line)
         {
-            string foe = FoeName(e);
-            int total = 0;
-            string how = "hit";
-            for (int i = 0; i < Math.Max(1, m.hits) && S.enemyHp > 0; i++)
-            {
-                float dmg = (m.skill == "magic" ? SpellHit() : WeaponHit()) * m.power;
-                total += HitEnemy(dmg, m.pierce ? null : move, out how);
-            }
-            lines.Add(m.name + (how == "crit" ? ", perfectly timed! " : how == "glance" ? ", but you mistime it. " : ". ") +
-                      Cap(foe) + " takes " + total + ".");
-            if (m.stagger && S.enemyHp > 0)
-            {
-                S.enemyStun = 1;
-                lines.Add(Cap(foe) + " reels.");
-            }
-            TrainSkill(m.skill, how == "crit" ? 4 : 3, "fighting");
-            if (m.skill == "magic") Rules.Train(S, Stat.Int, 1f, "casting");
-            else Rules.Train(S, Stat.Str, 1f, "fighting");
+            if (string.IsNullOrEmpty(line)) return;
+            S.battleLog.Add(line);
+            while (S.battleLog.Count > 8) S.battleLog.RemoveAt(0);
         }
 
-        /// <summary>Applies timing, fire and the enemy's guard to a hit, and records it. move null = ignores its guard.</summary>
-        int HitEnemy(float dmg, EnemyMove move, out string how)
+        // ------------------------------------------------------------------ states
+
+        public bool HasState(GridUnit u, string name)
         {
-            int roll = Roll(1, 100);
-            bool open = S.enemyOpen > 0;
-            how = open || (roll <= Rules.CritChance(S, data) && !Rules.Winded(S, data)) ? "crit" : roll > 100 - Rules.GlanceChance ? "glance" : "hit";
-            if (open) { S.enemyOpen = 0; move = null; }   // off balance: a sure crit, and its guard is no help
-            if (how == "crit") dmg *= Rules.CritMultiplier + Rules.TraitSum(S, data, t => t.crit) + (open ? Rules.OpenBonus : 0);
-            else if (how == "glance") dmg *= Rules.GlanceMultiplier;
-            dmg += Rules.TraitSum(S, data, t => t.fire);
-            dmg *= Rules.FightPower(S.body, data);
-            dmg *= Rules.QuirkMul(S, data, q => q.dealt);   // Hot-headed, Cautious
-            if (Berserk) dmg *= Rules.BerserkDamage;
-            if (move != null && move.KindOf() == "guard") { dmg *= 0.5f; struckGuard = true; }
-            var blade = S.InSlot("weapon");
-            if (blade != null && Rules.IsBlade(blade)) WearDown(blade, struckGuard ? Rules.GuardBladeWear : Rules.BladeWear);
-            int dealt = Math.Max(1, (int)Math.Round(dmg));
-            S.enemyHp -= dealt;
-            youHurtIt = true;
-            Events.Add(new BattleEvent { from = "player", target = "enemy", kind = how, amount = dealt, text = dealt.ToString() });
-            return dealt;
+            foreach (var s in u.states) if (s.StartsWith(name + ":")) return true;
+            return false;
         }
 
-        void EnemyActs(EnemyDef e, EnemyMove move, List<string> lines)
+        /// <summary>
+        /// Gives someone a state for some rounds. States count down at the end of their own side's turn, so a state
+        /// put on someone during their own side's turn gets one more round (or it would be gone before it mattered).
+        /// </summary>
+        void AddState(GridUnit u, string name, int rounds)
         {
-            string foe = Cap(FoeName(e));
-            if (S.enemyStun > 0)
+            if (G.phase == u.side) rounds++;
+            int had = 0;
+            for (int i = u.states.Count - 1; i >= 0; i--)
+                if (u.states[i].StartsWith(name + ":")) { int.TryParse(u.states[i].Substring(name.Length + 1), out had); u.states.RemoveAt(i); }
+            u.states.Add(name + ":" + Math.Max(had, rounds));
+        }
+
+        void ClearState(GridUnit u, string name) => u.states.RemoveAll(s => s.StartsWith(name + ":"));
+
+        void TickStates(string side)
+        {
+            foreach (var u in G.units.Where(u => u.side == side && !u.gone))
+                for (int i = u.states.Count - 1; i >= 0; i--)
+                {
+                    var p = u.states[i].Split(':');
+                    int n = int.Parse(p[1]) - 1;
+                    if (n <= 0) u.states.RemoveAt(i);
+                    else u.states[i] = p[0] + ":" + n;
+                }
+        }
+
+        /// <summary>The states worth showing on someone, in words: Open, Vulnerable, Hobbled...</summary>
+        public List<string> StatesOf(GridUnit u) =>
+            u.states.Select(s => s.Split(':')[0]).Where(s => !s.StartsWith("cd_")).Distinct().ToList();
+
+        // ------------------------------------------------------------------ how the enemies think
+
+        public EnemyDef FoeDef(GridUnit u) => data.Enemy(u.def);
+
+        IEnumerable<GridUnit> StandingParty => G.units.Where(u => u.side == "party" && !u.gone && !u.down);
+
+        /// <summary>Picks a move by weight, from those that pass the test.</summary>
+        EnemyMove PickMove(EnemyDef e, Func<EnemyMove, bool> ok)
+        {
+            var list = e.moves.Where(ok).ToList();
+            if (list.Count == 0) return e.moves.FirstOrDefault(m => m.Attacks()) ?? e.moves[0];
+            int total = list.Sum(m => Math.Max(1, m.weight));
+            int r = Roll(1, total);
+            foreach (var m in list)
             {
-                S.enemyStun--;
-                lines.Add(foe + " is still reeling and can't act.");
-                Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Staggered" });
-                return;
+                r -= Math.Max(1, m.weight);
+                if (r <= 0) return m;
             }
+            return list[0];
+        }
+
+        static bool Plain(EnemyMove m) => !m.charge && m.KindOf() != "howl";
+
+        /// <summary>At the start of your turn, each enemy decides what it'll do, and shows it.</summary>
+        void PlanFoe(GridUnit u)
+        {
+            var e = FoeDef(u);
+            u.intent = ""; u.intentTarget = ""; u.intentDir = ""; u.lane.Clear();
+            if (HasState(u, "fleeing")) { u.intent = "flee"; return; }
+            var party = StandingParty.ToList();
+            if (party.Count == 0) { u.intent = "wait"; return; }
+            GridUnit Nearest() => party.OrderBy(p => Dist(u, p)).ThenBy(p => p.id == "you" ? 0 : 1).First();
+            GridUnit adjacent = party.Where(p => Dist(u, p) == 1).OrderBy(p => SideOf(u, p.x, p.y) == "front" ? 0 : 1).FirstOrDefault();
+
+            switch (e.ai)
+            {
+                case "charger":
+                {
+                    if (adjacent != null)
+                    {
+                        var m = PickMove(e, x => Plain(x));
+                        u.intent = m.id; u.intentTarget = adjacent.id;
+                        return;
+                    }
+                    var charge = e.moves.FirstOrDefault(x => x.charge);
+                    if (charge != null && !HasState(u, "hobbled") && !HasState(u, "dazed"))
+                    {
+                        var lanes = new List<(string dir, List<int> lane, GridUnit first)>();
+                        foreach (var dir in new[] { "left", "up", "down", "right" })
+                        {
+                            var (lane, first) = Lane(u, u.x, u.y, dir);
+                            if (first != null && Dist(u, first) >= 2) lanes.Add((dir, lane, first));
+                        }
+                        if (lanes.Count > 0 && Roll(1, 100) <= 80)
+                        {
+                            var pick = lanes.OrderBy(l => Dist(u, l.first)).First();
+                            u.intent = charge.id; u.intentDir = pick.dir; u.intentTarget = pick.first.id;
+                            u.lane.AddRange(pick.lane);
+                            u.facing = pick.dir;
+                            return;
+                        }
+                    }
+                    var t = Nearest();
+                    if (charge != null && !HasState(u, "hobbled") && FoeApproach(u, t, false) == null) { u.intent = "line"; u.intentTarget = t.id; return; }
+                    var mv = PickMove(e, x => Plain(x) && x.Attacks());
+                    u.intent = mv.id; u.intentTarget = t.id;
+                    return;
+                }
+                case "leader":
+                {
+                    if (!G.leaderHowled && G.round == 1)
+                    {
+                        var howl = e.moves.FirstOrDefault(x => x.KindOf() == "howl");
+                        if (howl != null) { u.intent = howl.id; return; }
+                    }
+                    bool pack = G.units.Any(o => o != u && o.side == "foe" && !o.gone && !HasState(o, "fleeing"));
+                    if (pack && adjacent == null) { u.intent = "hang"; return; }
+                    var t = adjacent ?? HuntTarget(u, party);
+                    var m = PickMove(e, x => Plain(x) && x.Attacks());
+                    u.intent = m.id; u.intentTarget = t.id;
+                    return;
+                }
+                case "hunter":
+                {
+                    var t = HuntTarget(u, party);
+                    var m = PickMove(e, x => Plain(x));
+                    u.intent = m.id; u.intentTarget = t.id;
+                    return;
+                }
+                case "soldier":
+                {
+                    int round = party.Count(p => Dist(u, p) == 1);
+                    var guard = e.moves.FirstOrDefault(x => x.KindOf() == "guard");
+                    if (round >= 2 && guard != null) { u.intent = guard.id; return; }
+                    var hitter = party.FirstOrDefault(p => p.id == u.hitByWho);
+                    var t = adjacent ?? hitter ?? Nearest();
+                    var m = PickMove(e, x => Plain(x) && x.Attacks());
+                    u.intent = m.id; u.intentTarget = t.id;
+                    return;
+                }
+                default:   // brute: the nearest, with whatever it's got
+                {
+                    var t = adjacent ?? Nearest();
+                    var m = PickMove(e, x => Plain(x));
+                    u.intent = m.id; u.intentTarget = t.id;
+                    return;
+                }
+            }
+        }
+
+        /// <summary>Who a wolf goes for: the leader's marked prey, else whoever's alone or most hurt.</summary>
+        GridUnit HuntTarget(GridUnit u, List<GridUnit> party)
+        {
+            var prey = party.FirstOrDefault(p => HasState(p, "prey"));
+            if (prey != null) return prey;
+            return party.OrderBy(p => (party.Any(o => o != p && Dist(o, p) <= 1) ? 1f : 0f) + Hp(p) / Math.Max(1, MaxHpOf(p)) + Dist(u, p) * 0.05f).First();
+        }
+
+        /// <summary>The squares a charge would cross going that way, and the first of your side standing in it.</summary>
+        (List<int> lane, GridUnit first) Lane(GridUnit u, int x, int y, string dir)
+        {
+            var (dx, dy) = Dir(dir);
+            var lane = new List<int>();
+            GridUnit first = null;
+            for (int i = 1; i <= ChargeLength; i++)
+            {
+                int nx = x + dx * i, ny = y + dy * i;
+                if (!OnGrid(nx, ny) || Solid(nx, ny)) break;
+                var o = At(nx, ny);
+                if (o != null && o != u && o.side == u.side) break;
+                lane.Add(nx + ny * G.w);
+                if (o != null && o.side != u.side && first == null && !o.down) first = o;
+            }
+            return (lane, first);
+        }
+
+        /// <summary>What an enemy is about to do, in words: its tell.</summary>
+        public string IntentText(GridUnit u)
+        {
+            if (u == null || u.side != "foe") return "";
+            var e = FoeDef(u);
+            switch (u.intent)
+            {
+                case "flee": return "It's had enough. It's going to run.";
+                case "hang": return "It hangs back and lets its wolves do the work, watching for an opening.";
+                case "line": return "It swings round, snorting, trying to get one of you in a straight line.";
+                case "wait": case "": return "";
+            }
+            var m = e.moves.FirstOrDefault(x => x.id == u.intent);
+            return m?.tell ?? "";
+        }
+
+        /// <summary>The enemy's move it's about to make (null for a plan that isn't a move, like hanging back).</summary>
+        public EnemyMove IntentMove(GridUnit u) => u == null || u.side != "foe" ? null : FoeDef(u).moves.FirstOrDefault(x => x.id == u.intent);
+
+        /// <summary>One enemy's turn. Returns false when it stops for your timing bar (React carries on).</summary>
+        bool FoeTurn(GridUnit u)
+        {
+            var e = FoeDef(u);
+            if (G.enemyStage == 1)
+            {
+                AfterFoeAttack(u);
+                return true;
+            }
+            u.moveLeft = MoveOf(u);
+            if (HasState(u, "staggered"))
+            {
+                Log(Cap(UnitName(u)) + " is still reeling and can't act.");
+                Events.Add(new BattleEvent { target = u.id, kind = "stun", text = "Staggered" });
+                return true;
+            }
+            if (HasState(u, "fleeing")) { FoeRuns(u); return true; }
+            var move = IntentMove(u);
+            if (move != null && (move.charge || move.KindOf() == "howl") && HasState(u, "dazed"))
+            {
+                Log(Cap(UnitName(u)) + " shakes its head, dazed. Whatever it was winding up to, it's lost it.");
+                Events.Add(new BattleEvent { target = u.id, kind = "stun", text = "Dazed" });
+                return true;
+            }
+            switch (u.intent)
+            {
+                case "hang":
+                    FoeHangsBack(u);
+                    return true;
+                case "line":
+                    FoeLinesUp(u);
+                    return true;
+                case "wait": case "":
+                    return true;
+            }
+            if (move == null) return true;
             string kind = move.KindOf();
+            if (kind == "howl")
+            {
+                G.leaderHowled = true;
+                if (u.hitBy > 0)
+                {
+                    Log("You cut " + UnitName(u) + "'s howl short.");
+                    Events.Add(new BattleEvent { target = u.id, kind = "stun", text = "Cut short" });
+                    return true;
+                }
+                Log(Cap(UnitName(u)) + " " + move.name + ". The whole pack is in a rage now: their bites will land harder.");
+                Events.Add(new BattleEvent { from = u.id, target = u.id, kind = "howl", text = "Howl" });
+                foreach (var o in G.units.Where(o => o.side == "foe" && !o.gone)) AddState(o, "enraged", 999);
+                return true;
+            }
             if (kind == "guard")
             {
-                if (struckGuard && S.hp > 0)
+                AddState(u, "guard", 1);
+                Log(Cap(UnitName(u)) + " " + move.name + ".");
+                Events.Add(new BattleEvent { target = u.id, kind = "guard", text = "On guard" });
+                return true;
+            }
+            if (move.charge) { Charge(u, move); return true; }
+
+            // an ordinary blow: get to whoever it's after (or whoever's nearer now), then strike
+            var t = Unit(u.intentTarget);
+            if (t == null || t.gone || t.down) t = StandingParty.OrderBy(p => Dist(u, p)).FirstOrDefault();
+            if (t == null) return true;
+            if (Dist(u, t) > 1)
+            {
+                var spot = FoeApproach(u, t, e.ai == "hunter" || e.ai == "leader");
+                if (spot != null) FoeWalk(u, spot.Value.x, spot.Value.y);
+                else FoeWalkToward(u, t);
+                if (u.gone || G.phase == "over") return true;
+            }
+            if (Dist(u, t) != 1)
+            {
+                // still out of reach: anyone else in reach will do
+                var other = StandingParty.FirstOrDefault(p => Dist(u, p) == 1);
+                if (other == null) return true;
+                t = other;
+            }
+            if (!FoeAttack(u, t, move)) { G.enemyStage = 1; return false; }
+            if (G.phase == "over") return true;
+            AfterFoeAttack(u);
+            return true;
+        }
+
+        /// <summary>After a bite, a wolf with legs left in it backs off a step: hit and run.</summary>
+        void AfterFoeAttack(GridUnit u)
+        {
+            if (G.phase == "over" || u.gone || FoeDef(u).ai != "hunter" || u.moveLeft <= 0) return;
+            var reach = Flood(u, 1);
+            var away = reach.Keys.Where(k => k != u.x + u.y * G.w && At(k % G.w, k / G.w) == null)
+                            .Where(k => !StandingParty.Any(p => Math.Abs(p.x - k % G.w) + Math.Abs(p.y - k / G.w) <= 1)).ToList();
+            if (away.Count == 0) return;
+            int sq = away[0];
+            FoeWalk(u, sq % G.w, sq / G.w);
+        }
+
+        /// <summary>The square next to the target it'll go for: behind or beside them if it's a hunter. null: can't get there this turn.</summary>
+        (int x, int y)? FoeApproach(GridUnit u, GridUnit t, bool flank)
+        {
+            var reach = Flood(u, MoveOf(u));
+            (int x, int y)? best = null;
+            float bestScore = float.MinValue;
+            foreach (var (dx, dy) in Steps)
+            {
+                int x = t.x + dx, y = t.y + dy;
+                int k = x + y * G.w;
+                if (!OnGrid(x, y) || !reach.TryGetValue(k, out int steps)) continue;
+                var o = At(x, y);
+                if (o != null && o != u) continue;
+                string side = SideOf(t, x, y);
+                float score = -steps * 0.1f;
+                if (flank) score += side == "back" ? 3 : side == "side" ? 2 : 1;
+                score -= StandingParty.Count(p => p != t && Math.Abs(p.x - x) + Math.Abs(p.y - y) == 1) * 1.2f;
+                if (score > bestScore) { bestScore = score; best = (x, y); }
+            }
+            return best;
+        }
+
+        static readonly (int dx, int dy)[] Steps = { (1, 0), (-1, 0), (0, 1), (0, -1) };
+
+        /// <summary>Can't reach them this turn: get as close as it can.</summary>
+        void FoeWalkToward(GridUnit u, GridUnit t)
+        {
+            var reach = Flood(u, MoveOf(u));
+            int best = -1, bestD = Dist(u, t);
+            foreach (var kv in reach)
+            {
+                int x = kv.Key % G.w, y = kv.Key / G.w;
+                if (At(x, y) != null && At(x, y) != u) continue;
+                int d = Math.Abs(x - t.x) + Math.Abs(y - t.y);
+                if (d < bestD) { bestD = d; best = kv.Key; }
+            }
+            if (best >= 0) FoeWalk(u, best % G.w, best / G.w);
+        }
+
+        /// <summary>The pack leader keeps its distance while its wolves work: two squares from anyone if it can.</summary>
+        void FoeHangsBack(GridUnit u)
+        {
+            var reach = Flood(u, MoveOf(u));
+            int best = -1;
+            float bestScore = float.MinValue;
+            foreach (var kv in reach)
+            {
+                int x = kv.Key % G.w, y = kv.Key / G.w;
+                if (At(x, y) != null && At(x, y) != u) continue;
+                int near = StandingParty.Select(p => Math.Abs(p.x - x) + Math.Abs(p.y - y)).DefaultIfEmpty(9).Min();
+                float score = -Math.Abs(near - 3) - kv.Value * 0.1f;
+                if (score > bestScore) { bestScore = score; best = kv.Key; }
+            }
+            if (best >= 0 && best != u.x + u.y * G.w) FoeWalk(u, best % G.w, best / G.w);
+            var t = StandingParty.OrderBy(p => Dist(u, p)).FirstOrDefault();
+            if (t != null) u.facing = FaceTo(t.x - u.x, t.y - u.y);
+            Log(Cap(UnitName(u)) + " circles at the back, watching you.");
+        }
+
+        /// <summary>The boar turns to get one of you in a straight line for next time.</summary>
+        void FoeLinesUp(GridUnit u)
+        {
+            var reach = Flood(u, MoveOf(u));
+            int best = -1;
+            float bestScore = float.MinValue;
+            foreach (var kv in reach)
+            {
+                int x = kv.Key % G.w, y = kv.Key / G.w;
+                if (At(x, y) != null && At(x, y) != u) continue;
+                float score = -kv.Value * 0.2f;
+                foreach (var dir in new[] { "left", "up", "down", "right" })
                 {
-                    // it was waiting for that
-                    float back = Roll(e.atkMin, e.atkMax) * Rules.GuardCounter * Rage();
-                    if (Rules.Winded(S, data)) back *= Rules.WindedTaken;
-                    back *= (1f - Rules.GearGuard(S, data)) * Rules.QuirkMul(S, data, q => q.taken);
-                    int t = Math.Max(1, (int)Math.Round(back));
-                    S.hp -= t;
-                    WearArmour(1f);
-                    lines.Add(foe + " was waiting for that, and snaps back at you for " + t + ".");
-                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "hit", amount = t, text = t.ToString() });
-                    if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
+                    var (_, first) = Lane(u, x, y, dir);
+                    if (first != null && Math.Abs(first.x - x) + Math.Abs(first.y - y) >= 2) { score += 5; break; }
+                }
+                if (score > bestScore) { bestScore = score; best = kv.Key; }
+            }
+            if (best >= 0 && best != u.x + u.y * G.w) FoeWalk(u, best % G.w, best / G.w);
+            var t = StandingParty.OrderBy(p => Dist(u, p)).FirstOrDefault();
+            if (t != null) u.facing = FaceTo(t.x - u.x, t.y - u.y);
+            Log(Cap(UnitName(u)) + " wheels round, snorting, lining you up.");
+        }
+
+        /// <summary>A beast that's had enough runs for the far edge, and is gone when it gets there.</summary>
+        void FoeRuns(GridUnit u)
+        {
+            var reach = Flood(u, MoveOf(u) + 1);
+            int best = -1, bestX = -1;
+            foreach (var kv in reach)
+            {
+                int x = kv.Key % G.w, y = kv.Key / G.w;
+                if (At(x, y) != null && At(x, y) != u) continue;
+                if (x > bestX) { bestX = x; best = kv.Key; }
+            }
+            if (best >= 0 && best != u.x + u.y * G.w) FoeWalk(u, best % G.w, best / G.w);
+            if (!u.gone && (u.x >= G.w - 1 || best < 0))
+            {
+                Log(Cap(UnitName(u)) + " crashes off into the brush and is gone.");
+                Gone(u, "fled", "flee");
+            }
+            CheckEnd();
+        }
+
+        /// <summary>An enemy walks to a square, step by step; walking away from one of you who's facing it costs it a free hit.</summary>
+        void FoeWalk(GridUnit u, int x, int y)
+        {
+            var path = GridPath(u, x, y);
+            if (path == null || path.Count == 0) return;
+            WalkPath(u, path);
+        }
+
+        // ------------------------------------------------------------------ the boar's charge
+
+        void Charge(GridUnit u, EnemyMove move)
+        {
+            var e = FoeDef(u);
+            var (dx, dy) = Dir(u.intentDir);
+            u.facing = u.intentDir;
+            var path = new List<int>();
+            GridUnit hit = null;
+            foreach (int sq in u.lane)
+            {
+                int x = sq % G.w, y = sq / G.w;
+                var o = At(x, y);
+                if (o != null && o != u)
+                {
+                    if (o.side == "party") hit = o;
+                    break;
+                }
+                if (Solid(x, y)) break;
+                path.Add(sq);
+                u.x = x; u.y = y;
+            }
+            bool wall = hit == null && OnGrid(u.x + dx, u.y + dy) && Solid(u.x + dx, u.y + dy);
+            Events.Add(new BattleEvent { from = u.id, target = hit?.id ?? "", kind = "charge", path = path });
+            if (hit != null)
+            {
+                float dmg = Roll(e.atkMin, e.atkMax) * move.power * FoeRage(u);
+                if (HasState(hit, "braced"))
+                {
+                    Log((hit.id == "you" ? "You're braced. " : UnitName(hit) + " is braced. ") + Cap(UnitName(u)) + " slams into " + (hit.id == "you" ? "you" : UnitName(hit)) +
+                        " and stops dead, stunned, its flank wide open!");
+                    Events.Add(new BattleEvent { from = u.id, target = hit.id, kind = "braced", text = "Braced!" });
+                    AddState(u, "vulnerable", 1);
+                    AddState(u, "open", 1);
+                    Events.Add(new BattleEvent { target = u.id, kind = "open", text = "Open!" });
+                    if (hit.id == "you") { Rules.Train(S, Stat.End, 1f, "taking a charge"); if (HasShield()) TrainSkill("shield", 2, "bracing"); }
+                    LandFoeHit(u, hit, move, dmg * 0.25f, "front", true, null);
                     return;
                 }
-                lines.Add(foe + " " + move.name + ".");
-                Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Wary" });
-                return;
-            }
-            if (kind == "howl" || move.power <= 0)
-            {
-                if (youHurtIt)   // it takes a blow from you to break its focus; your companions' don't
+                // knocked flat, and back a square if there's room
+                int bx = hit.x + dx, by = hit.y + dy;
+                if (OnGrid(bx, by) && !Solid(bx, by) && At(bx, by) == null)
                 {
-                    lines.Add("You cut " + FoeName(e) + "'s howl short.");
-                    Events.Add(new BattleEvent { target = "enemy", kind = "guard", text = "Cut short" });
-                    return;
+                    hit.x = bx; hit.y = by;
+                    Events.Add(new BattleEvent { from = u.id, target = hit.id, kind = "knock", path = new List<int> { bx + by * G.w } });
                 }
-                S.enemyRage++;
-                lines.Add(foe + " " + move.name + ", and works itself into a rage. Its blows will hit harder.");
-                Events.Add(new BattleEvent { target = "enemy", kind = "rage", text = "Enraged" });
+                AddState(hit, "prone", 1);
+                Log(Cap(UnitName(u)) + " " + move.name.Replace(" you", hit.id == "you" ? " you" : " " + UnitName(hit)) + ", and knocks " + (hit.id == "you" ? "you" : UnitName(hit)) + " flat.");
+                LandFoeHit(u, hit, move, dmg, "front", false, "");
                 return;
             }
+            if (wall)
+            {
+                Log(Cap(UnitName(u)) + " charges into the " + (data.Tile(Square(u.x + dx, u.y + dy))?.name ?? "tree").ToLowerInvariant() + " head first and staggers, dazed!");
+                Events.Add(new BattleEvent { target = u.id, kind = "stun", text = "Stunned" });
+                AddState(u, "staggered", 1);
+                AddState(u, "vulnerable", 1);
+                return;
+            }
+            Log(Cap(UnitName(u)) + " thunders down the lane at nothing, and pulls up.");
+        }
 
-            float hit = Roll(e.atkMin, e.atkMax) * move.power * Rage();
-            // Sometimes it goes for someone in your party instead
-            var up = PartyUp.ToList();
-            if (up.Count > 0 && Roll(1, 100) <= 20 + 10 * up.Count)
-            {
-                var m = up[Roll(0, up.Count - 1)];
-                var f = data.Follower(m.id);
-                int ft = Math.Max(1, (int)Math.Round(hit));
-                m.hp -= ft;
-                lines.Add(foe + " " + move.name.Replace("your", f.name + "'s").Replace(" you", " " + f.name) + " for " + ft + ".");
-                Events.Add(new BattleEvent { from = "enemy", target = "follower" + S.party.IndexOf(m), kind = "hit", amount = ft, text = ft.ToString() });
-                if (m.hp <= -Rules.MemberMaxHp(m, f) * 0.5f)
-                {
-                    lines.Add(f.name + " is killed!");
-                    Rules.Die(S, data, m, "a blow from " + FoeName(e));
-                }
-                else if (m.hp <= 0) lines.Add(f.name + " goes down!");
-                else MaybeWound(move, m.body, f.name, ft, false);
-                return;
-            }
+        // ------------------------------------------------------------------ an enemy's blow
 
-            bool covered = false;   // blocked, so wounds are less likely
-            if (dodging)
+        float FoeRage(GridUnit u) => (HasState(u, "enraged") ? EnragedHits : 1f) * (HasState(u, "weakened") ? WeakenedHits : 1f);
+
+        /// <summary>An enemy strikes one of you. Returns false when it waits for your timing bar.</summary>
+        bool FoeAttack(GridUnit u, GridUnit t, EnemyMove move)
+        {
+            var e = FoeDef(u);
+            u.facing = FaceTo(t.x - u.x, t.y - u.y);
+            string side = SideOf(t, u.x, u.y);
+            float dmg = Roll(e.atkMin, e.atkMax) * move.power * FoeRage(u);
+            if (side == "back") dmg *= BackDamage;
+            if (t.id == "you" && CanReact(t, side))
             {
-                if (kind == "feint")
+                G.reactAttacker = u.id;
+                G.reactTarget = t.id;
+                G.reactMove = move.id;
+                G.reactKind = HasState(t, "guard") ? (HasShield() ? "block" : "parry") : "dodge";
+                G.reactSide = side;
+                G.reactDamage = dmg;
+                Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "windup", text = "" });
+                return false;
+            }
+            // your companions get out of the way by themselves, or don't
+            bool covered = false;
+            string note = null;
+            if (t.id != "you" && t.reaction && side != "back" && !HasState(t, "staggered") && !HasState(t, "dazed") && !HasState(t, "prone"))
+            {
+                t.reaction = false;
+                if (HasState(t, "guard")) { dmg *= 0.5f; covered = true; note = UnitName(t) + " takes it on guard."; }
+                else if (!HasState(t, "hobbled") && Roll(1, 100) <= 15 + 3 * Rules.MemberLevel(Member(t.def)))
                 {
-                    hit *= 1.4f;
-                    lines.Add("You throw yourself aside, but it was a feint. It catches you as you land.");
-                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "glance", text = "Feint!" });
+                    if (move.KindOf() == "feint") { dmg *= 1.4f; note = UnitName(t) + " jumps aside, but it was a feint."; }
+                    else
+                    {
+                        Log(Cap(UnitName(u)) + " " + Aimed(move.name, t) + ", but " + UnitName(t) + " gets out of the way.");
+                        Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "dodge", text = "Dodged" });
+                        return true;
+                    }
                 }
-                else if (pendingTiming >= TimingGood)
+            }
+            if (t.id == "you" && side == "back") note = "It gets you from behind.";
+            else if (t.id == "you" && Rules.Winded(S, data) && !HasState(t, "guard")) note = "You're too winded to get out of the way.";
+            LandFoeHit(u, t, move, dmg, side, covered, note);
+            return true;
+        }
+
+        /// <summary>Can you see this one coming and react (dodge, or parry or block when on guard)?</summary>
+        bool CanReact(GridUnit t, string side)
+        {
+            if (!t.reaction || side == "back" || HasState(t, "staggered") || HasState(t, "dazed") || HasState(t, "prone")) return false;
+            if (HasState(t, "guard")) return true;
+            return !HasState(t, "hobbled") && !Rules.Winded(S, data);
+        }
+
+        public bool AwaitingReaction => InGrid && !string.IsNullOrEmpty(G.reactAttacker);
+
+        void ClearReact()
+        {
+            G.reactAttacker = G.reactTarget = G.reactMove = G.reactKind = G.reactSide = "";
+            G.reactDamage = 0;
+        }
+
+        /// <summary>You've timed your dodge (or parry or block) on the bar: 0 mistimed, 1 good, 2 perfect. The enemies carry on.</summary>
+        public bool React(int timing)
+        {
+            if (!AwaitingReaction) return false;
+            Events.Clear();
+            timing = Math.Clamp(timing, TimingMiss, TimingPerfect);
+            var u = Unit(G.reactAttacker);
+            var t = Unit(G.reactTarget);
+            var e = FoeDef(u);
+            var move = e.moves.First(m => m.id == G.reactMove);
+            float dmg = G.reactDamage;
+            string kind = G.reactKind, side = G.reactSide;
+            ClearReact();
+            t.reaction = false;
+            string mk = move.KindOf();
+            string foe = Cap(UnitName(u));
+            if (kind == "dodge")
+            {
+                S.stamina -= Rules.HasPerk(S, data, "nimble") ? Rules.NimbleDodge : Rules.DodgeStamina;
+                if (mk == "feint")
                 {
-                    bool opens = kind == "heavy" || pendingTiming == TimingPerfect;
-                    lines.Add(foe + " " + move.name + ", but you slip aside" + (opens ? " and it overreaches. It's wide open!" : "."));
-                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "dodge", text = "Dodged" });
+                    dmg *= 1.4f;
+                    LandFoeHit(u, t, move, dmg, side, false, "You throw yourself aside, but it was a feint. It catches you as you land.");
+                }
+                else if (timing >= TimingGood)
+                {
+                    bool opens = mk == "heavy" || timing == TimingPerfect;
+                    Log(foe + " " + move.name + ", but you slip aside" + (opens ? " and it overreaches. It's wide open!" : "."));
+                    Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "dodge", text = "Dodged" });
                     if (opens)
                     {
-                        S.enemyOpen = 2;
-                        S.stamina += Rules.DodgeStamina;   // its own lunge carries it past you: the dodge cost you nothing
-                        Events.Add(new BattleEvent { target = "enemy", kind = "open", text = "Open!" });
+                        AddState(u, "open", 1);
+                        S.stamina += Rules.DodgeStamina;
+                        Events.Add(new BattleEvent { target = u.id, kind = "open", text = "Open!" });
                     }
                     Rules.Train(S, Stat.Agi, 1f, "dodging");
-                    return;
                 }
-                else lines.Add("You move a moment too late.");
+                else LandFoeHit(u, t, move, dmg, side, false, "You move a moment too late.");
             }
-            else if (S.defending)
+            else
             {
-                covered = true;
-                if (pendingTiming == TimingPerfect && (kind != "heavy" || HasShield()))
+                // on guard: parry with a blade, block with a shield
+                bool shield = kind == "block";
+                if (timing == TimingPerfect && (mk != "heavy" || shield))
                 {
-                    Parry(e, move, lines);
-                    return;
+                    int counter = Math.Max(1, (int)Math.Round(WeaponHit() * Rules.ParryCounter));
+                    Log(foe + " " + move.name + ", but you turn it aside and strike back for " + counter + "!");
+                    Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "parry", text = shield ? "Blocked!" : "Parry!" });
+                    Events.Add(new BattleEvent { from = t.id, target = u.id, kind = "hit", amount = counter, text = counter.ToString() });
+                    Rules.Train(S, Stat.Agi, 1f, "parrying");
+                    if (shield) TrainSkill("shield", 2, "blocking");
+                    DamageFoe(u, counter, t);
                 }
-                if (kind == "heavy")
+                else if (mk == "heavy")
                 {
-                    hit *= pendingTiming == TimingPerfect ? 0.45f : pendingTiming == TimingGood ? 0.65f : 0.9f;
+                    dmg *= timing == TimingPerfect ? 0.45f : timing == TimingGood ? 0.65f : 0.9f;
                     S.stamina -= 10;
-                    lines.Add("The blow smashes through your guard and knocks the wind out of you.");
-                    Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "glance", text = "-10 stamina" });
+                    LandFoeHit(u, t, move, dmg, side, true, "The blow smashes through your guard and knocks the wind out of you.");
                 }
-                else hit *= pendingTiming == TimingGood ? 0.4f : 0.7f;
+                else
+                {
+                    dmg *= timing == TimingGood ? 0.4f : 0.7f;
+                    if (shield) TrainSkill("shield", 1.5f, "blocking");
+                    LandFoeHit(u, t, move, dmg, side, true, timing == TimingGood ? "You catch it on your guard." : "You get your guard up, just.");
+                }
             }
-            if (Rules.Winded(S, data))
-            {
-                hit *= Rules.WindedTaken;
-                lines.Add("You're out of breath and slow to cover.");
-            }
-            hit *= 1f - Rules.GearGuard(S, data);
-            hit *= Rules.QuirkMul(S, data, q => q.taken);
-            int taken = Math.Max(0, (int)Math.Round(hit));
-            S.hp -= taken;
-            if (taken > 0) WearArmour(kind == "heavy" ? 2f : 1f);
-            lines.Add(foe + " " + move.name + " for " + taken + ".");
-            Events.Add(new BattleEvent { from = "enemy", target = "player", kind = kind == "heavy" && !covered ? "crit" : "hit", amount = taken, text = taken.ToString() });
-            if (S.defending) Rules.Train(S, Stat.End, 0.5f, "taking hits");
-            if (S.hp > 0) MaybeWound(move, S.body, null, taken, covered);
-            if (S.hp <= 0) S.deathCause = "You were killed by " + FoeName(e) + ".";
+            Rules.Clamp(S, data);
+            if (G.phase == "over" || CheckEnd()) return true;
+            RunFoes();
+            return true;
         }
 
-        /// <summary>Berserk (the soldier's perk): badly hurt, your blows land harder.</summary>
-        public bool Berserk => Rules.HasPerk(S, data, "berserk") && S.hp > 0 && S.hp < Rules.MaxHp(S) * Rules.BerserkBelow;
+        /// <summary>"lunges at your throat" said of a companion: "lunges at Rook's throat".</summary>
+        string Aimed(string moveName, GridUnit t) =>
+            t.id == "you" ? moveName : moveName.Replace("your", UnitName(t) + "'s").Replace(" you", " " + UnitName(t));
 
-        /// <summary>How much harder its blows land for being worked up.</summary>
-        float Rage() => 1f + S.enemyRage * Rules.RagePerPoint;
-
-        /// <summary>A perfect block: turn the blow aside and strike back.</summary>
-        void Parry(EnemyDef e, EnemyMove move, List<string> lines)
+        /// <summary>A blow from an enemy lands on one of you.</summary>
+        void LandFoeHit(GridUnit u, GridUnit t, EnemyMove move, float dmg, string side, bool covered, string note)
         {
-            string foe = Cap(FoeName(e));
-            int counter = Math.Max(1, (int)Math.Round(WeaponHit() * Rules.ParryCounter));
-            S.enemyHp -= counter;
-            lines.Add(foe + " " + move.name + ", but you turn it aside and strike back for " + counter + "!");
-            Events.Add(new BattleEvent { from = "enemy", target = "player", kind = "parry", text = "Parry!" });
-            Events.Add(new BattleEvent { from = "player", target = "enemy", kind = "hit", amount = counter, text = counter.ToString() });
-            Rules.Train(S, Stat.Agi, 1f, "parrying");
-            if (HasShield()) TrainSkill("shield", 2, "parrying");
-            if (S.enemyHp <= 0)
+            if (!string.IsNullOrEmpty(note)) Log(note);
+            if (HasState(t, "vulnerable")) dmg *= VulnerableTaken;
+            if (t.id == "you")
             {
-                lines.Add(foe + " goes down and stays down.");
-                S.inCombat = false;
-                fightRedirect = S.combatWin;
-                GainExp(e.exp, "for beating " + FoeName(e));
+                if (Rules.Winded(S, data)) dmg *= Rules.WindedTaken;
+                dmg *= 1f - Rules.GearGuard(S, data);
+                dmg *= Rules.QuirkMul(S, data, q => q.taken);
             }
+            int n = Math.Max(0, (int)Math.Round(dmg));
+            string mk = move.KindOf();
+            if (!move.charge) Log(Cap(UnitName(u)) + " " + Aimed(move.name, t) + " for " + n + ".");
+            else Log((t.id == "you" ? "You take " : UnitName(t) + " takes ") + n + ".");
+            Events.Add(new BattleEvent { from = move.charge ? "" : u.id, target = t.id, kind = mk == "heavy" && !covered ? "crit" : "hit", amount = n, text = n.ToString() });
+            if (t.id == "you")
+            {
+                S.hp -= n;
+                if (n > 0) WearArmour(mk == "heavy" ? 2f : 1f);
+                if (covered) Rules.Train(S, Stat.End, 0.5f, "taking hits");
+                if (S.hp > 0) MaybeWound(move, S.body, null, n, covered);
+                else S.deathCause = "You were killed by " + FoeName(FoeDef(u)) + ".";
+                CheckEnd();
+                return;
+            }
+            HurtParty(t, n, "a blow from " + FoeName(FoeDef(u)), move, covered);
         }
 
-        static string FoeName(EnemyDef e) => "the " + e.name.ToLowerInvariant();
+        /// <summary>A companion takes damage: down at 0, killed outright by a big enough blow or a blow while they're down.</summary>
+        void HurtParty(GridUnit t, int n, string cause, EnemyMove move = null, bool covered = false)
+        {
+            if (t.id == "you")
+            {
+                S.hp -= n;
+                if (S.hp <= 0 && string.IsNullOrEmpty(S.deathCause)) S.deathCause = "You died of " + cause + ".";
+                CheckEnd();
+                return;
+            }
+            var m = Member(t.def);
+            var f = data.Follower(t.def);
+            if (m == null || f == null) { Gone(t, "killed", "dead"); return; }
+            bool wasDown = t.down;
+            m.hp -= n;
+            float max = Rules.MemberMaxHp(m, f);
+            if (wasDown || m.hp <= -max * 0.5f)
+            {
+                Log(f.name + " is killed!");
+                Gone(t, "killed", "dead");
+                Rules.Die(S, data, m, cause);
+            }
+            else if (m.hp <= 0)
+            {
+                m.hp = 0;
+                t.down = true;
+                t.bleedOut = BleedOutRounds;
+                t.acted = true;
+                t.moveLeft = 0;
+                t.states.RemoveAll(s => !s.StartsWith("cd_"));
+                Log(f.name + " goes down! Get to them within " + BleedOutRounds + " rounds or they'll bleed out.");
+                Events.Add(new BattleEvent { target = t.id, kind = "down", text = "Down!" });
+            }
+            else if (move != null) MaybeWound(move, m.body, f.name, n, covered);
+            CheckEnd();
+        }
+
+        /// <summary>Someone leaves the field: killed, fled, or given up.</summary>
+        void Gone(GridUnit u, string how, string eventKind)
+        {
+            u.gone = true;
+            u.goneHow = how;
+            u.down = false;
+            Events.Add(new BattleEvent { target = u.id, kind = eventKind, text = how == "killed" ? "" : how == "fled" ? "Fled" : "Yields" });
+        }
+
+        /// <summary>One of you hurt an enemy. It might die, run, give up, or fly into a rage.</summary>
+        void DamageFoe(GridUnit u, int n, GridUnit by)
+        {
+            var e = FoeDef(u);
+            u.hp -= n;
+            if (by != null && n > u.hitBy) { u.hitBy = n; u.hitByWho = by.id; }
+            if (u.hp <= 0)
+            {
+                Log(Cap(UnitName(u)) + " goes down and stays down.");
+                Gone(u, "killed", "dead");
+                if (e.ai == "leader")
+                {
+                    var rest = G.units.Where(o => o.side == "foe" && !o.gone).ToList();
+                    if (rest.Count > 0) Log("With their leader dead, the pack breaks and runs.");
+                    foreach (var o in rest) AddState(o, "fleeing", 999);
+                }
+                CheckEnd();
+                return;
+            }
+            if (e.enrageBelow > 0 && u.hp < u.maxHp * e.enrageBelow && !HasState(u, "fury"))
+            {
+                u.states.Add("fury:999");
+                AddState(u, "enraged", 999);
+                Log(Cap(UnitName(u)) + " is bleeding badly, and it's furious now. Its blows will hit harder.");
+                Events.Add(new BattleEvent { target = u.id, kind = "rage", text = "Enraged" });
+            }
+            if (e.flee > 0 && u.hp < u.maxHp * e.flee && !HasState(u, "fleeing"))
+            {
+                if (!string.IsNullOrEmpty(e.figure))
+                {
+                    Log(Cap(UnitName(u)) + " throws down his weapon. \"Enough! I yield, I yield!\"");
+                    Gone(u, "surrendered", "yield");
+                }
+                else
+                {
+                    Log(Cap(UnitName(u)) + " has had enough. It turns to run.");
+                    AddState(u, "fleeing", 999);
+                    Events.Add(new BattleEvent { target = u.id, kind = "state", text = "Fleeing" });
+                }
+            }
+            CheckEnd();
+        }
+
+        // ------------------------------------------------------------------ names
+
+        /// <summary>"you", "Rook", "the wolf" (or "the second wolf" when there are more).</summary>
+        public string UnitName(GridUnit u)
+        {
+            if (u.id == "you") return "you";
+            if (u.side == "party") return data.Follower(u.def)?.name ?? u.def;
+            var e = FoeDef(u);
+            int same = G.units.Count(o => o.def == u.def);
+            if (same <= 1) return FoeName(e);
+            int i = G.units.Where(o => o.def == u.def).ToList().IndexOf(u);
+            string[] nth = { "first", "second", "third", "fourth", "fifth" };
+            return "the " + nth[Math.Min(i, nth.Length - 1)] + " " + e.name.ToLowerInvariant();
+        }
+
+        // ------------------------------------------------------------------ dev
+
+        /// <summary>Wins the current fight on the spot.</summary>
+        public void DevWinFight()
+        {
+            if (!S.inCombat) return;
+            Events.Clear();
+            if (!InGrid) { S.inCombat = false; GoTo(S.combatWin); return; }
+            foreach (var u in G.units.Where(u => u.side == "foe" && !u.gone).ToList()) { u.hp = 0; Gone(u, "killed", "dead"); }
+            S.result = "Dev mode: fight won.";
+            Finish("won");
+        }
+
+        static string FoeName(EnemyDef e) => e == null ? "the enemy"
+            : e.name.StartsWith("The ") ? "the " + e.name.Substring(4) : "the " + e.name.ToLowerInvariant();
         static string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
     }
 }
