@@ -153,7 +153,16 @@ namespace Loran.Core
             var a = Area;
             var sc = new SceneDef { id = TravelId, place = a?.name, title = a?.name };
             if (a != null && a.camp && !a.indoor)
+            {
+                // a word with the people walking with you, face to face (David, 25 Oct)
+                foreach (var m in S.party)
+                {
+                    var f = data.Follower(m.id);
+                    if (f != null && Scene("talk_" + m.id) != null)
+                        sc.choices.Add(new ChoiceDef { label = "Talk to " + f.name, go = "talk_" + m.id });
+                }
                 sc.choices.Add(new ChoiceDef { label = "Make camp here for the night", effects = { "travel:camp" } });
+            }
             return sc;
         }
 

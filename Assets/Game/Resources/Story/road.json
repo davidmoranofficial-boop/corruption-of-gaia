@@ -125,107 +125,18 @@
       ],
       "choices": [
         {
-          "label": "Ask Rook about growing up in Skelmed",
+          "label": "Talk to Rook",
           "when": [
-            "follower:rook",
-            "!flag:rt1",
-            "!flag:fire_talk_today"
+            "follower:rook"
           ],
-          "time": 30,
-          "effects": [
-            "flag:rt1",
-            "flag:fire_talk_today",
-            "bond:rook+4",
-            "morale:rook+5"
-          ],
-          "result": "\"Not much to tell. Ma put a bow in my hands before I could walk properly. I can hit a hare at sixty paces and I can't read my own name.\"\n\n[[mood:happy]]\"When I was small the harbour was so full you could walk across it on the boats. I used to do it for a dare. Now there's two boats and one of them leaks.\""
+          "go": "talk_rook"
         },
         {
-          "label": "Ask Rook about his father",
+          "label": "Talk to Wren",
           "when": [
-            "follower:rook",
-            "flag:rt1",
-            "!flag:rt2",
-            "bond:rook>=8",
-            "!flag:fire_talk_today"
+            "follower:wren"
           ],
-          "time": 30,
-          "effects": [
-            "flag:rt2",
-            "flag:fire_talk_today",
-            "bond:rook+5",
-            "morale:rook+5"
-          ],
-          "result": "[[mood:sad]]Rook pokes the fire for a long time before he answers.\n\n\"He went inland the year the levy doubled. Said there'd be work. Said he'd send for us.\" He shrugs. \"That was nine years ago.\"\n\n\"Eastmere's the first town inland. If he went anywhere, he went through there.\" He doesn't look at you. \"Ma doesn't know I'm going to ask after him. Don't tell her.\""
-        },
-        {
-          "label": "Ask Rook what happens to Skelmed",
-          "when": [
-            "follower:rook",
-            "flag:rt2",
-            "!flag:rt3",
-            "bond:rook>=14",
-            "!flag:fire_talk_today"
-          ],
-          "time": 30,
-          "effects": [
-            "flag:rt3",
-            "flag:fire_talk_today",
-            "bond:rook+5"
-          ],
-          "result": "[[mood:worried]]\"Honestly? If Eastmere won't help, Skelmed's done by winter. Ma knows it. She won't say it.\"\n\n\"She won't leave, either. She'll be the last one there, shooting wolves off the wall.\" He laughs, but it isn't a laugh. \"So I have to make Eastmere listen. That's all. Easy.\""
-        },
-        {
-          "label": "Ask Rook what he wants, after all this",
-          "when": [
-            "follower:rook",
-            "flag:rt3",
-            "!flag:rt4",
-            "bond:rook>=22",
-            "!flag:fire_talk_today"
-          ],
-          "time": 30,
-          "effects": [
-            "flag:rt4",
-            "flag:rook_close",
-            "flag:fire_talk_today",
-            "bond:rook+6",
-            "morale:rook+10"
-          ],
-          "result": "[[mood:surprised]]\"Me? Nobody's asked me that.\"\n\nHe thinks about it properly.\n\n[[mood:happy]]\"A place where people are coming instead of going. That's it. Somewhere you can hear children in the street.\" He looks at you across the fire. \"You washed up out of nowhere and you're walking two days for a village that isn't yours. I'm glad it was you the sea coughed up.\""
-        },
-        {
-          "label": "Ask Wren about Thornby",
-          "when": [
-            "follower:wren",
-            "!flag:wt1",
-            "!flag:fire_talk_today"
-          ],
-          "time": 30,
-          "effects": [
-            "flag:wt1",
-            "flag:fire_talk_today",
-            "bond:wren+4",
-            "morale:wren+5"
-          ],
-          "result": "\"Six houses and a mill. Well, five houses now. The Ashbys went inland in spring.\"\n\n\"We grind for everyone this side of the river. Took a cartload of flour to Eastmere every month. They pay half what they used to: the king's man at the gate takes the rest.\" [[mood:angry]]\"And now there's no cart.\""
-        },
-        {
-          "label": "Ask Wren what she wanted to do in Eastmere",
-          "when": [
-            "follower:wren",
-            "flag:wt1",
-            "!flag:wt2",
-            "bond:wren>=8",
-            "!flag:fire_talk_today"
-          ],
-          "time": 30,
-          "effects": [
-            "flag:wt2",
-            "flag:fire_talk_today",
-            "bond:wren+5"
-          ],
-          "result": "[[mood:sad]]\"There's a herb-wife there, old Agna. I was going to ask her to take me on. Da said we'd ask together, this trip.\"\n\nShe turns a stalk of yarrow in her fingers. \"I know every plant between here and the sea. My mother says that and a sharp tongue won't feed anybody.\"\n\n[[mood:happy]]\"She's not wrong about the tongue.\""
+          "go": "talk_wren"
         },
         {
           "label": "Rook and Wren are arguing again",
@@ -255,6 +166,181 @@
           "go": "travel"
         }
       ]
+    },
+    {
+      "id": "talk_rook",
+      "title": "Rook",
+      "speaker": "Rook",
+      "greet": [
+        {
+          "when": [
+            "flag:fire_talk_today"
+          ],
+          "mood": "happy",
+          "text": "\"Go to sleep. I'll still be here in the morning. Probably.\""
+        },
+        {
+          "when": [
+            "flag:rook_close"
+          ],
+          "mood": "happy",
+          "text": "Rook moves his pack so you can sit. \"Well? You've got your asking face on.\""
+        },
+        {
+          "when": [
+            "bond:rook>=10"
+          ],
+          "text": "Rook looks up from the arrow he's fletching. \"Something on your mind?\""
+        },
+        {
+          "when": [],
+          "text": "Rook is checking the fletching on his arrows, one by one. \"What?\""
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"What was it like, growing up in Skelmed?\"",
+          "when": [
+            "follower:rook",
+            "!flag:rt1",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt1",
+            "flag:fire_talk_today",
+            "bond:rook+4",
+            "morale:rook+5"
+          ],
+          "result": "\"Not much to tell. Ma put a bow in my hands before I could walk properly. I can hit a hare at sixty paces and I can't read my own name.\"\n\n[[mood:happy]]\"When I was small the harbour was so full you could walk across it on the boats. I used to do it for a dare. Now there's two boats and one of them leaks.\""
+        },
+        {
+          "label": "\"Tell me about your father.\"",
+          "when": [
+            "follower:rook",
+            "flag:rt1",
+            "!flag:rt2",
+            "bond:rook>=8",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt2",
+            "flag:fire_talk_today",
+            "bond:rook+5",
+            "morale:rook+5"
+          ],
+          "result": "[[mood:sad]]Rook pokes the fire for a long time before he answers.\n\n\"He went inland the year the levy doubled. Said there'd be work. Said he'd send for us.\" He shrugs. \"That was nine years ago.\"\n\n\"Eastmere's the first town inland. If he went anywhere, he went through there.\" He doesn't look at you. \"Ma doesn't know I'm going to ask after him. Don't tell her.\""
+        },
+        {
+          "label": "\"What happens to Skelmed, if Eastmere won't help?\"",
+          "when": [
+            "follower:rook",
+            "flag:rt2",
+            "!flag:rt3",
+            "bond:rook>=14",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt3",
+            "flag:fire_talk_today",
+            "bond:rook+5"
+          ],
+          "result": "[[mood:worried]]\"Honestly? If Eastmere won't help, Skelmed's done by winter. Ma knows it. She won't say it.\"\n\n\"She won't leave, either. She'll be the last one there, shooting wolves off the wall.\" He laughs, but it isn't a laugh. \"So I have to make Eastmere listen. That's all. Easy.\""
+        },
+        {
+          "label": "\"What do you want, after all this?\"",
+          "when": [
+            "follower:rook",
+            "flag:rt3",
+            "!flag:rt4",
+            "bond:rook>=22",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:rt4",
+            "flag:rook_close",
+            "flag:fire_talk_today",
+            "bond:rook+6",
+            "morale:rook+10"
+          ],
+          "result": "[[mood:surprised]]\"Me? Nobody's asked me that.\"\n\nHe thinks about it properly.\n\n[[mood:happy]]\"A place where people are coming instead of going. That's it. Somewhere you can hear children in the street.\" He looks at you across the fire. \"You washed up out of nowhere and you're walking two days for a village that isn't yours. I'm glad it was you the sea coughed up.\""
+        },
+        {
+          "label": "\"Nothing. Just checking on you.\"",
+          "go": "travel",
+          "result": "\"I'm fine.\" He goes back to his arrows."
+        }
+      ],
+      "text": []
+    },
+    {
+      "id": "talk_wren",
+      "title": "Wren",
+      "speaker": "Wren",
+      "greet": [
+        {
+          "when": [
+            "flag:fire_talk_today"
+          ],
+          "text": "Wren is half asleep already. \"Mm?\""
+        },
+        {
+          "when": [
+            "bond:wren>=10"
+          ],
+          "mood": "happy",
+          "text": "Wren shifts up to make room. \"Come and sit. Rook's been sulking at the trees.\""
+        },
+        {
+          "when": [],
+          "mood": "worried",
+          "text": "Wren is sorting the plants she picked along the road into little heaps. She doesn't look up straight away."
+        }
+      ],
+      "choices": [
+        {
+          "label": "\"Tell me about Thornby.\"",
+          "when": [
+            "follower:wren",
+            "!flag:wt1",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:wt1",
+            "flag:fire_talk_today",
+            "bond:wren+4",
+            "morale:wren+5"
+          ],
+          "result": "\"Six houses and a mill. Well, five houses now. The Ashbys went inland in spring.\"\n\n\"We grind for everyone this side of the river. Took a cartload of flour to Eastmere every month. They pay half what they used to: the king's man at the gate takes the rest.\" [[mood:angry]]\"And now there's no cart.\""
+        },
+        {
+          "label": "\"What were you going to do in Eastmere?\"",
+          "when": [
+            "follower:wren",
+            "flag:wt1",
+            "!flag:wt2",
+            "bond:wren>=8",
+            "!flag:fire_talk_today"
+          ],
+          "time": 30,
+          "effects": [
+            "flag:wt2",
+            "flag:fire_talk_today",
+            "bond:wren+5"
+          ],
+          "result": "[[mood:sad]]\"There's a herb-wife there, old Agna. I was going to ask her to take me on. Da said we'd ask together, this trip.\"\n\nShe turns a stalk of yarrow in her fingers. \"I know every plant between here and the sea. My mother says that and a sharp tongue won't feed anybody.\"\n\n[[mood:happy]]\"She's not wrong about the tongue.\""
+        },
+        {
+          "label": "\"Get some sleep, Wren.\"",
+          "go": "travel",
+          "result": "\"You first,\" she says, and doesn't."
+        }
+      ],
+      "text": []
     },
     {
       "id": "bicker",

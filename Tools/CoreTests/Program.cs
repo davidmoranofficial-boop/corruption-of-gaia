@@ -1177,9 +1177,14 @@ static class Program
         Assert(e.S.Count("firewood") >= 2 && e.Travelling, "deadwood by the road, picked up at once");
         UseThing(e, "fr_fire");
         Assert(e.S.scene == "campfire", "the fire");
-        Pick(e, "Ask Rook about growing up");
-        Assert(!e.Choices().Any(c => c.def.label.StartsWith("Ask Rook about his father")), "one talk a night");
-        Pick(e, "Leave the fire");
+        Pick(e, "Talk to Rook");
+        Assert(e.S.scene == "talk_rook" && e.Current.speaker == "Rook", "talking to Rook face to face");
+        Pick(e, "growing up in Skelmed");
+        Assert(!e.Choices().Any(c => c.def.label.Contains("your father")), "one talk a night");
+        Pick(e, "Just checking on you");
+        Assert(e.Travelling, "back on the road");
+        // and from the camp menu, anywhere you can camp
+        Assert(e.Choices().Any(c => c.def.label == "Talk to Rook"), "the camp menu has a word with Rook");
         Assert(e.Bond("rook").value > rook0, "Rook warms to you");
 
         // The charcoal burner's son

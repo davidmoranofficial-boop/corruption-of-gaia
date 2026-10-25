@@ -2788,3 +2788,61 @@
 .info-stat { flex-grow: 1; align-items: center; }
 .info-stat-value { font-size: 26px; color: var(--lantern); -unity-font-style: bold; }
 .info-stat-name { font-size: 14px; letter-spacing: 2px; color: var(--muted); }
+
+/* ---------- the talk screen: face to face (David, 25 Oct) ---------- */
+.dialogue.talk-screen {
+    left: 0; right: 0; top: 0; bottom: 0;
+    translate: 0 0; width: auto; max-width: none; max-height: none;
+}
+.hud-away { display: none; }
+.talk-shade {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+    background-color: rgba(7, 11, 13, 0.86);
+}
+.talk-figure {
+    position: absolute; left: 5%; bottom: 40px;
+    align-items: center;
+}
+.talk-floor {
+    position: absolute; left: 10px; bottom: 60px; width: 300px; height: 44px;
+    border-radius: 150px; background-color: rgba(0, 0, 0, 0.45);
+}
+.talk-img { -unity-background-scale-mode: stretch-to-fill; }
+.talk-plate {
+    flex-direction: row; align-items: center; margin-top: 6px;
+    padding: 6px 22px; background-color: rgba(13, 23, 27, 1);
+    border-width: 3px; border-color: var(--text); border-radius: 8px;
+}
+.talk-name { font-size: 26px; color: var(--lantern); -unity-font-style: bold; }
+.talk-bond { font-size: 16px; color: var(--muted); margin-left: 12px; -unity-font-style: italic; }
+.talk-right {
+    position: absolute; left: 30%; right: 5%; top: 9%; bottom: 7%;
+}
+.talk-speech {
+    min-height: 300px; max-height: 52%; flex-shrink: 1;
+    background-color: rgba(13, 23, 27, 0.98);
+    border-width: 3px; border-color: var(--text); border-radius: 14px;
+    padding: 30px 36px 16px 36px;
+}
+.talk-tail {
+    position: absolute; left: -15px; top: 120px; width: 26px; height: 26px; rotate: 45deg;
+    background-color: rgba(13, 23, 27, 1);
+    border-left-width: 3px; border-bottom-width: 3px; border-color: var(--text);
+}
+.talk-text { font-size: 28px; }
+.talk-answers { margin-top: 26px; flex-shrink: 1; flex-grow: 1; }
+.talk-choices { margin-top: 0; }
+.talk-choices .choice { min-height: 74px; padding: 12px 18px; border-width: 2px; }
+.talk-choices .choice-label { font-size: 22px; }
+.talk-screen.mood-angry .talk-speech { border-color: var(--blood); }
+.talk-screen.mood-happy .talk-speech { border-color: var(--lantern); }
+.talk-screen.mood-sad .talk-speech, .talk-screen.mood-worried .talk-speech { border-color: #7d95b0; }
+.talk-voice .talk-speech { border-color: #8fb3c9; background-color: rgba(10, 18, 30, 0.98); }
+.talk-voice .talk-text { color: #c4d6e2; -unity-font-style: italic; }
+.talk-voice .talk-tail { display: none; }
+.talk-voice .talk-img { opacity: 0.45; }
+.talk-voice-tag {
+    position: absolute; top: -20px; left: 30px; padding: 3px 14px;
+    font-size: 18px; color: #8fb3c9; -unity-font-style: bold;
+    background-color: rgba(10, 18, 30, 1); border-width: 3px; border-color: #8fb3c9; border-radius: 6px;
+}

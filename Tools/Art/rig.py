@@ -95,7 +95,7 @@ def render(prims, W, H, ground=None, details=(), seed=1, outline='o', sc=1.0):
     for p in prims:
         if p.mat not in mats: mats.append(p.mat)
         mi = mats.index(p.mat)
-        inside, z, a, b, c = _ell(p, X, Y) if isinstance(p, Ell) else _cap(p, X, Y)
+        inside, z, a, b, c = p.field(X, Y) if hasattr(p, 'field') else _ell(p, X, Y) if isinstance(p, Ell) else _cap(p, X, Y)
         win = inside & (z > zb)
         zb[win] = z[win]; nx[win] = a[win]; ny[win] = b[win]; nz[win] = c[win]; mid[win] = mi
     filled = mid >= 0

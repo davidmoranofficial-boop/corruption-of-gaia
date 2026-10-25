@@ -477,6 +477,8 @@ def main():
     made += cutscene.main()
     import bodychart
     made += bodychart.main()
+    import portrait   # full-length talking portraits for the talk screen (25 Oct)
+    print('portraits:', portrait.main())
     import world
     world.main()
     print('built %d sprites into %s' % (len(made), os.path.normpath(OUT)))

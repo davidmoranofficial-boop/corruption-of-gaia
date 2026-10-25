@@ -121,6 +121,7 @@ namespace Loran.UnityLayer
             bool talking = worldView.Q(className: "dialogue") != null;
             help.style.display = talking || DirectorActive ? DisplayStyle.None : DisplayStyle.Flex;
             hud.EnableInClassList("hud-talking", talking);   // the bars step aside while the dialogue box is up
+            hud.EnableInClassList("hud-away", worldView.Q(className: "talk-screen") != null);   // and go altogether face to face
             if (worldTick == null) worldTick = root.schedule.Execute(WorldTick).Every(16);
         }
 
@@ -201,6 +202,11 @@ namespace Loran.UnityLayer
 
             string who = string.IsNullOrEmpty(speaker) ? null : engine.Fill(speaker);
             dlgWho = who;
+            // Talking to someone face to face gets its own screen (David, 25 Oct); narration and in-world cutscenes keep the box
+            string figure = who != null && !dlgDirector ? FigureId(who) : null;
+            if (figure != null) { TalkScreen(who, figure, choices, actions, pages); return; }
+            dlgFigure = null;
+            dlgVoiceTag = null;
             var box = Add(worldView, new VisualElement(), "dialogue");
             dlgBoxEl = box;
             box.AddToClassList(who != null ? "dialogue-talk" : "dialogue-narrate");
@@ -276,7 +282,13 @@ namespace Loran.UnityLayer
             bool voice = mark.StartsWith("voice:");
             string mood = mark.StartsWith("mood:") ? mark.Substring(5) : "";
             dlgBoxEl.EnableInClassList("dialogue-voice", voice);
-            if (voice)
+            if (dlgVoiceTag != null)
+            {
+                dlgVoiceTag.text = voice ? mark.Substring(6).ToUpperInvariant() : "";
+                Show(dlgVoiceTag, voice);
+            }
+            if (voice && dlgFigure != null) dlgBoxEl.EnableInClassList("dialogue-rot", mark.Substring(6) == "The Rot");
+            else if (voice)
             {
                 string v = mark.Substring(6);
                 dlgSpeaker.text = v.ToUpperInvariant();
@@ -292,7 +304,14 @@ namespace Loran.UnityLayer
                 var bond = dlgWho != null ? engine.Bond(dlgWho) : (0, null);
                 dlgBond.text = bond.name ?? "";
             }
-            if (dlgPortrait != null) Show(dlgPortrait, !voice);
+            if (dlgPortrait != null && dlgFigure == null) Show(dlgPortrait, !voice);
+            if (dlgFigure != null)
+            {
+                var tex = Sprite("Portrait/" + dlgFigureId + "_" + (mood == "" ? "calm" : mood)) ?? Sprite("Portrait/" + dlgFigureId + "_calm");
+                if (tex != null) dlgFigure.style.backgroundImage = new StyleBackground(tex);
+                dlgBoxEl.EnableInClassList("talk-voice", voice);
+                foreach (var m in new[] { "happy", "angry", "sad", "worried", "surprised" }) dlgBoxEl.EnableInClassList("mood-" + m, m == mood);
+            }
             if (dlgMood != null)
             {
                 dlgMood.text = mood == "happy" ? "~" : mood == "angry" ? "!" : mood == "sad" ? "..." : mood == "worried" ? "?" : mood == "surprised" ? "!?" : "";
@@ -393,6 +412,68 @@ namespace Loran.UnityLayer
                 Add(close, new Label("Keep walking"), "choice-label");
                 dlgChoices.Add(close);
             }
+        }
+
+        // ------------------------------------------------------------------ the talk screen (David, 25 Oct)
+        // Whoever you're talking to stands on the left, head to boots, turned towards you; what they say is in the big box
+        // on the right and your answers sit under it, two to a row. Their face follows the mood of each page.
+        public const int FigureW = 80, FigureH = 144, FigureScale = 4;
+        VisualElement dlgFigure;
+        string dlgFigureId;
+        Label dlgVoiceTag;   // on the talk screen: the name of an inner voice, on the speech box
+
+        /// <summary>The talking portrait for a speaker (Sprites/Portrait/<id>_calm), or null if they haven't got one.</summary>
+        string FigureId(string speaker)
+        {
+            var sheet = PortraitSheet(speaker);
+            string id = sheet != null && sheet.StartsWith("Walk/npc_") ? sheet.Substring("Walk/npc_".Length) : Key(speaker.Split(' ')[0]);
+            return Sprite("Portrait/" + id + "_calm") != null ? id : null;
+        }
+
+        void TalkScreen(string who, string figure, List<ChoiceView> choices, bool actions, List<string> pages)
+        {
+            var box = Add(worldView, new VisualElement(), "dialogue");
+            box.AddToClassList("talk-screen");
+            dlgBoxEl = box;
+            Add(box, new VisualElement { pickingMode = PickingMode.Ignore }, "talk-shade");
+
+            var stand = Add(box, new VisualElement { pickingMode = PickingMode.Ignore }, "talk-figure");
+            Add(stand, new VisualElement { pickingMode = PickingMode.Ignore }, "talk-floor");
+            dlgFigure = Add(stand, new VisualElement { pickingMode = PickingMode.Ignore }, "talk-img");
+            dlgFigure.style.width = FigureW * FigureScale;
+            dlgFigure.style.height = FigureH * FigureScale;
+            dlgFigureId = figure;
+            dlgFigure.style.backgroundImage = new StyleBackground(Sprite("Portrait/" + figure + "_calm"));
+            var plate = Add(stand, new VisualElement(), "talk-plate");
+            dlgSpeaker = Add(plate, new Label(who), "talk-name");
+            dlgBond = Add(plate, new Label(""), "talk-bond");
+            var bond = engine.Bond(who);
+            if (bond.name != null) dlgBond.text = bond.name;
+            dlgPortrait = null;
+            dlgMood = null;
+
+            var right = Add(box, new VisualElement(), "talk-right");
+            var speech = Add(right, new VisualElement(), "talk-speech");
+            Add(speech, new VisualElement(), "talk-tail");
+            dlgVoiceTag = Add(speech, new Label(""), "talk-voice-tag");
+            Show(dlgVoiceTag, false);
+            var scroll = Add(speech, new ScrollView(ScrollViewMode.Vertical), "dialogue-scroll");
+            dlgText = Add(scroll, new Label(""), "dialogue-text");
+            dlgText.AddToClassList("talk-text");
+            dlgMore = Add(speech, new Label(""), "dialogue-more");
+            var answers = Add(right, new ScrollView(ScrollViewMode.Vertical), "talk-answers");
+            dlgChoices = Add(answers, new VisualElement(), "choices");
+            dlgChoices.AddToClassList("talk-choices");
+            box.RegisterCallback<PointerDownEvent>(e => { if (!(e.target is VisualElement ve && ve.GetFirstAncestorOfType<Button>() != null) && !(e.target is Button)) DialogueAdvance(); });
+
+            shownChoices = new List<ChoiceView>();
+            dlgPendingChoices = choices;
+            if (choices != null) BuildChoices(choices, actions);
+
+            if (pages.Count == 0) { dlgText.style.display = DisplayStyle.None; ShowChoices(); return; }
+            PageStyle();
+            if (dlgTypedPage >= dlgPage) { dlgText.text = pages[dlgPage]; PageDone(); return; }
+            StartTyping();
         }
 
         /// <summary>The face of whoever's talking: the top of their walking sprite, blown up in a frame.</summary>
