@@ -109,12 +109,12 @@ namespace Loran.Core
         public List<GridUnit> units = new List<GridUnit>();
         public int round;
         public string phase = "";              // party or enemy
-        public int enemyIndex, enemyStage;     // where the enemies' turn has got to (it stops for your timing bar)
+        public int enemyIndex, enemyStage;     // where the enemies' turn has got to
         public string reactAttacker = "", reactTarget = "", reactMove = "", reactKind = "", reactSide = "";
         public string selected = "you";
         public bool leaderHowled;
         public string outcome = "";            // won, fled or dead, once it's over
-        public float reactDamage;              // the blow waiting on your timing bar
+        public float reactDamage;              // old saves only: a blow that waited on the timing bar (removed 25 Oct)
         public bool swung;                     // you attacked this round (or you get some wind back)
     }
 

@@ -2878,7 +2878,6 @@
 .grid-intent { position: absolute; font-size: 13px; -unity-text-align: middle-center; color: #e2c27a; letter-spacing: 1px; -unity-font-style: bold; -unity-text-outline-width: 1px; -unity-text-outline-color: #000000; white-space: normal; }
 .grid-intent-big { color: #ff8a5c; font-size: 15px; }
 .grid-pop { position: absolute; right: auto; -unity-text-align: middle-center; }
-.grid-timing { position: absolute; left: 8%; right: 8%; bottom: 24px; padding: 12px 18px; background-color: rgba(14, 22, 26, 0.94); border-width: 1px; border-color: #5b4526; border-radius: 8px; }
 
 .grid-banner { padding: 8px 14px; background-color: var(--hull); border-left-width: 4px; border-color: var(--moss); border-radius: 6px; margin-bottom: 8px; flex-shrink: 0; }
 .grid-banner-foe { border-color: var(--blood); }

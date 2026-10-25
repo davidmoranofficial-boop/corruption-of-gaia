@@ -97,10 +97,9 @@ namespace Loran.UnityLayer
             Render();
         }
 
-        /// <summary>Clears any half-played fight, timing bar or forge step so a jump starts clean.</summary>
+        /// <summary>Clears any half-played fight or forge step so a jump starts clean.</summary>
         void ResetScreens()
         {
-            timingOn = false;
             busy = outro = false;
             selAction = "";
             shown = null;

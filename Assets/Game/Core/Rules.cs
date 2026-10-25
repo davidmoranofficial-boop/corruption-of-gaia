@@ -118,7 +118,7 @@ namespace Loran.Core
         // Background perks. Tuned so each is worth about the same: the fight perks by simulated fights (tests: PERKS=1).
         public const float BerserkBelow = 0.3f, BerserkDamage = 1.3f;   // Berserk: under 30% health, blows land 30% harder
         public const int DeadeyeCrit = 12;                              // Deadeye: +12% crit chance (and the cap rises with it)
-        public const int NimbleDodge = 4;                               // Nimble: dodging costs half the stamina, and the dodge zone is wider
+        public const int NimbleDodge = 4;                               // Nimble: dodging costs half the stamina, and works more often (Engine.NimbleDodgeBonus)
         public const float HardyNeeds = 0.8f, HardyWeather = 0.6f;     // Hardy: hunger and thirst drain 20% slower, rain and cold 40% slower
         public const float HealerRate = 1.5f;                          // Healer: wounds heal half again as fast, treating takes half the time
         public const float StudiousRate = 1.2f;                        // Studious: stats and skills grow 20% faster
@@ -382,18 +382,6 @@ namespace Loran.Core
 
         /// <summary>Who acts first: your Agility (plus Swift gear) against the enemy's speed. Ties go to you.</summary>
         public static int Speed(GameState s, GameData d) => s.stats[Stat.Agi] + (int)TraitSum(s, d, t => t.speed);
-
-        /// <summary>
-        /// The timing bar: the share of the bar that counts as a good hit, and the smaller share in its middle that counts as perfect.
-        /// Agility and Balanced gear widen both.
-        /// </summary>
-        public static (float good, float perfect) TimingZone(GameState s, GameData d)
-        {
-            float bonus = TraitSum(s, d, t => t.zone);
-            float good = Math.Clamp(0.26f + s.stats[Stat.Agi] * 0.012f + bonus, 0.2f, 0.6f);
-            float perfect = Math.Clamp(0.07f + s.stats[Stat.Agi] * 0.004f + bonus * 0.5f, 0.05f, 0.25f);
-            return (good, perfect);
-        }
 
         /// <summary>Minutes until the next 06:00, at least four hours.</summary>
         public static int MinutesUntilMorning(GameState s)

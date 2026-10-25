@@ -12,8 +12,8 @@ namespace Loran.UnityLayer
     /// Your side moves first: pick someone, walk them (the blue squares), then act: attack (pick where to aim and
     /// see the chance and damage first), guard, brace, help someone up, use something. Then end the turn and the
     /// enemies do what they showed they'd do: the boar's charge lane is drawn in red, each enemy says who it's after.
-    /// When one of them goes for you, the timing bar comes up: press Space in the bright zone to dodge (or parry,
-    /// or block, if you took Guard).
+    /// When one of them goes for you, you dodge by yourself (or parry or block, if you took Guard), as well as your
+    /// Agility and weapon skill let you. No timing bar (David, 25 Oct).
     ///
     /// Keys: WASD or arrows move the cursor, E or Enter acts on it (select, walk, aim), 1-9 pick an action, Tab picks
     /// the next of your side, R turns them, T ends the turn, Esc goes back. While aiming: A/D change target, W/S
@@ -21,7 +21,6 @@ namespace Loran.UnityLayer
     /// </summary>
     public partial class GameUI
     {
-        const float TimingSeconds = 1.05f;   // how long the marker takes to cross the bar
         const int MapTilesW = 12, MapTilesH = 9;
 
         bool busy;                             // events playing; input waits
@@ -35,12 +34,6 @@ namespace Loran.UnityLayer
         int selPart;
         int curX = 1, curY = 3;                // the keyboard cursor, in fight squares
         bool cursorOn;
-
-        // the timing bar
-        bool timingOn;
-        float timingStart, zoneCentre;
-        IVisualElementScheduledItem timingTick;
-        VisualElement timingMarker;
 
         // the field
         VisualElement arena, field, fieldMarks, fieldUnits, fieldTags, fieldFx, cursorEl;
@@ -101,7 +94,6 @@ namespace Loran.UnityLayer
             fk = Mathf.Clamp(Mathf.FloorToInt(Mathf.Min(aw / (MapTilesW * Tile), ah / (MapTilesH * Tile))), 2, 8);
             BuildField();
             BuildSide(side);
-            if (timingOn) RenderTimingBar();
 
             battleTick?.Pause();
             battleTick = root.schedule.Execute(BattleTick).Every(16);
@@ -152,7 +144,7 @@ namespace Loran.UnityLayer
             });
         }
 
-        bool YourTurn => engine.InGrid && engine.Grid.phase == "party" && !busy && !timingOn && !engine.AwaitingReaction;
+        bool YourTurn => engine.InGrid && engine.Grid.phase == "party" && !busy;
 
         void DrawMarks()
         {
@@ -388,15 +380,7 @@ namespace Loran.UnityLayer
 
             // whose turn, and what to do
             var banner = Add(side, new VisualElement(), "grid-banner");
-            if (timingOn || engine.AwaitingReaction)
-            {
-                banner.AddToClassList("grid-banner-foe");
-                Add(banner, new Label("THEY'RE COMING FOR YOU"), "grid-banner-head");
-                var att = engine.Unit(g.reactAttacker);
-                var mv = att == null ? null : engine.FoeDef(att).moves.FirstOrDefault(m => m.id == g.reactMove);
-                if (mv != null) Add(banner, new Label(mv.tell), "grid-banner-text");
-            }
-            else if (g.phase == "party" && !busy)
+            if (g.phase == "party" && !busy)
             {
                 Add(banner, new Label("YOUR TURN"), "grid-banner-head");
                 Add(banner, new Label(selAction == "" ? "Pick one of your side, walk them (blue squares), then act. End the turn when everyone's done."
@@ -474,7 +458,7 @@ namespace Loran.UnityLayer
                 bool anyLeft = g.units.Any(u => u.side == "party" && !u.gone && !u.down && !u.acted);
                 if (!anyLeft) end.AddToClassList("grid-end-ready");
             }
-            var keys = Add(side, new Label(timingOn ? "SPACE  time it" : selAction != "" ? "A / D  target   ·   W / S  aim   ·   E  strike   ·   ESC  back"
+            var keys = Add(side, new Label(selAction != "" ? "A / D  target   ·   W / S  aim   ·   E  strike   ·   ESC  back"
                                                     : "WASD  cursor   ·   E  select / walk / aim   ·   1-9  act   ·   TAB  next   ·   R  turn   ·   T  end turn"), "grid-keys");
         }
 
@@ -718,7 +702,6 @@ namespace Loran.UnityLayer
                     return;
                 }
                 var g = engine.Grid;
-                if (engine.AwaitingReaction) { StartTiming(); return; }
                 if (g.phase == "party")
                 {
                     var sel = engine.Unit(selUnit);
@@ -1013,87 +996,11 @@ namespace Loran.UnityLayer
             return l;
         }
 
-        // ------------------------------------------------------------------ the timing bar
-
-        string ReactKind => engine.Grid.reactKind;
-
-        void StartTiming()
-        {
-            timingOn = true;
-            var (good, _) = Zone();
-            zoneCentre = UnityEngine.Random.Range(0.35f + good / 2, 0.92f - good / 2);
-            timingStart = Time.realtimeSinceStartup;
-            Render();
-            timingTick?.Pause();
-            timingTick = root.schedule.Execute(() =>
-            {
-                if (!timingOn) return;
-                if (TimingPos() >= 1f) StopTiming();
-                else MoveMarker();
-            }).Every(10);
-        }
-
-        void RenderTimingBar()
-        {
-            var box = Add(arena, new VisualElement(), "grid-timing");
-            string kind = ReactKind;
-            Add(box, new Label(kind == "dodge" ? "DODGE  ·  press SPACE in the bright zone" : kind == "block" ? "BLOCK  ·  press SPACE in the bright zone (perfect: turn it aside)"
-                                                : "PARRY  ·  press SPACE in the bright zone (perfect: turn it aside and strike back)"), "timing-head");
-            var track = Add(box, new VisualElement(), "timing-track");
-            track.RegisterCallback<PointerDownEvent>(_ => StopTiming());
-            var (good, perfect) = Zone();
-            var g = Add(track, new VisualElement(), "timing-good");
-            g.style.left = Length.Percent((zoneCentre - good / 2) * 100);
-            g.style.width = Length.Percent(good * 100);
-            var p = Add(track, new VisualElement(), "timing-perfect");
-            p.style.left = Length.Percent((zoneCentre - perfect / 2) * 100);
-            p.style.width = Length.Percent(perfect * 100);
-            timingMarker = Add(track, new VisualElement(), "timing-marker");
-            MoveMarker();
-        }
-
-        /// <summary>The bright zone. Dodging is harder to time than parrying, so its zone is narrower.</summary>
-        (float good, float perfect) Zone()
-        {
-            var (good, perfect) = Rules.TimingZone(engine.S, engine.data);
-            bool dodge = ReactKind == "dodge";
-            float k = Rules.HasPerk(engine.S, engine.data, "nimble") ? 1.15f : 0.75f;   // Nimble: dodging comes easily
-            return dodge ? (good * k, perfect * (k + 0.05f)) : (good, perfect);
-        }
-
-        float TimingPos() => (Time.realtimeSinceStartup - timingStart) / TimingSeconds;
-
-        void MoveMarker()
-        {
-            if (timingMarker != null) timingMarker.style.left = Length.Percent(Mathf.Clamp01(TimingPos()) * 100f);
-        }
-
-        /// <summary>You pressed (or the marker ran off the end): how well you timed it.</summary>
-        void StopTiming()
-        {
-            if (!timingOn) return;
-            timingTick?.Pause();
-            float pos = TimingPos();
-            var (good, perfect) = Zone();
-            float off = Mathf.Abs(pos - zoneCentre);
-            int quality = pos >= 1f ? Engine.TimingMiss : off <= perfect / 2 ? Engine.TimingPerfect : off <= good / 2 ? Engine.TimingGood : Engine.TimingMiss;
-            timingOn = false;
-            Do(() => engine.React(quality), "react");
-            if (views.TryGetValue("you", out var you))
-                Popup(fieldTags, you, quality == Engine.TimingPerfect ? "PERFECT" : quality == Engine.TimingGood ? "GOOD" : "MISTIMED",
-                      quality == Engine.TimingPerfect ? "pop-perfect" : quality == Engine.TimingGood ? "pop-good" : "pop-miss");
-        }
-
         // ------------------------------------------------------------------ keys
 
         /// <summary>Keys during a fight.</summary>
         bool BattleKey(KeyDownEvent e)
         {
-            if (timingOn)
-            {
-                if (e.keyCode == KeyCode.Space || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.E) StopTiming();
-                return true;
-            }
             if (!YourTurn) return true;
             var k = NavKey(e.keyCode);
             bool confirm = e.keyCode == KeyCode.E || e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Space;

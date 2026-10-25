@@ -105,7 +105,7 @@ namespace Loran.UnityLayer
             // The battle screen fills the main area, so draw it again when that area changes size.
             mainBox.RegisterCallback<GeometryChangedEvent>(_ =>
             {
-                if (InBattle && !busy && !timingOn && Mathf.Abs(BattleHeight() - battleHeight) > 4f) Render();
+                if (InBattle && !busy && Mathf.Abs(BattleHeight() - battleHeight) > 4f) Render();
                 else if (InWorld && !InBattle && !moving && openMenu == ""
                          && (Mathf.Abs(TravelHeight() - worldSize.y) > 4f || Mathf.Abs(TravelWidth() - worldSize.x) > 4f)) Render();
             });
@@ -202,7 +202,7 @@ namespace Loran.UnityLayer
             bool cutscene = InCutscene;
             bool special = s.scene == Engine.Title || s.scene == Engine.Creation || cutscene;
             bool battle = !special && InBattle && engine.data.Enemy(s.enemy) != null;
-            if (!battle) { outro = false; timingOn = false; selAction = ""; shown = null; }
+            if (!battle) { outro = false; selAction = ""; shown = null; }
             bool forge = !special && !battle && s.scene == Engine.ForgeId;
             if (!forge && forgeStage != 3) { forgeStage = -1; stageRunning = false; }
             Show(screenBox, special);

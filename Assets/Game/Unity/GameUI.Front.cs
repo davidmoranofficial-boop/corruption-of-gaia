@@ -135,7 +135,7 @@ namespace Loran.UnityLayer
             }
 
             var foot = Add(page, new VisualElement(), "title-foot");
-            Add(foot, new Label("UPDATE: 25 OCT, GRID BATTLES"), "title-update");   // bumped with each update so you can see it arrived
+            Add(foot, new Label("UPDATE: 25 OCT, NO TIMING BAR"), "title-update");   // bumped with each update so you can see it arrived
             Add(foot, new Label("Vertical slice prototype"), "title-update");
         }
 

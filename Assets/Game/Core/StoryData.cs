@@ -361,7 +361,7 @@ namespace Loran.Core
     {
         public string id, name, desc;
         public float crit;                     // extra critical multiplier
-        public float zone;                     // wider timing zone (fraction of the bar)
+        public float zone;                     // Balanced: dodge and parry more often (0.06 = +6%)
         public float guard;                    // extra share of each hit blocked
         public int stamina;                    // extra max stamina
         public float fire;                     // fire damage added to every hit

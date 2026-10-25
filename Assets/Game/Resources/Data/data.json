@@ -252,8 +252,8 @@
       "rank": "F",
       "desc": "A starved grey wolf, all ribs and matted fur. Its eyes have gone the colour of old pus, and it doesn't blink.",
       "hp": 66,
-      "atkMin": 8,
-      "atkMax": 12,
+      "atkMin": 7,
+      "atkMax": 11,
       "speed": 4,
       "moves": [
         {
@@ -752,7 +752,7 @@
       "desc": "You lived by quick hands in the back streets of Zaron, until the watch learned your face.",
       "perk": "nimble",
       "perkName": "Nimble",
-      "perkDesc": "Dodging costs half the stamina, and it's easier to time."
+      "perkDesc": "Dodging costs half the stamina, and you get out of the way more often."
     },
     {
       "id": "hunter",
@@ -928,7 +928,7 @@
     {
       "id": "balanced",
       "name": "Balanced",
-      "desc": "Sits well in the hand. The timing bar's sweet spot is wider.",
+      "desc": "Sits well in the hand. You dodge and parry a little more often.",
       "zone": 0.06
     },
     {

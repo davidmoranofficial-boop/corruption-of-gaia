@@ -75,8 +75,7 @@ static class Program
             dog.hp = 999;
             for (int i = 0; i < 8; i++) Swing(e);
             Assert(blade.condition < 100, "fighting dulls the blade: " + blade.condition);
-            Incoming(e, "snap");
-            e.React(Engine.TimingMiss);
+            for (int i = 0; i < 20 && e.S.Equipped.All(g => g.guard <= 0 || g.condition == 100); i++) Incoming(e, "snap", out _, out _);
             Assert(e.S.Equipped.Any(g => g.guard > 0 && g.condition < 100), "taking hits wears what you're wearing");
             var v = NewEngine();
             v.DevStart("village");
@@ -400,7 +399,6 @@ static class Program
             b.AutoUnit("rook");
             b.GridDo("you", "guard");
             b.EndTurn();
-            while (b.AwaitingReaction) b.React(Engine.TimingGood);
         }
         Assert(b.Grid.units.Where(u => u.side == "foe").Sum(u => u.hp) < foesHp || !b.S.inCombat, "Rook shoots at the pack while you hold back");
     }
@@ -840,32 +838,25 @@ static class Program
         return e.GridAttack("you", f.id, part, action);
     }
 
-    /// <summary>The enemy in front of you is about to use this move on you, and you end your turn: the timing bar comes up.</summary>
-    static GridUnit Incoming(Engine e, string move, bool guard = false, string foeId = null)
+    /// <summary>The enemy in front of you uses this move on you (on guard if asked), and you meet it as well as your stats let you.
+    /// Gives your health and the enemy's from just before it.</summary>
+    static GridUnit Incoming(Engine e, string move, out float hp, out float foeHp, bool guard = false, string foeId = null)
     {
         var f = Duel(e, foeId);
         f.intent = move;
         f.intentTarget = "you";
         if (guard) e.GridDo("you", "guard");
+        hp = e.S.hp;
+        foeHp = f.hp;
         e.EndTurn();
-        Assert(e.AwaitingReaction, "the timing bar should come up for " + move + " (" + string.Join(" / ", e.S.battleLog) + ")");
         return f;
     }
 
     /// <summary>One round played well: everyone flanks, aims and helps (the engine's own sensible play), with good presses, some perfect.</summary>
-    static void SmartRound(Engine e, int salt)
-    {
-        int n = 0;
-        e.AutoRound(() =>
-        {
-            int r = (int)((salt * 7919L + e.Grid.round * 104729L + n++ * 31L) % 100);
-            if (Rules.HasPerk(e.S, e.data, "nimble") && e.Grid.reactKind == "dodge") r = r * 3 / 4;   // Nimble's wider dodge zone
-            return r < 30 ? Engine.TimingPerfect : r < 82 ? Engine.TimingGood : Engine.TimingMiss;
-        });
-    }
+    static void SmartRound(Engine e, int salt) => e.AutoRound();
 
     /// <summary>One round as a button-masher: walk straight at the nearest enemy and hit it in the body, companions too.
-    /// Never braces, never flanks, never helps anyone up. Presses all over the place.</summary>
+    /// Never guards, braces or flanks, never helps anyone up.</summary>
     static void MashRound(Engine e, int salt)
     {
         foreach (var u in e.Grid.units.Where(u => u.side == "party" && !u.gone && !u.down).ToList())
@@ -881,14 +872,7 @@ static class Program
             if (!e.S.inCombat) return;
             if (!e.GridAttack(u.id, t.id, "body", "attack")) e.GridDo(u.id, "wait");
         }
-        if (!e.S.inCombat) return;
-        e.EndTurn();
-        int n = 0;
-        for (int i = 0; i < 60 && e.AwaitingReaction; i++)
-        {
-            int t = (salt + e.Grid.round + n++) % 6;
-            e.React(t == 0 ? Engine.TimingPerfect : t <= 2 ? Engine.TimingGood : Engine.TimingMiss);
-        }
+        if (e.S.inCombat) e.EndTurn();
     }
 
     static (int wins, int deaths, float lost) Simulate(Func<int, Engine> start, Action<Engine, int> play, string win, int n)
@@ -922,12 +906,21 @@ static class Program
         Swing(a); Swing(b);
         Assert(b.Berserk && !a.Berserk && (999 - fb.hp) >= (999 - fa.hp) * 1.2f, "berserk hits harder when you're badly hurt: " + (999 - fb.hp) + " vs " + (999 - fa.hp));
 
-        // Nimble: dodging costs less
-        var l = AtDog(3); l.S.background = "thief";
-        Incoming(l, "snap");
-        l.S.stamina = 50;
-        l.React(Engine.TimingGood);
-        Assert(Math.Abs(50 - l.S.stamina - Rules.NimbleDodge) < 0.01f, "a thief dodges for half the stamina: " + (50 - l.S.stamina));
+        // Nimble: dodging costs less, and works more often
+        Assert(Rules.NimbleDodge < Rules.DodgeStamina, "a thief's dodge costs less");
+        int Dodges(string bg)
+        {
+            int n = 0;
+            for (int seed = 0; seed < 150; seed++)
+            {
+                var x = AtDog(seed); x.S.background = bg;
+                Incoming(x, "snap", out _, out _);
+                if (x.Events.Any(v => v.kind == "dodge" && v.target == "you")) n++;
+            }
+            return n;
+        }
+        int thief = Dodges("thief"), farmer = Dodges("farmer");
+        Assert(thief > farmer + 8, "a thief gets out of the way more often: " + thief + " vs " + farmer + " of 150");
 
         // Deadeye: more crits
         var k1 = AtDog(3); k1.S.background = "hunter";
@@ -1051,7 +1044,7 @@ static class Program
         Console.WriteLine("    the pack leader with Rook, mashing attack:");
         var bm = Simulate(AtPackLeader, MashRound, "den_won", n / 2);
         Assert(smart.wins >= n * 0.95f, "playing the wolf well should nearly always win");
-        Assert(mash.wins < smart.wins - n / 20 && mash.lost > smart.lost * 1.5f, "mashing attack should go much worse");
+        Assert(mash.wins <= smart.wins && mash.lost > smart.lost * 1.3f, "mashing attack should cost more health");
         Assert(bs.wins >= n / 2 * 0.6f, "the pack leader should be beatable by someone who plays it well");
         Assert(bm.wins < bs.wins / 2, "but it should punish mashing");
     }
@@ -1116,33 +1109,31 @@ static class Program
         Assert(grazes > 5 && grazes < 50, "some miss and only graze (" + grazes + ")");
         Assert(critDmg / crits > hitDmg / hits * 1.4f && grazeDmg / grazes < hitDmg / hits * 0.6f, "a crit hits much harder, a graze much softer");
 
-        int parried = 0, dodged = 0, smashed = 0;
-        for (int seed = 0; seed < 30; seed++)
+        // No timing bar: you dodge, or parry on guard, as well as your Agility and weapon skill let you
+        int parried = 0, dodged = 0, smashed = 0, caught = 0, tries = 0;
+        for (int seed = 0; seed < 90; seed++)
         {
             var e = AtDog(seed);
-            float hp;
             if (seed % 3 == 0)
             {
-                var f = Incoming(e, "snap", guard: true);
-                hp = e.S.hp;
-                float fh = f.hp;
-                e.React(Engine.TimingPerfect);
-                Assert(e.S.hp >= hp && f.hp < fh, "a perfect parry turns a quick blow and strikes back");
-                parried++;
+                var f = Incoming(e, "snap", out var hp, out var fh, guard: true);
+                if (e.Events.Any(x => x.kind == "parry"))
+                {
+                    Assert(e.S.hp >= hp && f.hp < fh, "a clean parry turns a quick blow and strikes back");
+                    parried++;
+                }
             }
             else if (seed % 3 == 1)
             {
-                Incoming(e, "lunge", guard: true);
-                hp = e.S.hp;
-                e.React(Engine.TimingPerfect);
+                Incoming(e, "lunge", out var hp, out _, guard: true);
                 Assert(e.S.hp < hp, "a big blow smashes through a parry without a shield");
                 smashed++;
             }
             else
             {
-                var f = Incoming(e, "lunge");
-                hp = e.S.hp;
-                e.React(Engine.TimingGood);
+                var f = Incoming(e, "lunge", out var hp, out _);
+                tries++;
+                if (!e.Events.Any(x => x.kind == "dodge")) { caught++; continue; }
                 Assert(e.S.hp >= hp && e.HasState(f, "open"), "dodging a big blow takes nothing and leaves it open: " + string.Join(", ", f.states));
                 f.hp = 999;
                 Swing(e);
@@ -1150,14 +1141,13 @@ static class Program
                 dodged++;
             }
         }
-        Assert(parried >= 10 && dodged >= 10 && smashed >= 10, "should have tested parries, dodges and smashes");
+        Console.WriteLine("    30 tries each: " + parried + " parried, " + dodged + " dodged (" + caught + " caught), " + smashed + " smashed through a parry");
+        Assert(parried > 0 && parried < 15 && dodged >= 5 && caught >= 5 && smashed == 30, "parries and dodges sometimes work, sometimes don't");
 
         // A feint punishes a dodge; a howl left alone enrages the pack, a blow first cuts it short
         var p = AtPackLeader(1);
         string leaderId = p.Grid.units.First(u => u.def == "pack_leader").id;
-        var lead = Incoming(p, "feint", foeId: leaderId);
-        float ph = p.S.hp;
-        p.React(Engine.TimingPerfect);
+        var lead = Incoming(p, "feint", out var ph, out _, foeId: leaderId);
         Assert(!p.HasState(lead, "open") && p.S.hp < ph, "dodging a feint gets you caught");
 
         var h = AtPackLeader(1);
@@ -1165,7 +1155,6 @@ static class Program
         foreach (var o in h.Grid.units.Where(u => u.side == "party")) o.acted = true;
         hl.intent = "howl";
         h.EndTurn();
-        while (h.AwaitingReaction) h.React(Engine.TimingGood);
         Assert(h.Grid.units.Where(u => u.side == "foe" && !u.gone).All(u => h.HasState(u, "enraged")), "letting it howl enrages the whole pack");
 
         var c = AtPackLeader(1);
@@ -1272,7 +1261,6 @@ static class Program
         rk.down = true; rk.bleedOut = 1; rk.x = 2; rk.y = 3;
         dn.GridDo("you", "wait");
         dn.EndTurn();
-        while (dn.AwaitingReaction) dn.React(Engine.TimingGood);
         Assert(rk.gone && dn.Member("rook") == null && dn.S.fallen.Contains("rook"), "left too long, Rook bleeds out, for good");
         var up = AtPackLeader(3);
         var rk2 = up.Unit("rook");

@@ -821,8 +821,9 @@ namespace Loran.Core
                 if (pot != null && GridDo(u.id, "item:" + pot.id)) { StepOutOfLane(u, lanes); return; }
             }
 
-            // nearly out of breath: guard and get it back, unless something's wide open or about to howl
-            if (you && S.stamina - Rules.AttackStamina < Rules.MaxStamina(S, data) * 0.2f
+            // nearly out of breath, or a feint coming at you (a dodge would fall for it): guard, unless something's wide open or about to howl
+            bool feint = G.units.Any(f => f.side == "foe" && !f.gone && f.intentTarget == "you" && IntentMove(f)?.KindOf() == "feint" && Dist(f, u) <= MoveOf(f) + 1);
+            if (you && (feint || S.stamina - Rules.AttackStamina < Rules.MaxStamina(S, data) * 0.2f)
                 && !G.units.Any(f => f.side == "foe" && !f.gone && (HasState(f, "open") || f.intent == "howl")))
             {
                 StepOutOfLane(u, lanes);
@@ -906,8 +907,8 @@ namespace Loran.Core
             if (!u.acted) GridDo(u.id, "brace");
         }
 
-        /// <summary>A whole round played for your side (tests, and anyone who'd rather): everyone acts, then the enemies, with your timing as given.</summary>
-        public void AutoRound(Func<int> timing)
+        /// <summary>A whole round played for your side (tests, and anyone who'd rather): everyone acts, then the enemies.</summary>
+        public void AutoRound()
         {
             if (!InGrid || G.phase != "party") return;
             foreach (var u in G.units.Where(u => u.side == "party").ToList())
@@ -917,7 +918,6 @@ namespace Loran.Core
             }
             if (!InGrid) return;
             EndTurn();
-            for (int i = 0; i < 60 && AwaitingReaction; i++) React(timing());
         }
     }
 }

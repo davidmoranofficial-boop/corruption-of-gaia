@@ -156,7 +156,12 @@ namespace Loran.Core
         {
             if (!S.inCombat) return;
             S.grid ??= new GridBattle();
-            if (S.grid.units.Count > 0 && S.grid.phase != "over") return;
+            if (S.grid.units.Count > 0 && S.grid.phase != "over")
+            {
+                // stopped for the old timing bar: let that blow go by and carry on with the enemies' turn
+                if (!string.IsNullOrEmpty(S.grid.reactAttacker)) { ClearReact(); G.enemyIndex++; G.enemyStage = 0; RunFoes(); }
+                return;
+            }
             if (data.Enemy(S.enemy) == null) { S.inCombat = false; return; }
             StartCombat(S.enemy, S.combatWin, S.combatFlee);
         }
@@ -229,7 +234,7 @@ namespace Loran.Core
                 var u = G.units[G.enemyIndex];
                 if (u.side == "foe" && !u.gone)
                 {
-                    if (!FoeTurn(u)) return;          // it's waiting on your timing bar
+                    FoeTurn(u);
                     if (G.phase == "over") return;
                 }
                 G.enemyIndex++;
@@ -514,15 +519,10 @@ namespace Loran.Core
         /// <summary>The enemy's move it's about to make (null for a plan that isn't a move, like hanging back).</summary>
         public EnemyMove IntentMove(GridUnit u) => u == null || u.side != "foe" ? null : FoeDef(u).moves.FirstOrDefault(x => x.id == u.intent);
 
-        /// <summary>One enemy's turn. Returns false when it stops for your timing bar (React carries on).</summary>
+        /// <summary>One enemy's turn.</summary>
         bool FoeTurn(GridUnit u)
         {
             var e = FoeDef(u);
-            if (G.enemyStage == 1)
-            {
-                AfterFoeAttack(u);
-                return true;
-            }
             u.moveLeft = MoveOf(u);
             if (HasState(u, "staggered"))
             {
@@ -592,7 +592,7 @@ namespace Loran.Core
                 if (other == null) return true;
                 t = other;
             }
-            if (!FoeAttack(u, t, move)) { G.enemyStage = 1; return false; }
+            FoeAttack(u, t, move);
             if (G.phase == "over") return true;
             AfterFoeAttack(u);
             return true;
@@ -787,24 +787,20 @@ namespace Loran.Core
 
         float FoeRage(GridUnit u) => (HasState(u, "enraged") ? EnragedHits : 1f) * (HasState(u, "weakened") ? WeakenedHits : 1f);
 
-        /// <summary>An enemy strikes one of you. Returns false when it waits for your timing bar.</summary>
-        bool FoeAttack(GridUnit u, GridUnit t, EnemyMove move)
+        /// <summary>An enemy strikes one of you.</summary>
+        void FoeAttack(GridUnit u, GridUnit t, EnemyMove move)
         {
             var e = FoeDef(u);
             u.facing = FaceTo(t.x - u.x, t.y - u.y);
             string side = SideOf(t, u.x, u.y);
             float dmg = Roll(e.atkMin, e.atkMax) * move.power * FoeRage(u);
             if (side == "back") dmg *= BackDamage;
+            Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "windup", text = "" });   // the screen shows it gathering itself
             if (t.id == "you" && CanReact(t, side))
             {
-                G.reactAttacker = u.id;
-                G.reactTarget = t.id;
-                G.reactMove = move.id;
-                G.reactKind = HasState(t, "guard") ? (HasShield() ? "block" : "parry") : "dodge";
-                G.reactSide = side;
-                G.reactDamage = dmg;
-                Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "windup", text = "" });
-                return false;
+                string kind = HasState(t, "guard") ? (HasShield() ? "block" : "parry") : "dodge";
+                Defend(u, t, move, dmg, kind, side, ReactRoll(kind));
+                return;
             }
             // your companions get out of the way by themselves, or don't
             bool covered = false;
@@ -820,14 +816,14 @@ namespace Loran.Core
                     {
                         Log(Cap(UnitName(u)) + " " + Aimed(move.name, t) + ", but " + UnitName(t) + " gets out of the way.");
                         Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "dodge", text = "Dodged" });
-                        return true;
+                        return;
                     }
                 }
             }
             if (t.id == "you" && side == "back") note = "It gets you from behind.";
             else if (t.id == "you" && Rules.Winded(S, data) && !HasState(t, "guard")) note = "You're too winded to get out of the way.";
             LandFoeHit(u, t, move, dmg, side, covered, note);
-            return true;
+            return;
         }
 
         /// <summary>Can you see this one coming and react (dodge, or parry or block when on guard)?</summary>
@@ -838,27 +834,31 @@ namespace Loran.Core
             return !HasState(t, "hobbled") && !Rules.Winded(S, data);
         }
 
-        public bool AwaitingReaction => InGrid && !string.IsNullOrEmpty(G.reactAttacker);
+        /// <summary>How well you meet a blow (no timing bar since 25 Oct): your Agility for a dodge, your weapon
+        /// skill (or shield) and Agility for a parry or block. 0 caught, 1 good, 2 perfect.</summary>
+        int ReactRoll(string kind)
+        {
+            int agi = S.stats[Stat.Agi];
+            int chance = kind == "dodge" ? DodgeBase + DodgePerAgi * agi + (Rules.HasPerk(S, data, "nimble") ? NimbleDodgeBonus : 0)
+                       : ParryBase + 2 * SkillLevel(kind == "block" ? "shield" : WeaponSkill()) + 2 * agi + (kind == "block" ? BlockBonus : 0);
+            chance += (int)Math.Round(Rules.TraitSum(S, data, t => t.zone) * 100);   // Balanced gear
+            chance = Math.Clamp(chance, 10, 90);
+            int r = Roll(1, 100);
+            return r <= chance / 4 ? TimingPerfect : r <= chance ? TimingGood : TimingMiss;
+        }
 
+        public const int DodgeBase = 40, DodgePerAgi = 4, NimbleDodgeBonus = 15, ParryBase = 50, BlockBonus = 15;
+
+        /// <summary>Old saves stopped mid-enemy-turn for the timing bar: forget it.</summary>
         void ClearReact()
         {
             G.reactAttacker = G.reactTarget = G.reactMove = G.reactKind = G.reactSide = "";
             G.reactDamage = 0;
         }
 
-        /// <summary>You've timed your dodge (or parry or block) on the bar: 0 mistimed, 1 good, 2 perfect. The enemies carry on.</summary>
-        public bool React(int timing)
+        /// <summary>You dodge (or parry or block, on guard) an enemy's blow, as well as your stats let you.</summary>
+        void Defend(GridUnit u, GridUnit t, EnemyMove move, float dmg, string kind, string side, int timing)
         {
-            if (!AwaitingReaction) return false;
-            Events.Clear();
-            timing = Math.Clamp(timing, TimingMiss, TimingPerfect);
-            var u = Unit(G.reactAttacker);
-            var t = Unit(G.reactTarget);
-            var e = FoeDef(u);
-            var move = e.moves.First(m => m.id == G.reactMove);
-            float dmg = G.reactDamage;
-            string kind = G.reactKind, side = G.reactSide;
-            ClearReact();
             t.reaction = false;
             string mk = move.KindOf();
             string foe = Cap(UnitName(u));
@@ -913,9 +913,7 @@ namespace Loran.Core
                 }
             }
             Rules.Clamp(S, data);
-            if (G.phase == "over" || CheckEnd()) return true;
-            RunFoes();
-            return true;
+            CheckEnd();
         }
 
         /// <summary>"lunges at your throat" said of a companion: "lunges at Rook's throat".</summary>
