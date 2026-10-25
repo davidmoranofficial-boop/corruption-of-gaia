@@ -158,8 +158,8 @@ namespace Loran.Core
             S.grid ??= new GridBattle();
             if (S.grid.units.Count > 0 && S.grid.phase != "over")
             {
-                // stopped for the old timing bar: let that blow go by and carry on with the enemies' turn
-                if (!string.IsNullOrEmpty(S.grid.reactAttacker)) { ClearReact(); G.enemyIndex++; G.enemyStage = 0; RunFoes(); }
+                // stopped for the old timing bar (no cue): let that blow go by and carry on with the enemies' turn
+                if (!string.IsNullOrEmpty(S.grid.reactAttacker) && string.IsNullOrEmpty(S.grid.reactCue)) { ClearReact(); G.enemyIndex++; G.enemyStage = 0; RunFoes(); }
                 return;
             }
             if (data.Enemy(S.enemy) == null) { S.inCombat = false; return; }
@@ -234,7 +234,7 @@ namespace Loran.Core
                 var u = G.units[G.enemyIndex];
                 if (u.side == "foe" && !u.gone)
                 {
-                    FoeTurn(u);
+                    if (!FoeTurn(u)) return;          // waiting on you to read and react
                     if (G.phase == "over") return;
                 }
                 G.enemyIndex++;
@@ -288,6 +288,7 @@ namespace Loran.Core
             G.phase = "over";
             G.outcome = outcome;
             ClearReact();
+            if (S.enemy == "boar" && outcome != "dead") S.flags.Add("react_taught");
             S.inCombat = false;
             var main = data.Enemy(S.enemy);
             string said = "";
@@ -523,6 +524,11 @@ namespace Loran.Core
         bool FoeTurn(GridUnit u)
         {
             var e = FoeDef(u);
+            if (G.enemyStage == 1)
+            {
+                AfterFoeAttack(u);
+                return true;
+            }
             u.moveLeft = MoveOf(u);
             if (HasState(u, "staggered"))
             {
@@ -592,7 +598,7 @@ namespace Loran.Core
                 if (other == null) return true;
                 t = other;
             }
-            FoeAttack(u, t, move);
+            if (!FoeAttack(u, t, move)) { G.enemyStage = 1; return false; }
             if (G.phase == "over") return true;
             AfterFoeAttack(u);
             return true;
@@ -787,8 +793,8 @@ namespace Loran.Core
 
         float FoeRage(GridUnit u) => (HasState(u, "enraged") ? EnragedHits : 1f) * (HasState(u, "weakened") ? WeakenedHits : 1f);
 
-        /// <summary>An enemy strikes one of you.</summary>
-        void FoeAttack(GridUnit u, GridUnit t, EnemyMove move)
+        /// <summary>An enemy strikes one of you. Returns false when it waits for you to read and react.</summary>
+        bool FoeAttack(GridUnit u, GridUnit t, EnemyMove move)
         {
             var e = FoeDef(u);
             u.facing = FaceTo(t.x - u.x, t.y - u.y);
@@ -799,8 +805,32 @@ namespace Loran.Core
             if (t.id == "you" && CanReact(t, side))
             {
                 string kind = HasState(t, "guard") ? (HasShield() ? "block" : "parry") : "dodge";
-                Defend(u, t, move, dmg, kind, side, ReactRoll(kind));
-                return;
+                float r = SpeedRatio(u);
+                if (r >= Untouchable)
+                {
+                    // far quicker than it: you see it all coming, feints too
+                    Log("It's slow next to you. You see it coming the whole way.");
+                    Defend(u, t, move, dmg, kind, side, TimingGood, true);
+                    return true;
+                }
+                if (r < 1f)
+                {
+                    // quicker than you: no time to do anything but take it (on your guard, if it's up)
+                    t.reaction = false;
+                    if (kind == "dodge") LandFoeHit(u, t, move, dmg, side, false, Cap(UnitName(u)) + " is too quick for you.");
+                    else Defend(u, t, move, dmg, kind, side, kind == "block" ? TimingGood : TimingMiss, true);
+                    return true;
+                }
+                // read and react: where the blow comes from, and (a feint) where it pretends to
+                G.reactAttacker = u.id;
+                G.reactTarget = t.id;
+                G.reactMove = move.id;
+                G.reactKind = kind;
+                G.reactSide = side;
+                G.reactDamage = dmg;
+                G.reactCue = Cues[Roll(0, 3)];
+                G.reactFake = move.KindOf() == "feint" ? Cues.Where(c => c != G.reactCue).ToList()[Roll(0, 2)] : "";
+                return false;
             }
             // your companions get out of the way by themselves, or don't
             bool covered = false;
@@ -816,14 +846,15 @@ namespace Loran.Core
                     {
                         Log(Cap(UnitName(u)) + " " + Aimed(move.name, t) + ", but " + UnitName(t) + " gets out of the way.");
                         Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "dodge", text = "Dodged" });
-                        return;
+                        return true;
                     }
                 }
             }
             if (t.id == "you" && side == "back") note = "It gets you from behind.";
             else if (t.id == "you" && Rules.Winded(S, data) && !HasState(t, "guard")) note = "You're too winded to get out of the way.";
             LandFoeHit(u, t, move, dmg, side, covered, note);
-            return;
+            return true;
+            return true;
         }
 
         /// <summary>Can you see this one coming and react (dodge, or parry or block when on guard)?</summary>
@@ -849,15 +880,94 @@ namespace Loran.Core
 
         public const int DodgeBase = 40, DodgePerAgi = 4, NimbleDodgeBonus = 15, ParryBase = 50, BlockBonus = 15;
 
-        /// <summary>Old saves stopped mid-enemy-turn for the timing bar: forget it.</summary>
+        // ------------------------------------------------------------------ read and react (David, 25 Oct)
+        //
+        // When an enemy goes for you and you're at least as quick as it, the fight stops for you: the screen shows
+        // which way the blow comes from (left, right, up or down, picked at random each time), and you answer with
+        // a direction. Away from it dodges (or blocks, on guard). Into it counters, if you're the quicker one. The
+        // wrong way, too early or too late, and it lands. A feint shows one way first, then comes from another.
+        // How long you get depends on how much quicker you are. Twice as quick: it never touches you.
+        // Slower than it: no chance to react at all. The Auto setting answers from your stats instead.
+
+        public static readonly string[] Cues = { "left", "right", "up", "down" };
+        public const float Untouchable = 2f;        // this many times quicker and it can't touch you
+        public const float ReactBase = 0.6f;         // seconds to answer at the same speed (times the speed ratio squared)
+
+        public bool AwaitingReaction => InGrid && !string.IsNullOrEmpty(G.reactAttacker) && !string.IsNullOrEmpty(G.reactCue);
+        /// <summary>Where the blow comes from: left, right, up or down (on the screen, around you).</summary>
+        public string ReactCue => G.reactCue;
+        /// <summary>A feint: where it pretends to come from first ("" if it's not a feint).</summary>
+        public string ReactFake => G.reactFake;
+        public string ReactKindNow => G.reactKind;
+        public GridUnit ReactAttacker => AwaitingReaction ? Unit(G.reactAttacker) : null;
+        /// <summary>You're quicker than it: going into the blow counters.</summary>
+        public bool ReactCanCounter => AwaitingReaction && SpeedRatio(Unit(G.reactAttacker)) > 1f;
+        /// <summary>The boar fight teaches it: no clock, and an explanation first (until it's been fought once).</summary>
+        public bool ReactTutorial => AwaitingReaction && S.enemy == "boar" && !S.Has("react_taught");
+        /// <summary>Seconds to answer (0: as long as you like).</summary>
+        public float ReactWindow => !AwaitingReaction || ReactTutorial ? 0f : Math.Min(2.5f, ReactBase * Sq(SpeedRatio(Unit(G.reactAttacker))));
+        static float Sq(float x) => x * x;
+
+        /// <summary>Your speed over this enemy's: above 1 you're the quicker.</summary>
+        public float SpeedRatio(GridUnit foe) => foe == null ? 1f : Rules.Speed(S, data) / (float)Math.Max(1, FoeDef(foe).speed);
+
+        public static string Opposite(string d) => d == "left" ? "right" : d == "right" ? "left" : d == "up" ? "down" : d == "down" ? "up" : "";
+
+        /// <summary>Your answer to the blow: a direction (left, right, up, down), "early" (you went before it showed),
+        /// "late" (too slow), or "auto" (your stats decide). The enemies then carry on.</summary>
+        public bool React(string answer)
+        {
+            if (!AwaitingReaction) return false;
+            Events.Clear();
+            var u = Unit(G.reactAttacker);
+            var t = Unit(G.reactTarget);
+            var move = FoeDef(u).moves.First(m => m.id == G.reactMove);
+            float dmg = G.reactDamage;
+            string kind = G.reactKind, side = G.reactSide, cue = G.reactCue, fake = G.reactFake;
+            bool counter = SpeedRatio(u) > 1f;
+            ClearReact();
+            string foe = Cap(UnitName(u));
+            if (answer == "auto") Defend(u, t, move, dmg, kind, side, ReactRoll(kind), false);
+            else if (answer == Opposite(cue)) Defend(u, t, move, dmg, kind, side, TimingGood, true);
+            else if (answer == cue && counter)
+            {
+                if (kind != "dodge") Defend(u, t, move, dmg, kind, side, TimingPerfect, true);
+                else
+                {
+                    // inside the blow before it lands
+                    t.reaction = false;
+                    int hit = Math.Max(1, (int)Math.Round(WeaponHit() * Rules.ParryCounter));
+                    Log(foe + " " + move.name + ", but you're quicker: you slip inside it and strike first for " + hit + "!");
+                    Events.Add(new BattleEvent { from = u.id, target = t.id, kind = "dodge", text = "Counter!" });
+                    Events.Add(new BattleEvent { from = t.id, target = u.id, kind = "hit", amount = hit, text = hit.ToString() });
+                    Rules.Train(S, Stat.Agi, 1f, "countering");
+                    TrainSkill(WeaponSkill(), 2, "countering");
+                    DamageFoe(u, hit, t);
+                }
+            }
+            else
+            {
+                // the wrong way, too early or too late. Going for the feint's first move is exactly what it wanted.
+                bool fooled = fake != "" && (answer == "early" || answer == Opposite(fake) || answer == fake);
+                string note = answer == "late" ? "Too slow." : answer == "early" ? "You moved before it did." : fooled ? "" : "Wrong way.";
+                if (note != "") Log(note);
+                Defend(u, t, move, dmg, kind, side, TimingMiss, !fooled);
+            }
+            Rules.Clamp(S, data);
+            if (G.phase == "over" || CheckEnd()) return true;
+            RunFoes();
+            return true;
+        }
+
         void ClearReact()
         {
-            G.reactAttacker = G.reactTarget = G.reactMove = G.reactKind = G.reactSide = "";
+            G.reactAttacker = G.reactTarget = G.reactMove = G.reactKind = G.reactSide = G.reactCue = G.reactFake = "";
             G.reactDamage = 0;
         }
 
-        /// <summary>You dodge (or parry or block, on guard) an enemy's blow, as well as your stats let you.</summary>
-        void Defend(GridUnit u, GridUnit t, EnemyMove move, float dmg, string kind, string side, int timing)
+        /// <summary>You dodge (or parry or block, on guard) an enemy's blow: 0 caught, 1 good, 2 perfect.
+        /// sawFeint: you read a feint for what it was (otherwise a feint catches a dodge).</summary>
+        void Defend(GridUnit u, GridUnit t, EnemyMove move, float dmg, string kind, string side, int timing, bool sawFeint)
         {
             t.reaction = false;
             string mk = move.KindOf();
@@ -865,7 +975,7 @@ namespace Loran.Core
             if (kind == "dodge")
             {
                 S.stamina -= Rules.HasPerk(S, data, "nimble") ? Rules.NimbleDodge : Rules.DodgeStamina;
-                if (mk == "feint")
+                if (mk == "feint" && !sawFeint)
                 {
                     dmg *= 1.4f;
                     LandFoeHit(u, t, move, dmg, side, false, "You throw yourself aside, but it was a feint. It catches you as you land.");
@@ -883,7 +993,7 @@ namespace Loran.Core
                     }
                     Rules.Train(S, Stat.Agi, 1f, "dodging");
                 }
-                else LandFoeHit(u, t, move, dmg, side, false, "You move a moment too late.");
+                else LandFoeHit(u, t, move, dmg, side, false, null);
             }
             else
             {
