@@ -2,3 +2,4 @@ Tools/CoreTests/bin/
 Tools/CoreTests/obj/
 *.meta
 __pycache__/
+Tools/Blender/raw/

@@ -1,0 +1,22 @@
+import sys, os, time
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common, terrain, render
+common.reset()
+d, a = common.load_area(sys.argv[1] if len(sys.argv) > 1 else 'coast_road')
+t = time.time()
+F = terrain.fields(a['rows'])
+print('fields', time.time() - t)
+gm = terrain.ground_material()
+terrain.build_ground(F, gm)
+terrain.build_water(F)
+import populate
+G = populate.Ground(F, a['rows'])
+t=time.time(); populate.populate(G); print('populate', time.time()-t)
+terrain.sky_and_sun()
+render.setup(samples=int(os.environ.get('SPP', 24)))
+cam = render.camera()
+x0, y0, x1, y1 = map(float, os.environ.get('BOX', '0,76,32,100').split(','))
+render.frame(cam, x0, y0, x1, y1, int(os.environ.get('PPT', 32)))
+t = time.time()
+render.shoot(os.environ.get('OUTP', '/tmp/claude-0/r/crop.png'))
+print('render', time.time() - t)
