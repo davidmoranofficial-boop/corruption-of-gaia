@@ -72,22 +72,28 @@ namespace Loran.UnityLayer
             worldLayer = Add(worldView, new VisualElement { pickingMode = PickingMode.Ignore }, "world-layer");
             worldLayer.style.width = Engine.Width(a) * T;
             worldLayer.style.height = Engine.Height(a) * T;
-            var ground = Sprite("World/" + a.id);
-            if (ground != null) worldLayer.style.backgroundImage = new StyleBackground(ground);
-
-            // People and things, then you, drawn top to bottom so whoever is lower stands in front
-            var things = engine.Objects().Where(o => !string.IsNullOrEmpty(o.sprite)).OrderBy(o => o.y).ToList();
-            bool youDrawn = false;
-            partyWalkers.Clear();
-            foreach (var o in things)
+            var hd = Hd(a.id);
+            if (hd != null) DrawHdGround(hd, a.id, T);
+            else
             {
-                if (!youDrawn && o.y > s.ay) { DrawYouAndFollower(); youDrawn = true; }
-                DrawObject(o);
+                var ground = Sprite("World/" + a.id);
+                if (ground != null) worldLayer.style.backgroundImage = new StyleBackground(ground);
             }
-            if (!youDrawn) DrawYouAndFollower();
+
+            // People and things, then you, drawn top to bottom so whoever is lower stands in front.
+            // In the 3D world, whatever stands on a tile row (trees, houses) is drawn just before the people on that row,
+            // so it hides anyone north of it.
+            var things = engine.Objects().Where(o => !string.IsNullOrEmpty(o.sprite)).ToList();
+            partyWalkers.Clear();
+            var order = new List<(float key, int seq, System.Action draw)>();
+            foreach (var o in things) { var oo = o; order.Add((o.y, order.Count, () => DrawObject(oo))); }
+            order.Add((s.ay + 0.5f, order.Count, DrawYouAndFollower));
+            if (hd != null)
+                foreach (var p in hd.occluders) { var pp = p; order.Add((p.row - 0.25f, order.Count, () => DrawHdOccluder(pp, hd, a.id, T))); }
+            foreach (var d in order.OrderBy(x => x.key).ThenBy(x => x.seq)) d.draw();
             DrawWalk();
 
-            var over = Sprite("World/" + a.id + "_over");
+            var over = hd != null ? null : Sprite("World/" + a.id + "_over");
             if (over != null)
             {
                 var ov = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-over");
@@ -520,6 +526,11 @@ namespace Loran.UnityLayer
         /// moved about inside it by SetFrame.</summary>
         (VisualElement box, VisualElement sheet) Walker(VisualElement parent, int k, List<string> sheets)
         {
+            if (parent == worldLayer && worldLayer != null)
+            {
+                var hd = HdWalkSheet(sheets);
+                if (hd != null) return HdWalker(parent, k, hd);
+            }
             var box = Add(parent, new VisualElement { pickingMode = PickingMode.Ignore }, "walker");
             box.style.width = 16 * k;
             box.style.height = 24 * k;
@@ -542,6 +553,12 @@ namespace Loran.UnityLayer
 
         static void SetFrame(VisualElement sheet, string facing, int frame, int k)
         {
+            if (sheet.ClassListContains("hd-sheet"))
+            {
+                sheet.style.left = -frame * 24 * k;
+                sheet.style.top = -FacingRow(facing) * 32 * k;
+                return;
+            }
             sheet.style.left = -frame * 16 * k;
             sheet.style.top = -FacingRow(facing) * 24 * k;
         }
@@ -625,6 +642,18 @@ namespace Loran.UnityLayer
                 w.box.style.left = o.x * T;
                 w.box.style.top = o.y * T - 8 * k;
                 objectSprites[o.id] = w;
+                return;
+            }
+            var hdTex = engine.Area != null && Hd(engine.Area.id) != null ? HdSprite("HD/Obj/" + o.sprite) : null;
+            if (hdTex != null)
+            {
+                // a rendered thing: a frame 2 tiles wide and 2.5 tall, standing on the bottom middle of it
+                var h = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-thing");
+                h.style.backgroundImage = new StyleBackground(hdTex);
+                h.style.width = 2 * T;
+                h.style.height = 2.5f * T;
+                h.style.left = o.x * T - 0.5f * T;
+                h.style.top = o.y * T - 1.5f * T;
                 return;
             }
             var e = Add(worldLayer, new VisualElement { pickingMode = PickingMode.Ignore }, "world-thing");

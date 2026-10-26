@@ -1111,6 +1111,12 @@ namespace Loran.UnityLayer
                 e.StopPropagation();
                 return;
             }
+            if (e.keyCode == KeyCode.F9 && InWorld && openMenu == "")
+            {
+                ToggleHd();
+                e.StopPropagation();
+                return;
+            }
             if (openMenu == "dev")
             {
                 if (e.keyCode == KeyCode.Escape) { openMenu = ""; Render(); }

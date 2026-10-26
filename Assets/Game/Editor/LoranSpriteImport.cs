@@ -12,7 +12,23 @@ namespace Loran.EditorTools
     {
         void OnPreprocessTexture()
         {
-            if (!assetPath.Replace('\\', '/').StartsWith("Assets/Game/Resources/Sprites/")) return;
+            string path = assetPath.Replace('\\', '/');
+            if (path.StartsWith("Assets/Game/Resources/Sprites/HD/"))
+            {
+                // pictures rendered in 3D: smooth, mipmapped, big, high-quality compression
+                var h = (TextureImporter)assetImporter;
+                h.textureType = TextureImporterType.Default;
+                h.filterMode = FilterMode.Trilinear;
+                h.mipmapEnabled = true;
+                h.textureCompression = TextureImporterCompression.CompressedHQ;
+                h.npotScale = TextureImporterNPOTScale.None;
+                h.alphaIsTransparency = true;
+                h.wrapMode = TextureWrapMode.Clamp;
+                h.maxTextureSize = 8192;
+                h.isReadable = false;
+                return;
+            }
+            if (!path.StartsWith("Assets/Game/Resources/Sprites/")) return;
             var t = (TextureImporter)assetImporter;
             t.textureType = TextureImporterType.Default;
             t.filterMode = FilterMode.Point;
@@ -32,7 +48,7 @@ namespace Loran.EditorTools
     [InitializeOnLoad]
     static class LoranSpriteReimport
     {
-        const int Version = 1;
+        const int Version = 2;
         const string Key = "CorruptionOfGaia.SpriteImportVersion";
         const string Folder = "Assets/Game/Resources/Sprites";
 

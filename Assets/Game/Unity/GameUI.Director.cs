@@ -121,8 +121,10 @@ namespace Loran.UnityLayer
             {
                 var e = new VisualElement { pickingMode = PickingMode.Ignore };
                 e.AddToClassList("world-thing");
+                var hdTex = Hd(engine.Area?.id) != null ? HdSprite("HD/Obj/" + a.sheet) : null;
                 var tex = Sprite("World/" + a.sheet);
-                if (tex != null) { e.style.backgroundImage = new StyleBackground(tex); e.style.width = tex.width * k; e.style.height = tex.height * k; }
+                if (hdTex != null) { e.style.backgroundImage = new StyleBackground(hdTex); e.style.width = 2 * Tile * k; e.style.height = 2.5f * Tile * k; }
+                else if (tex != null) { e.style.backgroundImage = new StyleBackground(tex); e.style.width = tex.width * k; e.style.height = tex.height * k; }
                 else { e.style.width = 16 * k; e.style.height = 16 * k; }
                 if (before != null) worldLayer.Insert(worldLayer.IndexOf(before), e); else worldLayer.Add(e);
                 a.box = e;
