@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 200" width="1260" height="600">
+  <rect width="420" height="200" fill="#6e5a3e"/>
+  <!-- painted ground: dirt road with ink-edged grass tufts -->
+  <path d="M0 0 L420 0 L420 40 Q300 60 200 44 Q100 30 0 50 Z" fill="#4c5a2c"/>
+  <path d="M0 200 L420 200 L420 176 Q320 160 210 178 Q90 194 0 170 Z" fill="#4c5a2c"/>
+  <g fill="#2e3a18" stroke="#120a10" stroke-width="1.2">
+    <path d="M30 48 L34 38 L37 47 L41 36 L43 49 Z"/><path d="M370 44 L373 34 L377 45 L381 35 L383 46 Z"/>
+    <path d="M60 172 L63 162 L67 171 L70 160 L73 173 Z"/><path d="M330 168 L333 158 L337 167 L341 157 L343 169 Z"/>
+  </g>
+  <path d="M110 120 L118 118 M290 90 L300 92 M60 100 L66 104" stroke="#4e3e2a" stroke-width="2"/>
+
+  <g stroke="#120a10" stroke-width="3" stroke-linejoin="miter">
+  <!-- ===== FRONT (walking towards the camera) ===== -->
+  <g transform="translate(20 8)">
+    <ellipse cx="50" cy="168" rx="26" ry="7" fill="#120a10" opacity="0.45" stroke="none"/>
+    <!-- legs -->
+    <path d="M34 126 L50 126 L48 162 L36 162 Z" fill="#4a3a48"/>
+    <path d="M52 126 L68 126 L66 160 L54 160 Z" fill="#2a1e2a"/>
+    <path d="M33 158 L49 158 L50 170 L31 170 Z" fill="#3b2a22"/>
+    <path d="M53 156 L67 156 L68 167 L52 167 Z" fill="#1a0f0c"/>
+    <!-- arms -->
+    <path d="M24 84 L32 82 L34 118 L26 122 L20 116 Z" fill="#eab48a"/>
+    <path d="M20 110 L32 110 L32 124 L22 124 Z" fill="#eab48a"/>
+    <path d="M70 84 L78 86 L82 116 L76 122 L68 118 Z" fill="#3a1d24"/>
+    <!-- tunic: seen from above, short and wide -->
+    <path d="M26 82 L50 76 L74 82 L72 112 L68 130 L32 130 L28 112 Z" fill="#6b4a33"/>
+    <path d="M52 78 L74 82 L72 112 L68 130 L52 130 Z" fill="#2a1820" stroke="none"/>
+    <path d="M26 82 L36 80 L34 104 L28 110 Z" fill="#a8774f" stroke="none"/>
+    <path d="M28 116 L72 114 L72 120 L28 122 Z" fill="#8a6a40" stroke-width="2"/>
+    <path d="M34 80 L40 78 L72 116 L66 118 Z" fill="#3b2a22" stroke-width="2"/>
+    <!-- head: big, mostly hair from this angle -->
+    <path d="M32 46 L68 44 L66 70 L58 80 L44 80 L36 70 Z" fill="#eab48a"/>
+    <path d="M52 46 L68 44 L66 70 L58 80 L52 80 L56 64 Z" fill="#3a1d24" stroke="none"/>
+    <path d="M38 62 L46 61 M54 61 L62 60" stroke-width="2.5"/>
+    <circle cx="43" cy="63" r="1.3" fill="#3f8a5a" stroke="none"/><circle cx="58" cy="62" r="1.3" fill="#3f8a5a" stroke="none"/>
+    <path d="M46 74 L54 73" stroke-width="2"/>
+    <g transform="translate(50 43) scale(0.8) translate(-50 -40)">
+    <path d="M22 50 L26 36 L18 26 L32 26 L30 10 L42 20 L48 2 L56 18 L68 6 L68 22 L82 22 L74 34 L82 46 L70 44 L70 56 L62 48 L58 60 L54 48 L48 60 L44 48 L38 60 L36 48 L28 58 L30 46 Z" fill="#1a0f0c"/>
+    <path d="M34 34 L42 20 L44 34 Z M50 30 L56 16 L58 30 Z" fill="#a8683c" stroke="none"/>
+    <path d="M18 26 L32 26 L26 30 Z M30 10 L42 20 L34 20 Z" fill="#ff9a3c" stroke="none"/>
+    </g>
+  </g>
+
+  <!-- ===== SIDE (walking right) ===== -->
+  <g transform="translate(160 8)">
+    <ellipse cx="50" cy="168" rx="28" ry="7" fill="#120a10" opacity="0.45" stroke="none"/>
+    <!-- far leg back, near leg forward -->
+    <path d="M44 126 L56 126 L44 160 L32 158 Z" fill="#2a1e2a"/>
+    <path d="M28 156 L44 158 L42 168 L24 166 Z" fill="#1a0f0c"/>
+    <path d="M48 126 L62 126 L70 160 L58 162 Z" fill="#4a3a48"/>
+    <path d="M58 158 L72 156 L80 166 L58 168 Z" fill="#3b2a22"/>
+    <!-- far arm swinging forward (shadow) -->
+    <path d="M58 86 L66 88 L72 114 L64 118 Z" fill="#3a1d24"/>
+    <!-- tunic, profile -->
+    <path d="M38 80 L62 78 L66 110 L64 130 L36 130 L34 108 Z" fill="#6b4a33"/>
+    <path d="M52 80 L62 78 L66 110 L64 130 L54 130 Z" fill="#2a1820" stroke="none"/>
+    <path d="M34 116 L66 114 L66 120 L34 122 Z" fill="#8a6a40" stroke-width="2"/>
+    <!-- satchel on the hip -->
+    <path d="M28 108 L44 106 L46 126 L30 128 Z" fill="#5a3e2c"/>
+    <path d="M28 108 L44 106 L44 114 L28 116 Z" fill="#3b2a22" stroke-width="2"/>
+    <!-- near arm swinging back, bare forearm -->
+    <path d="M42 84 L50 84 L44 110 L36 108 Z" fill="#6b4a33"/>
+    <path d="M36 106 L44 108 L36 124 L28 120 Z" fill="#eab48a"/>
+    <!-- head in profile, looking right -->
+    <path d="M40 46 L66 46 L72 60 L68 64 L70 68 L64 70 L62 80 L46 80 L40 66 Z" fill="#eab48a"/>
+    <path d="M40 46 L52 46 L52 76 L46 80 L40 66 Z" fill="#3a1d24" stroke="none"/>
+    <path d="M60 58 L66 57" stroke-width="2.5"/><circle cx="63" cy="60" r="1.2" fill="#3f8a5a" stroke="none"/>
+    <path d="M62 72 L66 72" stroke-width="2"/>
+    <path d="M44 56 Q50 54 50 62 Q48 68 44 66 Z" fill="#3a1d24" stroke-width="2"/>
+    <g transform="translate(50 43) scale(0.8) translate(-50 -40)">
+    <path d="M18 54 L26 44 L14 36 L30 32 L24 16 L38 24 L44 6 L52 22 L64 12 L64 28 L78 30 L70 40 L76 52 L66 48 L62 58 L56 48 L50 56 L46 48 L40 58 L36 50 L28 60 L30 50 Z" fill="#1a0f0c"/>
+    <path d="M36 36 L44 22 L46 36 Z M52 32 L60 18 L60 32 Z" fill="#a8683c" stroke="none"/>
+    <path d="M14 36 L30 32 L22 38 Z M24 16 L38 24 L30 24 Z" fill="#ff9a3c" stroke="none"/>
+    </g>
+  </g>
+
+  <!-- ===== BACK (walking away) ===== -->
+  <g transform="translate(300 8)">
+    <ellipse cx="50" cy="168" rx="26" ry="7" fill="#120a10" opacity="0.45" stroke="none"/>
+    <path d="M34 126 L50 126 L48 160 L36 160 Z" fill="#4a3a48"/>
+    <path d="M52 126 L68 126 L66 162 L54 162 Z" fill="#2a1e2a"/>
+    <path d="M35 156 L49 156 L48 166 L34 166 Z" fill="#3b2a22"/>
+    <path d="M53 158 L67 158 L69 170 L52 170 Z" fill="#1a0f0c"/>
+    <path d="M22 84 L30 82 L32 118 L24 122 L18 116 Z" fill="#eab48a"/>
+    <path d="M70 84 L78 86 L82 116 L76 122 L68 118 Z" fill="#3a1d24"/>
+    <path d="M26 82 L50 78 L74 82 L72 112 L68 130 L32 130 L28 112 Z" fill="#6b4a33"/>
+    <path d="M52 78 L74 82 L72 112 L68 130 L52 130 Z" fill="#2a1820" stroke="none"/>
+    <path d="M28 116 L72 114 L72 120 L28 122 Z" fill="#8a6a40" stroke-width="2"/>
+    <!-- strap across the back, satchel at the hip -->
+    <path d="M62 80 L68 82 L36 116 L30 114 Z" fill="#3b2a22" stroke-width="2"/>
+    <path d="M18 108 L34 106 L36 126 L20 128 Z" fill="#5a3e2c"/>
+    <!-- neck and hair from behind -->
+    <path d="M42 70 L58 70 L58 80 L42 80 Z" fill="#3a1d24"/>
+    <g transform="translate(50 43) scale(0.8) translate(-50 -40)">
+    <path d="M22 54 L26 38 L18 28 L32 26 L30 10 L42 20 L48 2 L56 18 L68 6 L68 22 L82 22 L74 34 L82 46 L74 52 L76 64 L66 62 L62 76 L56 66 L50 78 L46 66 L38 76 L36 62 L26 66 L30 54 Z" fill="#1a0f0c"/>
+    <path d="M34 36 L42 20 L44 40 Z M50 34 L56 16 L58 40 Z M30 50 L36 42 L38 56 Z" fill="#5a3522" stroke="none"/>
+    <path d="M18 28 L32 26 L26 32 Z M30 10 L42 20 L34 20 Z" fill="#ff9a3c" stroke="none"/>
+    </g>
+  </g>
+  </g>
+</svg>

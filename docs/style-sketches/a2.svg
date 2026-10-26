@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b1a3a"/><stop offset="0.55" stop-color="#8a3a3c"/><stop offset="1" stop-color="#e0773a"/>
+    </linearGradient>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+      <rect width="6" height="6" fill="#3a1d24"/><line x1="0" y1="0" x2="0" y2="6" stroke="#120a10" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="500" fill="url(#sky)"/>
+  <!-- Academy City skyline -->
+  <path d="M0 330 L0 250 L22 250 L22 210 L40 210 L40 262 L60 262 L60 180 L70 168 L80 180 L80 270 L104 270 L104 230 L128 230 L128 300 L272 300 L272 220 L284 200 L296 220 L296 256 L318 256 L318 160 L330 140 L342 160 L342 240 L362 240 L362 200 L384 200 L384 260 L400 260 L400 330 Z" fill="#3a2038" opacity="0.85"/>
+  <path d="M0 500 L0 300 L30 300 L30 276 L56 276 L56 316 L90 316 L90 290 L118 290 L118 340 L290 340 L290 300 L320 300 L320 270 L350 270 L350 310 L400 310 L400 500 Z" fill="#261428"/>
+  <g fill="#ffb45a" opacity="0.8">
+    <rect x="64" y="190" width="4" height="6"/><rect x="72" y="206" width="4" height="6"/><rect x="64" y="222" width="4" height="6"/>
+    <rect x="322" y="170" width="4" height="6"/><rect x="332" y="186" width="4" height="6"/><rect x="322" y="204" width="4" height="6"/>
+    <rect x="28" y="222" width="4" height="6"/><rect x="368" y="214" width="4" height="6"/><rect x="110" y="244" width="4" height="6"/>
+  </g>
+  <!-- torso: rough tunic -->
+  <path d="M64 500 L88 416 Q108 382 166 366 L196 350 L238 350 L264 366 Q320 378 340 418 L356 500 Z" fill="#6b4a33" stroke="#120a10" stroke-width="5" stroke-linejoin="miter"/>
+  <path d="M264 366 Q320 378 340 418 L356 500 L272 500 L262 440 L276 410 Z" fill="#2a1820"/>
+  <path d="M88 416 Q98 394 126 382 L116 428 L94 468 Z" fill="#a8774f"/>
+  <!-- folds as hard ink shapes -->
+  <path d="M120 470 L138 430 L134 470 Z M222 470 L236 420 L240 476 Z M172 440 L186 404 L182 446 Z" fill="#120a10"/>
+  <path d="M128 500 L140 476 L146 500 Z" fill="#3a2418"/>
+  <!-- patch on the shoulder: hand-me-down -->
+  <path d="M106 410 L132 400 L138 424 L112 432 Z" fill="#7e5a3a" stroke="#120a10" stroke-width="2.5"/>
+  <path d="M110 412 L114 428 M134 404 L136 420" stroke="#d8b080" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <!-- satchel strap with a buckle -->
+  <path d="M148 370 L176 360 L296 500 L258 500 Z" fill="#3b2a22" stroke="#120a10" stroke-width="4"/>
+  <rect x="196" y="410" width="22" height="18" transform="rotate(48 207 419)" fill="none" stroke="#c99a50" stroke-width="4"/>
+  <path d="M152 372 L172 364" stroke="#6a4a36" stroke-width="2"/>
+  <!-- neck, with the jaw's shadow falling on it -->
+  <path d="M184 292 L182 352 Q212 374 248 352 L242 286 Z" fill="#e3a77c" stroke="#120a10" stroke-width="5"/>
+  <path d="M182 300 L242 290 L248 352 Q232 364 214 364 L214 330 L198 322 L184 318 Z" fill="url(#hatch)"/>
+  <path d="M202 330 L208 356" stroke="#120a10" stroke-width="2.5"/>
+  <path d="M166 366 L196 350 Q214 374 248 350 L264 366 Q216 398 166 366 Z" fill="#4f3624" stroke="#120a10" stroke-width="4"/>
+  <g transform="translate(212 262) scale(1.28) translate(-212 -250)">
+    <!-- back hair mass, behind the head -->
+    <path d="M152 236 L146 200 L160 168 L262 160 L280 196 L270 250 L258 232 Z" fill="#120a0a"/>
+    <!-- face -->
+    <path d="M166 186 L254 170 L262 232 L250 282 L214 312 L196 310 L174 284 L160 240 Z" fill="#eab48a" stroke="#120a10" stroke-width="5" stroke-linejoin="miter"/>
+    <!-- hard ink shadow, light from the left, with hatching at its edge -->
+    <path d="M232 176 L254 170 L262 232 L250 282 L214 312 L210 296 L232 272 L230 248 L240 236 L236 214 Z" fill="#3a1d24"/>
+    <path d="M226 270 L232 248 L238 252 L232 274 Z M218 288 L228 278 L232 282 L222 294 Z" fill="#3a1d24"/>
+    <path d="M226 258 L222 266 M224 280 L218 286" stroke="#120a10" stroke-width="2"/>
+    <!-- cheekbone and under-eye lines -->
+    <path d="M168 252 L184 248" stroke="#b06a50" stroke-width="2"/>
+    <path d="M176 240 L196 242" stroke="#b06a50" stroke-width="1.5"/>
+    <!-- rim light on the near cheek -->
+    <path d="M161 238 L169 238 L180 280 L174 284 Z" fill="#ffd2a0"/>
+    <!-- ear -->
+    <path d="M256 214 Q276 210 274 236 Q272 254 254 258 Z" fill="#3a1d24" stroke="#120a10" stroke-width="4"/>
+    <path d="M262 224 Q268 234 262 246" fill="none" stroke="#120a10" stroke-width="2"/>
+    <!-- eyes: narrow, sharp, green -->
+    <path d="M174 232 Q188 224 202 232 Q188 238 174 232 Z" fill="#f2e6d6" stroke="#120a10" stroke-width="3"/>
+    <circle cx="191" cy="232" r="4.5" fill="#3f8a5a"/><circle cx="191" cy="232" r="2" fill="#120a10"/><circle cx="189.5" cy="230.5" r="1" fill="#fff"/>
+    <path d="M170 229 L204 228 L200 233 Q188 225 174 233 Z" fill="#120a10"/>
+    <path d="M216 230 Q230 222 244 228 Q232 237 216 230 Z" fill="#f2e6d6" stroke="#120a10" stroke-width="3"/>
+    <circle cx="229" cy="230" r="4.5" fill="#3f8a5a"/><circle cx="229" cy="230" r="2" fill="#120a10"/><circle cx="227.5" cy="228.5" r="1" fill="#fff"/>
+    <path d="M214 228 L246 224 L244 229 Q230 222 216 231 Z" fill="#120a10"/>
+    <!-- nose -->
+    <path d="M206 236 L200 262 L210 266" fill="none" stroke="#120a10" stroke-width="3.5" stroke-linejoin="miter"/>
+    <path d="M206 240 L212 262 L210 266 L202 262 Z" fill="#3a1d24" opacity="0.9"/>
+    <!-- mouth: tight line, a little set -->
+    <path d="M190 284 L206 282 L222 280" stroke="#120a10" stroke-width="4" stroke-linecap="square" fill="none"/>
+    <path d="M198 292 L214 291" stroke="#7a3a30" stroke-width="2.5"/>
+    <path d="M200 302 L210 301" stroke="#b06a50" stroke-width="2"/>
+    <!-- scuffs: from the street, not the boat -->
+    <path d="M176 258 L184 262 M178 264 L185 266" stroke="#b5583e" stroke-width="2"/>
+    <!-- hair: big spiky clumps, ink black with brown lights -->
+    <path d="M146 214 L150 170 L132 160 L158 148 L146 118 L178 128 L184 92 L206 118 L228 84 L236 120 L270 100 L262 134 L292 136 L270 160 L288 182 L262 182 L270 210 L254 200 L246 222 L238 196 L226 216 L222 194 L206 220 L200 196 L184 222 L180 196 L164 224 L162 198 Z" fill="#1a0f0c" stroke="#120a10" stroke-width="4" stroke-linejoin="miter"/>
+    <!-- clump separations -->
+    <path d="M184 92 L190 140 M228 84 L222 138 M270 100 L248 146 M146 118 L176 150" stroke="#3a2418" stroke-width="2"/>
+    <path d="M156 176 L176 128 L174 172 Z M186 168 L204 116 L206 164 Z M216 166 L230 112 L236 160 Z M240 172 L262 140 L252 178 Z" fill="#5a3522"/>
+    <path d="M162 168 L176 136 L172 166 Z M190 160 L202 128 L200 158 Z M220 156 L229 124 L230 150 Z" fill="#a8683c"/>
+    <!-- strand falling over the eye -->
+    <path d="M200 196 L206 220 L196 238 L198 214 Z" fill="#1a0f0c"/>
+    <!-- warm rim on the hair from the sunset -->
+    <path d="M146 118 L178 128 L166 132 Z M132 160 L158 148 L150 158 Z M146 214 L150 170 L154 176 L152 206 Z" fill="#ff9a3c"/>
+    <!-- brows: heavy, angled down to the nose, stubborn -->
+    <path d="M170 210 L200 214 L204 222 L172 218 Z" fill="#120a10"/>
+    <path d="M212 222 L218 212 L248 206 L246 214 Z" fill="#120a10"/>
+  </g>
+</svg>
