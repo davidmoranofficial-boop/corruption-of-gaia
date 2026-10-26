@@ -82,6 +82,11 @@ def shaped(vs, spec):
             w['macrodetails/%s-%s-child.target' % (r, g)] = rw * gw * (1 - young)
     w['macrodetails/universal-male-young-averagemuscle-minweight.target'] = spec.get('lean', 0.0) * male
     w['macrodetails/universal-male-young-maxmuscle-averageweight.target'] = spec.get('muscle', 0.0) * male
+    # face and head detail targets (e.g. a smaller nose for a cartoon face), fetched on first use
+    for t, wt in spec.get('shape', {}).items():
+        dst = os.path.join(MH_DATA, 'targets', t.replace('/', '_'))
+        if not os.path.exists(dst): urllib.request.urlretrieve(RAW + 'targets/' + t, dst)
+        w[t] = wt
     out = [list(v) for v in vs]
     for t, wt in w.items():
         if wt <= 0: continue
@@ -244,11 +249,55 @@ PRESETS = {
 }
 
 
+def _descendants(bones, root):
+    out = {root}
+    grew = True
+    while grew:
+        grew = False
+        for bn, b in bones.items():
+            if b['parent'] in out and bn not in out:
+                out.add(bn)
+                grew = True
+    return out
+
+
+def stylise(vs, skel, spec):
+    """Cartoon proportions: a bigger head (scaled round the neck) and bigger hands (round the wrists)."""
+    wts = json.load(open(os.path.join(MH_DATA, 'default_weights.mhw')))['weights']
+    bones = skel['bones']
+    J = lambda name: sum((vs[i] for i in skel['joints'][name]), Vector()) / len(skel['joints'][name])
+    out = list(vs)
+    weighted = {i for lst in wts.values() for i, _ in lst}
+    jobs = [(_descendants(bones, 'head'), J(bones['head']['head']), spec.get('head_scale', 1.0))]
+    for side in ('L', 'R'):
+        jobs.append((_descendants(bones, 'wrist.' + side), J(bones['wrist.' + side]['head']), spec.get('hand_scale', 1.0)))
+    for group, pivot, k in jobs:
+        if k == 1.0: continue
+        w = {}
+        for bn in group:
+            for i, x in wts.get(bn, []):
+                w[i] = w.get(i, 0.0) + x
+        for i, x in w.items():
+            x = min(1.0, x)
+            out[i] = out[i] + (out[i] - pivot) * (k - 1.0) * x
+        # helper geometry (the joint markers) carries no weights: move the bits inside this part fully
+        head_job = group is jobs[0][0]
+        for i in range(len(out)):
+            if i in w or i in weighted: continue
+            v = vs[i]
+            inside = (v.z > pivot.z + 0.005) if head_job else (
+                v.x * pivot.x > 0 and abs(v.x) > abs(pivot.x) - 0.005 and (v - pivot).length < 0.25)
+            if inside: out[i] = out[i] + (vs[i] - pivot) * (k - 1.0)
+    return out
+
+
 def person(name, spec, coll=None):
     coll = coll or bpy.context.scene.collection
     vs0, vts, faces = load_obj()
     vs = shaped(vs0, spec)
     skel = json.load(open(os.path.join(MH_DATA, 'default.mhskel')))
+    if spec.get('head_scale', 1.0) != 1.0 or spec.get('hand_scale', 1.0) != 1.0:
+        vs = stylise(vs, skel, spec)
     joints = {k: sum((vs[i] for i in idx), Vector()) / len(idx) for k, idx in skel['joints'].items()}
 
     # armature
@@ -398,7 +447,15 @@ def person(name, spec, coll=None):
         return c.z > head_c.z - 0.01 if c.y < head_c.y + 0.02 else c.z > head_c.z - 0.05
 
     hair = [f for f in body_faces if scalp(f)]
-    meshes.append(strands(name + '_hair', arm, coll, vs, hair, head_c, top_z, spec))
+    if spec.get('hairstyle') in ('locks', 'toon'):
+        hm = hair_mat(name + '_hair', spec['hair'])
+        meshes.append(piece(name + '_haircap', hair, spec.get('cap_offset', 0.006), hm, soften=10, wrap=meshes[0]))
+        if spec['hairstyle'] == 'locks':
+            meshes.append(locks(name + '_hair', arm, coll, vs, hair, head_c, top_z, spec, hm))
+        else:
+            arm['head_c'], arm['top_z'] = tuple(head_c), top_z   # toon.py grows the spikes off the cap
+    else:
+        meshes.append(strands(name + '_hair', arm, coll, vs, hair, head_c, top_z, spec))
 
     # eyes
     em = eye_mat(spec['iris'])
@@ -504,6 +561,78 @@ def strands(name, arm, coll, vs, faces, head_c, top_z, spec, n=26000, seed=4):
     cv.materials.append(m)
     ob = bpy.data.objects.new(name, cv)
     coll.objects.link(ob)
+    ob.parent = arm
+    ob.parent_type = 'BONE'
+    ob.parent_bone = 'head'
+    bpy.context.view_layer.update()
+    ob.matrix_world = Matrix.Identity(4)
+    return ob
+
+
+def locks(name, arm, coll, vs, faces, head_c, top_z, spec, mat, n=110, seed=7):
+    """Cartoon hair: a hundred-odd chunky tapered locks combed over the head, like Dragon Quest or anime hair."""
+    rs = random.Random(seed)
+    hc = Vector((0.0, head_c.y + 0.012, head_c.z + (top_z - head_c.z) * 0.42))
+    pts_all = []
+    for f in faces:
+        c = sum((vs[i] for i in f[0]), Vector()) / len(f[0])
+        a, b, cc = vs[f[0][0]], vs[f[0][1]], vs[f[0][2]]
+        nrm = (b - a).cross(cc - a).normalized()
+        if nrm.dot(c - hc) < 0: nrm = -nrm
+        pts_all.append((c, nrm))
+    rs.shuffle(pts_all)
+    roots = []
+    for c, nrm in pts_all:
+        if all((c - r[0]).length > 0.021 for r in roots): roots.append((c, nrm))
+        if len(roots) >= n: break
+    whorl = hc + Vector((0.0, 0.055, 0.07))
+    bm = bmesh.new()
+    SEG, RING = 7, 6
+    for root, nrm in roots:
+        front = root.y < hc.y - 0.04
+        side = 1 if root.x >= 0 else -1
+        if front:
+            d = Vector((0.45 * side * 0.4 + 0.25, -0.5, -0.8))     # a fringe falling over the brow, swept a little
+        else:
+            d = root - whorl
+        d = (d - nrm * d.dot(nrm)).normalized()
+        L = rs.uniform(0.07, 0.1) * (1.25 if front else 1.0) * (0.85 if root.z < head_c.z + 0.04 else 1.0)
+        r0 = (root - hc).length
+        path = [root - nrm * 0.004]
+        p = root + nrm * 0.004
+        for k in range(SEG - 1):
+            # a slight upward flick at the tips, then gravity
+            d = (d + Vector((0, 0, -0.12)) + nrm * (0.08 if k < 2 else -0.02)).normalized()
+            p = p + d * (L / (SEG - 1))
+            q = p - hc
+            R = r0 + 0.01 + 0.003 * k
+            if q.length < R: p = hc + q.normalized() * R
+            path.append(p.copy())
+        rings = []
+        for k, c in enumerate(path):
+            t = (path[min(k + 1, SEG - 1)] - path[max(k - 1, 0)]).normalized()
+            out = (c - hc).normalized()
+            side_v = t.cross(out).normalized()
+            up_v = side_v.cross(t).normalized()
+            rad = 0.017 * (1 - k / (SEG - 1)) ** 0.85 + 0.0008
+            ring = []
+            for j in range(RING):
+                a = 2 * math.pi * j / RING
+                ring.append(bm.verts.new(c + side_v * math.cos(a) * rad + up_v * math.sin(a) * rad * 0.5))
+            rings.append(ring)
+        for k in range(SEG - 1):
+            for j in range(RING):
+                bm.faces.new((rings[k][j], rings[k][(j + 1) % RING], rings[k + 1][(j + 1) % RING], rings[k + 1][j]))
+        bm.faces.new(list(reversed(rings[0])))
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    for pl in me.polygons: pl.use_smooth = True
+    me.materials.append(mat)
+    ob = bpy.data.objects.new(name, me)
+    coll.objects.link(ob)
+    sub = ob.modifiers.new('sub', 'SUBSURF')
+    sub.levels = sub.render_levels = 1
     ob.parent = arm
     ob.parent_type = 'BONE'
     ob.parent_bone = 'head'
