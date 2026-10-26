@@ -19,7 +19,8 @@ namespace Loran.UnityLayer
     {
         const int CutW = 320, CutH = 180;
 
-        VisualElement cutPage, cutView, cutFade, cutFlash, cutBolt, cutHint;
+        VisualElement cutPage, cutView, cutFade, cutFlash, cutBolt, cutHint, cutFilm;
+        string cutFilmShown;
         Label cutCaption;
         string cutId, cutKind;
         float cutStart;
@@ -78,6 +79,14 @@ namespace Loran.UnityLayer
             FillScreen(cutPage);
             cutView = Add(cutPage, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-view");
             ShipwreckBuild();
+            cutFilm = null;
+            cutFilmShown = null;
+            if (cutKind == "shipwreck" && HdFilm("storm", 0) != null)
+            {
+                cutFilm = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-layer");
+                cutFilm.style.left = cutFilm.style.top = 0;
+                cutFilm.style.width = cutFilm.style.height = Length.Percent(100);
+            }
 
             cutFlash = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-flash");
             cutFade = Add(cutView, new VisualElement { pickingMode = PickingMode.Ignore }, "cut-fade");
@@ -318,6 +327,31 @@ namespace Loran.UnityLayer
             {
                 cutYou.box.style.display = DisplayStyle.None;
                 cutYenson.box.style.display = DisplayStyle.None;
+            }
+
+            if (cutFilm != null)
+            {
+                // the cutscene filmed in 3D (Tools/Blender/cutscene.py) plays over the pixel-art one
+                string shot = null;
+                int f = 0;
+                if (storm) { shot = "storm"; f = Mathf.Min((int)(t * FilmStormFps), FilmStormFrames - 1); flash = Mathf.Min(flash, t > 15.4f ? 1f : 0.25f); }
+                else if (beach) { shot = "beach"; f = Mathf.Clamp((int)((t - ShotBeach) * FilmFps), 0, FilmBeachFrames - 1); }
+                else if (shack) { shot = "shack"; f = Mathf.Clamp((int)((t - ShotShack) * FilmFps), 0, FilmShackFrames - 1); }
+                cutFilm.style.display = shot != null ? DisplayStyle.Flex : DisplayStyle.None;
+                if (shot != null)
+                {
+                    string key = shot + "_" + f.ToString("000");
+                    if (key != cutFilmShown)
+                    {
+                        var tex = HdFilm(shot, f);
+                        if (tex != null)
+                        {
+                            cutFilm.style.backgroundImage = new StyleBackground(tex);
+                            if (cutFilmShown != null) HdFilmDrop(cutFilmShown);
+                            cutFilmShown = key;
+                        }
+                    }
+                }
             }
 
             cutFade.style.opacity = fade;
