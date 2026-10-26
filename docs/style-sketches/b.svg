@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd0f0"/><stop offset="1" stop-color="#e8f4d8"/></linearGradient></defs>
+  <rect width="400" height="500" fill="url(#bg)"/>
+  <g stroke="#1b1410" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+  <!-- body: tunic with a rope belt, simple bright shapes -->
+  <path d="M84 500 Q90 420 140 392 Q170 380 188 372 L236 372 Q256 380 284 392 Q332 420 338 500 Z" fill="#c98a4a"/>
+  <path d="M262 384 Q324 412 338 500 L286 500 Q284 440 262 384 Z" fill="#9a6232" stroke="none"/>
+  <path d="M84 500 Q90 420 140 392 Q170 380 188 372 L236 372 Q256 380 284 392 Q332 420 338 500" fill="none"/>
+  <path d="M176 374 Q212 410 248 374" fill="#f4e0b8"/>
+  <path d="M132 400 Q140 440 136 500 M292 404 Q284 444 290 500" fill="none" stroke-width="2.5"/>
+  <!-- neck -->
+  <path d="M190 330 L188 378 Q212 396 236 378 L234 330 Z" fill="#f6c69c"/>
+  <path d="M214 338 L234 332 L236 378 Q226 386 214 386 Z" fill="#dc9f78" stroke="none"/>
+  <!-- face: round, soft jaw -->
+  <path d="M138 222 Q134 300 178 336 Q206 356 232 340 Q282 304 284 222 Q280 180 212 176 Q142 180 138 222 Z" fill="#f6c69c"/>
+  <path d="M262 236 Q268 300 232 338 Q250 300 250 258 Z" fill="#dc9f78" stroke="none"/>
+  <!-- ears -->
+  <path d="M140 246 Q120 236 122 262 Q126 284 146 286" fill="#f6c69c"/>
+  <path d="M282 246 Q302 236 300 262 Q296 284 276 286" fill="#dc9f78"/>
+  <!-- eyes: big, round, black pupils with a shine (Toriyama) -->
+  <path d="M164 258 Q166 232 186 232 Q204 234 202 260 Q200 278 184 278 Q166 278 164 258 Z" fill="#ffffff" stroke="none"/>
+  <path d="M220 258 Q222 232 242 232 Q260 234 258 260 Q256 278 240 278 Q222 278 220 258 Z" fill="#ffffff" stroke="none"/>
+  <ellipse cx="189" cy="259" rx="9" ry="12" fill="#2a1a12" stroke="none"/>
+  <ellipse cx="244" cy="259" rx="9" ry="12" fill="#2a1a12" stroke="none"/>
+  <circle cx="186" cy="253" r="3.5" fill="#fff" stroke="none"/><circle cx="241" cy="253" r="3.5" fill="#fff" stroke="none"/>
+  <path d="M158 236 Q182 228 206 240 L206 246 Q184 236 160 244 Z" fill="#1b1410"/>
+  <path d="M162 241 Q184 232 204 244 L204 230 L162 230 Z" fill="#f6c69c" stroke="none"/>
+  <path d="M216 240 Q240 228 264 236 L262 244 Q240 236 216 246 Z" fill="#1b1410"/>
+  <path d="M218 244 Q240 232 260 241 L260 230 L218 230 Z" fill="#f6c69c" stroke="none"/>
+  <path d="M158 238 Q182 230 206 242 M216 242 Q240 230 264 238" fill="none" stroke-width="5"/>
+  <path d="M168 270 Q184 282 200 270 M224 270 Q240 282 256 270" fill="none" stroke-width="2"/>
+  <!-- nose and mouth: minimal -->
+  <path d="M214 282 L208 296 L218 298" fill="none" stroke-width="3"/>
+  <path d="M196 316 Q212 324 230 314" fill="none" stroke-width="3.5"/>
+  <!-- plaster on the cheek -->
+  <path d="M236 292 L256 286 L259 296 L239 302 Z" fill="#f0dcae" stroke-width="2.5"/>
+  <!-- hair: chunky spiky clumps, rounded at the base -->
+  <path d="M132 250 Q120 214 136 180 L108 176 Q132 160 150 154 L128 124 Q162 128 180 136 L176 96 Q200 116 212 130 L232 88 Q240 118 246 134 L282 110 Q276 138 274 150 L310 152 Q292 170 286 184 L312 206 Q290 208 286 214 L288 250 Q276 228 270 214 Q262 230 266 246 Q252 226 246 206 Q238 222 238 236 Q226 216 222 204 Q210 220 210 238 Q198 218 196 204 Q184 222 182 240 Q172 220 172 206 Q160 222 158 248 Q148 226 152 206 Q140 226 132 250 Z" fill="#6a3f22"/>
+  <path d="M150 170 Q168 148 196 146 Q176 160 168 182 Z M214 140 Q236 132 258 148 Q236 150 222 168 Z" fill="#9a6232" stroke="none"/>
+  <path d="M244 180 Q268 186 282 210 Q266 200 252 198 Z" fill="#4a2814" stroke="none"/>
+  <!-- brows: thick, determined -->
+  <path d="M160 226 L202 232 L200 222 L164 216 Z" fill="#3a2214"/>
+  <path d="M222 232 L264 226 L260 216 L224 222 Z" fill="#3a2214"/>
+  </g>
+</svg>
